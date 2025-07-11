@@ -1,0 +1,30 @@
+{
+  "name": "olaclick-dashboard",
+  "version": "1.0.0",
+  "description": "Multi-account dashboard for OlaClick orders with 7-day comparison trends",
+  "main": "server.js",
+  "type": "module",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "olaclick",
+    "dashboard",
+    "orders",
+    "analytics",
+    "comparison"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "axios": "^1.6.7",
+    "cors": "^2.8.5"
+  }
+} 
