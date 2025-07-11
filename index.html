@@ -18,9 +18,133 @@
             padding: 20px;
         }
         
+        /* Authentication Overlay */
+        .auth-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        }
+        
+        .auth-container {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+        
+        .auth-title {
+            color: #2c3e50;
+            font-size: 2.2em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+        
+        .auth-subtitle {
+            color: #7f8c8d;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+        
+        .pin-input {
+            width: 100%;
+            padding: 15px 20px;
+            font-size: 1.2em;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            text-align: center;
+            letter-spacing: 3px;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+        
+        .pin-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .pin-input.error {
+            border-color: #e74c3c;
+            animation: shake 0.5s ease-in-out;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+        
+        .auth-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1.1em;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .auth-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+        
+        .auth-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .error-message {
+            color: #e74c3c;
+            margin-top: 15px;
+            font-weight: 600;
+            display: none;
+        }
+        
+        .logout-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(231, 76, 60, 0.9);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+        
+        .logout-btn:hover {
+            background: #e74c3c;
+            transform: translateY(-2px);
+        }
+        
         .dashboard {
             max-width: 1400px;
             margin: 0 auto;
+            display: none; /* Hidden by default until authenticated */
+        }
+        
+        .dashboard.authenticated {
+            display: block;
         }
         
         .header {
@@ -562,7 +686,18 @@
     </style>
 </head>
 <body>
-    <div class="dashboard">
+    <div class="auth-overlay" id="authOverlay" style="display: none;">
+        <div class="auth-container">
+            <h2 class="auth-title">PIN Authentication</h2>
+            <p class="auth-subtitle">Please enter your PIN to access the dashboard.</p>
+            <input type="password" class="pin-input" id="pinInput" placeholder="Enter PIN">
+            <button class="auth-btn" id="authBtn">Authenticate</button>
+            <div class="error-message" id="authErrorMessage"></div>
+        </div>
+    </div>
+
+    <div class="dashboard" id="dashboard">
+        <button class="logout-btn" id="logoutBtn" onclick="logout()">🔓 Logout</button>
         <div class="header">
             <h1>🍔 OlaClick Multi-Account Dashboard</h1>
             <p style="text-align: center; color: #6c757d; margin-bottom: 20px; font-size: 1.1em;">
@@ -1156,6 +1291,111 @@
                 closeAccountModal();
             }
         }
+        
+        // ====== AUTHENTICATION SYSTEM ======
+        const CORRECT_PIN = '125646';
+        const AUTH_KEY = 'dashboard_authenticated';
+        
+        // Check authentication status on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAuthentication();
+        });
+        
+        function checkAuthentication() {
+            const isAuthenticated = localStorage.getItem(AUTH_KEY) === 'true';
+            
+            if (isAuthenticated) {
+                showDashboard();
+            } else {
+                showAuthOverlay();
+            }
+        }
+        
+        function showAuthOverlay() {
+            document.getElementById('authOverlay').style.display = 'flex';
+            document.getElementById('dashboard').classList.remove('authenticated');
+            document.getElementById('pinInput').focus();
+            
+            // Add event listeners
+            const pinInput = document.getElementById('pinInput');
+            const authBtn = document.getElementById('authBtn');
+            
+            // Handle Enter key
+            pinInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    authenticate();
+                }
+            });
+            
+            // Handle auth button click
+            authBtn.addEventListener('click', authenticate);
+        }
+        
+        function showDashboard() {
+            document.getElementById('authOverlay').style.display = 'none';
+            document.getElementById('dashboard').classList.add('authenticated');
+        }
+        
+        function authenticate() {
+            const pinInput = document.getElementById('pinInput');
+            const authBtn = document.getElementById('authBtn');
+            const errorMessage = document.getElementById('authErrorMessage');
+            const enteredPin = pinInput.value;
+            
+            // Disable button during authentication
+            authBtn.disabled = true;
+            authBtn.textContent = 'Authenticating...';
+            
+            // Simulate slight delay for better UX
+            setTimeout(() => {
+                if (enteredPin === CORRECT_PIN) {
+                    // Successful authentication
+                    localStorage.setItem(AUTH_KEY, 'true');
+                    showDashboard();
+                    pinInput.value = '';
+                    errorMessage.style.display = 'none';
+                    pinInput.classList.remove('error');
+                } else {
+                    // Failed authentication
+                    errorMessage.textContent = 'Incorrect PIN. Please try again.';
+                    errorMessage.style.display = 'block';
+                    pinInput.classList.add('error');
+                    pinInput.value = '';
+                    pinInput.focus();
+                    
+                    // Remove error styling after animation
+                    setTimeout(() => {
+                        pinInput.classList.remove('error');
+                    }, 500);
+                }
+                
+                // Re-enable button
+                authBtn.disabled = false;
+                authBtn.textContent = 'Authenticate';
+            }, 300);
+        }
+        
+        function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                localStorage.removeItem(AUTH_KEY);
+                document.getElementById('pinInput').value = '';
+                showAuthOverlay();
+            }
+        }
+        
+        // Prevent right-click context menu for additional security
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+        });
+        
+        // Prevent F12 and other developer shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'F12' || 
+                (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'C' || e.key === 'J')) ||
+                (e.ctrlKey && e.key === 'U')) {
+                e.preventDefault();
+            }
+        });
     </script>
 </body>
 </html> 
