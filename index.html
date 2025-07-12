@@ -508,6 +508,80 @@
             opacity: 0.8;
         }
         
+        /* Token Expiration Info Styles */
+        .token-expiration-info {
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 5px 15px rgba(243, 156, 18, 0.3);
+            animation: pulse-glow 2s infinite;
+        }
+        
+        .token-expiration-info.warning {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            box-shadow: 0 5px 15px rgba(231, 76, 60, 0.3);
+        }
+        
+        .token-expiration-info.success {
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            box-shadow: 0 5px 15px rgba(39, 174, 96, 0.3);
+            animation: none;
+        }
+        
+        .expiration-icon {
+            font-size: 1.5em;
+            min-width: 30px;
+        }
+        
+        .expiration-content {
+            flex: 1;
+        }
+        
+        .expiration-title {
+            font-weight: 600;
+            font-size: 0.9em;
+            margin-bottom: 3px;
+            opacity: 0.9;
+        }
+        
+        .expiration-text {
+            font-size: 1.1em;
+            font-weight: 700;
+        }
+        
+        @keyframes pulse-glow {
+            0%, 100% { 
+                box-shadow: 0 5px 15px rgba(243, 156, 18, 0.3);
+                transform: scale(1);
+            }
+            50% { 
+                box-shadow: 0 8px 25px rgba(243, 156, 18, 0.5);
+                transform: scale(1.02);
+            }
+        }
+        
+        /* Responsive adjustments for token expiration */
+        @media (max-width: 480px) {
+            .token-expiration-info {
+                padding: 12px 15px;
+                margin: 15px 0;
+                gap: 12px;
+            }
+            
+            .expiration-icon {
+                font-size: 1.3em;
+            }
+            
+            .expiration-text {
+                font-size: 1em;
+            }
+        }
+        
         .modal {
             display: none;
             position: fixed;
@@ -1095,6 +1169,16 @@
             <p style="text-align: center; color: #6c757d; margin-bottom: 20px; font-size: 1.1em;">
                 📊 Real-time data with 7-day comparison trends
             </p>
+            
+            <!-- Token Expiration Warning -->
+            <div id="tokenExpirationInfo" class="token-expiration-info" style="display: none;">
+                <div class="expiration-icon">⏰</div>
+                <div class="expiration-content">
+                    <div class="expiration-title">Session Expiration</div>
+                    <div id="expirationText" class="expiration-text"></div>
+                </div>
+            </div>
+            
             <div class="controls">
                 <div class="control-group">
                     <label>Start Date</label>
@@ -1228,12 +1312,161 @@
         // Auto-refresh every 5 minutes
         setInterval(refreshData, 5 * 60 * 1000);
         
+        // Check token expirations every hour
+        setInterval(checkTokenExpirations, 60 * 60 * 1000);
+        
+        // ====== JWT TOKEN EXPIRATION MONITORING ======
+        
+        // Function to decode JWT token payload
+        function decodeJWT(token) {
+            try {
+                const parts = token.split('.');
+                if (parts.length !== 3) {
+                    throw new Error('Invalid JWT format');
+                }
+                
+                const payload = parts[1];
+                const decodedPayload = JSON.parse(atob(payload));
+                return decodedPayload;
+            } catch (error) {
+                console.error('Error decoding JWT:', error);
+                return null;
+            }
+        }
+        
+        // Function to check token expiration status
+        function getTokenExpirationInfo(payload) {
+            if (!payload || !payload.exp) {
+                return null;
+            }
+            
+            const now = Date.now();
+            const expiry = payload.exp * 1000; // Convert to milliseconds
+            const timeUntilExpiry = expiry - now;
+            const isExpired = timeUntilExpiry <= 0;
+            
+            // Calculate time components
+            const days = Math.floor(Math.abs(timeUntilExpiry) / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((Math.abs(timeUntilExpiry) % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((Math.abs(timeUntilExpiry) % (1000 * 60 * 60)) / (1000 * 60));
+            
+            return {
+                isExpired,
+                expiryDate: new Date(expiry),
+                timeUntilExpiry,
+                days,
+                hours,
+                minutes,
+                payload
+            };
+        }
+        
+        // Function to check all accounts and find closest expiration
+        function checkTokenExpirations() {
+            console.log('🔍 Checking token expirations for all accounts...');
+            
+            let closestExpiration = null;
+            let closestAccount = null;
+            let allTokens = [];
+            
+            // Check all accounts
+            accounts.forEach(account => {
+                if (account.tokens && Array.isArray(account.tokens)) {
+                    account.tokens.forEach(tokenInfo => {
+                        if (tokenInfo.auth_token) {
+                            const payload = decodeJWT(tokenInfo.auth_token);
+                            if (payload) {
+                                const expirationInfo = getTokenExpirationInfo(payload);
+                                if (expirationInfo) {
+                                    const tokenData = {
+                                        account: account.name,
+                                        companyToken: account.company_token,
+                                        ...expirationInfo
+                                    };
+                                    
+                                    allTokens.push(tokenData);
+                                    
+                                    // Find closest expiration (earliest date)
+                                    if (!closestExpiration || 
+                                        (!tokenData.isExpired && tokenData.timeUntilExpiry < closestExpiration.timeUntilExpiry) ||
+                                        (closestExpiration.isExpired && !tokenData.isExpired)) {
+                                        closestExpiration = tokenData;
+                                        closestAccount = account.name;
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            });
+            
+            console.log(`📊 Found ${allTokens.length} tokens across ${accounts.length} accounts`);
+            
+            // Display expiration info
+            displayTokenExpirationInfo(closestExpiration, closestAccount, allTokens);
+        }
+        
+        // Function to display token expiration information
+        function displayTokenExpirationInfo(closestExpiration, accountName, allTokens) {
+            const expirationDiv = document.getElementById('tokenExpirationInfo');
+            const expirationText = document.getElementById('expirationText');
+            
+            if (!closestExpiration) {
+                expirationDiv.style.display = 'none';
+                return;
+            }
+            
+            let message, className, icon;
+            
+            if (closestExpiration.isExpired) {
+                message = `❌ Token EXPIRED ${closestExpiration.days} days ago (${accountName})`;
+                className = 'warning';
+                icon = '🚨';
+            } else if (closestExpiration.days === 0) {
+                message = `⚠️ Token expires TODAY in ${closestExpiration.hours}h ${closestExpiration.minutes}m (${accountName})`;
+                className = 'warning';
+                icon = '🚨';
+            } else if (closestExpiration.days <= 7) {
+                message = `⚠️ Token expires in ${closestExpiration.days} days, ${closestExpiration.hours}h (${accountName})`;
+                className = 'warning';
+                icon = '⚠️';
+            } else if (closestExpiration.days <= 30) {
+                message = `⏰ Token expires in ${closestExpiration.days} days (${accountName})`;
+                className = '';
+                icon = '⏰';
+            } else {
+                message = `✅ All tokens valid. Next expiry: ${closestExpiration.days} days (${accountName})`;
+                className = 'success';
+                icon = '✅';
+            }
+            
+            // Update display
+            document.querySelector('.expiration-icon').textContent = icon;
+            expirationText.textContent = message;
+            expirationDiv.className = `token-expiration-info ${className}`;
+            expirationDiv.style.display = 'flex';
+            
+            // Add detailed info to console
+            console.log('🔐 Token Expiration Summary:');
+            console.log(`   Closest expiration: ${closestExpiration.expiryDate.toLocaleString()}`);
+            console.log(`   Account: ${accountName}`);
+            console.log(`   Status: ${closestExpiration.isExpired ? 'EXPIRED' : 'VALID'}`);
+            console.log(`   Time remaining: ${closestExpiration.days}d ${closestExpiration.hours}h ${closestExpiration.minutes}m`);
+            
+            // Log all tokens for debugging
+            console.log('📋 All token expirations:');
+            allTokens.forEach(token => {
+                console.log(`   ${token.account}: ${token.expiryDate.toLocaleDateString()} (${token.isExpired ? 'EXPIRED' : token.days + 'd remaining'})`);
+            });
+        }
+        
         async function loadAccounts() {
             try {
                 const response = await fetch('/api/accounts');
                 const data = await response.json();
                 accounts = data.accounts || [];
                 displayAccountsList();
+                checkTokenExpirations(); // Check token expirations when accounts are loaded
             } catch (error) {
                 console.error('Error loading accounts:', error);
             }
@@ -1393,6 +1626,7 @@
                     displaySummary(data.aggregated, data.comparison, data.periods);
                     displayData(data.accounts);
                     updateLastUpdated(data.timestamp);
+                    checkTokenExpirations(); // Check token expirations after data refresh
                 } else {
                     throw new Error(data.error || 'Failed to fetch data');
                 }
