@@ -799,9 +799,30 @@
     </div>
 
     <script>
-        // Set default dates to today
-        document.getElementById('startDate').value = new Date().toISOString().split('T')[0];
-        document.getElementById('endDate').value = new Date().toISOString().split('T')[0];
+        // Helper function to get today's date in Lima timezone
+        function getTodayInLima() {
+            const now = new Date();
+            // Convert to Lima timezone and format as YYYY-MM-DD
+            return now.toLocaleDateString('en-CA', { timeZone: 'America/Lima' });
+        }
+        
+        // Helper function to get date in specific timezone
+        function getDateInTimezone(timezone) {
+            const now = new Date();
+            return now.toLocaleDateString('en-CA', { timeZone: timezone });
+        }
+        
+        // Set default dates to today in Lima timezone
+        const todayInLima = getTodayInLima();
+        document.getElementById('startDate').value = todayInLima;
+        document.getElementById('endDate').value = todayInLima;
+        
+        // Debug: Show current timezone info
+        console.log('🕐 Timezone Debug Info:');
+        console.log(`   Browser timezone: ${Intl.DateTimeFormat().resolvedOptions().timeZone}`);
+        console.log(`   Lima date: ${todayInLima}`);
+        console.log(`   UTC date: ${new Date().toISOString().split('T')[0]}`);
+        console.log(`   Browser local date: ${new Date().toLocaleDateString('en-CA')}`);
         
         let accounts = [];
         let lastData = null;
@@ -1293,7 +1314,7 @@
         }
         
         // ====== AUTHENTICATION SYSTEM ======
-        const CORRECT_PIN = '125646';
+        const CORRECT_PIN = '105646';
         const AUTH_KEY = 'dashboard_authenticated';
         
         // Check authentication status on page load

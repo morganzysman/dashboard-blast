@@ -284,6 +284,27 @@ function getDateDaysAgo(days) {
   return date.toISOString().split('T')[0];
 }
 
+// Helper function to get timezone-aware date
+function getTimezoneAwareDate(dateString, timezone = 'America/Lima') {
+  if (!dateString) {
+    // Return today's date in the specified timezone
+    const now = new Date();
+    return now.toLocaleDateString('en-CA', { timeZone: timezone }); // en-CA gives YYYY-MM-DD format
+  }
+  
+  // If date string is provided, ensure it's in the correct format
+  const date = new Date(dateString + 'T00:00:00');
+  return date.toLocaleDateString('en-CA', { timeZone: timezone });
+}
+
+// Helper function to get date N days ago in specific timezone
+function getDateDaysAgoInTimezone(days, timezone = 'America/Lima') {
+  const today = new Date();
+  const targetDate = new Date(today);
+  targetDate.setDate(today.getDate() - days);
+  return targetDate.toLocaleDateString('en-CA', { timeZone: timezone });
+}
+
 // Helper function to make OlaClick API requests
 async function fetchOlaClickData(companyToken, queryParams = {}) {
   const account = ACCOUNTS[companyToken];
@@ -291,12 +312,18 @@ async function fetchOlaClickData(companyToken, queryParams = {}) {
     throw new Error(`Account ${companyToken} not found`);
   }
 
+  // Get timezone from parameters or default to Lima
+  const timezone = queryParams['filter[timezone]'] || 'America/Lima';
+  
+  // Create timezone-aware defaults
+  const todayInTimezone = getTimezoneAwareDate(null, timezone);
+  
   const defaultParams = {
     'filter[start_time]': '00:00:00',
     'filter[end_time]': '23:59:59',
-    'filter[timezone]': 'America/Lima',
-    'filter[start_date]': new Date().toISOString().split('T')[0],
-    'filter[end_date]': new Date().toISOString().split('T')[0],
+    'filter[timezone]': timezone,
+    'filter[start_date]': todayInTimezone,
+    'filter[end_date]': todayInTimezone,
     'filter[time_type]': 'pending_at',
     'filter[status]': 'PENDING,PREPARING,READY,DRIVER_ON_THE_WAY_TO_DESTINATION,CHECK_REQUESTED,CHECK_PRINTED,DRIVER_ARRIVED_AT_DESTINATION,DELIVERED,FINALIZED',
     'filter[max_order_limit]': 'true'
@@ -304,11 +331,22 @@ async function fetchOlaClickData(companyToken, queryParams = {}) {
 
   const params = { ...defaultParams, ...queryParams };
 
+  // Ensure dates are properly formatted for the specified timezone
+  if (params['filter[start_date]']) {
+    params['filter[start_date]'] = getTimezoneAwareDate(params['filter[start_date]'], timezone);
+  }
+  if (params['filter[end_date]']) {
+    params['filter[end_date]'] = getTimezoneAwareDate(params['filter[end_date]'], timezone);
+  }
+
   // Debug logging for API requests
   console.log(`🔍 API Request for ${companyToken}:`);
-  console.log(`   Start Date: ${params['filter[start_date]']}`);
-  console.log(`   End Date: ${params['filter[end_date]']}`);
-  console.log(`   Timezone: ${params['filter[timezone]']}`);
+  console.log(`   Original Start Date: ${queryParams['filter[start_date]'] || 'default'}`);
+  console.log(`   Original End Date: ${queryParams['filter[end_date]'] || 'default'}`);
+  console.log(`   Timezone: ${timezone}`);
+  console.log(`   Processed Start Date: ${params['filter[start_date]']}`);
+  console.log(`   Processed End Date: ${params['filter[end_date]']}`);
+  console.log(`   Today in ${timezone}: ${todayInTimezone}`);
   
   // Construct the URL for debugging
   const baseUrl = 'https://api.olaclick.app/ms-orders/auth/orders/by_payment_methods';
@@ -459,36 +497,52 @@ app.get('/api/orders/all', async (req, res) => {
     
     if (currentParams['filter[start_date]'] && currentParams['filter[end_date]']) {
       console.log('📅 Using provided date range');
-      const startDate = new Date(currentParams['filter[start_date]']);
-      const endDate = new Date(currentParams['filter[end_date]']);
       
-      console.log(`   Provided start date: ${startDate.toISOString()}`);
-      console.log(`   Provided end date: ${endDate.toISOString()}`);
+      // Get timezone from parameters
+      const timezone = currentParams['filter[timezone]'] || 'America/Lima';
       
-      // Calculate 7 days before
+      // Use timezone-aware date processing
+      const startDateStr = currentParams['filter[start_date]'];
+      const endDateStr = currentParams['filter[end_date]'];
+      
+      console.log(`   Provided start date: ${startDateStr}`);
+      console.log(`   Provided end date: ${endDateStr}`);
+      console.log(`   Using timezone: ${timezone}`);
+      
+      // Create timezone-aware dates
+      const startDate = new Date(startDateStr + 'T00:00:00');
+      const endDate = new Date(endDateStr + 'T00:00:00');
+      
+      // Calculate 7 days before in the same timezone
       const prevStartDate = new Date(startDate);
       prevStartDate.setDate(startDate.getDate() - 7);
       const prevEndDate = new Date(endDate);
       prevEndDate.setDate(endDate.getDate() - 7);
       
-      previousParams['filter[start_date]'] = prevStartDate.toISOString().split('T')[0];
-      previousParams['filter[end_date]'] = prevEndDate.toISOString().split('T')[0];
+      // Format dates for the specific timezone
+      previousParams['filter[start_date]'] = prevStartDate.toLocaleDateString('en-CA', { timeZone: timezone });
+      previousParams['filter[end_date]'] = prevEndDate.toLocaleDateString('en-CA', { timeZone: timezone });
       
       console.log(`   Calculated previous start: ${previousParams['filter[start_date]']}`);
       console.log(`   Calculated previous end: ${previousParams['filter[end_date]']}`);
     } else {
       console.log('📅 Using default date ranges (today vs 7 days ago)');
-      // Default to today for current period and 7 days ago for previous period
-      const today = new Date().toISOString().split('T')[0];
-      const sevenDaysAgo = getDateDaysAgo(7);
       
-      currentParams['filter[start_date]'] = today;
-      currentParams['filter[end_date]'] = today;
-      previousParams['filter[start_date]'] = sevenDaysAgo;
-      previousParams['filter[end_date]'] = sevenDaysAgo;
+      // Get timezone from parameters or default to Lima
+      const timezone = currentParams['filter[timezone]'] || 'America/Lima';
       
-      console.log(`   Default current date: ${today}`);
-      console.log(`   Default previous date: ${sevenDaysAgo}`);
+      // Use timezone-aware date calculation
+      const todayInTimezone = getTimezoneAwareDate(null, timezone);
+      const sevenDaysAgoInTimezone = getDateDaysAgoInTimezone(7, timezone);
+      
+      currentParams['filter[start_date]'] = todayInTimezone;
+      currentParams['filter[end_date]'] = todayInTimezone;
+      previousParams['filter[start_date]'] = sevenDaysAgoInTimezone;
+      previousParams['filter[end_date]'] = sevenDaysAgoInTimezone;
+      
+      console.log(`   Using timezone: ${timezone}`);
+      console.log(`   Today in ${timezone}: ${todayInTimezone}`);
+      console.log(`   7 days ago in ${timezone}: ${sevenDaysAgoInTimezone}`);
     }
     
     console.log('📋 Final parameter sets:');
@@ -568,6 +622,37 @@ app.get('/api/orders/all', async (req, res) => {
       error: error.message 
     });
   }
+});
+
+// Debug endpoint to check timezone handling
+app.get('/api/debug/timezone', (req, res) => {
+  const timezone = req.query.timezone || 'America/Lima';
+  const inputDate = req.query.date;
+  
+  const now = new Date();
+  const serverTime = now.toISOString();
+  const timezoneTime = now.toLocaleString('en-US', { timeZone: timezone });
+  const todayInTimezone = getTimezoneAwareDate(null, timezone);
+  const sevenDaysAgo = getDateDaysAgoInTimezone(7, timezone);
+  
+  let processedInputDate = null;
+  if (inputDate) {
+    processedInputDate = getTimezoneAwareDate(inputDate, timezone);
+  }
+  
+  res.json({
+    success: true,
+    debug: {
+      serverTime,
+      timezone,
+      timezoneTime,
+      todayInTimezone,
+      sevenDaysAgo,
+      inputDate,
+      processedInputDate,
+      serverTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+    }
+  });
 });
 
 // Get data from a specific account
