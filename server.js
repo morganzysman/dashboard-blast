@@ -49,6 +49,46 @@ if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
 // In-memory storage for push subscriptions (use database in production)
 const pushSubscriptions = new Map();
 
+// In-memory storage for notification errors and debug info
+const notificationErrors = new Map();
+const notificationDebugLog = [];
+
+// Helper function to log notification events
+function logNotificationEvent(userId, event, details = {}) {
+  const logEntry = {
+    userId,
+    userEmail: sessions.get(userId)?.userEmail || 'Unknown',
+    event,
+    details,
+    timestamp: new Date().toISOString(),
+    userAgent: details.userAgent || 'Unknown'
+  };
+  
+  notificationDebugLog.push(logEntry);
+  
+  // Keep only last 100 entries
+  if (notificationDebugLog.length > 100) {
+    notificationDebugLog.shift();
+  }
+  
+  console.log(`📱 Notification Event: ${event} for ${logEntry.userEmail}`, details);
+}
+
+// Helper function to store notification error
+function storeNotificationError(userId, error, context = {}) {
+  const errorEntry = {
+    userId,
+    userEmail: sessions.get(userId)?.userEmail || 'Unknown',
+    error: error.message || error.toString(),
+    stack: error.stack,
+    context,
+    timestamp: new Date().toISOString()
+  };
+  
+  notificationErrors.set(userId, errorEntry);
+  logNotificationEvent(userId, 'error', { error: error.message, context });
+}
+
 // Add some basic security headers for production
 if (process.env.NODE_ENV === 'production') {
   app.use((req, res, next) => {
@@ -906,6 +946,11 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+// Serve notifications debug page
+app.get('/notifications-debug', (req, res) => {
+  res.sendFile(path.join(__dirname, 'notifications-debug.html'));
+});
+
 // ====== PUSH NOTIFICATION ROUTES ======
 
 // Get VAPID public key
@@ -921,11 +966,77 @@ app.post('/api/notifications/subscribe', requireAuth, async (req, res) => {
   try {
     const subscription = req.body;
     const userId = req.user.userId;
+    const userAgent = req.headers['user-agent'] || 'Unknown';
+    
+    logNotificationEvent(userId, 'subscribe_attempt', { 
+      userAgent,
+      endpoint: subscription?.endpoint,
+      hasKeys: !!(subscription?.keys),
+      hasP256dh: !!(subscription?.keys?.p256dh),
+      hasAuth: !!(subscription?.keys?.auth)
+    });
     
     if (!subscription || !subscription.endpoint) {
+      const error = new Error('Invalid subscription data');
+      storeNotificationError(userId, error, { subscription, userAgent });
       return res.status(400).json({
         success: false,
-        error: 'Invalid subscription data'
+        error: 'Invalid subscription data',
+        details: {
+          hasSubscription: !!subscription,
+          hasEndpoint: !!subscription?.endpoint,
+          subscriptionKeys: subscription ? Object.keys(subscription) : []
+        }
+      });
+    }
+    
+    // Validate required subscription properties
+    if (!subscription.keys || !subscription.keys.p256dh || !subscription.keys.auth) {
+      const error = new Error('Missing required subscription keys');
+      storeNotificationError(userId, error, { subscription, userAgent });
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required subscription keys',
+        details: {
+          hasKeys: !!subscription.keys,
+          hasP256dh: !!subscription.keys?.p256dh,
+          hasAuth: !!subscription.keys?.auth
+        }
+      });
+    }
+    
+    // Test the subscription by sending a test notification
+    try {
+      const testPayload = {
+        title: '✅ Notifications Activated',
+        body: 'You will now receive daily sales reports and updates.',
+        icon: '/icons/icon-192x192.png',
+        badge: '/icons/icon-72x72.png',
+        tag: 'subscription-test',
+        data: {
+          type: 'subscription-test',
+          timestamp: Date.now()
+        }
+      };
+      
+      await webpush.sendNotification(subscription, JSON.stringify(testPayload));
+      logNotificationEvent(userId, 'test_notification_sent', { userAgent });
+      
+    } catch (testError) {
+      storeNotificationError(userId, testError, { 
+        context: 'test_notification', 
+        subscription, 
+        userAgent 
+      });
+      
+      return res.status(400).json({
+        success: false,
+        error: 'Failed to send test notification',
+        details: {
+          error: testError.message,
+          statusCode: testError.statusCode,
+          headers: testError.headers
+        }
       });
     }
     
@@ -937,21 +1048,38 @@ app.post('/api/notifications/subscribe', requireAuth, async (req, res) => {
       timezone: req.user.userTimezone || 'America/Lima',
       currency: req.user.userCurrency || 'PEN',
       currencySymbol: req.user.userCurrencySymbol || 'S/',
-      subscribedAt: new Date().toISOString()
+      subscribedAt: new Date().toISOString(),
+      userAgent,
+      endpoint: subscription.endpoint
     });
+    
+    // Clear any previous errors for this user
+    notificationErrors.delete(userId);
+    
+    logNotificationEvent(userId, 'subscribe_success', { userAgent });
     
     console.log(`✅ Push subscription added for user: ${req.user.userEmail}`);
     
     res.json({
       success: true,
-      message: 'Successfully subscribed to push notifications'
+      message: 'Successfully subscribed to push notifications',
+      testNotificationSent: true
     });
     
   } catch (error) {
+    storeNotificationError(req.user.userId, error, { 
+      context: 'subscription_process',
+      userAgent: req.headers['user-agent']
+    });
+    
     console.error('❌ Error subscribing to push notifications:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to subscribe to push notifications'
+      error: 'Failed to subscribe to push notifications',
+      details: {
+        message: error.message,
+        stack: error.stack
+      }
     });
   }
 });
@@ -985,11 +1113,20 @@ app.post('/api/notifications/test', requireAuth, async (req, res) => {
   try {
     const userId = req.user.userId;
     const userSubscription = pushSubscriptions.get(userId);
+    const userAgent = req.headers['user-agent'] || 'Unknown';
+    
+    logNotificationEvent(userId, 'test_notification_request', { userAgent });
     
     if (!userSubscription) {
+      const error = new Error('No push subscription found for this user');
+      storeNotificationError(userId, error, { context: 'test_notification', userAgent });
       return res.status(404).json({
         success: false,
-        error: 'No push subscription found for this user'
+        error: 'No push subscription found for this user',
+        details: {
+          subscriptionExists: false,
+          totalSubscriptions: pushSubscriptions.size
+        }
       });
     }
     
@@ -1021,6 +1158,8 @@ app.post('/api/notifications/test', requireAuth, async (req, res) => {
       JSON.stringify(notificationPayload)
     );
     
+    logNotificationEvent(userId, 'test_notification_sent', { userAgent });
+    
     console.log(`📨 Test notification sent to: ${req.user.userEmail}`);
     
     res.json({
@@ -1029,10 +1168,20 @@ app.post('/api/notifications/test', requireAuth, async (req, res) => {
     });
     
   } catch (error) {
+    storeNotificationError(req.user.userId, error, { 
+      context: 'test_notification',
+      userAgent: req.headers['user-agent']
+    });
+    
     console.error('❌ Error sending test notification:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to send test notification'
+      error: 'Failed to send test notification',
+      details: {
+        message: error.message,
+        statusCode: error.statusCode,
+        headers: error.headers
+      }
     });
   }
 });
@@ -1212,12 +1361,171 @@ app.post('/api/notifications/send-daily-reports', requireAuth, async (req, res) 
 app.get('/api/notifications/status', requireAuth, (req, res) => {
   const userId = req.user.userId;
   const userSubscription = pushSubscriptions.get(userId);
+  const userError = notificationErrors.get(userId);
   
   res.json({
     success: true,
     isSubscribed: !!userSubscription,
     subscriptionCount: pushSubscriptions.size,
-    subscribedAt: userSubscription?.subscribedAt || null
+    subscribedAt: userSubscription?.subscribedAt || null,
+    userAgent: userSubscription?.userAgent || null,
+    endpoint: userSubscription?.endpoint || null,
+    lastError: userError ? {
+      message: userError.error,
+      timestamp: userError.timestamp,
+      context: userError.context
+    } : null
+  });
+});
+
+// New debugging endpoints
+
+// Get notification debug info for current user
+app.get('/api/notifications/debug', requireAuth, (req, res) => {
+  const userId = req.user.userId;
+  const userSubscription = pushSubscriptions.get(userId);
+  const userError = notificationErrors.get(userId);
+  
+  // Get user's notification events
+  const userEvents = notificationDebugLog.filter(log => log.userId === userId);
+  
+  res.json({
+    success: true,
+    user: {
+      id: userId,
+      email: req.user.userEmail,
+      name: req.user.userName
+    },
+    subscription: userSubscription ? {
+      subscribedAt: userSubscription.subscribedAt,
+      userAgent: userSubscription.userAgent,
+      endpoint: userSubscription.endpoint,
+      hasValidKeys: !!(userSubscription.subscription?.keys?.p256dh && userSubscription.subscription?.keys?.auth)
+    } : null,
+    lastError: userError,
+    events: userEvents.slice(-10), // Last 10 events
+    browserInfo: {
+      userAgent: req.headers['user-agent'],
+      acceptLanguage: req.headers['accept-language'],
+      acceptEncoding: req.headers['accept-encoding']
+    }
+  });
+});
+
+// Get all notification debug info (admin only)
+app.get('/api/notifications/debug/all', requireAuth, (req, res) => {
+  // Check if user is admin
+  if (req.user.userRole !== 'admin') {
+    return res.status(403).json({
+      success: false,
+      error: 'Admin access required'
+    });
+  }
+  
+  const allErrors = Array.from(notificationErrors.values());
+  const allSubscriptions = Array.from(pushSubscriptions.entries()).map(([userId, data]) => ({
+    userId,
+    userEmail: data.userEmail,
+    subscribedAt: data.subscribedAt,
+    userAgent: data.userAgent,
+    endpoint: data.endpoint
+  }));
+  
+  res.json({
+    success: true,
+    statistics: {
+      totalSubscriptions: pushSubscriptions.size,
+      totalErrors: notificationErrors.size,
+      totalEvents: notificationDebugLog.length
+    },
+    subscriptions: allSubscriptions,
+    errors: allErrors,
+    events: notificationDebugLog.slice(-50) // Last 50 events
+  });
+});
+
+// Test notification capabilities
+app.post('/api/notifications/test-capabilities', requireAuth, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const userAgent = req.headers['user-agent'] || 'Unknown';
+    
+    logNotificationEvent(userId, 'capabilities_test', { userAgent });
+    
+    // Test VAPID configuration
+    const vapidTest = {
+      publicKey: !!vapidKeys.publicKey,
+      privateKey: !!vapidKeys.privateKey,
+      contact: !!vapidContact
+    };
+    
+    // Test user subscription
+    const userSubscription = pushSubscriptions.get(userId);
+    const subscriptionTest = {
+      exists: !!userSubscription,
+      hasEndpoint: !!userSubscription?.subscription?.endpoint,
+      hasKeys: !!userSubscription?.subscription?.keys,
+      hasP256dh: !!userSubscription?.subscription?.keys?.p256dh,
+      hasAuth: !!userSubscription?.subscription?.keys?.auth
+    };
+    
+    // Test environment
+    const environmentTest = {
+      nodeEnv: process.env.NODE_ENV || 'development',
+      hasVapidPublicKey: !!process.env.VAPID_PUBLIC_KEY,
+      hasVapidPrivateKey: !!process.env.VAPID_PRIVATE_KEY,
+      hasVapidContact: !!process.env.VAPID_CONTACT_EMAIL
+    };
+    
+    res.json({
+      success: true,
+      tests: {
+        vapid: vapidTest,
+        subscription: subscriptionTest,
+        environment: environmentTest
+      },
+      browserInfo: {
+        userAgent,
+        acceptLanguage: req.headers['accept-language'],
+        acceptEncoding: req.headers['accept-encoding']
+      }
+    });
+    
+  } catch (error) {
+    storeNotificationError(req.user.userId, error, { 
+      context: 'capabilities_test',
+      userAgent: req.headers['user-agent']
+    });
+    
+    res.status(500).json({
+      success: false,
+      error: 'Failed to test notification capabilities',
+      details: {
+        message: error.message,
+        stack: error.stack
+      }
+    });
+  }
+});
+
+// Clear notification errors for current user
+app.post('/api/notifications/clear-errors', requireAuth, (req, res) => {
+  const userId = req.user.userId;
+  
+  notificationErrors.delete(userId);
+  
+  // Remove user's events from debug log
+  const userEvents = notificationDebugLog.filter(log => log.userId !== userId);
+  notificationDebugLog.length = 0;
+  notificationDebugLog.push(...userEvents);
+  
+  logNotificationEvent(userId, 'errors_cleared', { 
+    userAgent: req.headers['user-agent'] 
+  });
+  
+  res.json({
+    success: true,
+    message: 'Notification errors cleared'
   });
 });
 
@@ -1248,6 +1556,7 @@ app.get('/ping', (req, res) => {
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 OlaClick Dashboard server running on port ${PORT}`);
   console.log(`📊 Dashboard available at: http://localhost:${PORT}`);
+  console.log(`🔔 Notifications Debug available at: http://localhost:${PORT}/notifications-debug`);
   console.log(`👤 Users file: ${USERS_FILE}`);
   console.log(`🔧 API endpoints:`);
   console.log(`   POST /api/auth/login - User login`);
@@ -1261,9 +1570,18 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`   POST /api/notifications/test - Send test notification`);
   console.log(`   POST /api/notifications/send-daily-reports - Send daily reports (admin)`);
   console.log(`   GET /api/notifications/status - Get notification status`);
+  console.log(`   GET /api/notifications/debug - Get notification debug info for current user`);
+  console.log(`   GET /api/notifications/debug/all - Get all notification debug info (admin)`);
+  console.log(`   POST /api/notifications/test-capabilities - Test notification capabilities`);
+  console.log(`   POST /api/notifications/clear-errors - Clear notification errors for current user`);
   console.log(`   GET /health - Health check endpoint`);
   console.log(`   GET /healthz - Health check endpoint (alternative)`);
   console.log(`   GET /ping - Ping endpoint`);
+  console.log(`🔔 Debugging features:`);
+  console.log(`   📱 Mobile-friendly notifications debug page`);
+  console.log(`   🔍 Detailed error logging and event tracking`);
+  console.log(`   📊 Browser compatibility and capability testing`);
+  console.log(`   💾 Debug information download and export`);
   console.log(`✨ Features:`);
   console.log(`   📈 7-day comparison trends`);
   console.log(`   👥 User-based account access`);

@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Push Notifications Debug - OlaClick Analytics</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .section {
+            background: white;
+            margin-bottom: 20px;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .section h2 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .status-item {
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+        }
+
+        .status-item.success {
+            background-color: #d4edda;
+            border-left-color: #28a745;
+        }
+
+        .status-item.error {
+            background-color: #f8d7da;
+            border-left-color: #dc3545;
+        }
+
+        .status-item.warning {
+            background-color: #fff3cd;
+            border-left-color: #ffc107;
+        }
+
+        .button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+            transition: background-color 0.3s;
+        }
+
+        .button:hover {
+            background-color: #2980b9;
+        }
+
+        .button:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+        }
+
+        .button.success {
+            background-color: #27ae60;
+        }
+
+        .button.success:hover {
+            background-color: #219a52;
+        }
+
+        .button.danger {
+            background-color: #e74c3c;
+        }
+
+        .button.danger:hover {
+            background-color: #c0392b;
+        }
+
+        .code-block {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .log-entry {
+            background-color: #f8f9fa;
+            border-left: 3px solid #007bff;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+        }
+
+        .log-entry.error {
+            border-left-color: #dc3545;
+            background-color: #f8d7da;
+        }
+
+        .log-entry.success {
+            border-left-color: #28a745;
+            background-color: #d4edda;
+        }
+
+        .timestamp {
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+
+        .alert {
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 6px;
+            border: 1px solid transparent;
+        }
+
+        .alert-info {
+            color: #0c5460;
+            background-color: #d1ecf1;
+            border-color: #bee5eb;
+        }
+
+        .alert-success {
+            color: #155724;
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+        }
+
+        .alert-danger {
+            color: #721c24;
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+        }
+
+        .device-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .device-info-item {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #e9ecef;
+        }
+
+        .device-info-item strong {
+            color: #2c3e50;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .status-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .device-info {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔔 Push Notifications Debug</h1>
+            <p>Troubleshooting push notifications for OlaClick Analytics</p>
+        </div>
+
+        <!-- Login Section -->
+        <div id="loginSection" class="section">
+            <h2>🔐 Login Required</h2>
+            <div class="alert alert-info">
+                Please login to access notification debugging information.
+            </div>
+            <button class="button" onclick="window.location.href='/'">Go to Dashboard</button>
+        </div>
+
+        <!-- Main Debug Section -->
+        <div id="debugSection" class="section" style="display: none;">
+            <h2>📱 Device Information</h2>
+            <div class="device-info" id="deviceInfo">
+                <!-- Device info will be populated here -->
+            </div>
+        </div>
+
+        <!-- Notification Status -->
+        <div id="statusSection" class="section" style="display: none;">
+            <h2>📊 Notification Status</h2>
+            <div id="statusContent">
+                <div class="loading">Loading status...</div>
+            </div>
+        </div>
+
+        <!-- Browser Support -->
+        <div id="supportSection" class="section" style="display: none;">
+            <h2>🌐 Browser Support</h2>
+            <div id="supportContent">
+                <div class="loading">Checking browser support...</div>
+            </div>
+        </div>
+
+        <!-- Test Actions -->
+        <div id="actionsSection" class="section" style="display: none;">
+            <h2>🧪 Test Actions</h2>
+            <div style="margin-bottom: 20px;">
+                <button class="button" onclick="testCapabilities()">Test Capabilities</button>
+                <button class="button" onclick="requestPermission()">Request Permission</button>
+                <button class="button success" onclick="subscribeToNotifications()">Subscribe</button>
+                <button class="button" onclick="sendTestNotification()">Send Test</button>
+                <button class="button danger" onclick="clearErrors()">Clear Errors</button>
+            </div>
+            <div id="actionResults"></div>
+        </div>
+
+        <!-- Debug Information -->
+        <div id="debugInfoSection" class="section" style="display: none;">
+            <h2>🔍 Debug Information</h2>
+            <div id="debugInfoContent">
+                <div class="loading">Loading debug information...</div>
+            </div>
+        </div>
+
+        <!-- Event Log -->
+        <div id="eventLogSection" class="section" style="display: none;">
+            <h2>📋 Event Log</h2>
+            <div id="eventLogContent">
+                <div class="loading">Loading event log...</div>
+            </div>
+        </div>
+
+        <!-- Error Details -->
+        <div id="errorSection" class="section" style="display: none;">
+            <h2>❌ Error Details</h2>
+            <div id="errorContent">
+                <div class="loading">Loading error information...</div>
+            </div>
+        </div>
+
+        <!-- Refresh Button -->
+        <div class="section">
+            <button class="button" onclick="refreshAll()">🔄 Refresh All Information</button>
+            <button class="button" onclick="downloadDebugInfo()">📥 Download Debug Info</button>
+        </div>
+    </div>
+
+    <script>
+        let sessionId = localStorage.getItem('sessionId');
+        let debugInfo = {};
+
+        // Check if user is logged in
+        if (!sessionId) {
+            document.getElementById('loginSection').style.display = 'block';
+        } else {
+            initializeDebugPage();
+        }
+
+        function initializeDebugPage() {
+            document.getElementById('loginSection').style.display = 'none';
+            document.getElementById('debugSection').style.display = 'block';
+            document.getElementById('statusSection').style.display = 'block';
+            document.getElementById('supportSection').style.display = 'block';
+            document.getElementById('actionsSection').style.display = 'block';
+            document.getElementById('debugInfoSection').style.display = 'block';
+            document.getElementById('eventLogSection').style.display = 'block';
+            document.getElementById('errorSection').style.display = 'block';
+
+            loadDeviceInfo();
+            loadAllDebugInfo();
+        }
+
+        function loadDeviceInfo() {
+            const deviceInfoDiv = document.getElementById('deviceInfo');
+            const deviceInfo = {
+                'User Agent': navigator.userAgent,
+                'Platform': navigator.platform,
+                'Language': navigator.language,
+                'Online': navigator.onLine,
+                'Service Worker': 'serviceWorker' in navigator,
+                'Push API': 'PushManager' in window,
+                'Notification API': 'Notification' in window,
+                'Screen Size': `${screen.width}x${screen.height}`,
+                'Viewport': `${window.innerWidth}x${window.innerHeight}`,
+                'Touch Support': 'ontouchstart' in window
+            };
+
+            deviceInfoDiv.innerHTML = Object.entries(deviceInfo).map(([key, value]) => `
+                <div class="device-info-item">
+                    <strong>${key}:</strong><br>
+                    ${value}
+                </div>
+            `).join('');
+        }
+
+        async function loadAllDebugInfo() {
+            await Promise.all([
+                loadNotificationStatus(),
+                loadBrowserSupport(),
+                loadDebugInfo(),
+                loadEventLog(),
+                loadErrorInfo()
+            ]);
+        }
+
+        async function loadNotificationStatus() {
+            try {
+                const response = await fetch('/api/notifications/status', {
+                    headers: {
+                        'X-Session-ID': sessionId
+                    }
+                });
+                const data = await response.json();
+                
+                document.getElementById('statusContent').innerHTML = `
+                    <div class="status-grid">
+                        <div class="status-item ${data.isSubscribed ? 'success' : 'error'}">
+                            <strong>Subscription Status:</strong><br>
+                            ${data.isSubscribed ? '✅ Subscribed' : '❌ Not Subscribed'}
+                        </div>
+                        <div class="status-item">
+                            <strong>Subscribed At:</strong><br>
+                            ${data.subscribedAt ? new Date(data.subscribedAt).toLocaleString() : 'Never'}
+                        </div>
+                        <div class="status-item">
+                            <strong>Total Subscriptions:</strong><br>
+                            ${data.subscriptionCount}
+                        </div>
+                        <div class="status-item ${data.lastError ? 'error' : 'success'}">
+                            <strong>Last Error:</strong><br>
+                            ${data.lastError ? data.lastError.message : 'None'}
+                        </div>
+                    </div>
+                `;
+                
+                if (data.lastError) {
+                    document.getElementById('statusContent').innerHTML += `
+                        <div class="alert alert-danger">
+                            <strong>Error Details:</strong><br>
+                            ${data.lastError.message}<br>
+                            <small>Context: ${data.lastError.context || 'Unknown'}</small><br>
+                            <small>Time: ${new Date(data.lastError.timestamp).toLocaleString()}</small>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                document.getElementById('statusContent').innerHTML = `
+                    <div class="alert alert-danger">
+                        Failed to load notification status: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        async function loadBrowserSupport() {
+            const supportInfo = {
+                'Service Worker': 'serviceWorker' in navigator,
+                'Push Manager': 'PushManager' in window,
+                'Notification API': 'Notification' in window,
+                'Push Subscribe': 'PushManager' in window && 'subscribe' in PushManager.prototype,
+                'Push Unsubscribe': 'PushManager' in window && 'getSubscription' in PushManager.prototype
+            };
+
+            let notificationPermission = 'unknown';
+            if ('Notification' in window) {
+                notificationPermission = Notification.permission;
+            }
+
+            document.getElementById('supportContent').innerHTML = `
+                <div class="status-grid">
+                    ${Object.entries(supportInfo).map(([key, value]) => `
+                        <div class="status-item ${value ? 'success' : 'error'}">
+                            <strong>${key}:</strong><br>
+                            ${value ? '✅ Supported' : '❌ Not Supported'}
+                        </div>
+                    `).join('')}
+                    <div class="status-item ${notificationPermission === 'granted' ? 'success' : notificationPermission === 'denied' ? 'error' : 'warning'}">
+                        <strong>Permission:</strong><br>
+                        ${notificationPermission === 'granted' ? '✅ Granted' : 
+                          notificationPermission === 'denied' ? '❌ Denied' : 
+                          '⚠️ Default'}
+                    </div>
+                </div>
+            `;
+        }
+
+        async function loadDebugInfo() {
+            try {
+                const response = await fetch('/api/notifications/debug', {
+                    headers: {
+                        'X-Session-ID': sessionId
+                    }
+                });
+                const data = await response.json();
+                debugInfo = data;
+                
+                document.getElementById('debugInfoContent').innerHTML = `
+                    <div class="code-block">${JSON.stringify(data, null, 2)}</div>
+                `;
+            } catch (error) {
+                document.getElementById('debugInfoContent').innerHTML = `
+                    <div class="alert alert-danger">
+                        Failed to load debug information: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        async function loadEventLog() {
+            try {
+                const response = await fetch('/api/notifications/debug', {
+                    headers: {
+                        'X-Session-ID': sessionId
+                    }
+                });
+                const data = await response.json();
+                
+                if (data.events && data.events.length > 0) {
+                    document.getElementById('eventLogContent').innerHTML = data.events.map(event => `
+                        <div class="log-entry ${event.event.includes('error') ? 'error' : event.event.includes('success') ? 'success' : ''}">
+                            <strong>${event.event}</strong><br>
+                            <div class="timestamp">${new Date(event.timestamp).toLocaleString()}</div>
+                            ${event.details ? `<div class="code-block">${JSON.stringify(event.details, null, 2)}</div>` : ''}
+                        </div>
+                    `).join('');
+                } else {
+                    document.getElementById('eventLogContent').innerHTML = `
+                        <div class="alert alert-info">
+                            No events logged yet. Try subscribing to notifications or sending a test notification.
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                document.getElementById('eventLogContent').innerHTML = `
+                    <div class="alert alert-danger">
+                        Failed to load event log: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        async function loadErrorInfo() {
+            try {
+                const response = await fetch('/api/notifications/debug', {
+                    headers: {
+                        'X-Session-ID': sessionId
+                    }
+                });
+                const data = await response.json();
+                
+                if (data.lastError) {
+                    document.getElementById('errorContent').innerHTML = `
+                        <div class="alert alert-danger">
+                            <strong>Error Message:</strong><br>
+                            ${data.lastError.error}<br><br>
+                            <strong>Context:</strong><br>
+                            ${JSON.stringify(data.lastError.context, null, 2)}<br><br>
+                            <strong>Timestamp:</strong><br>
+                            ${new Date(data.lastError.timestamp).toLocaleString()}
+                        </div>
+                        ${data.lastError.stack ? `<div class="code-block">${data.lastError.stack}</div>` : ''}
+                    `;
+                } else {
+                    document.getElementById('errorContent').innerHTML = `
+                        <div class="alert alert-success">
+                            No errors recorded for your account.
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                document.getElementById('errorContent').innerHTML = `
+                    <div class="alert alert-danger">
+                        Failed to load error information: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        async function testCapabilities() {
+            try {
+                const response = await fetch('/api/notifications/test-capabilities', {
+                    method: 'POST',
+                    headers: {
+                        'X-Session-ID': sessionId,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                const data = await response.json();
+                
+                document.getElementById('actionResults').innerHTML = `
+                    <div class="alert alert-success">
+                        Capabilities test completed successfully!
+                    </div>
+                    <div class="code-block">${JSON.stringify(data, null, 2)}</div>
+                `;
+            } catch (error) {
+                document.getElementById('actionResults').innerHTML = `
+                    <div class="alert alert-danger">
+                        Capabilities test failed: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        async function requestPermission() {
+            if (!('Notification' in window)) {
+                document.getElementById('actionResults').innerHTML = `
+                    <div class="alert alert-danger">
+                        This browser does not support notifications.
+                    </div>
+                `;
+                return;
+            }
+
+            try {
+                const permission = await Notification.requestPermission();
+                document.getElementById('actionResults').innerHTML = `
+                    <div class="alert alert-${permission === 'granted' ? 'success' : 'danger'}">
+                        Permission request result: ${permission}
+                    </div>
+                `;
+                
+                // Refresh browser support info
+                loadBrowserSupport();
+            } catch (error) {
+                document.getElementById('actionResults').innerHTML = `
+                    <div class="alert alert-danger">
+                        Permission request failed: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        async function subscribeToNotifications() {
+            try {
+                if (!('serviceWorker' in navigator)) {
+                    throw new Error('Service Worker not supported');
+                }
+
+                const registration = await navigator.serviceWorker.ready;
+                
+                // Get VAPID public key
+                const vapidResponse = await fetch('/api/notifications/vapid-public-key');
+                const vapidData = await vapidResponse.json();
+                
+                const subscription = await registration.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: vapidData.publicKey
+                });
+
+                const response = await fetch('/api/notifications/subscribe', {
+                    method: 'POST',
+                    headers: {
+                        'X-Session-ID': sessionId,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(subscription)
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('actionResults').innerHTML = `
+                        <div class="alert alert-success">
+                            Successfully subscribed to notifications!
+                        </div>
+                    `;
+                } else {
+                    document.getElementById('actionResults').innerHTML = `
+                        <div class="alert alert-danger">
+                            Subscription failed: ${data.error}<br>
+                            ${data.details ? `<div class="code-block">${JSON.stringify(data.details, null, 2)}</div>` : ''}
+                        </div>
+                    `;
+                }
+                
+                // Refresh status
+                loadNotificationStatus();
+            } catch (error) {
+                document.getElementById('actionResults').innerHTML = `
+                    <div class="alert alert-danger">
+                        Subscription failed: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        async function sendTestNotification() {
+            try {
+                const response = await fetch('/api/notifications/test', {
+                    method: 'POST',
+                    headers: {
+                        'X-Session-ID': sessionId,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('actionResults').innerHTML = `
+                        <div class="alert alert-success">
+                            Test notification sent successfully!
+                        </div>
+                    `;
+                } else {
+                    document.getElementById('actionResults').innerHTML = `
+                        <div class="alert alert-danger">
+                            Test notification failed: ${data.error}<br>
+                            ${data.details ? `<div class="code-block">${JSON.stringify(data.details, null, 2)}</div>` : ''}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                document.getElementById('actionResults').innerHTML = `
+                    <div class="alert alert-danger">
+                        Test notification failed: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        async function clearErrors() {
+            try {
+                const response = await fetch('/api/notifications/clear-errors', {
+                    method: 'POST',
+                    headers: {
+                        'X-Session-ID': sessionId,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('actionResults').innerHTML = `
+                        <div class="alert alert-success">
+                            Errors cleared successfully!
+                        </div>
+                    `;
+                    
+                    // Refresh all info
+                    loadAllDebugInfo();
+                } else {
+                    document.getElementById('actionResults').innerHTML = `
+                        <div class="alert alert-danger">
+                            Failed to clear errors: ${data.error}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                document.getElementById('actionResults').innerHTML = `
+                    <div class="alert alert-danger">
+                        Failed to clear errors: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        function refreshAll() {
+            loadDeviceInfo();
+            loadAllDebugInfo();
+            document.getElementById('actionResults').innerHTML = `
+                <div class="alert alert-info">
+                    All information refreshed!
+                </div>
+            `;
+        }
+
+        function downloadDebugInfo() {
+            const debugData = {
+                timestamp: new Date().toISOString(),
+                url: window.location.href,
+                userAgent: navigator.userAgent,
+                debugInfo: debugInfo,
+                deviceInfo: {
+                    platform: navigator.platform,
+                    language: navigator.language,
+                    online: navigator.onLine,
+                    screenSize: `${screen.width}x${screen.height}`,
+                    viewport: `${window.innerWidth}x${window.innerHeight}`
+                }
+            };
+
+            const blob = new Blob([JSON.stringify(debugData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `notification-debug-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html> 
