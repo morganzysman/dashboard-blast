@@ -1339,16 +1339,28 @@
         function checkSafariInstallSupport() {
             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
             const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-            const isStandalone = window.navigator.standalone;
+            const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+            
+            console.log('🔍 Safari Install Check:');
+            console.log(`   iOS: ${isIOS}`);
+            console.log(`   Safari: ${isSafari}`);
+            console.log(`   Standalone: ${isStandalone}`);
+            console.log(`   Deferred Prompt: ${!!deferredPrompt}`);
             
             // If it's Safari/iOS and not already installed, show install instructions
             if ((isIOS || isSafari) && !isStandalone && !deferredPrompt) {
+                console.log('✅ Showing Safari install button');
                 showSafariInstallButton();
+            } else {
+                console.log('❌ Safari install button not needed');
             }
         }
         
-        // Check Safari install support after a delay
-        setTimeout(checkSafariInstallSupport, 2000);
+        // Check Safari install support when user is authenticated
+        function checkSafariInstallAfterLogin() {
+            // Only check after user is logged in and dropdown is ready
+            setTimeout(checkSafariInstallSupport, 500);
+        }
         
         // PWA Install handler
         async function installPWA() {
@@ -1568,6 +1580,12 @@
             const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
             
+            console.log('🔔 Notification Button Update:');
+            console.log(`   Safari: ${isSafari}, Standalone: ${isStandalone}`);
+            console.log(`   Notification API: ${'Notification' in window}`);
+            console.log(`   Service Worker: ${'serviceWorker' in navigator}`);
+            console.log(`   Push Manager: ${'PushManager' in window}`);
+            
             // Create new button
             notificationButton = document.createElement('button');
             notificationButton.id = 'notificationButton';
@@ -1575,6 +1593,7 @@
             
             if (isSafari && !isStandalone) {
                 // Safari without PWA installation
+                console.log('🔔 Safari needs PWA installation');
                 notificationButton.onclick = () => {
                     showSafariInstallInstructions();
                     showNotification('Install the app first to enable push notifications on Safari!', 'info');
@@ -1585,6 +1604,7 @@
                 `;
             } else if (!('Notification' in window) || !('serviceWorker' in navigator) || !('PushManager' in window)) {
                 // Browser doesn't support notifications
+                console.log('🔔 Browser does not support notifications');
                 notificationButton.onclick = () => {
                     showNotification('Push notifications are not supported in this browser.', 'warning');
                 };
@@ -1594,6 +1614,7 @@
                 `;
             } else if (isSubscribed) {
                 // Already subscribed
+                console.log('🔔 Already subscribed to notifications');
                 notificationButton.onclick = unsubscribeFromPushNotifications;
                 notificationButton.innerHTML = `
                     <span class="dropdown-icon">🔕</span>
@@ -1601,6 +1622,7 @@
                 `;
             } else {
                 // Can subscribe
+                console.log('🔔 Can subscribe to notifications');
                 notificationButton.onclick = subscribeToPushNotifications;
                 notificationButton.innerHTML = `
                     <span class="dropdown-icon">🔔</span>
@@ -2189,6 +2211,8 @@ Test push notification?`;
                     // Initialize notification button after user info is updated
                     setTimeout(() => {
                         updateNotificationButton();
+                        // Also check for Safari install button after login
+                        checkSafariInstallAfterLogin();
                     }, 100);
                     
                     // Update dates with user's timezone
@@ -2326,6 +2350,8 @@ Test push notification?`;
                     // Initialize notification button after user info is updated
                     setTimeout(() => {
                         updateNotificationButton();
+                        // Also check for Safari install button after login
+                        checkSafariInstallAfterLogin();
                     }, 100);
                     
                     // Update dates with user's timezone
@@ -2447,11 +2473,18 @@ Test push notification?`;
         
         // Show Safari/iOS install instructions
         function showSafariInstallButton() {
+            console.log('📱 showSafariInstallButton called');
             const userDropdown = document.getElementById('userDropdown');
             let safariInstallButton = document.getElementById('safariInstallButton');
             
+            if (!userDropdown) {
+                console.log('❌ User dropdown not found');
+                return;
+            }
+            
             // Remove existing button
             if (safariInstallButton) {
+                console.log('🗑️ Removing existing Safari install button');
                 safariInstallButton.remove();
             }
             
@@ -2467,7 +2500,13 @@ Test push notification?`;
             
             // Insert before the divider
             const divider = userDropdown.querySelector('.dropdown-divider');
-            userDropdown.insertBefore(safariInstallButton, divider);
+            if (divider) {
+                userDropdown.insertBefore(safariInstallButton, divider);
+                console.log('✅ Safari install button added to user dropdown');
+            } else {
+                console.log('❌ Dropdown divider not found, appending to end');
+                userDropdown.appendChild(safariInstallButton);
+            }
         }
         
         // Show Safari install instructions
@@ -2517,6 +2556,19 @@ Push notifications require the app to be installed as a PWA.`;
             
             // Close dropdown
             document.getElementById('userMenu').classList.remove('open');
+        }
+        
+        // Test function for manual debugging (call from console)
+        function testSafariInstall() {
+            console.log('🧪 Manual Safari install test');
+            console.log('User Agent:', navigator.userAgent);
+            console.log('Is iOS:', /iPad|iPhone|iPod/.test(navigator.userAgent));
+            console.log('Is Safari:', /^((?!chrome|android).)*safari/i.test(navigator.userAgent));
+            console.log('Is Standalone:', window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches);
+            console.log('Has deferred prompt:', !!deferredPrompt);
+            
+            checkSafariInstallSupport();
+            updateNotificationButton();
         }
     </script>
 </body>
