@@ -1197,8 +1197,31 @@ app.get('/api/notifications/status', requireAuth, (req, res) => {
   });
 });
 
+// ====== HEALTH CHECK ENDPOINT ======
+
+// Health check endpoint for Railway and other deployment platforms
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    memory: process.memoryUsage(),
+    env: process.env.NODE_ENV || 'development',
+    version: '2.0.0'
+  });
+});
+
+// Alternative health check endpoints (common patterns)
+app.get('/healthz', (req, res) => {
+  res.status(200).send('OK');
+});
+
+app.get('/ping', (req, res) => {
+  res.status(200).send('pong');
+});
+
 // Start server
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 OlaClick Dashboard server running on port ${PORT}`);
   console.log(`📊 Dashboard available at: http://localhost:${PORT}`);
   console.log(`👤 Users file: ${USERS_FILE}`);
@@ -1214,6 +1237,9 @@ app.listen(PORT, () => {
   console.log(`   POST /api/notifications/test - Send test notification`);
   console.log(`   POST /api/notifications/send-daily-reports - Send daily reports (admin)`);
   console.log(`   GET /api/notifications/status - Get notification status`);
+  console.log(`   GET /health - Health check endpoint`);
+  console.log(`   GET /healthz - Health check endpoint (alternative)`);
+  console.log(`   GET /ping - Ping endpoint`);
   console.log(`✨ Features:`);
   console.log(`   📈 7-day comparison trends`);
   console.log(`   👥 User-based account access`);
@@ -1221,5 +1247,6 @@ app.listen(PORT, () => {
   console.log(`   🎯 Per-user account management`);
   console.log(`   📱 PWA with offline support`);
   console.log(`   🔔 Push notifications & daily reports`);
-  console.log(`   ⏰ Daily reports scheduled at 9:00 AM (Lima timezone)`);
+  console.log(`   ⏰ Daily reports scheduled every 5 minutes for testing`);
+  console.log(`🌐 Server listening on all interfaces (0.0.0.0:${PORT})`);
 }); 
