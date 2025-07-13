@@ -1335,6 +1335,21 @@
             showInstallButton();
         });
         
+        // Check for Safari and iOS devices that don't support beforeinstallprompt
+        function checkSafariInstallSupport() {
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+            const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+            const isStandalone = window.navigator.standalone;
+            
+            // If it's Safari/iOS and not already installed, show install instructions
+            if ((isIOS || isSafari) && !isStandalone && !deferredPrompt) {
+                showSafariInstallButton();
+            }
+        }
+        
+        // Check Safari install support after a delay
+        setTimeout(checkSafariInstallSupport, 2000);
+        
         // PWA Install handler
         async function installPWA() {
             if (!deferredPrompt) {
@@ -1399,21 +1414,26 @@
                 return;
             }
             
+            // Check if running as installed PWA
+            const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+            const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+            
+            if (isSafari && !isStandalone) {
+                console.log('⚠️  Safari detected - PWA installation required for push notifications');
+                // Don't try to initialize push notifications until installed
+                return;
+            }
+            
             try {
                 // Check current subscription status
                 const subscription = await swRegistration.pushManager.getSubscription();
                 isSubscribed = !(subscription === null);
                 
                 console.log(`📨 Push notifications: ${isSubscribed ? 'Subscribed' : 'Not subscribed'}`);
+                console.log(`📱 Running as PWA: ${isStandalone ? 'Yes' : 'No'}`);
                 
                 // Update UI based on subscription status
                 updateNotificationButton();
-                
-                // Auto-request permission if not granted
-                if (Notification.permission === 'default') {
-                    console.log('🔔 Requesting notification permission...');
-                    // We'll request permission when user logs in
-                }
                 
             } catch (error) {
                 console.error('❌ Error initializing push notifications:', error);
@@ -1427,12 +1447,26 @@
                 return false;
             }
             
+            // Check Safari and PWA status
+            const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+            const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+            
+            if (isSafari && !isStandalone) {
+                showNotification('Please install the app first to enable notifications on Safari!', 'warning');
+                showSafariInstallInstructions();
+                return false;
+            }
+            
             try {
                 // Request permission
                 const permission = await Notification.requestPermission();
                 if (permission !== 'granted') {
                     console.log('🚫 Notification permission denied');
-                    showNotification('Notification permission denied. You can enable it in your browser settings.', 'warning');
+                    if (isSafari) {
+                        showNotification('Notification permission denied. Make sure the app is installed and try again.', 'warning');
+                    } else {
+                        showNotification('Notification permission denied. You can enable it in your browser settings.', 'warning');
+                    }
                     return false;
                 }
                 
@@ -1463,12 +1497,21 @@
                 updateNotificationButton();
                 
                 console.log('✅ Push notifications subscribed successfully');
-                showNotification('Push notifications enabled! You\'ll receive daily sales reports.', 'success');
+                if (isSafari) {
+                    showNotification('Push notifications enabled! You\'ll receive daily sales reports in your installed app.', 'success');
+                } else {
+                    showNotification('Push notifications enabled! You\'ll receive daily sales reports.', 'success');
+                }
                 
                 return true;
             } catch (error) {
                 console.error('❌ Error subscribing to push notifications:', error);
-                showNotification('Failed to enable push notifications. Please try again.', 'error');
+                
+                if (isSafari) {
+                    showNotification('Failed to enable push notifications. Make sure the app is properly installed as a PWA.', 'error');
+                } else {
+                    showNotification('Failed to enable push notifications. Please try again.', 'error');
+                }
                 return false;
             }
         }
@@ -1520,18 +1563,44 @@
                 notificationButton.remove();
             }
             
+            // Check Safari and PWA status
+            const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+            const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+            
             // Create new button
             notificationButton = document.createElement('button');
             notificationButton.id = 'notificationButton';
             notificationButton.className = 'dropdown-item';
             
-            if (isSubscribed) {
+            if (isSafari && !isStandalone) {
+                // Safari without PWA installation
+                notificationButton.onclick = () => {
+                    showSafariInstallInstructions();
+                    showNotification('Install the app first to enable push notifications on Safari!', 'info');
+                };
+                notificationButton.innerHTML = `
+                    <span class="dropdown-icon">📱</span>
+                    <span>Install App for Notifications</span>
+                `;
+            } else if (!('Notification' in window) || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+                // Browser doesn't support notifications
+                notificationButton.onclick = () => {
+                    showNotification('Push notifications are not supported in this browser.', 'warning');
+                };
+                notificationButton.innerHTML = `
+                    <span class="dropdown-icon">❌</span>
+                    <span>Notifications Not Supported</span>
+                `;
+            } else if (isSubscribed) {
+                // Already subscribed
                 notificationButton.onclick = unsubscribeFromPushNotifications;
                 notificationButton.innerHTML = `
                     <span class="dropdown-icon">🔕</span>
                     <span>Disable Notifications</span>
                 `;
             } else {
+                // Can subscribe
                 notificationButton.onclick = subscribeToPushNotifications;
                 notificationButton.innerHTML = `
                     <span class="dropdown-icon">🔔</span>
@@ -1655,6 +1724,23 @@
             const notificationStatus = isSubscribed ? 'Enabled' : 'Disabled';
             const permissionStatus = Notification.permission || 'default';
             
+            // Browser and PWA detection
+            const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+            const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+            const hasServiceWorker = 'serviceWorker' in navigator;
+            const hasPushManager = 'PushManager' in window;
+            const hasNotificationAPI = 'Notification' in window;
+            
+            let browserInfo = '';
+            if (isIOS) {
+                browserInfo = 'iOS Safari';
+            } else if (isSafari) {
+                browserInfo = 'macOS Safari';
+            } else {
+                browserInfo = 'Other Browser';
+            }
+            
             const accountInfo = `Account Information:
             
 Name: ${user.name}
@@ -1664,13 +1750,30 @@ Timezone: ${user.timezone}
 Currency: ${user.currency}
 Accounts: ${user.accountsCount}
 
-Push Notifications: ${notificationStatus}
+Browser Information:
+Browser: ${browserInfo}
+Installed as PWA: ${isStandalone ? 'Yes' : 'No'}
+Service Worker: ${hasServiceWorker ? 'Supported' : 'Not Supported'}
+Push Manager: ${hasPushManager ? 'Supported' : 'Not Supported'}
+Notification API: ${hasNotificationAPI ? 'Supported' : 'Not Supported'}
+
+Push Notifications:
+Status: ${notificationStatus}
 Permission: ${permissionStatus}
+Safari Ready: ${isSafari ? (isStandalone ? 'Yes' : 'No - Install Required') : 'N/A'}
+
+${isSafari && !isStandalone ? 
+'⚠️ Safari requires PWA installation for notifications!\nUse "Install App (Safari)" option to enable notifications.' : 
+''}
 
 Test push notification?`;
             
             if (confirm(accountInfo)) {
-                testPushNotification();
+                if (isSubscribed) {
+                    testPushNotification();
+                } else {
+                    subscribeToPushNotifications();
+                }
             }
             
             // Close dropdown
@@ -2233,15 +2336,41 @@ Test push notification?`;
                     console.log(`   Timezone: ${result.user.timezone}`);
                     console.log(`   Currency: ${result.user.currency} (${result.user.currencySymbol})`);
                     console.log(`   Accounts assigned: ${result.user.accountsCount}`);
+                    
+                    // Refresh data after successful authentication
+                    refreshData();
                 } else {
-                    // Session invalid
+                    // Session invalid or expired
+                    console.log('❌ Session invalid or expired, clearing stored data');
                     localStorage.removeItem('sessionId');
                     localStorage.removeItem('user');
+                    
+                    // Reset user settings to defaults
+                    userSettings = {
+                        timezone: 'America/Lima',
+                        currency: 'PEN',
+                        currencySymbol: 'S/'
+                    };
+                    
                     showAuthOverlay();
                 }
             } catch (error) {
                 console.error('Auth verification error:', error);
-                showAuthOverlay();
+                
+                // Only show auth overlay if it's a real authentication error
+                // Don't clear session on network errors to avoid unnecessary re-logins
+                if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                    console.log('⚠️  Network error during session verification, retrying...');
+                    // Retry after 3 seconds
+                    setTimeout(() => {
+                        checkAuthentication();
+                    }, 3000);
+                } else {
+                    // Clear session on other errors
+                    localStorage.removeItem('sessionId');
+                    localStorage.removeItem('user');
+                    showAuthOverlay();
+                }
             }
         }
         
@@ -2281,6 +2410,114 @@ Test push notification?`;
                 e.preventDefault();
             }
         });
+        
+        // Check authentication on page load
+        checkAuthentication();
+        
+        // Periodically refresh session to keep it active (every 30 minutes)
+        setInterval(async () => {
+            const sessionId = localStorage.getItem('sessionId');
+            if (sessionId) {
+                try {
+                    const response = await fetch('/api/auth/verify', {
+                        headers: {
+                            'X-Session-ID': sessionId
+                        }
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        console.log('🔄 Session refreshed successfully');
+                        // Update user info if it changed
+                        localStorage.setItem('user', JSON.stringify(result.user));
+                    } else {
+                        console.log('❌ Session expired during refresh');
+                        // Session expired, redirect to login
+                        localStorage.removeItem('sessionId');
+                        localStorage.removeItem('user');
+                        showAuthOverlay();
+                    }
+                } catch (error) {
+                    console.error('Session refresh error:', error);
+                    // Don't logout on network errors during refresh
+                }
+            }
+        }, 30 * 60 * 1000); // 30 minutes
+        
+        // Show Safari/iOS install instructions
+        function showSafariInstallButton() {
+            const userDropdown = document.getElementById('userDropdown');
+            let safariInstallButton = document.getElementById('safariInstallButton');
+            
+            // Remove existing button
+            if (safariInstallButton) {
+                safariInstallButton.remove();
+            }
+            
+            // Create Safari install button
+            safariInstallButton = document.createElement('button');
+            safariInstallButton.id = 'safariInstallButton';
+            safariInstallButton.className = 'dropdown-item';
+            safariInstallButton.onclick = showSafariInstallInstructions;
+            safariInstallButton.innerHTML = `
+                <span class="dropdown-icon">📱</span>
+                <span>Install App (Safari)</span>
+            `;
+            
+            // Insert before the divider
+            const divider = userDropdown.querySelector('.dropdown-divider');
+            userDropdown.insertBefore(safariInstallButton, divider);
+        }
+        
+        // Show Safari install instructions
+        function showSafariInstallInstructions() {
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+            const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+            
+            let instructions = '';
+            
+            if (isIOS) {
+                instructions = `To install OlaClick Analytics as an app on iOS:
+
+1. Tap the Share button (📤) at the bottom of Safari
+2. Scroll down and tap "Add to Home Screen"
+3. Tap "Add" to confirm
+
+After installation:
+• The app will appear on your home screen
+• Push notifications will be available
+• You'll have a native app experience
+
+Note: Push notifications only work when the app is installed!`;
+            } else if (isSafari) {
+                instructions = `To install OlaClick Analytics as an app on macOS Safari:
+
+1. Click Safari menu → Add to Dock
+   OR
+2. Click the Share button and select "Add to Dock"
+
+After installation:
+• The app will appear in your Dock
+• Push notifications will be available
+• You'll have a native app experience
+
+Note: Push notifications only work when the app is installed!`;
+            } else {
+                instructions = `To enable push notifications and install the app:
+
+1. Use Safari browser (recommended)
+2. Follow the installation instructions
+3. Push notifications will be available after installation
+
+Push notifications require the app to be installed as a PWA.`;
+            }
+            
+            alert(instructions);
+            
+            // Close dropdown
+            document.getElementById('userMenu').classList.remove('open');
+        }
     </script>
 </body>
-</html> 
+</html>

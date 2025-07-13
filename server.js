@@ -189,6 +189,8 @@ function createSession(user) {
     expiresAt
   });
   
+  console.log(`🔑 Session created for user: ${user.email} (ID: ${sessionId.substring(0, 8)}...) - Expires: ${new Date(expiresAt).toLocaleString()}`);
+  
   return sessionId;
 }
 
@@ -204,16 +206,34 @@ function verifySession(sessionId) {
     return null;
   }
   
+  // Extend session expiry for active users (sliding window)
+  // Only extend if session has less than 12 hours remaining
+  const timeRemaining = session.expiresAt - Date.now();
+  const twelveHours = 12 * 60 * 60 * 1000;
+  
+  if (timeRemaining < twelveHours) {
+    session.expiresAt = Date.now() + SESSION_EXPIRY;
+    console.log(`🔄 Session extended for user: ${session.userEmail}`);
+  }
+  
   return session;
 }
 
 // Clean expired sessions
 function cleanExpiredSessions() {
   const now = Date.now();
+  let cleanedCount = 0;
+  
   for (const [sessionId, session] of sessions.entries()) {
     if (now > session.expiresAt) {
       sessions.delete(sessionId);
+      cleanedCount++;
+      console.log(`🗑️  Cleaned expired session for user: ${session.userEmail}`);
     }
+  }
+  
+  if (cleanedCount > 0) {
+    console.log(`🧹 Session cleanup completed: ${cleanedCount} expired sessions removed, ${sessions.size} active sessions remaining`);
   }
 }
 
@@ -644,6 +664,7 @@ app.get('/api/auth/verify', (req, res) => {
   const sessionId = req.headers['x-session-id'] || req.headers['authorization']?.replace('Bearer ', '');
   
   if (!sessionId) {
+    console.log('❌ Session verification failed: No session ID provided');
     return res.status(401).json({
       success: false,
       error: 'No session provided',
@@ -654,12 +675,15 @@ app.get('/api/auth/verify', (req, res) => {
   const session = verifySession(sessionId);
   
   if (!session) {
+    console.log(`❌ Session verification failed: Invalid or expired session (ID: ${sessionId.substring(0, 8)}...)`);
     return res.status(401).json({
       success: false,
       error: 'Invalid or expired session',
       requiresLogin: true
     });
   }
+  
+  console.log(`✅ Session verified for user: ${session.userEmail} (ID: ${sessionId.substring(0, 8)}...) - Expires: ${new Date(session.expiresAt).toLocaleString()}`);
   
   res.json({
     success: true,
