@@ -374,8 +374,21 @@ function getTimezoneAwareDate(dateString, timezone = 'America/Lima') {
     return now.toLocaleDateString('en-CA', { timeZone: validTimezone }); // en-CA gives YYYY-MM-DD format
   }
   
-  // If date string is provided, ensure it's in the correct format
-  const date = new Date(dateString + 'T00:00:00');
+  // If date string is provided, treat it as already being in the target timezone
+  // Don't add T00:00:00 which causes UTC interpretation and timezone shifting
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+    // Input is already in YYYY-MM-DD format, return as-is
+    return dateString;
+  }
+  
+  // For other date formats, try to parse and format
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) {
+    // If parsing fails, return today's date
+    const now = new Date();
+    return now.toLocaleDateString('en-CA', { timeZone: validTimezone });
+  }
+  
   return date.toLocaleDateString('en-CA', { timeZone: validTimezone });
 }
 
@@ -384,10 +397,16 @@ function getDateDaysAgoInTimezone(days, timezone = 'America/Lima') {
   // Ensure timezone is valid or use default
   const validTimezone = timezone && timezone !== 'undefined' ? timezone : 'America/Lima';
   
-  const today = new Date();
-  const targetDate = new Date(today);
-  targetDate.setDate(today.getDate() - days);
-  return targetDate.toLocaleDateString('en-CA', { timeZone: validTimezone });
+  // Get current date in the target timezone first
+  const now = new Date();
+  const todayInTargetTz = now.toLocaleDateString('en-CA', { timeZone: validTimezone });
+  
+  // Parse the date and subtract days
+  const todayDate = new Date(todayInTargetTz + 'T12:00:00'); // Use noon to avoid timezone edge cases
+  const targetDate = new Date(todayDate);
+  targetDate.setDate(todayDate.getDate() - days);
+  
+  return targetDate.toLocaleDateString('en-CA');
 }
 
 // Helper function to make OlaClick API requests
@@ -428,12 +447,13 @@ async function fetchOlaClickData(account, queryParams = {}) {
 
   // Debug logging for API requests
   console.log(`🔍 API Request for ${account.company_token}:`);
+  console.log(`   Timezone: ${timezone}`);
   console.log(`   Original Start Date: ${queryParams['filter[start_date]'] || 'default'}`);
   console.log(`   Original End Date: ${queryParams['filter[end_date]'] || 'default'}`);
-  console.log(`   Timezone: ${timezone}`);
+  console.log(`   Today in ${timezone}: ${todayInTimezone}`);
   console.log(`   Processed Start Date: ${params['filter[start_date]']}`);
   console.log(`   Processed End Date: ${params['filter[end_date]']}`);
-  console.log(`   Today in ${timezone}: ${todayInTimezone}`);
+  console.log(`   Date processing status: ${params['filter[start_date]'] === queryParams['filter[start_date]'] ? 'UNCHANGED' : 'MODIFIED'}`);
   
   // Construct the URL for debugging
   const baseUrl = 'https://api.olaclick.app/ms-orders/auth/orders/by_payment_methods';
