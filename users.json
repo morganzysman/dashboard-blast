@@ -1,0 +1,71 @@
+{
+  "users": [
+    {
+      "id": "user_001",
+      "name": "Morgan Zysman",
+      "email": "demo@dashboard.com",
+      "keys": {
+        "hashedPassword": "$2b$10$e5LlKfql5RoIkrAR4QMxae7vmyj4qAr4B.RAHLLnruJyjx.fXEbYq"
+      },
+      "role": "admin",
+      "createdAt": "2025-01-12T00:00:00.000Z",
+      "lastLogin": "2025-07-13T15:19:11.019Z",
+      "active": true,
+      "timezone": "America/Lima",
+      "currency": "PEN",
+      "currencySymbol": "S/",
+      "accounts": [
+        {
+          "company_token": "blast-smash-burgers",
+          "name": "Blast Barranco",
+          "tokens": [
+            {
+              "company_token": "blast-smash-burgers",
+              "auth_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwczovL29sYWNsaWNrLW5sYi1kMzU3ZGFmOTUyNWJlMmUzLmVsYi51cy1lYXN0LTEuYW1hem9uYXdzLmNvbTo4MC9tcy1jb21wYW5pZXMvcHVibGljL2xvZ2luIiwiaWF0IjoxNzUwODkxMTY3LCJleHAiOjE3NTg2NjcxNjcsIm5iZiI6MTc1MDg5MTE2NywianRpIjoiQ0wzM2x3M3N1bTQ5T1dFNyIsInN1YiI6IjVjMWIzMWMwLTFlZTQtMTFlZi05NTdkLTg5OWVjOTZhYTU2NyIsInBydiI6IjIzYmQ1Yzg5NDlmNjAwYWRiMzllNzAxYzQwMDg3MmRiN2E1OTc2ZjciLCJjb21wYW55X2lkIjoiYzY4NjcxNjQtZjJkOC00YjA5LWFkNTgtMWVlZmZjMWNkYzc5IiwiY291bnRyeV9jb2RlIjoiUEUiLCJsYW5ndWFnZSI6ImVzIiwicm9sZSI6ImFkbWluIiwiY3VycmVuY3kiOiJQRU4iLCJ0aW1lem9uZSI6IkFtZXJpY2EvTGltYSIsInRva2VuIjoiYmxhc3Qtc21hc2gtYnVyZ2VycyIsInVzZXJfbmFtZSI6IkJsYXN0IFNtYXNoIEJ1cmdlciJ9.u7ad4B0zq8nGNTwB7QKgcUQNgF_M92pps8YRs-WtwAo"
+            }
+          ],
+          "additional_cookies": ""
+        },
+        {
+          "company_token": "blast-smash-burgers-miraflores",
+          "name": "Blast Miraflores",
+          "tokens": [
+            {
+              "company_token": "blast-smash-burgers-miraflores",
+              "auth_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwczovL29sYWNsaWNrLW5sYi1kMzU3ZGFmOTUyNWJlMmUzLmVsYi51cy1lYXN0LTEuYW1hem9uYXdzLmNvbTo4MC9tcy1jb21wYW5pZXMvcHVibGljL2xvZ2luIiwiaWF0IjoxNzUyMTg3MzY0LCJleHAiOjE3NTk5NjMzNjQsIm5iZiI6MTc1MjE4NzM2NCwianRpIjoiRWZmRzBXdzE4RXU2cmkzdiIsInN1YiI6IjA5ZmY3NjYwLTVkMWEtMTFmMC1hMzA5LTNkMTczYWZmYWYzZiIsInBydiI6IjIzYmQ1Yzg5NDlmNjAwYWRiMzllNzAxYzQwMDg3MmRiN2E1OTc2ZjciLCJjb21wYW55X2lkIjoiMWEwMzJhMGEtNzE5MC00MGU0LWIwNmItOWExNjZjMWUxMTMwIiwiY291bnRyeV9jb2RlIjoiUEUiLCJsYW5ndWFnZSI6ImVzIiwicm9sZSI6ImFkbWluIiwiY3VycmVuY3kiOiJQRU4iLCJ0aW1lem9uZSI6IkFtZXJpY2EvTGltYSIsInRva2VuIjoiYmxhc3Qtc21hc2gtYnVyZ2Vycy1taXJhZmxvcmVzIiwidXNlcl9uYW1lIjoiQmxhc3QgU21hc2ggQnVyZ2VycyBNaXJhZmxvcmVzIn0.neCLt52eSNPsMcNUFrBzZQSGXGZY0y4CZnYCCkXNfVo"
+            }
+          ],
+          "additional_cookies": "ajs_user_id=1a032a0a-7190-40e4-b06b-9a166c1e1130; ajs_anonymous_id=299d15b9-2fbe-4473-90db-530553283408; ajs_group_id=1a032a0a-7190-40e4-b06b-9a166c1e1130"
+        }
+      ]
+    },
+    {
+      "id": "user_002",
+      "name": "Admin User",
+      "email": "admin@blastburgers.com",
+      "keys": {
+        "hashedPassword": "$2b$10$PyAxN9f.gnGrFUCtgyX5met2p8NXygThseiQVRvk0x0NmjJP9pPzO"
+      },
+      "role": "admin",
+      "createdAt": "2025-01-12T00:00:00.000Z",
+      "lastLogin": null,
+      "active": true,
+      "timezone": "America/New_York",
+      "currency": "USD",
+      "currencySymbol": "$",
+      "accounts": [
+        {
+          "company_token": "blast-smash-burgers",
+          "name": "Blast Barranco",
+          "tokens": [
+            {
+              "company_token": "blast-smash-burgers",
+              "auth_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwczovL29sYWNsaWNrLW5sYi1kMzU3ZGFmOTUyNWJlMmUzLmVsYi51cy1lYXN0LTEuYW1hem9uYXdzLmNvbTo4MC9tcy1jb21wYW5pZXMvcHVibGljL2xvZ2luIiwiaWF0IjoxNzUwODkxMTY3LCJleHAiOjE3NTg2NjcxNjcsIm5iZiI6MTc1MDg5MTE2NywianRpIjoiQ0wzM2x3M3N1bTQ5T1dFNyIsInN1YiI6IjVjMWIzMWMwLTFlZTQtMTFlZi05NTdkLTg5OWVjOTZhYTU2NyIsInBydiI6IjIzYmQ1Yzg5NDlmNjAwYWRiMzllNzAxYzQwMDg3MmRiN2E1OTc2ZjciLCJjb21wYW55X2lkIjoiYzY4NjcxNjQtZjJkOC00YjA5LWFkNTgtMWVlZmZjMWNkYzc5IiwiY291bnRyeV9jb2RlIjoiUEUiLCJsYW5ndWFnZSI6ImVzIiwicm9sZSI6ImFkbWluIiwiY3VycmVuY3kiOiJQRU4iLCJ0aW1lem9uZSI6IkFtZXJpY2EvTGltYSIsInRva2VuIjoiYmxhc3Qtc21hc2gtYnVyZ2VycyIsInVzZXJfbmFtZSI6IkJsYXN0IFNtYXNoIEJ1cmdlciJ9.u7ad4B0zq8nGNTwB7QKgcUQNgF_M92pps8YRs-WtwAo"
+            }
+          ],
+          "additional_cookies": ""
+        }
+      ]
+    }
+  ]
+}
