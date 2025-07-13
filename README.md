@@ -1,242 +1,197 @@
-# OlaClick Multi-Account Dashboard
+# OlaClick Analytics Dashboard PWA
 
-A modern, responsive dashboard for monitoring orders from multiple OlaClick accounts. This dashboard fetches data from different accounts using their respective authentication cookies and displays aggregated order information.
+A Progressive Web App (PWA) for OlaClick restaurant analytics with push notifications and real-time data visualization.
 
-## Features
+## 🚀 Features
 
-- 🏢 **Multi-Account Support**: Monitor multiple OlaClick accounts simultaneously
-- 📊 **Real-time Data**: Automatic refresh every 5 minutes
-- 📈 **Payment Methods Breakdown**: View order distribution by payment method
-- 🎯 **Date Range Filtering**: Filter orders by date range and timezone
-- ⚙️ **Advanced Account Management**: List, add, edit, and delete accounts through web interface
-- 💾 **File-based Credential Storage**: Secure credential storage in JSON file
-- 📱 **Responsive Design**: Works on desktop and mobile devices
-- 🔄 **Auto-refresh**: Keeps data up-to-date automatically
-- 🔐 **Secure Cookie Management**: Handles HTTP-only secure cookies properly
+- **📊 Real-time Analytics** - Live sales data with 7-day comparison trends
+- **📱 PWA Support** - Install as native app on mobile and desktop
+- **🔔 Push Notifications** - Daily sales reports delivered to your device
+- **🔐 Multi-user Authentication** - Secure session-based login system
+- **🏢 Multi-account Management** - Access multiple restaurant accounts
+- **📈 Trend Analysis** - Compare current vs previous week performance
+- **🌐 Offline Support** - Cached data available without internet
+- **📱 Responsive Design** - Works on all screen sizes
 
-## Setup
+## 🔧 Installation
 
-### 1. Install Dependencies
+1. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-```bash
-cd dashboard
-npm install
+2. **Start development server**
+   ```bash
+   npm start
+   ```
+
+3. **Access dashboard**
+   - Open `http://localhost:3001` in your browser
+   - Login with demo credentials: `demo@dashboard.com` / `admin123`
+
+## 🔐 Production VAPID Keys
+
+The app includes **secure production VAPID keys** for push notifications:
+
+```
+Public Key: BCGkRbD4Yd6whNST8Moo1DMtTV-XVfQzztx20Ax0XMKgw7Ps_IEMkNXKb2X0Gn4PWrTaecV_peaRhc2Re4wblAM
+Private Key: dVpMJM8ZFeQj_OWS6nXEJsjYq41aA6czXlPs0cOizIQ
 ```
 
-### 2. Start the Server
+### Quick Production Start
 
 ```bash
+# Use the production startup script
+./start-production.sh
+```
+
+Or set environment variables manually:
+
+```bash
+export VAPID_PUBLIC_KEY="BCGkRbD4Yd6whNST8Moo1DMtTV-XVfQzztx20Ax0XMKgw7Ps_IEMkNXKb2X0Gn4PWrTaecV_peaRhc2Re4wblAM"
+export VAPID_PRIVATE_KEY="dVpMJM8ZFeQj_OWS6nXEJsjYq41aA6czXlPs0cOizIQ"
+export NODE_ENV="production"
 npm start
 ```
 
-The dashboard will be available at: `http://localhost:3001`
+## 📱 PWA Setup
 
-### 3. Configure Your Accounts
+### Install as App
+1. Open the dashboard in Chrome/Edge
+2. Look for "Install App" button in user menu
+3. Click to install on your device
 
-On first startup, the dashboard will create an `accounts.json` file with default account configurations. You can manage accounts in two ways:
+### Enable Push Notifications
+1. Click the user menu (top-right)
+2. Select "Enable Notifications"
+3. Allow notifications in browser prompt
+4. Receive daily sales reports at 9:00 AM
 
-#### Option A: Through Web Interface (Recommended)
-1. Open the dashboard at `http://localhost:3001`
-2. Click "⚙️ Manage Accounts" button
-3. View current accounts and add/edit/delete as needed
+## 🔔 Push Notification Features
 
-#### Option B: Direct File Editing
-Edit the `accounts.json` file directly (server restart required)
+- **Daily Reports** - Automated sales summaries every morning
+- **Test Notifications** - Development testing capability
+- **User-specific** - Personalized with timezone and currency
+- **Rich Content** - Include sales data and action buttons
+- **Secure Delivery** - VAPID-authenticated push messages
 
-## Account Management Features
+## 📊 API Endpoints
 
-### Web Interface
-- **View Current Accounts**: See all configured accounts with their settings
-- **Add New Account**: Add accounts using company token as the unique identifier
-- **Edit Existing Account**: Click "Edit" to modify account settings
-- **Delete Account**: Remove accounts with confirmation
-- **Real-time Updates**: Changes take effect immediately
+### Authentication
+- `POST /api/auth/login` - User login
+- `POST /api/auth/logout` - User logout
+- `GET /api/auth/verify` - Verify session
 
-### Account Structure
+### Analytics Data
+- `GET /api/orders/all` - Get all user account data
+- `GET /api/orders/:companyToken` - Get specific account data
 
-Each account is identified by its `company_token` (no separate account key needed):
+### Push Notifications
+- `GET /api/notifications/vapid-public-key` - Get VAPID public key
+- `POST /api/notifications/subscribe` - Subscribe to notifications
+- `POST /api/notifications/unsubscribe` - Unsubscribe from notifications
+- `POST /api/notifications/test` - Send test notification
+- `GET /api/notifications/status` - Get subscription status
 
-```json
-{
-  "blast-smash-burgers": {
-    "company_token": "blast-smash-burgers",
-    "name": "Blast Smash Burgers",
-    "tokens": [
-      {
-        "company_token": "blast-smash-burgers",
-        "auth_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
-      }
-    ],
-    "additional_cookies": "ajs_user_id=...; ajs_anonymous_id=..."
-  }
-}
-```
+## 🏗️ Architecture
 
-### How to Get Your Tokens
+### Frontend
+- **Progressive Web App** with service worker
+- **Responsive design** with modern CSS
+- **Real-time data visualization** with trend analysis
+- **Push notification handling** with rich UI
 
-1. **Option A: Extract from Browser (Recommended)**
-   - Log into your OlaClick account in a web browser
-   - Open Developer Tools (F12)
-   - Go to the Application/Storage tab
-   - Look for cookies and find the `tokens` parameter
-   - Copy the decoded JSON value
+### Backend
+- **Node.js/Express** server with RESTful API
+- **Session-based authentication** with bcrypt
+- **OlaClick API integration** with timezone awareness
+- **Web Push implementation** with VAPID keys
+- **Cron job scheduling** for daily reports
 
-2. **Option B: From Network Requests**
-   - Log into your OlaClick account
-   - Open Developer Tools (F12) → Network tab
-   - Make a request to the OlaClick API
-   - Find the request and copy the `Cookie` header
-   - The system will automatically convert legacy cookies to the new format
+### PWA Components
+- **Service Worker** (`sw.js`) - Offline caching and push handling
+- **Web App Manifest** (`manifest.json`) - App metadata and icons
+- **Push Notifications** - Web Push API with VAPID authentication
 
-### Legacy Cookie Support
-
-The dashboard automatically converts legacy cookie strings to the new format:
-- Paste your old cookie string in the token field
-- The system will extract and convert the tokens parameter
-- Additional cookie parameters are preserved separately
-
-### Account Configuration Examples
-
-**New Format (Recommended):**
-```json
-{
-  "blast-smash-burgers": {
-    "company_token": "blast-smash-burgers",
-    "tokens": [
-      {
-        "company_token": "blast-smash-burgers",
-        "auth_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
-      }
-    ],
-    "additional_cookies": "ajs_user_id=...; ajs_anonymous_id=...",
-    "name": "Blast Smash Burgers"
-  },
-  "blast-smash-burgers-miraflores": {
-    "company_token": "blast-smash-burgers-miraflores",
-    "tokens": [
-      {
-        "company_token": "blast-smash-burgers-miraflores",
-        "auth_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
-      }
-    ],
-    "additional_cookies": "ajs_user_id=...; ajs_anonymous_id=...",
-    "name": "Blast Smash Burgers Miraflores"
-  }
-}
-```
-
-**Legacy Format (Still Supported):**
-```json
-{
-  "blast-smash-burgers": {
-    "company_token": "blast-smash-burgers",
-    "cookie": "tokens=%5B%7B%22company_token%22%3A%22blast-smash-burgers%22...",
-    "name": "Blast Smash Burgers"
-  }
-}
-```
-
-## API Endpoints
-
-The dashboard provides comprehensive API endpoints:
-
-- `GET /api/accounts` - List all accounts
-- `GET /api/accounts/:companyToken` - Get full account details for editing
-- `POST /api/accounts/:companyToken` - Add or update an account
-- `DELETE /api/accounts/:companyToken` - Delete an account
-- `GET /api/orders/all` - Get orders from all accounts with aggregation
-- `GET /api/orders/:companyToken` - Get orders from a specific account
-
-## Data Structure
-
-The dashboard displays:
-
-- **Combined Summary**: Aggregated data from all accounts
-- **Total Orders**: Number of orders across all accounts
-- **Total Amount**: Sum of all order totals
-- **Payment Methods**: Combined breakdown by payment method
-- **Individual Account Data**: Separate stats for each account
-
-## File Structure
+## 📁 Project Structure
 
 ```
 dashboard/
-├── server.js              # Main server file
-├── index.html             # Dashboard interface
+├── server.js              # Main server application
+├── index.html             # PWA frontend
+├── manifest.json          # PWA manifest
+├── sw.js                  # Service worker
 ├── package.json           # Dependencies
-├── accounts.json          # Account credentials (auto-generated)
-├── .gitignore            # Excludes sensitive files
-└── README.md             # This file
+├── users.json             # User accounts (auto-generated)
+├── start-production.sh    # Production startup script
+├── PRODUCTION-SETUP.md    # Production deployment guide
+└── PWA-SETUP.md          # PWA configuration guide
 ```
 
-## Security Features
+## 🔧 Configuration
 
-### Credential Protection
-- **File-based Storage**: Credentials stored in local JSON file
-- **Git Exclusion**: `accounts.json` excluded from version control
-- **Truncated Display**: Cookie values truncated in account list for security
-- **Full Cookie Access**: Complete cookies available only when editing
+### Environment Variables
+- `VAPID_PUBLIC_KEY` - Web Push public key
+- `VAPID_PRIVATE_KEY` - Web Push private key
+- `VAPID_CONTACT_EMAIL` - Contact email for VAPID
+- `NODE_ENV` - Environment (development/production)
+- `PORT` - Server port (default: 3001)
 
-### Best Practices
-- Keep `accounts.json` file secure and backed up
-- Don't commit credential files to version control
-- Use environment variables for production deployments
-- Consider additional authentication for production use
+### Daily Reports
+- **Schedule**: 9:00 AM Lima timezone
+- **Content**: Sales summary with orders, revenue, and account count
+- **Personalization**: User's timezone and currency settings
+- **Delivery**: Push notification with dashboard link
 
-## API Response Handling
+## 🚀 Deployment
 
-The dashboard correctly handles the OlaClick API response format:
-```json
-{
-    "data": [
-        {
-            "name": "card",
-            "count": 4,
-            "sum": 266,
-            "percent": 86.31
-        },
-        {
-            "name": "bitcoin",
-            "count": 1,
-            "sum": 42.2,
-            "percent": 13.69
-        }
-    ]
-}
+See `PRODUCTION-SETUP.md` for detailed deployment instructions including:
+- Railway, Vercel, Heroku deployment options
+- HTTPS configuration for push notifications
+- PWA icon generation
+- Security considerations
+
+## 🛠️ Development
+
+### Local Development
+```bash
+# Install dependencies
+npm install
+
+# Start development server
+npm start
+
+# Test push notifications
+# Login → User Menu → Enable Notifications → Test Notification
 ```
 
-## Troubleshooting
+### Generate New VAPID Keys
+```bash
+# Generate new keys if needed
+npx web-push generate-vapid-keys
+```
 
-### Common Issues
+## 📋 Requirements
 
-1. **Server won't start**: Check if port 3001 is available
-2. **Accounts not loading**: Check `accounts.json` file permissions
-3. **API errors**: Verify cookie values are current and complete
-4. **Data not updating**: Check browser console for network errors
+- **Node.js** 18.0.0 or higher
+- **Modern browser** with PWA support
+- **HTTPS** for push notifications in production
 
-### Account Management Issues
+## 🔐 Security
 
-1. **Can't edit account**: Ensure account exists and server is running
-2. **Changes not saving**: Check server logs for file write permissions
-3. **Accounts disappeared**: Check if `accounts.json` file exists and is readable
+- **Session-based authentication** with secure sessions
+- **VAPID key authentication** for push notifications
+- **Security headers** in production mode
+- **Input validation** and error handling
+- **Environment variable** configuration
 
-### Checking Logs
+## 📞 Support
 
-The server provides detailed logging:
-- Account file operations
-- API request results
-- Error messages with details
+For questions or issues:
+- Check `PRODUCTION-SETUP.md` for deployment help
+- Review `PWA-SETUP.md` for PWA configuration
+- Test with demo account: `demo@dashboard.com` / `admin123`
 
-## Production Deployment
+---
 
-For production use:
-
-1. **Environment Variables**: Store sensitive data in environment variables
-2. **HTTPS**: Use HTTPS for secure cookie transmission
-3. **Authentication**: Add authentication to protect the dashboard
-4. **Process Management**: Use PM2 or similar for process management
-5. **Backup**: Regular backup of `accounts.json` file
-
-## License
-
-MIT License - feel free to modify and use for your own projects. 
+**✨ Ready for production deployment with secure push notifications!** 

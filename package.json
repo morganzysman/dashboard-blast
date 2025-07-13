@@ -1,30 +1,37 @@
 {
   "name": "olaclick-dashboard",
-  "version": "1.0.0",
-  "description": "Multi-account dashboard for OlaClick orders with 7-day comparison trends",
+  "version": "2.0.0",
+  "description": "OlaClick Multi-Account Analytics Dashboard with PWA and Push Notifications",
   "main": "server.js",
   "type": "module",
-  "engines": {
-    "node": ">=18.0.0",
-    "npm": ">=8.0.0"
-  },
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
-    "olaclick",
-    "dashboard",
-    "orders",
     "analytics",
-    "comparison"
+    "dashboard",
+    "olaclick",
+    "restaurant",
+    "pwa",
+    "push-notifications",
+    "real-time"
   ],
-  "author": "",
-  "license": "MIT",
+  "author": "OlaClick Analytics Team",
+  "license": "ISC",
   "dependencies": {
+    "axios": "^1.6.0",
+    "bcrypt": "^5.1.1",
+    "cors": "^2.8.5",
     "express": "^4.18.2",
-    "axios": "^1.6.7",
-    "cors": "^2.8.5"
+    "node-cron": "^3.0.3",
+    "uuid": "^9.0.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "devDependencies": {
+    "web-push": "^3.6.7"
   }
-} 
+}

@@ -4,12 +4,46 @@ import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs/promises';
+import bcrypt from 'bcrypt';
+import { v4 as uuidv4 } from 'uuid';
+import webpush from 'web-push';
+import cron from 'node-cron';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+// Configure Web Push
+const vapidKeys = {
+  publicKey: process.env.VAPID_PUBLIC_KEY || 'BCGkRbD4Yd6whNST8Moo1DMtTV-XVfQzztx20Ax0XMKgw7Ps_IEMkNXKb2X0Gn4PWrTaecV_peaRhc2Re4wblAM',
+  privateKey: process.env.VAPID_PRIVATE_KEY || 'dVpMJM8ZFeQj_OWS6nXEJsjYq41aA6czXlPs0cOizIQ'
+};
+
+// Contact email for VAPID (can be overridden with environment variable)
+const vapidContact = process.env.VAPID_CONTACT_EMAIL || 'admin@olaclick.com';
+
+webpush.setVapidDetails(
+  `mailto:${vapidContact}`,
+  vapidKeys.publicKey,
+  vapidKeys.privateKey
+);
+
+// Log VAPID configuration (only show first/last 8 characters of keys for security)
+console.log('🔐 VAPID Keys Configuration:');
+console.log(`   Public Key: ${vapidKeys.publicKey.substring(0, 8)}...${vapidKeys.publicKey.substring(vapidKeys.publicKey.length - 8)}`);
+console.log(`   Private Key: ${vapidKeys.privateKey.substring(0, 8)}...${vapidKeys.privateKey.substring(vapidKeys.privateKey.length - 8)}`);
+console.log(`   Contact Email: ${vapidContact}`);
+console.log(`   Environment: ${process.env.NODE_ENV || 'development'}`);
+
+// Warn if using default keys
+if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
+  console.warn('⚠️  WARNING: Using default VAPID keys. Set VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY environment variables for production!');
+}
+
+// In-memory storage for push subscriptions (use database in production)
+const pushSubscriptions = new Map();
 
 // Add some basic security headers for production
 if (process.env.NODE_ENV === 'production') {
@@ -26,34 +60,14 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(__dirname));
 
-// Path to the accounts configuration file
-const ACCOUNTS_FILE = path.join(__dirname, 'accounts.json');
+// Path to the users configuration file
+const USERS_FILE = path.join(__dirname, 'users.json');
 
-// Default accounts configuration
-const DEFAULT_ACCOUNTS = {
-  'blast-smash-burgers': {
-    company_token: 'blast-smash-burgers',
-    tokens: [
-      {
-        company_token: 'blast-smash-burgers',
-        auth_token: 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwczovL29sYWNsaWNrLW5sYi1kMzU3ZGFmOTUyNWJlMmUzLmVsYi51cy1lYXN0LTEuYW1hem9uYXdzLmNvbTo4MC9tcy1jb21wYW5pZXMvcHVibGljL2xvZ2luIiwiaWF0IjoxNzUwODkxMTY3LCJleHAiOjE3NTg2NjcxNjcsIm5iZiI6MTc1MDg5MTE2NywianRpIjoiQ0wzM2x3M3N1bTQ5T1dFNyIsInN1YiI6IjVjMWIzMWMwLTFlZTQtMTFlZi05NTdkLTg5OWVjOTZhYTU2NyIsInBydiI6IjIzYmQ1Yzg5NDlmNjAwYWRiMzllNzAxYzQwMDg3MmRiN2E1OTc2ZjciLCJjb21wYW55X2lkIjoiYzY4NjcxNjQtZjJkOC00YjA5LWFkNTgtMWVlZmZjMWNkYzc5IiwiY291bnRyeV9jb2RlIjoiUEUiLCJsYW5ndWFnZSI6ImVzIiwicm9sZSI6ImFkbWluIiwiY3VycmVuY3kiOiJQRU4iLCJ0aW1lem9uZSI6IkFtZXJpY2EvTGltYSIsInRva2VuIjoiYmxhc3Qtc21hc2gtYnVyZ2VycyIsInVzZXJfbmFtZSI6IkJsYXN0IFNtYXNoIEJ1cmdlciJ9.u7ad4B0zq8nGNTwB7QKgcUQNgF_M92pps8YRs-WtwAo'
-      }
-    ],
-    additional_cookies: '', // For any additional cookie parameters
-    name: 'Blast Barranco'
-  },
-  'blast-smash-burgers-miraflores': {
-    company_token: 'blast-smash-burgers-miraflores',
-    tokens: [
-      {
-        company_token: 'blast-smash-burgers-miraflores',
-        auth_token: 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwczovL29sYWNsaWNrLW5sYi1kMzU3ZGFmOTUyNWJlMmUzLmVsYi51cy1lYXN0LTEuYW1hem9uYXdzLmNvbTo4MC9tcy1jb21wYW5pZXMvcHVibGljL2xvZ2luIiwiaWF0IjoxNzUyMTg3MzY0LCJleHAiOjE3NTk5NjMzNjQsIm5iZiI6MTc1MjE4NzM2NCwianRpIjoiRWZmRzBXdzE4RXU2cmkzdiIsInN1YiI6IjA5ZmY3NjYwLTVkMWEtMTFmMC1hMzA5LTNkMTczYWZmYWYzZiIsInBydiI6IjIzYmQ1Yzg5NDlmNjAwYWRiMzllNzAxYzQwMDg3MmRiN2E1OTc2ZjciLCJjb21wYW55X2lkIjoiMWEwMzJhMGEtNzE5MC00MGU0LWIwNmItOWExNjZjMWUxMTMwIiwiY291bnRyeV9jb2RlIjoiUEUiLCJsYW5ndWFnZSI6ImVzIiwicm9sZSI6ImFkbWluIiwiY3VycmVuY3kiOiJQRU4iLCJ0aW1lem9uZSI6IkFtZXJpY2EvTGltYSIsInRva2VuIjoiYmxhc3Qtc21hc2gtYnVyZ2Vycy1taXJhZmxvcmVzIiwidXNlcl9uYW1lIjoiQmxhc3QgU21hc2ggQnVyZ2VycyBNaXJhZmxvcmVzIn0.neCLt52eSNPsMcNUFrBzZQSGXGZY0y4CZnYCCkXNfVo'
-      }
-    ],
-    additional_cookies: 'ajs_user_id=1a032a0a-7190-40e4-b06b-9a166c1e1130; ajs_anonymous_id=299d15b9-2fbe-4473-90db-530553283408; ajs_group_id=1a032a0a-7190-40e4-b06b-9a166c1e1130',
-    name: 'Blast Miraflores'
-  }
-};
+// In-memory session storage (use Redis in production)
+const sessions = new Map();
+
+// Session expiry time (24 hours)
+const SESSION_EXPIRY = 24 * 60 * 60 * 1000;
 
 // Helper function to construct cookie header from token structure
 function constructCookieHeader(account) {
@@ -79,59 +93,127 @@ function constructCookieHeader(account) {
   throw new Error('Account must have either tokens array or legacy cookie format');
 }
 
-// Helper function to migrate legacy cookie format to new format
-function migrateLegacyCookie(cookieString) {
+// Load users from file
+async function loadUsers() {
   try {
-    // Extract tokens parameter from cookie
-    const tokensMatch = cookieString.match(/tokens=([^;]+)/);
-    if (!tokensMatch) {
-      throw new Error('No tokens parameter found in cookie');
-    }
-    
-    const decodedTokens = decodeURIComponent(tokensMatch[1]);
-    const tokens = JSON.parse(decodedTokens);
-    
-    // Extract additional cookies (everything except tokens)
-    const additionalCookies = cookieString
-      .split(';')
-      .map(part => part.trim())
-      .filter(part => !part.startsWith('tokens='))
-      .join('; ');
-    
-    return {
-      tokens: tokens,
-      additional_cookies: additionalCookies
-    };
-  } catch (error) {
-    throw new Error(`Failed to migrate cookie: ${error.message}`);
-  }
-}
-
-// Load accounts from file
-async function loadAccounts() {
-  try {
-    const data = await fs.readFile(ACCOUNTS_FILE, 'utf-8');
+    const data = await fs.readFile(USERS_FILE, 'utf-8');
     return JSON.parse(data);
   } catch (error) {
-    console.log('📁 Accounts file not found, creating with default accounts...');
-    await saveAccounts(DEFAULT_ACCOUNTS);
-    return DEFAULT_ACCOUNTS;
+    console.log('👤 Users file not found, creating empty users file...');
+    const defaultUsers = { users: [] };
+    await saveUsers(defaultUsers);
+    return defaultUsers;
   }
 }
 
-// Save accounts to file
-async function saveAccounts(accounts) {
+// Save users to file
+async function saveUsers(usersData) {
   try {
-    await fs.writeFile(ACCOUNTS_FILE, JSON.stringify(accounts, null, 2));
-    console.log('💾 Accounts saved successfully');
+    await fs.writeFile(USERS_FILE, JSON.stringify(usersData, null, 2));
+    console.log('👤 Users saved successfully');
   } catch (error) {
-    console.error('❌ Error saving accounts:', error.message);
+    console.error('❌ Error saving users:', error.message);
     throw error;
   }
 }
 
-// Load accounts on startup
-let ACCOUNTS = await loadAccounts();
+// Hash password
+async function hashPassword(password) {
+  const saltRounds = 10;
+  return await bcrypt.hash(password, saltRounds);
+}
+
+// Verify password
+async function verifyPassword(password, hashedPassword) {
+  return await bcrypt.compare(password, hashedPassword);
+}
+
+// Create session
+function createSession(user) {
+  const sessionId = uuidv4();
+  const expiresAt = Date.now() + SESSION_EXPIRY;
+  
+  sessions.set(sessionId, {
+    userId: user.id,
+    userEmail: user.email,
+    userName: user.name,
+    userRole: user.role,
+    userAccounts: user.accounts || [],
+    userTimezone: user.timezone || 'America/Lima',
+    userCurrency: user.currency || 'PEN',
+    userCurrencySymbol: user.currencySymbol || 'S/',
+    expiresAt
+  });
+  
+  return sessionId;
+}
+
+// Verify session
+function verifySession(sessionId) {
+  const session = sessions.get(sessionId);
+  if (!session) {
+    return null;
+  }
+  
+  if (Date.now() > session.expiresAt) {
+    sessions.delete(sessionId);
+    return null;
+  }
+  
+  return session;
+}
+
+// Clean expired sessions
+function cleanExpiredSessions() {
+  const now = Date.now();
+  for (const [sessionId, session] of sessions.entries()) {
+    if (now > session.expiresAt) {
+      sessions.delete(sessionId);
+    }
+  }
+}
+
+// Authentication middleware
+function requireAuth(req, res, next) {
+  const sessionId = req.headers['x-session-id'] || req.headers['authorization']?.replace('Bearer ', '');
+  
+  if (!sessionId) {
+    return res.status(401).json({ 
+      success: false, 
+      error: 'No session provided',
+      requiresLogin: true 
+    });
+  }
+  
+  const session = verifySession(sessionId);
+  if (!session) {
+    return res.status(401).json({ 
+      success: false, 
+      error: 'Invalid or expired session',
+      requiresLogin: true 
+    });
+  }
+  
+  req.user = session;
+  next();
+}
+
+// Load users on startup
+let USERS_DATA = await loadUsers();
+
+// Clean expired sessions every hour
+setInterval(cleanExpiredSessions, 60 * 60 * 1000);
+
+// Helper function to get user's accounts as a map
+function getUserAccountsMap(userAccounts) {
+  const accountsMap = {};
+  if (userAccounts && Array.isArray(userAccounts)) {
+    userAccounts.forEach(account => {
+      accountsMap[account.company_token] = account;
+    });
+  }
+  return accountsMap;
+}
 
 // Helper function to aggregate data from multiple accounts
 function aggregateAccountsData(accountsData) {
@@ -277,43 +359,44 @@ function calculateAccountComparison(currentAccount, previousAccount) {
   };
 }
 
-// Helper function to get date 7 days ago
-function getDateDaysAgo(days) {
-  const date = new Date();
-  date.setDate(date.getDate() - days);
-  return date.toISOString().split('T')[0];
-}
-
 // Helper function to get timezone-aware date
 function getTimezoneAwareDate(dateString, timezone = 'America/Lima') {
+  // Ensure timezone is valid or use default
+  const validTimezone = timezone && timezone !== 'undefined' ? timezone : 'America/Lima';
+  
   if (!dateString) {
     // Return today's date in the specified timezone
     const now = new Date();
-    return now.toLocaleDateString('en-CA', { timeZone: timezone }); // en-CA gives YYYY-MM-DD format
+    return now.toLocaleDateString('en-CA', { timeZone: validTimezone }); // en-CA gives YYYY-MM-DD format
   }
   
   // If date string is provided, ensure it's in the correct format
   const date = new Date(dateString + 'T00:00:00');
-  return date.toLocaleDateString('en-CA', { timeZone: timezone });
+  return date.toLocaleDateString('en-CA', { timeZone: validTimezone });
 }
 
 // Helper function to get date N days ago in specific timezone
 function getDateDaysAgoInTimezone(days, timezone = 'America/Lima') {
+  // Ensure timezone is valid or use default
+  const validTimezone = timezone && timezone !== 'undefined' ? timezone : 'America/Lima';
+  
   const today = new Date();
   const targetDate = new Date(today);
   targetDate.setDate(today.getDate() - days);
-  return targetDate.toLocaleDateString('en-CA', { timeZone: timezone });
+  return targetDate.toLocaleDateString('en-CA', { timeZone: validTimezone });
 }
 
 // Helper function to make OlaClick API requests
-async function fetchOlaClickData(companyToken, queryParams = {}) {
-  const account = ACCOUNTS[companyToken];
+async function fetchOlaClickData(account, queryParams = {}) {
   if (!account) {
-    throw new Error(`Account ${companyToken} not found`);
+    throw new Error('Account not found');
   }
 
-  // Get timezone from parameters or default to Lima
-  const timezone = queryParams['filter[timezone]'] || 'America/Lima';
+  // Get timezone from parameters or default to Lima, ensure it's valid
+  let timezone = queryParams['filter[timezone]'] || 'America/Lima';
+  if (!timezone || timezone === 'undefined') {
+    timezone = 'America/Lima';
+  }
   
   // Create timezone-aware defaults
   const todayInTimezone = getTimezoneAwareDate(null, timezone);
@@ -340,7 +423,7 @@ async function fetchOlaClickData(companyToken, queryParams = {}) {
   }
 
   // Debug logging for API requests
-  console.log(`🔍 API Request for ${companyToken}:`);
+  console.log(`🔍 API Request for ${account.company_token}:`);
   console.log(`   Original Start Date: ${queryParams['filter[start_date]'] || 'default'}`);
   console.log(`   Original End Date: ${queryParams['filter[end_date]'] || 'default'}`);
   console.log(`   Timezone: ${timezone}`);
@@ -370,7 +453,7 @@ async function fetchOlaClickData(companyToken, queryParams = {}) {
     });
 
     // Debug logging for API responses
-    console.log(`📊 API Response for ${companyToken}:`);
+    console.log(`📊 API Response for ${account.company_token}:`);
     console.log(`   Status: ${response.status}`);
     console.log(`   Raw Data: ${JSON.stringify(response.data)}`);
     
@@ -394,10 +477,10 @@ async function fetchOlaClickData(companyToken, queryParams = {}) {
       success: true,
       data: response.data,
       account: account.name,
-      accountKey: companyToken
+      accountKey: account.company_token
     };
   } catch (error) {
-    console.error(`❌ Error fetching data for ${companyToken}:`, error.message);
+    console.error(`❌ Error fetching data for ${account.company_token}:`, error.message);
     if (error.response) {
       console.error(`   Response Status: ${error.response.status}`);
       console.error(`   Response Data: ${JSON.stringify(error.response.data)}`);
@@ -406,68 +489,163 @@ async function fetchOlaClickData(companyToken, queryParams = {}) {
       success: false,
       error: error.response?.data || error.message,
       account: account.name,
-      accountKey: companyToken
+      accountKey: account.company_token
     };
   }
 }
 
 // API Routes
 
-// Get available accounts with full details
-app.get('/api/accounts', (req, res) => {
-  const accounts = Object.keys(ACCOUNTS).map(companyToken => {
-    const account = ACCOUNTS[companyToken];
-    let tokenDisplay = 'N/A';
+// ====== AUTHENTICATION ROUTES ======
+
+// Login endpoint
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
     
-    if (account.tokens && Array.isArray(account.tokens)) {
-      tokenDisplay = `${account.tokens.length} token(s)`;
-    } else if (account.cookie) {
-      tokenDisplay = account.cookie.substring(0, 50) + '...';
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        error: 'Email and password are required'
+      });
     }
     
-    return {
-      company_token: companyToken,
-      name: account.name,
-      tokens: account.tokens,
-      additional_cookies: account.additional_cookies,
-      cookie: account.cookie, // Keep for legacy support
-      token_display: tokenDisplay
-    };
-  });
-  
-  res.json({ success: true, accounts });
+    // Find user by email
+    const user = USERS_DATA.users.find(u => u.email.toLowerCase() === email.toLowerCase() && u.active);
+    
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid email or password'
+      });
+    }
+    
+    // Verify password
+    const isValidPassword = await verifyPassword(password, user.keys.hashedPassword);
+    
+    if (!isValidPassword) {
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid email or password'
+      });
+    }
+    
+    // Update last login
+    user.lastLogin = new Date().toISOString();
+    await saveUsers(USERS_DATA);
+    
+    // Create session
+    const sessionId = createSession(user);
+    
+    console.log(`✅ User logged in: ${user.email} (${user.accounts?.length || 0} accounts)`);
+    
+    res.json({
+      success: true,
+      sessionId,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        timezone: user.timezone || 'America/Lima',
+        currency: user.currency || 'PEN',
+        currencySymbol: user.currencySymbol || 'S/',
+        accountsCount: user.accounts?.length || 0
+      }
+    });
+    
+  } catch (error) {
+    console.error('❌ Login error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error'
+    });
+  }
 });
 
-// Get full account details for editing
-app.get('/api/accounts/:companyToken', (req, res) => {
-  const { companyToken } = req.params;
-  const account = ACCOUNTS[companyToken];
+// Logout endpoint
+app.post('/api/auth/logout', (req, res) => {
+  const sessionId = req.headers['x-session-id'] || req.headers['authorization']?.replace('Bearer ', '');
   
-  if (!account) {
-    return res.status(404).json({ 
-      success: false, 
-      error: 'Account not found' 
+  if (sessionId) {
+    sessions.delete(sessionId);
+    console.log(`👋 User logged out: ${sessionId}`);
+  }
+  
+  res.json({ success: true, message: 'Logged out successfully' });
+});
+
+// Verify session endpoint
+app.get('/api/auth/verify', (req, res) => {
+  const sessionId = req.headers['x-session-id'] || req.headers['authorization']?.replace('Bearer ', '');
+  
+  if (!sessionId) {
+    return res.status(401).json({
+      success: false,
+      error: 'No session provided',
+      requiresLogin: true
     });
   }
   
-  res.json({ 
-    success: true, 
-    account: {
-      company_token: companyToken,
-      name: account.name,
-      tokens: account.tokens,
-      additional_cookies: account.additional_cookies,
-      cookie: account.cookie // Keep for legacy support
+  const session = verifySession(sessionId);
+  
+  if (!session) {
+    return res.status(401).json({
+      success: false,
+      error: 'Invalid or expired session',
+      requiresLogin: true
+    });
+  }
+  
+  res.json({
+    success: true,
+    user: {
+      id: session.userId,
+      name: session.userName,
+      email: session.userEmail,
+      role: session.userRole,
+      timezone: session.userTimezone || 'America/Lima',
+      currency: session.userCurrency || 'PEN',
+      currencySymbol: session.userCurrencySymbol || 'S/',
+      accountsCount: session.userAccounts?.length || 0
     }
   });
 });
 
-// Get data from all accounts - THIS MUST COME BEFORE /api/orders/:account
-app.get('/api/orders/all', async (req, res) => {
+// ====== PROTECTED API ROUTES ======
+
+// Get data from all user's accounts
+app.get('/api/orders/all', requireAuth, async (req, res) => {
   try {
     console.log('🚀 Starting /api/orders/all request');
     const queryParams = req.query;
     console.log(`   Original query params: ${JSON.stringify(queryParams)}`);
+    
+    // Get user's accounts and timezone with safe fallbacks
+    const userAccounts = req.user.userAccounts || [];
+    let userTimezone = req.user.userTimezone || 'America/Lima';
+    
+    // Ensure timezone is valid
+    if (!userTimezone || userTimezone === 'undefined' || userTimezone === 'null') {
+      userTimezone = 'America/Lima';
+    }
+    
+    console.log(`   User timezone: ${userTimezone}`);
+    
+    if (userAccounts.length === 0) {
+      return res.json({
+        success: true,
+        accounts: [],
+        aggregated: {
+          paymentMethods: [],
+          totalOrders: 0,
+          totalAmount: 0,
+          accountsCount: 0
+        },
+        comparison: null,
+        message: 'No accounts assigned to this user'
+      });
+    }
     
     // Extract and flatten filter parameters
     let baseParams = {};
@@ -487,6 +665,11 @@ app.get('/api/orders/all', async (req, res) => {
       console.log('📋 Using flat filter parameters');
     }
     
+    // Use user's timezone if not specified, ensure it's valid
+    if (!baseParams['filter[timezone]'] || baseParams['filter[timezone]'] === 'undefined') {
+      baseParams['filter[timezone]'] = userTimezone;
+    }
+    
     console.log(`   Base filter params: ${JSON.stringify(baseParams)}`);
     
     // Get current period parameters
@@ -498,8 +681,11 @@ app.get('/api/orders/all', async (req, res) => {
     if (currentParams['filter[start_date]'] && currentParams['filter[end_date]']) {
       console.log('📅 Using provided date range');
       
-      // Get timezone from parameters
-      const timezone = currentParams['filter[timezone]'] || 'America/Lima';
+      // Get timezone from parameters, ensure it's valid
+      let timezone = currentParams['filter[timezone]'] || 'America/Lima';
+      if (!timezone || timezone === 'undefined') {
+        timezone = 'America/Lima';
+      }
       
       // Use timezone-aware date processing
       const startDateStr = currentParams['filter[start_date]'];
@@ -528,8 +714,11 @@ app.get('/api/orders/all', async (req, res) => {
     } else {
       console.log('📅 Using default date ranges (today vs 7 days ago)');
       
-      // Get timezone from parameters or default to Lima
-      const timezone = currentParams['filter[timezone]'] || 'America/Lima';
+      // Get timezone from parameters or default to Lima, ensure it's valid
+      let timezone = currentParams['filter[timezone]'] || 'America/Lima';
+      if (!timezone || timezone === 'undefined') {
+        timezone = 'America/Lima';
+      }
       
       // Use timezone-aware date calculation
       const todayInTimezone = getTimezoneAwareDate(null, timezone);
@@ -551,14 +740,14 @@ app.get('/api/orders/all', async (req, res) => {
     
     // Fetch current period data
     console.log('🔄 Fetching current period data...');
-    const currentPromises = Object.keys(ACCOUNTS).map(companyToken => 
-      fetchOlaClickData(companyToken, currentParams)
+    const currentPromises = userAccounts.map(account => 
+      fetchOlaClickData(account, currentParams)
     );
     
     // Fetch previous period data
     console.log('🔄 Fetching previous period data...');
-    const previousPromises = Object.keys(ACCOUNTS).map(companyToken => 
-      fetchOlaClickData(companyToken, previousParams)
+    const previousPromises = userAccounts.map(account => 
+      fetchOlaClickData(account, previousParams)
     );
     
     const [currentResults, previousResults] = await Promise.all([
@@ -655,13 +844,24 @@ app.get('/api/debug/timezone', (req, res) => {
   });
 });
 
-// Get data from a specific account
-app.get('/api/orders/:companyToken', async (req, res) => {
+// Get data from a specific account (if user has access)
+app.get('/api/orders/:companyToken', requireAuth, async (req, res) => {
   try {
     const { companyToken } = req.params;
     const queryParams = req.query;
     
-    const result = await fetchOlaClickData(companyToken, queryParams);
+    // Find the account in user's accounts
+    const userAccounts = req.user.userAccounts || [];
+    const account = userAccounts.find(acc => acc.company_token === companyToken);
+    
+    if (!account) {
+      return res.status(404).json({
+        success: false,
+        error: 'Account not found or access denied'
+      });
+    }
+    
+    const result = await fetchOlaClickData(account, queryParams);
     
     if (result.success) {
       res.json(result);
@@ -677,116 +877,349 @@ app.get('/api/orders/:companyToken', async (req, res) => {
   }
 });
 
-// Update account configuration
-app.post('/api/accounts/:companyToken', async (req, res) => {
-  const { companyToken } = req.params;
-  const { name, cookie, tokens, additional_cookies } = req.body;
-  
-  if (!name || !companyToken) {
-    return res.status(400).json({ 
-      success: false, 
-      error: 'Missing required fields: name, company_token' 
-    });
-  }
-
-  try {
-    // Get existing account or create new one
-    let account = ACCOUNTS[companyToken];
-    const isNewAccount = !account;
-    
-    if (!account) {
-      account = {
-        company_token: companyToken,
-        name,
-        tokens: [],
-        additional_cookies: ''
-      };
-    }
-
-    if (cookie) {
-      // Migrate legacy cookie format to new tokens format
-      const migrated = migrateLegacyCookie(cookie);
-      account.tokens = migrated.tokens;
-      account.additional_cookies = migrated.additional_cookies;
-      account.cookie = null; // Clear legacy cookie
-    } else if (tokens && Array.isArray(tokens)) {
-      account.tokens = tokens;
-      account.additional_cookies = additional_cookies || '';
-      account.cookie = null; // Clear legacy cookie
-    } else {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Must provide either cookie string or tokens array' 
-      });
-    }
-
-    account.name = name;
-    account.company_token = companyToken;
-    
-    // Save the account
-    ACCOUNTS[companyToken] = account;
-    await saveAccounts(ACCOUNTS);
-    
-    res.json({ 
-      success: true, 
-      message: `Account ${companyToken} ${isNewAccount ? 'created' : 'updated'} successfully`,
-      account: account
-    });
-  } catch (error) {
-    res.status(500).json({ 
-      success: false, 
-      error: 'Failed to save account: ' + error.message 
-    });
-  }
-});
-
-// Delete account
-app.delete('/api/accounts/:companyToken', async (req, res) => {
-  const { companyToken } = req.params;
-  
-  if (!ACCOUNTS[companyToken]) {
-    return res.status(404).json({ 
-      success: false, 
-      error: 'Account not found' 
-    });
-  }
-  
-  try {
-    delete ACCOUNTS[companyToken];
-    await saveAccounts(ACCOUNTS);
-    
-    res.json({ 
-      success: true, 
-      message: `Account ${companyToken} deleted successfully` 
-    });
-  } catch (error) {
-    res.status(500).json({ 
-      success: false, 
-      error: 'Failed to delete account: ' + error.message 
-    });
-  }
-});
-
 // Serve dashboard HTML
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// ====== PUSH NOTIFICATION ROUTES ======
+
+// Get VAPID public key
+app.get('/api/notifications/vapid-public-key', (req, res) => {
+  res.json({
+    success: true,
+    publicKey: vapidKeys.publicKey
+  });
+});
+
+// Subscribe to push notifications
+app.post('/api/notifications/subscribe', requireAuth, async (req, res) => {
+  try {
+    const subscription = req.body;
+    const userId = req.user.userId;
+    
+    if (!subscription || !subscription.endpoint) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid subscription data'
+      });
+    }
+    
+    // Store subscription for this user
+    pushSubscriptions.set(userId, {
+      subscription,
+      userEmail: req.user.userEmail,
+      userName: req.user.userName,
+      timezone: req.user.userTimezone || 'America/Lima',
+      currency: req.user.userCurrency || 'PEN',
+      currencySymbol: req.user.userCurrencySymbol || 'S/',
+      subscribedAt: new Date().toISOString()
+    });
+    
+    console.log(`✅ Push subscription added for user: ${req.user.userEmail}`);
+    
+    res.json({
+      success: true,
+      message: 'Successfully subscribed to push notifications'
+    });
+    
+  } catch (error) {
+    console.error('❌ Error subscribing to push notifications:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to subscribe to push notifications'
+    });
+  }
+});
+
+// Unsubscribe from push notifications
+app.post('/api/notifications/unsubscribe', requireAuth, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    
+    if (pushSubscriptions.has(userId)) {
+      pushSubscriptions.delete(userId);
+      console.log(`✅ Push subscription removed for user: ${req.user.userEmail}`);
+    }
+    
+    res.json({
+      success: true,
+      message: 'Successfully unsubscribed from push notifications'
+    });
+    
+  } catch (error) {
+    console.error('❌ Error unsubscribing from push notifications:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to unsubscribe from push notifications'
+    });
+  }
+});
+
+// Send test notification
+app.post('/api/notifications/test', requireAuth, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const userSubscription = pushSubscriptions.get(userId);
+    
+    if (!userSubscription) {
+      return res.status(404).json({
+        success: false,
+        error: 'No push subscription found for this user'
+      });
+    }
+    
+    const notificationPayload = {
+      title: '🧪 Test Notification',
+      body: `Hello ${req.user.userName}! This is a test notification from OlaClick Analytics.`,
+      icon: '/icons/icon-192x192.png',
+      badge: '/icons/icon-72x72.png',
+      tag: 'test-notification',
+      data: {
+        url: '/',
+        type: 'test',
+        timestamp: Date.now()
+      },
+      actions: [
+        {
+          action: 'view',
+          title: 'View Dashboard'
+        },
+        {
+          action: 'dismiss',
+          title: 'Dismiss'
+        }
+      ]
+    };
+    
+    await webpush.sendNotification(
+      userSubscription.subscription,
+      JSON.stringify(notificationPayload)
+    );
+    
+    console.log(`📨 Test notification sent to: ${req.user.userEmail}`);
+    
+    res.json({
+      success: true,
+      message: 'Test notification sent successfully'
+    });
+    
+  } catch (error) {
+    console.error('❌ Error sending test notification:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to send test notification'
+    });
+  }
+});
+
+// Send daily report to all subscribers
+async function sendDailyReports() {
+  console.log('📊 Starting daily report generation...');
+  
+  try {
+    const today = new Date();
+    const users = USERS_DATA.users.filter(user => user.active);
+    
+    for (const user of users) {
+      const userSubscription = pushSubscriptions.get(user.id);
+      
+      if (!userSubscription || !user.accounts || user.accounts.length === 0) {
+        continue;
+      }
+      
+      try {
+        // Generate report for this user
+        const report = await generateUserDailyReport(user, userSubscription);
+        
+        if (report) {
+          // Send notification
+          await webpush.sendNotification(
+            userSubscription.subscription,
+            JSON.stringify(report)
+          );
+          
+          console.log(`📨 Daily report sent to: ${user.email}`);
+        }
+        
+      } catch (error) {
+        console.error(`❌ Error sending daily report to ${user.email}:`, error);
+        
+        // Remove invalid subscription
+        if (error.statusCode === 410) {
+          pushSubscriptions.delete(user.id);
+          console.log(`🗑️ Removed invalid subscription for: ${user.email}`);
+        }
+      }
+    }
+    
+    console.log('✅ Daily reports generation completed');
+    
+  } catch (error) {
+    console.error('❌ Error in daily reports generation:', error);
+  }
+}
+
+// Generate daily report for a specific user
+async function generateUserDailyReport(user, userSubscription) {
+  try {
+    const timezone = userSubscription.timezone || 'America/Lima';
+    const currencySymbol = userSubscription.currencySymbol || 'S/';
+    
+    // Get today's date in user's timezone
+    const today = new Date();
+    const todayInUserTz = today.toLocaleDateString('en-CA', { timeZone: timezone });
+    
+    // Prepare parameters for today's data
+    const todayParams = {
+      'filter[start_date]': todayInUserTz,
+      'filter[end_date]': todayInUserTz,
+      'filter[timezone]': timezone
+    };
+    
+    // Fetch data for all user's accounts
+    const promises = user.accounts.map(account => 
+      fetchOlaClickData(account, todayParams)
+    );
+    
+    const results = await Promise.all(promises);
+    
+    // Calculate totals
+    let totalOrders = 0;
+    let totalAmount = 0;
+    let successfulAccounts = 0;
+    
+    results.forEach(result => {
+      if (result.success && result.data && result.data.data) {
+        successfulAccounts++;
+        result.data.data.forEach(method => {
+          totalOrders += method.count || 0;
+          totalAmount += method.sum || 0;
+        });
+      }
+    });
+    
+    // Don't send notification if no data
+    if (totalOrders === 0) {
+      console.log(`📊 No sales data for ${user.email} today`);
+      return null;
+    }
+    
+    // Format the notification
+    const formattedAmount = `${currencySymbol} ${totalAmount.toFixed(2)}`;
+    const accountText = successfulAccounts === 1 ? 'account' : 'accounts';
+    
+    const notificationPayload = {
+      title: '📊 Daily Sales Report',
+      body: `Today's performance: ${totalOrders} orders, ${formattedAmount} from ${successfulAccounts} ${accountText}`,
+      icon: '/icons/icon-192x192.png',
+      badge: '/icons/icon-72x72.png',
+      tag: 'daily-report',
+      requireInteraction: true,
+      data: {
+        url: `/?view=today&date=${todayInUserTz}`,
+        type: 'daily-report',
+        timestamp: Date.now(),
+        reportData: {
+          date: todayInUserTz,
+          totalOrders,
+          totalAmount,
+          accountsCount: successfulAccounts,
+          currency: currencySymbol
+        }
+      },
+      actions: [
+        {
+          action: 'view',
+          title: 'View Dashboard'
+        },
+        {
+          action: 'dismiss',
+          title: 'Dismiss'
+        }
+      ]
+    };
+    
+    return notificationPayload;
+    
+  } catch (error) {
+    console.error(`❌ Error generating report for ${user.email}:`, error);
+    return null;
+  }
+}
+
+// Schedule daily reports (runs at 9 AM every day)
+// Run every 5 minutes for testing
+cron.schedule('*/5 * * * *', () => {
+  console.log('⏰ [TEST] Daily report cron job triggered (every 5 minutes)');
+  sendDailyReports();
+}, {
+  timezone: 'America/Lima' // Adjust this to your preferred timezone
+});
+
+// Manual trigger for daily reports (for testing)
+app.post('/api/notifications/send-daily-reports', requireAuth, async (req, res) => {
+  try {
+    // Check if user is admin
+    if (req.user.userRole !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        error: 'Admin access required'
+      });
+    }
+    
+    await sendDailyReports();
+    
+    res.json({
+      success: true,
+      message: 'Daily reports sent successfully'
+    });
+    
+  } catch (error) {
+    console.error('❌ Error sending daily reports:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to send daily reports'
+    });
+  }
+});
+
+// Get notification status for current user
+app.get('/api/notifications/status', requireAuth, (req, res) => {
+  const userId = req.user.userId;
+  const userSubscription = pushSubscriptions.get(userId);
+  
+  res.json({
+    success: true,
+    isSubscribed: !!userSubscription,
+    subscriptionCount: pushSubscriptions.size,
+    subscribedAt: userSubscription?.subscribedAt || null
+  });
 });
 
 // Start server
 app.listen(PORT, () => {
   console.log(`🚀 OlaClick Dashboard server running on port ${PORT}`);
   console.log(`📊 Dashboard available at: http://localhost:${PORT}`);
-  console.log(`📁 Accounts file: ${ACCOUNTS_FILE}`);
+  console.log(`👤 Users file: ${USERS_FILE}`);
   console.log(`🔧 API endpoints:`);
-  console.log(`   GET /api/accounts - List all accounts`);
-  console.log(`   GET /api/accounts/:companyToken - Get account details`);
-  console.log(`   POST /api/accounts/:companyToken - Add or update account`);
-  console.log(`   DELETE /api/accounts/:companyToken - Delete account`);
-  console.log(`   GET /api/orders/all - Get orders from all accounts`);
+  console.log(`   POST /api/auth/login - User login`);
+  console.log(`   POST /api/auth/logout - User logout`);
+  console.log(`   GET /api/auth/verify - Verify session`);
+  console.log(`   GET /api/orders/all - Get orders from all user accounts`);
   console.log(`   GET /api/orders/:companyToken - Get orders from specific account`);
+  console.log(`   GET /api/notifications/vapid-public-key - Get VAPID public key`);
+  console.log(`   POST /api/notifications/subscribe - Subscribe to push notifications`);
+  console.log(`   POST /api/notifications/unsubscribe - Unsubscribe from push notifications`);
+  console.log(`   POST /api/notifications/test - Send test notification`);
+  console.log(`   POST /api/notifications/send-daily-reports - Send daily reports (admin)`);
+  console.log(`   GET /api/notifications/status - Get notification status`);
   console.log(`✨ Features:`);
   console.log(`   📈 7-day comparison trends`);
-  console.log(`   🔄 Automatic legacy cookie migration`);
-  console.log(`   💾 File-based credential storage`);
-  console.log(`   🎯 Company token as primary key`);
+  console.log(`   👥 User-based account access`);
+  console.log(`   🔐 Session-based authentication`);
+  console.log(`   🎯 Per-user account management`);
+  console.log(`   📱 PWA with offline support`);
+  console.log(`   🔔 Push notifications & daily reports`);
+  console.log(`   ⏰ Daily reports scheduled at 9:00 AM (Lima timezone)`);
 }); 
