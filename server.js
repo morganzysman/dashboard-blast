@@ -6,8 +6,12 @@ import { fileURLToPath } from 'url';
 import fs from 'fs/promises';
 import bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
-import webpush from 'web-push';
+import { createRequire } from 'module';
 import cron from 'node-cron';
+import webpush from 'web-push';
+
+// Fix for web-push ES module compatibility
+const require = createRequire(import.meta.url);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
