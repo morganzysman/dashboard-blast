@@ -1296,46 +1296,83 @@ async function generateUserDailyReport(user, userSubscription) {
       }
     });
     
-    // Don't send notification if no data
+    // Format the notification based on whether there are sales or not
+    let notificationPayload;
+    
     if (totalOrders === 0) {
-      console.log(`📊 No sales data for ${user.email} today`);
-      return null;
-    }
-    
-    // Format the notification
-    const formattedAmount = `${currencySymbol} ${totalAmount.toFixed(2)}`;
-    const accountText = successfulAccounts === 1 ? 'account' : 'accounts';
-    
-    const notificationPayload = {
-      title: '📊 Daily Sales Report',
-      body: `Today's performance: ${totalOrders} orders, ${formattedAmount} from ${successfulAccounts} ${accountText}`,
-      icon: '/icons/icon-192x192.png',
-      badge: '/icons/icon-72x72.png',
-      tag: 'daily-report',
-      requireInteraction: true,
-      data: {
-        url: `/?view=today&date=${todayInUserTz}`,
-        type: 'daily-report',
-        timestamp: Date.now(),
-        reportData: {
-          date: todayInUserTz,
-          totalOrders,
-          totalAmount,
-          accountsCount: successfulAccounts,
-          currency: currencySymbol
-        }
-      },
-      actions: [
-        {
-          action: 'view',
-          title: 'View Dashboard'
+      // Send "no sales yet" notification
+      console.log(`📊 No sales data for ${user.email} today - sending "no sales yet" notification`);
+      
+      const accountText = successfulAccounts === 1 ? 'account' : 'accounts';
+      
+      notificationPayload = {
+        title: '📊 Daily Sales Report',
+        body: `No sales yet today from ${successfulAccounts} ${accountText}. Keep an eye on your dashboard!`,
+        icon: '/icons/icon-192x192.png',
+        badge: '/icons/icon-72x72.png',
+        tag: 'daily-report-no-sales',
+        requireInteraction: false,
+        data: {
+          url: `/?view=today&date=${todayInUserTz}`,
+          type: 'daily-report-no-sales',
+          timestamp: Date.now(),
+          reportData: {
+            date: todayInUserTz,
+            totalOrders: 0,
+            totalAmount: 0,
+            accountsCount: successfulAccounts,
+            currency: currencySymbol,
+            hasData: false
+          }
         },
-        {
-          action: 'dismiss',
-          title: 'Dismiss'
-        }
-      ]
-    };
+        actions: [
+          {
+            action: 'view',
+            title: 'View Dashboard'
+          },
+          {
+            action: 'dismiss',
+            title: 'Dismiss'
+          }
+        ]
+      };
+    } else {
+      // Send regular sales notification
+      const formattedAmount = `${currencySymbol} ${totalAmount.toFixed(2)}`;
+      const accountText = successfulAccounts === 1 ? 'account' : 'accounts';
+      
+      notificationPayload = {
+        title: '📊 Daily Sales Report',
+        body: `Today's performance: ${totalOrders} orders, ${formattedAmount} from ${successfulAccounts} ${accountText}`,
+        icon: '/icons/icon-192x192.png',
+        badge: '/icons/icon-72x72.png',
+        tag: 'daily-report',
+        requireInteraction: true,
+        data: {
+          url: `/?view=today&date=${todayInUserTz}`,
+          type: 'daily-report',
+          timestamp: Date.now(),
+          reportData: {
+            date: todayInUserTz,
+            totalOrders,
+            totalAmount,
+            accountsCount: successfulAccounts,
+            currency: currencySymbol,
+            hasData: true
+          }
+        },
+        actions: [
+          {
+            action: 'view',
+            title: 'View Dashboard'
+          },
+          {
+            action: 'dismiss',
+            title: 'Dismiss'
+          }
+        ]
+      };
+    }
     
     return notificationPayload;
     
