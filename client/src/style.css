@@ -1,0 +1,497 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom base styles */
+@layer base {
+  body {
+    @apply bg-gray-50 text-gray-900 font-sans;
+  }
+  
+  html {
+    @apply h-full;
+  }
+  
+  #app {
+    @apply h-full;
+  }
+  
+  /* Improve touch targets on mobile */
+  @media (max-width: 640px) {
+    button, .btn, input, select, textarea {
+      @apply min-h-[44px]; /* iOS recommended minimum touch target */
+    }
+    
+    .btn-sm {
+      @apply min-h-[40px] px-3 py-2 text-sm;
+    }
+  }
+}
+
+/* Custom component styles */
+@layer components {
+  /* Sidebar styles with responsive behavior */
+  .sidebar {
+    @apply fixed left-0 top-0 z-40 h-screen bg-white border-r border-gray-200 shadow-sm;
+    /* Mobile: Hidden by default, shown with overlay */
+    @apply w-64 -translate-x-full transition-transform duration-300 ease-in-out;
+    /* Tablet and up: Always visible */
+    @apply md:translate-x-0;
+    /* Desktop: Full width sidebar */
+    @apply lg:w-64;
+  }
+  
+  .sidebar.mobile-open {
+    @apply translate-x-0;
+  }
+  
+  .sidebar-overlay {
+    @apply fixed inset-0 bg-gray-600 bg-opacity-50 z-30 md:hidden;
+  }
+  
+  .sidebar-header {
+    @apply px-4 py-3 border-b border-gray-200;
+    /* Tablet and up: More padding */
+    @apply md:px-6 md:py-4;
+  }
+  
+  .sidebar-nav {
+    @apply flex-1 px-2 py-3 space-y-1 overflow-y-auto;
+    /* Tablet and up: More padding */
+    @apply md:px-3 md:py-4;
+  }
+  
+  .sidebar-nav-item {
+    @apply flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors duration-200;
+    @apply text-gray-700 hover:bg-gray-50 hover:text-gray-900;
+    /* Tablet and up: More padding */
+    @apply md:px-3;
+    /* Mobile: Larger touch targets */
+    @apply min-h-[44px];
+  }
+  
+  .sidebar-nav-item.active {
+    @apply bg-primary-50 text-primary-700;
+    /* Desktop: Add border indicator */
+    @apply lg:border-r-2 lg:border-primary-600;
+  }
+  
+  .sidebar-nav-icon {
+    @apply mr-2 h-5 w-5 flex-shrink-0;
+    /* Tablet and up: More margin */
+    @apply md:mr-3;
+  }
+  
+  /* Main content area responsive layout */
+  .main-content {
+    @apply flex-1 overflow-auto;
+    /* Mobile: Full width */
+    @apply w-full;
+    /* Tablet and up: Account for sidebar */
+    @apply md:ml-64;
+  }
+  
+  /* Page header styles with responsive behavior */
+  .page-header {
+    @apply bg-white border-b border-gray-200 px-4 py-3;
+    /* Tablet and up: More padding */
+    @apply md:px-6 md:py-4;
+  }
+  
+  .page-title {
+    @apply text-xl font-bold text-gray-900;
+    /* Tablet and up: Larger text */
+    @apply md:text-2xl;
+  }
+  
+  .page-subtitle {
+    @apply mt-1 text-xs text-gray-500;
+    /* Tablet and up: Larger text */
+    @apply md:text-sm;
+  }
+  
+  /* Mobile menu button */
+  .mobile-menu-button {
+    @apply inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100;
+    @apply focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500;
+    @apply md:hidden; /* Hide on tablet and up */
+  }
+  
+  /* Dropdown styles with responsive positioning */
+  .dropdown {
+    @apply relative;
+  }
+  
+  .dropdown-menu {
+    @apply absolute right-0 mt-2 bg-white rounded-md shadow-lg border border-gray-200 py-1 z-50;
+    /* Mobile: Full width dropdown */
+    @apply w-full min-w-[200px];
+    /* Tablet and up: Fixed width */
+    @apply sm:w-48;
+    /* Desktop: Better positioning */
+    @apply lg:right-0;
+  }
+  
+  .dropdown-item {
+    @apply flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200;
+    /* Mobile: Larger touch targets */
+    @apply min-h-[44px];
+    /* Tablet and up: Standard padding */
+    @apply md:px-4 md:min-h-[auto];
+  }
+
+  /* Button styles with responsive sizing */
+  .btn {
+    @apply inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm;
+    @apply focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200;
+    /* Mobile: Larger touch targets */
+    @apply min-h-[44px];
+    /* Tablet and up: Standard sizing */
+    @apply md:px-4 md:min-h-[auto];
+  }
+  
+  .btn-primary {
+    @apply btn bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500;
+  }
+  
+  .btn-secondary {
+    @apply btn bg-gray-200 text-gray-900 hover:bg-gray-300 focus:ring-gray-500;
+  }
+  
+  .btn-danger {
+    @apply btn bg-error-600 text-white hover:bg-error-700 focus:ring-error-500;
+  }
+  
+  .btn-success {
+    @apply btn bg-success-600 text-white hover:bg-success-700 focus:ring-success-500;
+  }
+  
+  .btn-warning {
+    @apply btn bg-warning-600 text-white hover:bg-warning-700 focus:ring-warning-500;
+  }
+  
+  .btn-sm {
+    @apply px-2 py-1 text-xs;
+    /* Mobile: Maintain minimum touch target */
+    @apply min-h-[40px];
+    /* Tablet and up: Smaller sizing */
+    @apply md:px-3 md:py-1.5 md:min-h-[auto];
+  }
+  
+  .btn-lg {
+    @apply px-4 py-3 text-base;
+    /* Tablet and up: Larger sizing */
+    @apply md:px-6;
+  }
+  
+  /* Card styles with responsive padding */
+  .card {
+    @apply bg-white rounded-lg shadow-sm border border-gray-200;
+  }
+  
+  .card-header {
+    @apply px-3 py-2 border-b border-gray-200;
+    /* Tablet and up: More padding */
+    @apply sm:px-4 sm:py-3;
+    @apply md:px-6 md:py-4;
+  }
+  
+  .card-body {
+    @apply p-3;
+    /* Tablet and up: More padding */
+    @apply sm:p-4;
+    @apply md:p-6;
+  }
+  
+  .card-footer {
+    @apply px-3 py-2 border-t border-gray-200 bg-gray-50;
+    /* Tablet and up: More padding */
+    @apply sm:px-4 sm:py-3;
+    @apply md:px-6 md:py-4;
+  }
+  
+  /* Form styles with responsive sizing */
+  .form-label {
+    @apply block text-sm font-medium text-gray-700 mb-1;
+    /* Desktop: Slightly larger text */
+    @apply lg:text-base;
+  }
+  
+  .form-input {
+    @apply block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm;
+    @apply focus:outline-none focus:ring-primary-500 focus:border-primary-500 transition-colors duration-200;
+    /* Mobile: Larger touch targets */
+    @apply min-h-[44px];
+    /* Tablet and up: Standard sizing */
+    @apply md:min-h-[auto];
+  }
+  
+  .form-textarea {
+    @apply form-input resize-none;
+    /* Mobile: Minimum height for usability */
+    @apply min-h-[88px];
+    /* Tablet and up: More height */
+    @apply md:min-h-[120px];
+  }
+  
+  .form-error {
+    @apply mt-1 text-xs text-error-600;
+    /* Tablet and up: Slightly larger text */
+    @apply md:text-sm;
+  }
+  
+  /* Table styles with responsive behavior */
+  .table {
+    @apply min-w-full divide-y divide-gray-200;
+  }
+  
+  .table-header {
+    @apply bg-gray-50;
+  }
+  
+  .table-header th {
+    @apply px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider;
+    /* Tablet and up: More padding */
+    @apply sm:px-4 sm:py-3;
+    @apply md:px-6;
+  }
+  
+  .table-body {
+    @apply bg-white divide-y divide-gray-200;
+  }
+  
+  .table-body td {
+    @apply px-3 py-2 text-sm;
+    /* Tablet and up: More padding */
+    @apply sm:px-4 sm:py-3;
+    @apply md:px-6 md:py-4 md:whitespace-nowrap;
+  }
+  
+  /* Mobile table cards (alternative to table on small screens) */
+  .table-card {
+    @apply md:hidden bg-white border border-gray-200 rounded-lg p-4 mb-4;
+  }
+  
+  .table-card-header {
+    @apply flex items-center justify-between mb-3;
+  }
+  
+  .table-card-body {
+    @apply space-y-2;
+  }
+  
+  .table-card-row {
+    @apply flex justify-between text-sm;
+  }
+  
+  .table-card-label {
+    @apply font-medium text-gray-500;
+  }
+  
+  .table-card-value {
+    @apply text-gray-900;
+  }
+  
+  /* Badge styles */
+  .badge {
+    @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium;
+    /* Tablet and up: Slightly larger */
+    @apply md:px-2.5;
+  }
+  
+  .badge-primary {
+    @apply bg-primary-100 text-primary-800;
+  }
+  
+  .badge-secondary {
+    @apply bg-gray-100 text-gray-800;
+  }
+  
+  .badge-success {
+    @apply bg-success-100 text-success-800;
+  }
+  
+  .badge-warning {
+    @apply bg-warning-100 text-warning-800;
+  }
+  
+  .badge-error {
+    @apply bg-error-100 text-error-800;
+  }
+  
+  .badge-gray {
+    @apply bg-gray-100 text-gray-800;
+  }
+  
+  /* Modal styles with responsive sizing */
+  .modal-overlay {
+    @apply fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity z-50;
+  }
+  
+  .modal-container {
+    @apply fixed inset-0 z-50 overflow-y-auto;
+  }
+  
+  .modal-content {
+    @apply flex min-h-full items-center justify-center p-3 text-center;
+    /* Tablet and up: More padding */
+    @apply sm:p-4;
+    @apply md:p-0;
+  }
+  
+  .modal-panel {
+    @apply relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all;
+    /* Mobile: Full width with margin */
+    @apply w-full max-w-sm mx-3;
+    /* Tablet: Larger modal */
+    @apply sm:max-w-lg sm:mx-4;
+    /* Desktop: Even larger */
+    @apply md:max-w-2xl md:mx-0;
+  }
+  
+  .modal-header {
+    @apply px-4 py-3 border-b border-gray-200;
+    /* Tablet and up: More padding */
+    @apply md:px-6 md:py-4;
+  }
+  
+  .modal-body {
+    @apply px-4 py-3;
+    /* Tablet and up: More padding */
+    @apply md:px-6 md:py-4;
+  }
+  
+  .modal-footer {
+    @apply px-4 py-3 border-t border-gray-200 bg-gray-50;
+    /* Tablet and up: More padding */
+    @apply md:px-6 md:py-4;
+  }
+  
+  /* Notification styles with responsive positioning */
+  .notification {
+    @apply fixed z-50 bg-white rounded-lg shadow-lg border border-gray-200 p-3;
+    /* Mobile: Full width at top */
+    @apply top-2 left-2 right-2;
+    /* Tablet and up: Positioned at top right */
+    @apply sm:top-4 sm:right-4 sm:left-auto sm:max-w-sm sm:w-full;
+  }
+  
+  .notification-success {
+    @apply border-success-200 bg-success-50;
+  }
+  
+  .notification-error {
+    @apply border-error-200 bg-error-50;
+  }
+  
+  .notification-warning {
+    @apply border-warning-200 bg-warning-50;
+  }
+  
+  .notification-info {
+    @apply border-primary-200 bg-primary-50;
+  }
+  
+  /* Loading spinner */
+  .loading-spinner {
+    @apply inline-block w-4 h-4 border-2 border-gray-300 border-t-primary-600 rounded-full animate-spin;
+    /* Tablet and up: Slightly larger */
+    @apply md:w-5 md:h-5;
+  }
+  
+  /* Responsive grid utilities */
+  .responsive-grid-1 {
+    @apply grid grid-cols-1;
+  }
+  
+  .responsive-grid-2 {
+    @apply grid grid-cols-1 sm:grid-cols-2;
+  }
+  
+  .responsive-grid-3 {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3;
+  }
+  
+  .responsive-grid-4 {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4;
+  }
+  
+  /* Responsive spacing utilities */
+  .space-mobile {
+    @apply space-y-3;
+    /* Tablet and up: More space */
+    @apply sm:space-y-4;
+    @apply lg:space-y-6;
+  }
+  
+  .gap-mobile {
+    @apply gap-3;
+    /* Tablet and up: More gap */
+    @apply sm:gap-4;
+    @apply lg:gap-6;
+  }
+  
+  /* Touch-friendly interactive elements */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px] flex items-center justify-center;
+    /* Tablet and up: Standard sizing */
+    @apply md:min-h-[auto] md:min-w-[auto];
+  }
+  
+  /* Page content responsive padding */
+  .page-content {
+    @apply p-3;
+    /* Tablet and up: More padding */
+    @apply sm:p-4;
+    @apply md:p-6;
+    @apply lg:p-8;
+  }
+  
+  /* Responsive text utilities */
+  .text-responsive-sm {
+    @apply text-xs;
+    @apply sm:text-sm;
+    @apply md:text-base;
+  }
+  
+  .text-responsive-base {
+    @apply text-sm;
+    @apply sm:text-base;
+    @apply md:text-lg;
+  }
+  
+  .text-responsive-lg {
+    @apply text-base;
+    @apply sm:text-lg;
+    @apply md:text-xl;
+    @apply lg:text-2xl;
+  }
+  
+  /* Responsive flex utilities */
+  .flex-responsive {
+    @apply flex-col;
+    @apply sm:flex-row;
+  }
+  
+  .flex-responsive-reverse {
+    @apply flex-col-reverse;
+    @apply sm:flex-row;
+  }
+  
+  /* Hide/show utilities for different breakpoints */
+  .mobile-only {
+    @apply block sm:hidden;
+  }
+  
+  .tablet-up {
+    @apply hidden sm:block;
+  }
+  
+  .desktop-only {
+    @apply hidden lg:block;
+  }
+  
+  .mobile-tablet {
+    @apply block lg:hidden;
+  }
+} 

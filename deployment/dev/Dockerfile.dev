@@ -1,0 +1,53 @@
+FROM node:18-alpine
+
+# Install curl for health checks
+RUN apk add --no-cache curl
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install all dependencies (including devDependencies for development)
+RUN npm install
+
+# Copy configuration files
+COPY config/ ./config/
+
+# Create necessary directories
+RUN mkdir -p server client database
+
+# Expose ports
+EXPOSE 3001 5173
+
+# Add a wait script for database
+RUN echo '#!/bin/sh' > /wait-for-postgres.sh && \
+    echo 'until pg_isready -h postgres -p 5432; do' >> /wait-for-postgres.sh && \
+    echo '  echo "Waiting for postgres..."' >> /wait-for-postgres.sh && \
+    echo '  sleep 2' >> /wait-for-postgres.sh && \
+    echo 'done' >> /wait-for-postgres.sh && \
+    chmod +x /wait-for-postgres.sh
+
+# Install postgresql-client for pg_isready
+RUN apk add --no-cache postgresql-client
+
+# Development start script
+RUN echo '#!/bin/sh' > /start-dev.sh && \
+    echo 'echo "🚀 Starting OlaClick Analytics Development Environment..."' >> /start-dev.sh && \
+    echo 'echo "⏳ Waiting for PostgreSQL to be ready..."' >> /start-dev.sh && \
+    echo '/wait-for-postgres.sh' >> /start-dev.sh && \
+    echo 'echo "✅ PostgreSQL is ready!"' >> /start-dev.sh && \
+    echo 'echo "🔧 Running database migrations..."' >> /start-dev.sh && \
+    echo 'npm run db:migrate' >> /start-dev.sh && \
+    echo 'echo "✅ Database migrations completed!"' >> /start-dev.sh && \
+    echo 'echo "🚀 Starting development servers..."' >> /start-dev.sh && \
+    echo 'npm run dev' >> /start-dev.sh && \
+    chmod +x /start-dev.sh
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:3001/health || exit 1
+
+# Start the development environment
+CMD ["/start-dev.sh"] 

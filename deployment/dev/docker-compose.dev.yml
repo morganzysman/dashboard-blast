@@ -1,0 +1,79 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: olaclick-postgres
+    environment:
+      POSTGRES_DB: olaclick_analytics
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ../../database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - ../../database/push-subscriptions.sql:/docker-entrypoint-initdb.d/02-push-subscriptions.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - olaclick-network
+
+  # Main Application (Backend + Frontend)
+  app:
+    build:
+      context: ../..
+      dockerfile: deployment/dev/Dockerfile.dev
+    container_name: olaclick-app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: development
+      PORT: 3001
+      # Database configuration
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: olaclick_analytics
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_SSL: "false"
+      # VAPID keys for push notifications
+      VAPID_PUBLIC_KEY: "BCGkRbD4Yd6whNST8Moo1DMtTV-XVfQzztx20Ax0XMKgw7Ps_IEMkNXKb2X0Gn4PWrTaecV_peaRhc2Re4wblAM"
+      VAPID_PRIVATE_KEY: "dVpMJM8ZFeQj_OWS6nXEJsjYq41aA6czXlPs0cOizIQ"
+      VAPID_CONTACT_EMAIL: "admin@olaclick.com"
+    ports:
+      - "3001:3001"  # Backend API
+      - "5173:5173"  # Frontend dev server
+    volumes:
+      # Mount source code for hot reloading
+      - ../../server:/app/server
+      - ../../client:/app/client
+      - ../../database:/app/database
+      - ../../config:/app/config
+      - ../../package.json:/app/package.json
+      - ../../package-lock.json:/app/package-lock.json
+      # Exclude node_modules to avoid conflicts
+      - /app/node_modules
+    networks:
+      - olaclick-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  olaclick-network:
+    driver: bridge 

@@ -1,197 +1,186 @@
-# OlaClick Analytics Dashboard PWA
+# OlaClick Analytics Dashboard
 
-A Progressive Web App (PWA) for OlaClick restaurant analytics with push notifications and real-time data visualization.
+A real-time analytics dashboard for OlaClick restaurant accounts with PostgreSQL backend and Vue.js frontend.
 
-## 🚀 Features
-
-- **📊 Real-time Analytics** - Live sales data with 7-day comparison trends
-- **📱 PWA Support** - Install as native app on mobile and desktop
-- **🔔 Push Notifications** - Daily sales reports delivered to your device
-- **🔐 Multi-user Authentication** - Secure session-based login system
-- **🏢 Multi-account Management** - Access multiple restaurant accounts
-- **📈 Trend Analysis** - Compare current vs previous week performance
-- **🌐 Offline Support** - Cached data available without internet
-- **📱 Responsive Design** - Works on all screen sizes
-
-## 🔧 Installation
-
-1. **Install dependencies**
-   ```bash
-   npm install
-   ```
-
-2. **Start development server**
-   ```bash
-   npm start
-   ```
-
-3. **Access dashboard**
-   - Open `http://localhost:3001` in your browser
-   - Login with demo credentials: `demo@dashboard.com` / `admin123`
-
-## 🔐 Production VAPID Keys
-
-The app includes **secure production VAPID keys** for push notifications:
+## Project Structure
 
 ```
-Public Key: BCGkRbD4Yd6whNST8Moo1DMtTV-XVfQzztx20Ax0XMKgw7Ps_IEMkNXKb2X0Gn4PWrTaecV_peaRhc2Re4wblAM
-Private Key: dVpMJM8ZFeQj_OWS6nXEJsjYq41aA6czXlPs0cOizIQ
+├── client/                    # Frontend (Vue.js)
+│   ├── src/                  # Vue source code
+│   │   ├── components/       # Vue components
+│   │   ├── views/           # Vue pages/views
+│   │   ├── stores/          # Pinia stores
+│   │   ├── App.vue          # Root component
+│   │   ├── main.js          # Entry point
+│   │   └── style.css        # Global styles
+│   ├── public/              # Static assets
+│   │   ├── icons/           # PWA icons
+│   │   ├── manifest.json    # PWA manifest
+│   │   └── sw.js           # Service worker
+│   └── index.html           # HTML template
+├── server/                   # Backend (Node.js)
+│   ├── server.js            # Main server file
+│   ├── database.js          # Database connection & queries
+│   └── setup.js             # Database setup & migrations
+├── database/                 # Database files
+│   ├── migrations/          # SQL migration files
+│   ├── schema.sql           # Database schema
+│   ├── push-subscriptions.sql # Push notification setup
+│   └── seed-data.json       # Demo/test data
+├── config/                   # Configuration files
+│   ├── vite.config.js       # Vite configuration
+│   ├── tailwind.config.js   # Tailwind CSS configuration
+│   └── postcss.config.js    # PostCSS configuration
+├── docs/                     # Documentation
+│   ├── deployment/          # Deployment guides
+│   ├── setup/               # Setup guides
+│   ├── screenshots/         # Documentation images
+│   └── DOCKER-DEVELOPMENT.md # Docker development guide
+├── deployment/               # Deployment files
+│   ├── dev/                 # Development environment
+│   │   ├── docker-compose.dev.yml # Docker development setup
+│   │   ├── Dockerfile.dev   # Development Docker image
+│   │   └── .dockerignore    # Build exclusions
+│   └── prod/                # Production environment
+│       ├── docker-compose.yml # Production Docker setup
+│       ├── Dockerfile       # Production Docker image
+│       ├── .dockerignore    # Build exclusions
+│       ├── railway.json     # Railway deployment config
+│       └── start-production.sh # Production startup script
+├── scripts/                  # Development scripts
+│   ├── setup-dev.sh         # Docker setup script
+│   ├── dev-logs.sh          # View logs
+│   ├── dev-stop.sh          # Stop services
+│   └── dev-reset.sh         # Reset environment
+└── legacy/                   # Legacy/debug files
+    ├── server-legacy.js     # Old server implementation
+    ├── index-legacy.html    # Legacy HTML file
+    └── notifications-debug.html # Debug page
 ```
 
-### Quick Production Start
+## Tech Stack
 
+- **Frontend**: Vue.js 3, Vite, Tailwind CSS, Pinia
+- **Backend**: Node.js, Express.js
+- **Database**: PostgreSQL
+- **PWA**: Service Worker, Web Push Notifications
+- **Development**: Docker, Docker Compose
+- **Deployment**: Railway, Docker
+
+## Getting Started
+
+### Option 1: Docker Development Environment (Recommended)
+
+**Quick Start:**
 ```bash
-# Use the production startup script
-./start-production.sh
+# Clone the repository
+git clone <repository-url>
+cd dashboard
+
+# Start complete development environment with database
+npm run docker:setup
 ```
 
-Or set environment variables manually:
+This provides:
+- ✅ PostgreSQL database with automatic migrations
+- 🔥 Hot reloading for both frontend and backend
+- 🐳 Isolated environment with Docker
+- 📊 Dashboard at http://localhost:3001
 
-```bash
-export VAPID_PUBLIC_KEY="BCGkRbD4Yd6whNST8Moo1DMtTV-XVfQzztx20Ax0XMKgw7Ps_IEMkNXKb2X0Gn4PWrTaecV_peaRhc2Re4wblAM"
-export VAPID_PRIVATE_KEY="dVpMJM8ZFeQj_OWS6nXEJsjYq41aA6czXlPs0cOizIQ"
-export NODE_ENV="production"
-npm start
-```
+See [Docker Development Guide](docs/DOCKER-DEVELOPMENT.md) for details.
 
-## 📱 PWA Setup
+### Option 2: Local Development
 
-### Install as App
-1. Open the dashboard in Chrome/Edge
-2. Look for "Install App" button in user menu
-3. Click to install on your device
+**Prerequisites:**
+- Node.js >= 16.0.0
+- PostgreSQL database running locally
+- npm or yarn
 
-### Enable Push Notifications
-1. Click the user menu (top-right)
-2. Select "Enable Notifications"
-3. Allow notifications in browser prompt
-4. Receive daily sales reports at 9:00 AM
-
-## 🔔 Push Notification Features
-
-- **Daily Reports** - Automated sales summaries every morning
-- **Test Notifications** - Development testing capability
-- **User-specific** - Personalized with timezone and currency
-- **Rich Content** - Include sales data and action buttons
-- **Secure Delivery** - VAPID-authenticated push messages
-
-## 📊 API Endpoints
-
-### Authentication
-- `POST /api/auth/login` - User login
-- `POST /api/auth/logout` - User logout
-- `GET /api/auth/verify` - Verify session
-
-### Analytics Data
-- `GET /api/orders/all` - Get all user account data
-- `GET /api/orders/:companyToken` - Get specific account data
-
-### Push Notifications
-- `GET /api/notifications/vapid-public-key` - Get VAPID public key
-- `POST /api/notifications/subscribe` - Subscribe to notifications
-- `POST /api/notifications/unsubscribe` - Unsubscribe from notifications
-- `POST /api/notifications/test` - Send test notification
-- `GET /api/notifications/status` - Get subscription status
-
-## 🏗️ Architecture
-
-### Frontend
-- **Progressive Web App** with service worker
-- **Responsive design** with modern CSS
-- **Real-time data visualization** with trend analysis
-- **Push notification handling** with rich UI
-
-### Backend
-- **Node.js/Express** server with RESTful API
-- **Session-based authentication** with bcrypt
-- **OlaClick API integration** with timezone awareness
-- **Web Push implementation** with VAPID keys
-- **Cron job scheduling** for daily reports
-
-### PWA Components
-- **Service Worker** (`sw.js`) - Offline caching and push handling
-- **Web App Manifest** (`manifest.json`) - App metadata and icons
-- **Push Notifications** - Web Push API with VAPID authentication
-
-## 📁 Project Structure
-
-```
-dashboard/
-├── server.js              # Main server application
-├── index.html             # PWA frontend
-├── manifest.json          # PWA manifest
-├── sw.js                  # Service worker
-├── package.json           # Dependencies
-├── users.json             # User accounts (auto-generated)
-├── start-production.sh    # Production startup script
-├── PRODUCTION-SETUP.md    # Production deployment guide
-└── PWA-SETUP.md          # PWA configuration guide
-```
-
-## 🔧 Configuration
-
-### Environment Variables
-- `VAPID_PUBLIC_KEY` - Web Push public key
-- `VAPID_PRIVATE_KEY` - Web Push private key
-- `VAPID_CONTACT_EMAIL` - Contact email for VAPID
-- `NODE_ENV` - Environment (development/production)
-- `PORT` - Server port (default: 3001)
-
-### Daily Reports
-- **Schedule**: 9:00 AM Lima timezone
-- **Content**: Sales summary with orders, revenue, and account count
-- **Personalization**: User's timezone and currency settings
-- **Delivery**: Push notification with dashboard link
-
-## 🚀 Deployment
-
-See `PRODUCTION-SETUP.md` for detailed deployment instructions including:
-- Railway, Vercel, Heroku deployment options
-- HTTPS configuration for push notifications
-- PWA icon generation
-- Security considerations
-
-## 🛠️ Development
-
-### Local Development
+**Installation:**
 ```bash
 # Install dependencies
 npm install
 
-# Start development server
-npm start
+# Set up environment variables
+cp .env.development .env.local
+# Edit .env.local with your database credentials
 
-# Test push notifications
-# Login → User Menu → Enable Notifications → Test Notification
+# Set up the database
+npm run db:migrate
+
+# Start development servers
+npm run dev
 ```
 
-### Generate New VAPID Keys
-```bash
-# Generate new keys if needed
-npx web-push generate-vapid-keys
-```
+## Available Scripts
 
-## 📋 Requirements
+### Development
+- `npm run dev` - Start development (both client and server)
+- `npm run server` - Start server only (development)
+- `npm run client` - Start client only (development)
+- `npm run build` - Build for production
+- `npm run preview` - Preview production build
 
-- **Node.js** 18.0.0 or higher
-- **Modern browser** with PWA support
-- **HTTPS** for push notifications in production
+### Database
+- `npm run db:migrate` - Run database migrations
+- `npm run db:status` - Check migration status
+- `npm run db:test` - Test database connection
 
-## 🔐 Security
+### Docker Development
+- `npm run docker:setup` - Setup and start Docker environment
+- `npm run docker:start` - Start Docker services
+- `npm run docker:stop` - Stop Docker services
+- `npm run docker:logs` - View Docker logs
+- `npm run docker:shell` - Access application shell
+- `npm run docker:db` - Access PostgreSQL shell
+- `npm run docker:reset` - Reset environment (deletes all data!)
 
-- **Session-based authentication** with secure sessions
-- **VAPID key authentication** for push notifications
-- **Security headers** in production mode
-- **Input validation** and error handling
-- **Environment variable** configuration
+### Production
+- `npm start` - Start production server
 
-## 📞 Support
+## Development
 
-For questions or issues:
-- Check `PRODUCTION-SETUP.md` for deployment help
-- Review `PWA-SETUP.md` for PWA configuration
-- Test with demo account: `demo@dashboard.com` / `admin123`
+The project uses a clean separation between frontend and backend:
 
----
+- **Client**: Vue.js SPA with Vite for fast development
+- **Server**: Express.js API with PostgreSQL integration
+- **Database**: Migration-based schema management
 
-**✨ Ready for production deployment with secure push notifications!** 
+### Docker Development
+
+The Docker environment provides:
+- **PostgreSQL 15** with automatic schema setup
+- **Hot reloading** for both frontend and backend
+- **Automatic migrations** on startup
+- **Isolated environment** with proper networking
+
+### Local Development
+
+For local development without Docker:
+1. Install PostgreSQL and create database
+2. Set up environment variables
+3. Run migrations
+4. Start development servers
+
+## Documentation
+
+- [Docker Development Guide](docs/DOCKER-DEVELOPMENT.md)
+- [PostgreSQL Setup](docs/README-POSTGRES.md)
+- [Production Setup](docs/setup/PRODUCTION-SETUP.md)
+- [PWA Setup](docs/setup/PWA-SETUP.md)
+- [Railway Deployment](docs/deployment/RAILWAY-DEPLOYMENT.md)
+- [General Deployment](docs/deployment/DEPLOYMENT.md)
+
+## Features
+
+- Real-time analytics dashboard
+- User authentication and authorization
+- Push notifications
+- PWA support
+- Responsive design
+- PostgreSQL backend with migrations
+- Docker support
+
+## License
+
+MIT License

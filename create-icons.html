@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Icon Generator</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .icon { margin: 10px; display: inline-block; }
+        canvas { border: 1px solid #ccc; }
+        button { margin: 10px; padding: 10px; }
+    </style>
+</head>
+<body>
+    <h1>OlaClick Analytics Icon Generator</h1>
+    <p>This will generate placeholder icons for the PWA. Click "Generate All Icons" to create them.</p>
+    
+    <button onclick="generateAllIcons()">Generate All Icons</button>
+    <button onclick="downloadAllIcons()">Download All Icons</button>
+    
+    <div id="icons"></div>
+
+    <script>
+        const iconSizes = [16, 32, 72, 96, 128, 144, 152, 192, 384, 512];
+        const icons = {};
+
+        function generateIcon(size) {
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+
+            // Background
+            ctx.fillStyle = '#3b82f6';
+            ctx.fillRect(0, 0, size, size);
+
+            // Text
+            ctx.fillStyle = 'white';
+            ctx.font = `${size * 0.3}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('🍔', size/2, size/2);
+
+            return canvas.toDataURL('image/png');
+        }
+
+        function generateAllIcons() {
+            const container = document.getElementById('icons');
+            container.innerHTML = '';
+
+            iconSizes.forEach(size => {
+                const dataUrl = generateIcon(size);
+                icons[size] = dataUrl;
+
+                const div = document.createElement('div');
+                div.className = 'icon';
+                div.innerHTML = `
+                    <h3>${size}x${size}</h3>
+                    <canvas width="${size}" height="${size}"></canvas>
+                    <br>
+                    <button onclick="downloadIcon(${size})">Download</button>
+                `;
+
+                const canvas = div.querySelector('canvas');
+                const ctx = canvas.getContext('2d');
+                const img = new Image();
+                img.onload = () => ctx.drawImage(img, 0, 0);
+                img.src = dataUrl;
+
+                container.appendChild(div);
+            });
+
+            console.log('All icons generated!');
+        }
+
+        function downloadIcon(size) {
+            const dataUrl = icons[size];
+            const link = document.createElement('a');
+            link.download = `icon-${size}x${size}.png`;
+            link.href = dataUrl;
+            link.click();
+        }
+
+        function downloadAllIcons() {
+            iconSizes.forEach(size => {
+                setTimeout(() => downloadIcon(size), size * 10);
+            });
+        }
+
+        // Auto-generate on load
+        window.onload = generateAllIcons;
+    </script>
+</body>
+</html> 

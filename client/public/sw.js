@@ -1,7 +1,7 @@
 // Service Worker for OlaClick Analytics PWA
-const CACHE_NAME = 'olaclick-analytics-v1';
-const STATIC_CACHE = 'olaclick-static-v1';
-const DYNAMIC_CACHE = 'olaclick-dynamic-v1';
+const CACHE_NAME = 'olaclick-analytics-v2'; // Increment version to bust cache
+const STATIC_CACHE = 'olaclick-static-v2';  // Increment version
+const DYNAMIC_CACHE = 'olaclick-dynamic-v2'; // Increment version
 
 // Files to cache for offline functionality
 const STATIC_FILES = [
@@ -121,19 +121,13 @@ async function handleApiRequest(request) {
   }
 }
 
-// Handle static requests with cache-first strategy
+// Handle static requests with network-first strategy (better for development)
 async function handleStaticRequest(request) {
   try {
-    // Try cache first
-    const cachedResponse = await caches.match(request);
-    if (cachedResponse) {
-      return cachedResponse;
-    }
-    
-    // If not in cache, fetch from network
+    // Try network first to get fresh content
     const networkResponse = await fetch(request);
     
-    // Cache the response for future use
+    // Cache the fresh response
     if (networkResponse.ok) {
       const cache = await caches.open(DYNAMIC_CACHE);
       cache.put(request, networkResponse.clone());
@@ -141,7 +135,13 @@ async function handleStaticRequest(request) {
     
     return networkResponse;
   } catch (error) {
-    console.log('🌐 Service Worker: Request failed for:', request.url);
+    console.log('🌐 Service Worker: Network failed, trying cache for:', request.url);
+    
+    // If network fails, try cache
+    const cachedResponse = await caches.match(request);
+    if (cachedResponse) {
+      return cachedResponse;
+    }
     
     // For navigation requests, return the cached index.html
     if (request.mode === 'navigate') {
