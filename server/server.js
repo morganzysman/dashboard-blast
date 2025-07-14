@@ -50,7 +50,11 @@ app.use(express.json());
 
 // Serve static files from client directory in development
 // In production, this would typically serve from a dist/build directory
-const clientPath = path.join(__dirname, '..', 'client');
+const clientPath = config.nodeEnv === 'production' 
+  ? path.join(__dirname, '..', 'dist')
+  : path.join(__dirname, '..', 'client');
+
+console.log(`📁 Serving static files from: ${clientPath}`);
 app.use(express.static(clientPath));
 
 // Initialize database on startup
@@ -100,24 +104,30 @@ app.get('/notifications-debug', (req, res) => {
 // Health check endpoint for Railway and other deployment platforms
 app.get('/health', async (req, res) => {
   try {
-    const dbHealthy = await healthCheck();
+    const dbHealth = await healthCheck();
     
-    res.status(200).json({
-      status: 'healthy',
+    const healthStatus = {
+      status: dbHealth.connected ? 'healthy' : 'unhealthy',
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
       memory: process.memoryUsage(),
       env: config.nodeEnv,
       version: '2.0.0',
-      database: {
-        connected: dbHealthy
-      }
-    });
+      database: dbHealth
+    };
+    
+    const statusCode = dbHealth.connected ? 200 : 503;
+    res.status(statusCode).json(healthStatus);
+    
   } catch (error) {
     res.status(503).json({
       status: 'unhealthy',
       error: error.message,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      database: {
+        connected: false,
+        error: error.message
+      }
     });
   }
 });
@@ -125,8 +135,8 @@ app.get('/health', async (req, res) => {
 // Alternative health check endpoints (common patterns)
 app.get('/healthz', async (req, res) => {
   try {
-    const dbHealthy = await healthCheck();
-    if (dbHealthy) {
+    const dbHealth = await healthCheck();
+    if (dbHealth.connected) {
       res.status(200).send('OK');
     } else {
       res.status(503).send('Database Unavailable');

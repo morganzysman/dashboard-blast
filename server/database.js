@@ -898,13 +898,47 @@ export async function closeDatabase() {
 // Export pool for direct queries if needed
 export { pool };
 
-// Health check
+// Health check with comprehensive database information
 export async function healthCheck() {
   try {
-    const result = await pool.query('SELECT 1 as health');
-    return result.rows[0].health === 1;
+    const startTime = Date.now();
+    const client = await pool.connect();
+    
+    // Test basic connectivity and get database info
+    const result = await client.query('SELECT NOW() as current_time, version() as db_version');
+    const connectionTime = Date.now() - startTime;
+    
+    // Get basic database statistics
+    const statsResult = await client.query(`
+      SELECT 
+        (SELECT COUNT(*) FROM users WHERE is_active = TRUE) as active_users,
+        (SELECT COUNT(*) FROM user_sessions WHERE is_active = TRUE AND expires_at > CURRENT_TIMESTAMP) as active_sessions,
+        (SELECT COUNT(*) FROM push_subscriptions WHERE is_active = TRUE) as active_push_subscriptions
+    `);
+    
+    client.release();
+    
+    return {
+      connected: true,
+      responseTime: connectionTime,
+      currentTime: result.rows[0].current_time,
+      version: result.rows[0].db_version.split(' ').slice(0, 2).join(' '),
+      connectionString: process.env.DATABASE_URL ? 'DATABASE_URL' : 'Individual Variables',
+      ssl: process.env.NODE_ENV === 'production' || process.env.DB_SSL === 'true',
+      stats: {
+        activeUsers: parseInt(statsResult.rows[0].active_users),
+        activeSessions: parseInt(statsResult.rows[0].active_sessions),
+        activePushSubscriptions: parseInt(statsResult.rows[0].active_push_subscriptions)
+      }
+    };
   } catch (error) {
-    return false;
+    console.error('❌ Database health check failed:', error);
+    return {
+      connected: false,
+      error: error.message,
+      connectionString: process.env.DATABASE_URL ? 'DATABASE_URL' : 'Individual Variables',
+      ssl: process.env.NODE_ENV === 'production' || process.env.DB_SSL === 'true'
+    };
   }
 }
 
