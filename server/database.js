@@ -792,8 +792,12 @@ export async function logNotificationEvent(userId, eventType, message, payload =
     RETURNING id, created_at
   `;
   
+  // Use NULL for system events (dummy UUID for system events)
+  const systemUserId = '00000000-0000-0000-0000-000000000000';
+  const actualUserId = userId === systemUserId ? null : userId;
+  
   const values = [
-    userId,
+    actualUserId,
     eventType,
     message,
     JSON.stringify(payload),
