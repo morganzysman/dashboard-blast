@@ -16,6 +16,10 @@ let dbConfig;
 
 if (process.env.DATABASE_URL) {
   // Railway and other platforms provide DATABASE_URL
+  console.log('🔗 Using DATABASE_URL connection string');
+  console.log(`   Connection: ${process.env.DATABASE_URL.replace(/:[^:@]*@/, ':****@')}`);
+  console.log(`   Environment: ${process.env.NODE_ENV || 'development'}`);
+  
   dbConfig = {
     connectionString: process.env.DATABASE_URL,
     ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
@@ -25,6 +29,13 @@ if (process.env.DATABASE_URL) {
   };
 } else {
   // Development and custom setups use individual variables
+  console.log('🔧 Using individual DB_* environment variables');
+  console.log(`   Host: ${process.env.DB_HOST || 'localhost'}`);
+  console.log(`   Port: ${process.env.DB_PORT || 5432}`);
+  console.log(`   Database: ${process.env.DB_NAME || 'olaclick_analytics'}`);
+  console.log(`   User: ${process.env.DB_USER || 'postgres'}`);
+  console.log(`   SSL: ${process.env.DB_SSL === 'true' ? 'enabled' : 'disabled'}`);
+  
   dbConfig = {
     user: process.env.DB_USER || 'postgres',
     host: process.env.DB_HOST || 'localhost',
