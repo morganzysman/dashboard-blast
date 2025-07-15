@@ -27,50 +27,64 @@ export function scheduleDailyReports() {
     console.log('🔔 Checking for users ready for notifications...');
     
     try {
-      // Check for each frequency interval
-      const frequencies = [30, 60, 240, 480]; // 30min, 1h, 4h, 8h
+      // Get all active subscriptions
+      const subscriptions = await getAllActivePushSubscriptions();
       
-      for (const frequency of frequencies) {
-        const subscriptions = await getAllActivePushSubscriptions(frequency);
+      if (subscriptions.length === 0) {
+        console.log('📊 No active subscriptions found');
+        return;
+      }
+      
+      console.log(`📊 Found ${subscriptions.length} active subscriptions, checking frequency...`);
+      
+      for (const subscriptionData of subscriptions) {
+        const { userId, user, notificationFrequency, lastNotificationTime } = subscriptionData;
         
-        if (subscriptions.length > 0) {
-          console.log(`📊 Found ${subscriptions.length} users ready for ${frequency}-minute notifications`);
+        if (!user.accounts || user.accounts.length === 0) {
+          console.log(`📊 Skipping user ${user.email} - no accounts assigned`);
+          continue;
+        }
+        
+        // Simple logic: check if enough time has passed since last notification
+        const now = new Date();
+        const lastNotification = lastNotificationTime ? new Date(lastNotificationTime) : null;
+        const frequencyMs = (notificationFrequency || 30) * 60 * 1000; // Convert minutes to milliseconds
+        
+        // If no last notification or enough time has passed
+        if (!lastNotification || (now.getTime() - lastNotification.getTime()) >= frequencyMs) {
+          console.log(`📊 User ${user.email} ready for ${notificationFrequency}-minute notification`);
           
-          for (const subscriptionData of subscriptions) {
-            const { userId, user } = subscriptionData;
+          try {
+            // Generate report for this user
+            const report = await generateUserDailyReport(user, subscriptionData);
             
-            if (!user.accounts || user.accounts.length === 0) {
-              console.log(`📊 Skipping user ${user.email} - no accounts assigned`);
-              continue;
+            if (report) {
+              // Send notification
+              await webpush.sendNotification(
+                subscriptionData.subscription,
+                JSON.stringify(report)
+              );
+              
+              await trackNotificationSent(userId);
+              console.log(`📨 ${notificationFrequency}-minute report sent to: ${user.email}`);
             }
             
-            try {
-              // Generate report for this user
-              const report = await generateUserDailyReport(user, subscriptionData);
-              
-              if (report) {
-                // Send notification
-                await webpush.sendNotification(
-                  subscriptionData.subscription,
-                  JSON.stringify(report)
-                );
-                
-                await trackNotificationSent(userId);
-                console.log(`📨 ${frequency}-minute report sent to: ${user.email}`);
-              }
-              
-            } catch (error) {
-              console.error(`❌ Error sending ${frequency}-minute report to ${user.email}:`, error);
-              
-              await trackNotificationError(userId, error.message);
-              
-              // Remove invalid subscription (410 = Gone)
-              if (error.statusCode === 410) {
-                await removePushSubscription(userId);
-                console.log(`🗑️ Removed invalid subscription for: ${user.email}`);
-              }
+          } catch (error) {
+            console.error(`❌ Error sending ${notificationFrequency}-minute report to ${user.email}:`, error);
+            
+            await trackNotificationError(userId, error.message);
+            
+            // Remove invalid subscription (410 = Gone)
+            if (error.statusCode === 410) {
+              await removePushSubscription(userId);
+              console.log(`🗑️ Removed invalid subscription for: ${user.email}`);
             }
           }
+        } else {
+          // Calculate time remaining until next notification
+          const timeRemaining = frequencyMs - (now.getTime() - lastNotification.getTime());
+          const minutesRemaining = Math.ceil(timeRemaining / (60 * 1000));
+          console.log(`⏰ User ${user.email} not ready yet (${minutesRemaining} minutes remaining)`);
         }
       }
       

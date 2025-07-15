@@ -636,9 +636,9 @@ export async function getPushSubscription(userId) {
   };
 }
 
-// Get all active push subscriptions with frequency filtering
-export async function getAllActivePushSubscriptions(frequencyFilter = null) {
-  let query = `
+// Get all active push subscriptions
+export async function getAllActivePushSubscriptions() {
+  const query = `
     SELECT ps.user_id, ps.endpoint, ps.p256dh_key, ps.auth_key, ps.timezone, ps.currency, 
            ps.currency_symbol, ps.subscribed_at, ps.user_agent, ps.notification_frequency,
            ps.last_notification_time, u.email, u.name, u.accounts
@@ -647,17 +647,7 @@ export async function getAllActivePushSubscriptions(frequencyFilter = null) {
     WHERE ps.is_active = TRUE AND u.is_active = TRUE
   `;
   
-  const values = [];
-  
-  if (frequencyFilter) {
-    query += ` AND ps.notification_frequency = $1`;
-    values.push(frequencyFilter);
-    
-    // Add time-based filtering to respect user's frequency preference
-    query += ` AND (ps.last_notification_time IS NULL OR ps.last_notification_time < CURRENT_TIMESTAMP - INTERVAL '${frequencyFilter} minutes')`;
-  }
-  
-  const result = await pool.query(query, values);
+  const result = await pool.query(query);
   
   return result.rows.map(row => ({
     userId: row.user_id,

@@ -115,7 +115,7 @@ const pageSubtitle = computed(() => {
   const routeSubtitles = {
     Dashboard: 'Real-time analytics and sales data',
     Admin: '',
-    Notifications: 'Push notification settings and debug'
+    Notifications: 'Push notification settings'
   }
   return routeSubtitles[route.name] || ''
 })

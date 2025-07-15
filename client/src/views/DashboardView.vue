@@ -90,7 +90,7 @@
         <div class="card-body">
           <div class="flex items-center justify-between">
             <div class="min-w-0 flex-1">
-              <p class="text-blue-100 text-xs sm:text-sm font-medium">TOTAL TRANSACTION</p>
+              <p class="text-blue-100 text-xs sm:text-sm font-medium">TOTAL TRANSACTIONs</p>
               <p class="text-2xl sm:text-3xl font-bold truncate">{{ analyticsData.aggregated.totalPayments }}</p>
               <div class="flex items-center mt-1" v-if="analyticsData.comparison">
                 <span class="text-xs sm:text-sm" :class="analyticsData.comparison.payments.trend === 'up' ? 'text-green-200' : 'text-red-200'">
@@ -186,7 +186,7 @@
             <div class="space-y-1">
               <p class="font-bold text-gray-900 text-sm sm:text-base">{{ formatCurrency(method.sum) }}</p>
               <div class="flex items-center justify-between text-xs sm:text-sm text-gray-500">
-                <span>{{ method.count }} payments</span>
+                <span>{{ method.count }} transactions</span>
                 <span>{{ method.percent.toFixed(1) }}%</span>
               </div>
             </div>
@@ -216,7 +216,7 @@
               <div class="grid grid-cols-3 gap-2 sm:gap-4 text-center">
                 <div class="bg-blue-50 rounded-lg p-2 sm:p-3">
                   <p class="text-sm sm:text-lg font-bold text-blue-600">{{ getAccountTotalPayments(account) }}</p>
-                  <p class="text-xs text-blue-500">Payments</p>
+                  <p class="text-xs text-blue-500">Transactions</p>
                 </div>
                 <div class="bg-green-50 rounded-lg p-2 sm:p-3">
                   <p class="text-xs sm:text-lg font-bold text-green-600 truncate">{{ formatCurrency(getAccountTotalAmount(account)) }}</p>
@@ -233,7 +233,7 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 text-center">
                   <div>
                     <p class="text-xs sm:text-sm font-medium" :class="account.comparison.payments.trend === 'up' ? 'text-green-600' : 'text-red-600'">
-                      {{ account.comparison.payments.trend === 'up' ? '+' : '' }}{{ account.comparison.payments.difference }} payments
+                      {{ account.comparison.payments.trend === 'up' ? '+' : '' }}{{ account.comparison.payments.difference }} transactions
                     </p>
                     <p class="text-xs text-gray-500">vs same period last week</p>
                   </div>
@@ -264,7 +264,7 @@
                     <div class="space-y-0.5">
                       <p class="font-bold text-gray-900 text-xs">{{ formatCurrency(method.sum) }}</p>
                       <div class="flex items-center justify-between text-xs text-gray-500">
-                        <span>{{ method.count }} payments</span>
+                        <span>{{ method.count }} transactions</span>
                         <span>{{ method.percent.toFixed(1) }}%</span>
                       </div>
                     </div>
