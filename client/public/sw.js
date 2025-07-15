@@ -1,41 +1,47 @@
 // Service Worker for OlaClick Analytics PWA - NO CACHE VERSION
 // This version disables all caching to ensure fresh content after deployments
+// Version: 3.0.0 - NO CACHE MODE
 
 const CACHE_NAME = 'disabled'; // Not used but kept for cleanup
+const SW_VERSION = '3.0.0-no-cache';
+
+console.log(`🚀 Service Worker ${SW_VERSION}: Loading...`);
 
 // Install event - skip caching
 self.addEventListener('install', event => {
-  console.log('🔧 Service Worker: Installing (no cache mode)...');
+  console.log(`🔧 Service Worker ${SW_VERSION}: Installing (no cache mode)...`);
   
   event.waitUntil(
     Promise.resolve()
       .then(() => {
-        console.log('✅ Service Worker: Installed without caching');
-        return self.skipWaiting(); // Activate immediately
+        console.log(`✅ Service Worker ${SW_VERSION}: Installed without caching`);
+        // Force immediate activation
+        return self.skipWaiting();
       })
   );
 });
 
 // Activate event - clean up any existing caches
 self.addEventListener('activate', event => {
-  console.log('🚀 Service Worker: Activating (no cache mode)...');
+  console.log(`🚀 Service Worker ${SW_VERSION}: Activating (no cache mode)...`);
   
   event.waitUntil(
     caches.keys()
       .then(cacheNames => {
         return Promise.all(
           cacheNames.map(cacheName => {
-            console.log('🗑️ Service Worker: Deleting cache:', cacheName);
+            console.log(`🗑️ Service Worker ${SW_VERSION}: Deleting cache:`, cacheName);
             return caches.delete(cacheName);
           })
         );
       })
       .then(() => {
-        console.log('✅ Service Worker: Activated successfully - all caches cleared');
-        return self.clients.claim(); // Take control of all clients
+        console.log(`✅ Service Worker ${SW_VERSION}: Activated successfully - all caches cleared`);
+        // Force immediate control of all clients
+        return self.clients.claim();
       })
       .catch(error => {
-        console.error('❌ Service Worker: Error during activation:', error);
+        console.error(`❌ Service Worker ${SW_VERSION}: Error during activation:`, error);
       })
   );
 });
@@ -216,4 +222,4 @@ async function clearAllCaches() {
   }
 }
 
-console.log('🚀 Service Worker: Loaded and ready (no cache mode)!'); 
+console.log(`🚀 Service Worker ${SW_VERSION}: Loaded and ready (no cache mode)!`); 
