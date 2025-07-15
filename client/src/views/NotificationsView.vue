@@ -1,16 +1,6 @@
 <template>
   <div class="space-y-6">
     <!-- Header -->
-    <div class="flex justify-between items-center">
-      <div>
-        <h2 class="text-2xl font-bold text-gray-900">Notifications</h2>
-        <p class="text-gray-600">Manage your push notification settings</p>
-      </div>
-      <div class="flex items-center space-x-2">
-        <div class="h-2 w-2 rounded-full" :class="statusColor"></div>
-        <span class="text-sm text-gray-600">{{ statusText }}</span>
-      </div>
-    </div>
 
     <!-- Notification Status Card -->
     <div class="card">
@@ -80,7 +70,7 @@
                 Disable Notifications
               </button>
               
-              <button
+              <!-- <button
                 v-if="notificationStatus.isSubscribed"
                 @click="sendTestNotification"
                 :disabled="loading"
@@ -90,7 +80,7 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                 </svg>
                 Send Test Notification
-              </button>
+              </button> -->
             </div>
           </div>
         </div>

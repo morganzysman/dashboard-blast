@@ -27,7 +27,7 @@
         <!-- Notification status -->
         <div class="flex items-center space-x-2" v-if="!authStore.isSuperAdmin">
           <div class="h-2 w-2 rounded-full flex-shrink-0" :class="notificationStatusColor"></div>
-          <span class="text-sm text-gray-600 hidden sm:block">{{ notificationStatusText }}</span>
+          <span class="text-sm text-gray-600">{{ notificationStatusText }}</span>
         </div>
 
         <!-- User dropdown -->
@@ -113,7 +113,7 @@ const pageTitle = computed(() => {
 
 const pageSubtitle = computed(() => {
   const routeSubtitles = {
-    Dashboard: 'Real-time analytics and sales data',
+    Dashboard: '',
     Admin: '',
     Notifications: 'Push notification settings'
   }
@@ -136,11 +136,11 @@ const notificationStatusColor = computed(() => {
 const notificationStatusText = computed(() => {
   switch (notificationStatus.value) {
     case 'active':
-      return 'Notifications Active'
+      return 'Notifications'
     case 'inactive':
-      return 'Notifications Off'
+      return 'Notifications'
     case 'error':
-      return 'Notification Error'
+      return 'Notification'
     default:
       return 'Checking...'
   }

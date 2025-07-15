@@ -1,69 +1,52 @@
-// Service Worker for OlaClick Analytics PWA
-const CACHE_NAME = 'olaclick-analytics-v2'; // Increment version to bust cache
-const STATIC_CACHE = 'olaclick-static-v2';  // Increment version
-const DYNAMIC_CACHE = 'olaclick-dynamic-v2'; // Increment version
+// Service Worker for OlaClick Analytics PWA - NO CACHE VERSION
+// This version disables all caching to ensure fresh content after deployments
+// Version: 3.0.0 - NO CACHE MODE
 
-// Files to cache for offline functionality
-const STATIC_FILES = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap'
-];
+const CACHE_NAME = 'disabled'; // Not used but kept for cleanup
+const SW_VERSION = '3.0.0-no-cache';
 
-// API endpoints that should be cached
-const CACHEABLE_APIS = [
-  '/api/auth/verify',
-  '/api/orders/all'
-];
+console.log(`🚀 Service Worker ${SW_VERSION}: Loading...`);
 
-// Install event - cache static resources
+// Install event - skip caching
 self.addEventListener('install', event => {
-  console.log('🔧 Service Worker: Installing...');
+  console.log(`🔧 Service Worker ${SW_VERSION}: Installing (no cache mode)...`);
   
   event.waitUntil(
-    caches.open(STATIC_CACHE)
-      .then(cache => {
-        console.log('📦 Service Worker: Caching static files...');
-        return cache.addAll(STATIC_FILES);
-      })
+    Promise.resolve()
       .then(() => {
-        console.log('✅ Service Worker: Static files cached successfully');
-        return self.skipWaiting(); // Activate immediately
-      })
-      .catch(error => {
-        console.error('❌ Service Worker: Error caching static files:', error);
+        console.log(`✅ Service Worker ${SW_VERSION}: Installed without caching`);
+        // Force immediate activation
+        return self.skipWaiting();
       })
   );
 });
 
-// Activate event - clean up old caches
+// Activate event - clean up any existing caches
 self.addEventListener('activate', event => {
-  console.log('🚀 Service Worker: Activating...');
+  console.log(`🚀 Service Worker ${SW_VERSION}: Activating (no cache mode)...`);
   
   event.waitUntil(
     caches.keys()
       .then(cacheNames => {
         return Promise.all(
           cacheNames.map(cacheName => {
-            if (cacheName !== STATIC_CACHE && cacheName !== DYNAMIC_CACHE) {
-              console.log('🗑️ Service Worker: Deleting old cache:', cacheName);
-              return caches.delete(cacheName);
-            }
+            console.log(`🗑️ Service Worker ${SW_VERSION}: Deleting cache:`, cacheName);
+            return caches.delete(cacheName);
           })
         );
       })
       .then(() => {
-        console.log('✅ Service Worker: Activated successfully');
-        return self.clients.claim(); // Take control of all clients
+        console.log(`✅ Service Worker ${SW_VERSION}: Activated successfully - all caches cleared`);
+        // Force immediate control of all clients
+        return self.clients.claim();
       })
       .catch(error => {
-        console.error('❌ Service Worker: Error during activation:', error);
+        console.error(`❌ Service Worker ${SW_VERSION}: Error during activation:`, error);
       })
   );
 });
 
-// Fetch event - handle network requests with cache strategy
+// Fetch event - always fetch from network, no caching
 self.addEventListener('fetch', event => {
   const { request } = event;
   const url = new URL(request.url);
@@ -73,91 +56,41 @@ self.addEventListener('fetch', event => {
     return;
   }
   
-  // Handle API requests
-  if (url.pathname.startsWith('/api/')) {
-    event.respondWith(handleApiRequest(request));
-    return;
-  }
-  
-  // Handle static files
-  event.respondWith(handleStaticRequest(request));
+  // Always fetch from network - no caching
+  event.respondWith(
+    fetch(request)
+      .then(response => {
+        console.log('🌐 Service Worker: Fresh fetch for:', url.pathname);
+        return response;
+      })
+      .catch(error => {
+        console.log('❌ Service Worker: Network failed for:', url.pathname);
+        
+        // Return basic offline response
+        if (request.mode === 'navigate') {
+          return new Response(`
+            <!DOCTYPE html>
+            <html>
+              <head><title>Offline</title></head>
+              <body>
+                <h1>Offline</h1>
+                <p>Please check your internet connection and try again.</p>
+                <button onclick="window.location.reload()">Retry</button>
+              </body>
+            </html>
+          `, {
+            status: 503,
+            headers: { 'Content-Type': 'text/html' }
+          });
+        }
+        
+        return new Response('Network unavailable', {
+          status: 503,
+          headers: { 'Content-Type': 'text/plain' }
+        });
+      })
+  );
 });
-
-// Handle API requests with network-first strategy
-async function handleApiRequest(request) {
-  const url = new URL(request.url);
-  
-  try {
-    // Try network first
-    const networkResponse = await fetch(request);
-    
-    // Cache successful responses for cacheable APIs
-    if (networkResponse.ok && CACHEABLE_APIS.some(api => url.pathname.includes(api))) {
-      const cache = await caches.open(DYNAMIC_CACHE);
-      cache.put(request, networkResponse.clone());
-    }
-    
-    return networkResponse;
-  } catch (error) {
-    console.log('🌐 Service Worker: Network failed, trying cache for:', url.pathname);
-    
-    // If network fails, try cache
-    const cachedResponse = await caches.match(request);
-    if (cachedResponse) {
-      return cachedResponse;
-    }
-    
-    // Return error response if no cache
-    return new Response(
-      JSON.stringify({ 
-        success: false, 
-        error: 'Network unavailable. Please check your connection.' 
-      }),
-      { 
-        status: 503, 
-        headers: { 'Content-Type': 'application/json' } 
-      }
-    );
-  }
-}
-
-// Handle static requests with network-first strategy (better for development)
-async function handleStaticRequest(request) {
-  try {
-    // Try network first to get fresh content
-    const networkResponse = await fetch(request);
-    
-    // Cache the fresh response
-    if (networkResponse.ok) {
-      const cache = await caches.open(DYNAMIC_CACHE);
-      cache.put(request, networkResponse.clone());
-    }
-    
-    return networkResponse;
-  } catch (error) {
-    console.log('🌐 Service Worker: Network failed, trying cache for:', request.url);
-    
-    // If network fails, try cache
-    const cachedResponse = await caches.match(request);
-    if (cachedResponse) {
-      return cachedResponse;
-    }
-    
-    // For navigation requests, return the cached index.html
-    if (request.mode === 'navigate') {
-      const cachedIndex = await caches.match('/index.html');
-      if (cachedIndex) {
-        return cachedIndex;
-      }
-    }
-    
-    // Return a generic offline page or error
-    return new Response('Offline - Please check your internet connection', {
-      status: 503,
-      headers: { 'Content-Type': 'text/plain' }
-    });
-  }
-}
 
 // Push notification event handler
 self.addEventListener('push', event => {
@@ -258,37 +191,6 @@ self.addEventListener('notificationclick', event => {
   );
 });
 
-// Background sync for offline actions (optional)
-self.addEventListener('sync', event => {
-  console.log('🔄 Service Worker: Background sync triggered');
-  
-  if (event.tag === 'sync-analytics-data') {
-    event.waitUntil(syncAnalyticsData());
-  }
-});
-
-// Sync analytics data when back online
-async function syncAnalyticsData() {
-  try {
-    console.log('📊 Service Worker: Syncing analytics data...');
-    
-    // Get all clients (open tabs)
-    const clients = await self.clients.matchAll();
-    
-    // Notify clients to refresh data
-    clients.forEach(client => {
-      client.postMessage({
-        type: 'SYNC_DATA',
-        message: 'Connection restored. Refreshing data...'
-      });
-    });
-    
-    console.log('✅ Service Worker: Analytics data sync completed');
-  } catch (error) {
-    console.error('❌ Service Worker: Error syncing analytics data:', error);
-  }
-}
-
 // Handle messages from the main thread
 self.addEventListener('message', event => {
   console.log('💬 Service Worker: Message received:', event.data);
@@ -300,11 +202,6 @@ self.addEventListener('message', event => {
       self.skipWaiting();
       break;
       
-    case 'CACHE_ANALYTICS_DATA':
-      // Cache important analytics data for offline use
-      cacheAnalyticsData(data);
-      break;
-      
     case 'CLEAR_CACHE':
       clearAllCaches();
       break;
@@ -313,20 +210,6 @@ self.addEventListener('message', event => {
       console.log('❓ Service Worker: Unknown message type:', type);
   }
 });
-
-// Cache analytics data for offline use
-async function cacheAnalyticsData(data) {
-  try {
-    const cache = await caches.open(DYNAMIC_CACHE);
-    const response = new Response(JSON.stringify(data), {
-      headers: { 'Content-Type': 'application/json' }
-    });
-    await cache.put('/offline-analytics-data', response);
-    console.log('💾 Service Worker: Analytics data cached for offline use');
-  } catch (error) {
-    console.error('❌ Service Worker: Error caching analytics data:', error);
-  }
-}
 
 // Clear all caches
 async function clearAllCaches() {
@@ -339,4 +222,4 @@ async function clearAllCaches() {
   }
 }
 
-console.log('🚀 Service Worker: Loaded and ready!'); 
+console.log(`🚀 Service Worker ${SW_VERSION}: Loaded and ready (no cache mode)!`); 
