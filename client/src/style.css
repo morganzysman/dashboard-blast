@@ -96,6 +96,10 @@
     @apply flex-1 overflow-auto;
     /* Mobile: Full width */
     @apply w-full;
+  }
+  
+  /* Only apply sidebar margin when sidebar is present (authenticated state) */
+  .flex .main-content {
     /* Tablet and up: Account for sidebar */
     @apply md:ml-64;
   }
