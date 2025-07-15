@@ -28,7 +28,7 @@ router.get('/vapid-public-key', (req, res) => {
 // Subscribe to push notifications
 router.post('/subscribe', requireAuth, async (req, res) => {
   try {
-    const subscription = req.body;
+    const { subscription, userAgent: clientUserAgent, notificationFrequency } = req.body;
     const userId = req.user.userId;
     const userAgent = req.headers['user-agent'] || 'Unknown';
     
@@ -115,7 +115,7 @@ router.post('/subscribe', requireAuth, async (req, res) => {
       subscribedAt: new Date().toISOString(),
       userAgent,
       endpoint: subscription.endpoint,
-      notificationFrequency: subscription.notificationFrequency || 30 // Default to 30 minutes
+      notificationFrequency: notificationFrequency || 30 // Default to 30 minutes
     };
     
     await storePushSubscription(userId, subscriptionData);

@@ -1,6 +1,6 @@
 <template>
   <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
-    <div class="max-w-md w-full space-y-8">
+    <div class="max-w-md w-full">
       <div class="bg-white rounded-xl shadow-2xl p-8 border border-gray-200">
         <!-- Logo and title -->
         <div class="text-center">
@@ -67,39 +67,6 @@
             </button>
           </div>
         </form>
-
-        <!-- Footer -->
-        <div class="mt-8 text-center text-sm text-gray-500">
-          <p>OlaClick Analytics Dashboard v2.0.0</p>
-          <p class="mt-1">Vue.js Edition with PostgreSQL</p>
-        </div>
-      </div>
-
-      <!-- Features -->
-      <div class="mt-8 bg-white/10 backdrop-blur-md rounded-lg p-6 text-white">
-        <h3 class="text-lg font-semibold mb-4">✨ New Features</h3>
-        <ul class="space-y-2 text-sm">
-          <li class="flex items-center">
-            <span class="text-green-400 mr-2">✓</span>
-            Modern Vue.js interface with components
-          </li>
-          <li class="flex items-center">
-            <span class="text-green-400 mr-2">✓</span>
-            PostgreSQL database with migrations
-          </li>
-          <li class="flex items-center">
-            <span class="text-green-400 mr-2">✓</span>
-            Super-admin user management
-          </li>
-          <li class="flex items-center">
-            <span class="text-green-400 mr-2">✓</span>
-            Role-based access control
-          </li>
-          <li class="flex items-center">
-            <span class="text-green-400 mr-2">✓</span>
-            Enhanced push notifications
-          </li>
-        </ul>
       </div>
     </div>
   </div>

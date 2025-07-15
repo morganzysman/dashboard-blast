@@ -90,7 +90,7 @@
         <div class="card-body">
           <div class="flex items-center justify-between">
             <div class="min-w-0 flex-1">
-              <p class="text-blue-100 text-xs sm:text-sm font-medium">TOTAL PAYMENTS</p>
+              <p class="text-blue-100 text-xs sm:text-sm font-medium">TOTAL TRANSACTION</p>
               <p class="text-2xl sm:text-3xl font-bold truncate">{{ analyticsData.aggregated.totalPayments }}</p>
               <div class="flex items-center mt-1" v-if="analyticsData.comparison">
                 <span class="text-xs sm:text-sm" :class="analyticsData.comparison.payments.trend === 'up' ? 'text-green-200' : 'text-red-200'">
@@ -346,7 +346,7 @@ const paymentMethodColors = {
 
 // Computed properties
 const todayString = computed(() => {
-  return new Date().toISOString().split('T')[0]
+  return getCurrentDateInTimezone()
 })
 
 // Date helper functions
@@ -363,39 +363,66 @@ const formatDisplayDate = (dateString) => {
   })
 }
 
-const getDateRange = (rangeType) => {
-  const today = new Date()
+// Get current date in user's timezone
+const getCurrentDateInTimezone = () => {
   const timezone = authStore.user?.timezone || 'America/Lima'
+  
+  // Create a date object for the current time in the user's timezone
+  const now = new Date()
+  const timezoneDate = new Date(now.toLocaleString('en-US', { timeZone: timezone }))
+  
+  // Format as YYYY-MM-DD
+  const year = timezoneDate.getFullYear()
+  const month = String(timezoneDate.getMonth() + 1).padStart(2, '0')
+  const day = String(timezoneDate.getDate()).padStart(2, '0')
+  
+  return `${year}-${month}-${day}`
+}
+
+// Get date in user's timezone
+const getDateInTimezone = (date, timezone) => {
+  const timezoneDate = new Date(date.toLocaleString('en-US', { timeZone: timezone }))
+  
+  const year = timezoneDate.getFullYear()
+  const month = String(timezoneDate.getMonth() + 1).padStart(2, '0')
+  const day = String(timezoneDate.getDate()).padStart(2, '0')
+  
+  return `${year}-${month}-${day}`
+}
+
+const getDateRange = (rangeType) => {
+  const timezone = authStore.user?.timezone || 'America/Lima'
+  const today = new Date()
   
   switch (rangeType) {
     case 'today':
       return { 
-        start: formatDate(today), 
-        end: formatDate(today) 
+        start: getCurrentDateInTimezone(), 
+        end: getCurrentDateInTimezone() 
       }
     
     case 'yesterday':
       const yesterday = new Date(today)
       yesterday.setDate(yesterday.getDate() - 1)
       return { 
-        start: formatDate(yesterday), 
-        end: formatDate(yesterday) 
+        start: getDateInTimezone(yesterday, timezone), 
+        end: getDateInTimezone(yesterday, timezone) 
       }
     
     case 'last7days':
       const week = new Date(today)
       week.setDate(week.getDate() - 6)
       return { 
-        start: formatDate(week), 
-        end: formatDate(today) 
+        start: getDateInTimezone(week, timezone), 
+        end: getCurrentDateInTimezone() 
       }
     
     case 'last30days':
       const month = new Date(today)
       month.setDate(month.getDate() - 29)
       return { 
-        start: formatDate(month), 
-        end: formatDate(today) 
+        start: getDateInTimezone(month, timezone), 
+        end: getCurrentDateInTimezone() 
       }
     
     case 'thisweek':
@@ -404,8 +431,8 @@ const getDateRange = (rangeType) => {
       const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1) // adjust when day is Sunday
       startOfWeek.setDate(diff)
       return { 
-        start: formatDate(startOfWeek), 
-        end: formatDate(today) 
+        start: getDateInTimezone(startOfWeek, timezone), 
+        end: getCurrentDateInTimezone() 
       }
     
     case 'lastweek':
@@ -414,23 +441,23 @@ const getDateRange = (rangeType) => {
       const lastWeekStart = new Date(lastWeekEnd)
       lastWeekStart.setDate(lastWeekStart.getDate() - 6)
       return { 
-        start: formatDate(lastWeekStart), 
-        end: formatDate(lastWeekEnd) 
+        start: getDateInTimezone(lastWeekStart, timezone), 
+        end: getDateInTimezone(lastWeekEnd, timezone) 
       }
     
     case 'thismonth':
       const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1)
       return { 
-        start: formatDate(startOfMonth), 
-        end: formatDate(today) 
+        start: getDateInTimezone(startOfMonth, timezone), 
+        end: getCurrentDateInTimezone() 
       }
     
     case 'lastmonth':
       const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1)
       const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0)
       return { 
-        start: formatDate(lastMonth), 
-        end: formatDate(lastMonthEnd) 
+        start: getDateInTimezone(lastMonth, timezone), 
+        end: getDateInTimezone(lastMonthEnd, timezone) 
       }
     
     case 'custom':
@@ -441,8 +468,8 @@ const getDateRange = (rangeType) => {
     
     default:
       return { 
-        start: formatDate(today), 
-        end: formatDate(today) 
+        start: getCurrentDateInTimezone(), 
+        end: getCurrentDateInTimezone() 
       }
   }
 }
