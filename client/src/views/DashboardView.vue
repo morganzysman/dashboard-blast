@@ -90,7 +90,7 @@
         <div class="card-body">
           <div class="flex items-center justify-between">
             <div class="min-w-0 flex-1">
-              <p class="text-blue-100 text-xs sm:text-sm font-medium">TOTAL TRANSACTIONs</p>
+              <p class="text-blue-100 text-xs sm:text-sm font-medium">TOTAL TRANSACTIONS</p>
               <p class="text-2xl sm:text-3xl font-bold truncate">{{ analyticsData.aggregated.totalPayments }}</p>
               <div class="flex items-center mt-1" v-if="analyticsData.comparison">
                 <span class="text-xs sm:text-sm" :class="analyticsData.comparison.payments.trend === 'up' ? 'text-green-200' : 'text-red-200'">
@@ -176,6 +176,28 @@
         <h3 class="text-base sm:text-lg font-medium text-gray-900">🏦 Payment Methods</h3>
       </div>
       <div class="card-body">
+        <!-- Stacked Bar Chart -->
+        <div class="mb-6">
+          <div class="flex items-center space-x-2 mb-2">
+            <h4 class="text-sm font-medium text-gray-700">Amount Distribution</h4>
+            <span class="text-xs text-gray-500">({{ formatCurrency(analyticsData.aggregated.totalAmount) }} total)</span>
+          </div>
+          <div class="w-full bg-gray-200 rounded-full h-8 overflow-hidden">
+            <div class="flex h-full">
+              <div v-for="method in analyticsData.aggregated.paymentMethods" 
+                   :key="method.name"
+                   class="h-full transition-all duration-300"
+                   :style="{ 
+                     width: method.percent + '%',
+                     backgroundColor: getPaymentMethodColor(method.name)
+                   }"
+                   :title="`${method.name}: ${formatCurrency(method.sum)} (${method.percent.toFixed(1)}%)`">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Payment Methods Grid -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <div v-for="method in analyticsData.aggregated.paymentMethods" :key="method.name" 
                class="bg-gray-50 rounded-lg p-3 sm:p-4">
@@ -320,7 +342,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, nextTick } from 'vue'
 import { useAuthStore } from '../stores/auth'
 
 const authStore = useAuthStore()
