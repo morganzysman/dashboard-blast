@@ -40,6 +40,13 @@ if (config.nodeEnv === 'production') {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('X-Frame-Options', 'DENY');
     res.setHeader('X-XSS-Protection', '1; mode=block');
+    
+    if (!req.path.startsWith('/api/')) {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      res.setHeader('Surrogate-Control', 'no-store');
+    }
     next();
   });
 }
@@ -55,6 +62,19 @@ const clientPath = config.nodeEnv === 'production'
   : path.join(__dirname, '..', 'client');
 
 console.log(`📁 Serving static files from: ${clientPath}`);
+
+// Disable caching for all static assets to prevent cache issues after deployment
+app.use((req, res, next) => {
+  // Only set for static assets (not API)
+  if (!req.path.startsWith('/api/')) {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.setHeader('Surrogate-Control', 'no-store');
+  }
+  next();
+});
+
 app.use(express.static(clientPath));
 
 // Initialize database on startup

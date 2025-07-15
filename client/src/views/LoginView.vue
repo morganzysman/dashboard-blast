@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+  <div class="login-bg min-h-screen w-screen flex items-center justify-center">
     <div class="max-w-md w-full">
       <div class="bg-white rounded-xl shadow-2xl p-8 border border-gray-200">
         <!-- Logo and title -->
@@ -145,5 +145,12 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* Component-specific styles if needed */
+.login-bg {
+  min-height: 100vh;
+  min-width: 100vw;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #1a202c 0%, #2d3748 50%, #1a202c 100%);
+}
 </style> 
