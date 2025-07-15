@@ -1,6 +1,6 @@
 <template>
   <div class="login-bg min-h-screen w-screen flex items-center justify-center">
-    <div class="max-w-md w-full">
+    <div class="max-w-md w-full login-container">
       <div class="bg-white rounded-xl shadow-2xl p-8 border border-gray-200">
         <!-- Logo and title -->
         <div class="text-center">
@@ -152,5 +152,23 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   background: linear-gradient(135deg, #1a202c 0%, #2d3748 50%, #1a202c 100%);
+  margin: 0;
+  padding: 0;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+/* Override any inherited padding/margin from global styles */
+.login-bg * {
+  box-sizing: border-box;
+}
+
+/* Ensure the login container has no inherited spacing */
+.login-container {
+  margin: 0;
+  padding: 0;
 }
 </style> 
