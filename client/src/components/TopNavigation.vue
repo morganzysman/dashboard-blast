@@ -12,11 +12,11 @@
         </button>
         
         <!-- Page title -->
-        <div>
-          <h1 class="page-title">
+        <div class="min-w-0 flex-1">
+          <h1 class="page-title truncate">
             {{ pageTitle }}
           </h1>
-          <p class="page-subtitle" v-if="pageSubtitle">
+          <p class="page-subtitle truncate" v-if="pageSubtitle">
             {{ pageSubtitle }}
           </p>
         </div>
@@ -26,22 +26,22 @@
       <div class="flex items-center space-x-4">
         <!-- Notification status -->
         <div class="flex items-center space-x-2" v-if="!authStore.isSuperAdmin">
-          <div class="h-2 w-2 rounded-full" :class="notificationStatusColor"></div>
-          <span class="text-sm text-gray-600">{{ notificationStatusText }}</span>
+          <div class="h-2 w-2 rounded-full flex-shrink-0" :class="notificationStatusColor"></div>
+          <span class="text-sm text-gray-600 hidden sm:block">{{ notificationStatusText }}</span>
         </div>
 
         <!-- User dropdown -->
         <div class="dropdown">
           <button
             @click="toggleUserMenu"
-            class="flex items-center space-x-3 bg-white rounded-lg px-3 py-2 hover:bg-gray-50 transition-colors duration-200"
+            class="flex items-center space-x-2 sm:space-x-3 bg-white rounded-lg px-2 sm:px-3 py-2 hover:bg-gray-50 transition-colors duration-200"
           >
-            <div class="h-8 w-8 rounded-full bg-primary-100 flex items-center justify-center">
+            <div class="h-8 w-8 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
               <span class="text-sm font-medium text-primary-600">
                 {{ authStore.user?.name?.charAt(0).toUpperCase() }}
               </span>
             </div>
-            <div class="text-left">
+            <div class="text-left hidden sm:block">
               <div class="flex items-center space-x-2">
                 <p class="text-sm font-medium text-gray-900">
                   {{ authStore.user?.name }}
@@ -58,11 +58,11 @@
                   {{ authStore.user?.role?.replace('-', ' ') || 'User' }}
                 </span>
               </div>
-              <p class="text-xs text-gray-500">
+              <p class="text-xs text-gray-500 hidden md:block">
                 {{ authStore.user?.email }}
               </p>
             </div>
-            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-4 h-4 text-gray-400 hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
             </svg>
           </button>

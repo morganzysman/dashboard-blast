@@ -136,7 +136,7 @@
                 </div>
                 <div class="min-w-0 flex-1">
                   <div class="text-sm font-medium text-gray-900 truncate">{{ user.name }}</div>
-                  <div class="text-xs text-gray-500 truncate">{{ user.email }}</div>
+                  <div class="text-xs text-gray-500 truncate hidden sm:block">{{ user.email }}</div>
                 </div>
               </div>
               <span class="badge" :class="user.is_active ? 'badge-success' : 'badge-gray'">

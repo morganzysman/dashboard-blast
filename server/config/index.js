@@ -18,7 +18,22 @@ export const config = {
     baseUrl: 'https://api.olaclick.app/ms-orders/auth/orders/by_payment_methods',
     defaultTimezone: 'America/Lima',
     defaultCurrency: 'PEN',
-    defaultCurrencySymbol: 'S/'
+    defaultCurrencySymbol: 'S/',
+    // Supported timezones and currencies
+    supportedTimezones: [
+      { value: 'America/Lima', label: 'Peru (Lima)', flag: '🇵🇪' },
+      { value: 'America/Mexico_City', label: 'Mexico (Mexico City)', flag: '🇲🇽' },
+      { value: 'America/New_York', label: 'USA (New York)', flag: '🇺🇸' },
+      { value: 'Europe/London', label: 'UK (London)', flag: '🇬🇧' },
+      { value: 'Europe/Paris', label: 'France (Paris)', flag: '🇫🇷' }
+    ],
+    supportedCurrencies: [
+      { code: 'PEN', symbol: 'S/', name: 'Peruvian Sol', flag: '🇵🇪' },
+      { code: 'MXN', symbol: '$', name: 'Mexican Peso', flag: '🇲🇽' },
+      { code: 'USD', symbol: '$', name: 'US Dollar', flag: '🇺🇸' },
+      { code: 'EUR', symbol: '€', name: 'Euro', flag: '🇪🇺' },
+      { code: 'GBP', symbol: '£', name: 'British Pound', flag: '🇬🇧' }
+    ]
   }
 };
 

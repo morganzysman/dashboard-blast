@@ -81,7 +81,10 @@ router.post('/users', requireAuth, requireRole(['super-admin']), async (req, res
       hashedPassword,
       timezone: timezone || 'America/Lima',
       currency: currency || 'PEN',
-      currencySymbol: currency === 'USD' ? '$' : currency === 'EUR' ? '€' : 'S/'
+      currencySymbol: currency === 'USD' ? '$' : 
+                     currency === 'EUR' ? '€' : 
+                     currency === 'MXN' ? '$' :
+                     currency === 'GBP' ? '£' : 'S/'
     };
     
     const user = await createUserWithAccounts(userData, accounts || []);

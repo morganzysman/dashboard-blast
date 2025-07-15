@@ -67,23 +67,26 @@
           <div>
             <label class="form-label">Timezone</label>
             <select v-model="form.timezone" class="form-input">
-              <option value="America/Lima">Lima (UTC-5)</option>
-              <option value="America/New_York">New York (UTC-5)</option>
-              <option value="America/Chicago">Chicago (UTC-6)</option>
-              <option value="America/Denver">Denver (UTC-7)</option>
-              <option value="America/Los_Angeles">Los Angeles (UTC-8)</option>
-              <option value="Europe/London">London (UTC+0)</option>
-              <option value="Europe/Madrid">Madrid (UTC+1)</option>
-              <option value="Asia/Tokyo">Tokyo (UTC+9)</option>
+              <option value="America/Lima">🇵🇪 Lima (UTC-5)</option>
+              <option value="America/Mexico_City">🇲🇽 Mexico City (UTC-6)</option>
+              <option value="America/New_York">🇺🇸 New York (UTC-5)</option>
+              <option value="America/Chicago">🇺🇸 Chicago (UTC-6)</option>
+              <option value="America/Denver">🇺🇸 Denver (UTC-7)</option>
+              <option value="America/Los_Angeles">🇺🇸 Los Angeles (UTC-8)</option>
+              <option value="Europe/London">🇬🇧 London (UTC+0)</option>
+              <option value="Europe/Madrid">🇪🇸 Madrid (UTC+1)</option>
+              <option value="Asia/Tokyo">🇯🇵 Tokyo (UTC+9)</option>
             </select>
           </div>
 
           <div>
             <label class="form-label">Currency</label>
             <select v-model="form.currency" class="form-input">
-              <option value="PEN">PEN (Soles)</option>
-              <option value="USD">USD (Dollars)</option>
-              <option value="EUR">EUR (Euros)</option>
+              <option value="PEN">🇵🇪 PEN (Peruvian Sol)</option>
+              <option value="MXN">🇲🇽 MXN (Mexican Peso)</option>
+              <option value="USD">🇺🇸 USD (US Dollar)</option>
+              <option value="EUR">🇪🇺 EUR (Euro)</option>
+              <option value="GBP">🇬🇧 GBP (British Pound)</option>
             </select>
           </div>
         </div>
