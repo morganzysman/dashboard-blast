@@ -101,9 +101,14 @@
               <p class="text-2xl sm:text-3xl font-bold truncate">{{ getTotalOrders() }}</p>
               <div class="flex items-center mt-1" v-if="getOrdersComparison()">
                 <span class="text-xs sm:text-sm" :class="getOrdersComparison().trend === 'up' ? 'text-green-200' : 'text-red-200'">
-                  {{ getOrdersComparison().trend === 'up' ? '↗' : '↘' }} {{ Math.abs(getOrdersComparison().difference) }}
+                  {{ getOrdersComparison().trend === 'up' ? '↗' : '↘' }}
+                  {{
+                    getTotalOrders()
+                      ? ((Math.abs(getOrdersComparison().difference) / getTotalOrders()) * 100).toFixed(1)
+                      : '0.0'
+                  }}%
                 </span>
-                <span class="text-xs text-blue-200 ml-1">vs same period last week</span>
+                <span class="text-xs text-blue-200 ml-1">vs Prev. same period</span>
               </div>
             </div>
             <div class="w-10 h-10 sm:w-12 sm:h-12 bg-blue-400 bg-opacity-30 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -124,9 +129,14 @@
               <p class="text-xl sm:text-3xl font-bold truncate">{{ formatCurrency(analyticsData.aggregated.totalAmount) }}</p>
               <div class="flex items-center mt-1" v-if="analyticsData.comparison">
                 <span class="text-xs sm:text-sm" :class="analyticsData.comparison.amount.trend === 'up' ? 'text-green-200' : 'text-red-200'">
-                  {{ analyticsData.comparison.amount.trend === 'up' ? '↗' : '↘' }} {{ formatCurrency(Math.abs(analyticsData.comparison.amount.difference)) }}
+                  {{ analyticsData.comparison.amount.trend === 'up' ? '↗' : '↘' }}
+                  {{
+                    analyticsData.aggregated.totalAmount
+                      ? ((Math.abs(analyticsData.comparison.amount.difference) / analyticsData.aggregated.totalAmount) * 100).toFixed(1)
+                      : '0.0'
+                  }}%
                 </span>
-                <span class="text-xs text-green-200 ml-1">vs same period last week</span>
+                <span class="text-xs text-green-200 ml-1">vs Prev. same period</span>
               </div>
             </div>
             <div class="w-10 h-10 sm:w-12 sm:h-12 bg-green-400 bg-opacity-30 rounded-lg flex items-center justify-center flex-shrink-0">

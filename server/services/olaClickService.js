@@ -362,12 +362,21 @@ export async function fetchGeneralIndicators(account, queryParams = {}) {
   // Get period from parameters or default to 'today'
   const period = queryParams.period || 'today';
   
+  // Check if custom date range is provided
+  const hasCustomDateRange = queryParams.startDate && queryParams.endDate;
+  
   // Construct the URL for the request
   const baseUrl = 'https://api.olaclick.app/ms-reports/auth/dashboard/general_indicators/details';
   const params = {
     period: period,
     timezone: timezone
   };
+  
+  // If custom date range is provided, add it to params
+  if (hasCustomDateRange) {
+    params.start_date = queryParams.startDate;
+    params.end_date = queryParams.endDate;
+  }
   
   const urlParams = new URLSearchParams(params);
   const fullUrl = `${baseUrl}?${urlParams.toString()}`;
@@ -378,6 +387,9 @@ export async function fetchGeneralIndicators(account, queryParams = {}) {
   console.log(`   Company Token: ${account.company_token}`);
   console.log(`   Period: ${period}`);
   console.log(`   Timezone: ${timezone}`);
+  if (hasCustomDateRange) {
+    console.log(`   Custom date range: ${queryParams.startDate} to ${queryParams.endDate}`);
+  }
 
   // Construct cookie header
   let cookieHeader;

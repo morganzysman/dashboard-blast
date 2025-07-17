@@ -20,11 +20,23 @@
               <div class="bg-blue-50 rounded-lg p-2 sm:p-3">
                 <p class="text-sm sm:text-lg font-bold text-blue-600">{{ getAccountTotalOrders(account) }}</p>
                 <p class="text-xs text-blue-500">Total Orders</p>
+                <div class="flex items-center justify-center mt-1" v-if="getAccountOrdersComparison(account)">
+                  <span class="text-xs text-gray-500"> vs last week</span>
+                  <span class="text-xs ml-1 font-medium" :class="getAccountOrdersComparison(account).trend === 'up' ? 'text-green-600' : 'text-red-600'">
+                    {{ getAccountOrdersComparison(account).trend === 'up' ? '↗' : '↘' }} {{ getAccountOrdersPercentageChange(account) }}%
+                  </span>
+                </div>
               </div>
 
               <div class="bg-green-50 rounded-lg p-2 sm:p-3">
                 <p class="text-xs sm:text-lg font-bold text-green-600 truncate">{{ formatCurrency(getAccountTotalAmount(account)) }}</p>
                 <p class="text-xs text-green-500">Total</p>
+                <div class="flex items-center justify-center mt-1" v-if="getAccountAmountComparison(account)">
+                  <span class="text-xs text-gray-500"> vs last week</span>
+                  <span class="text-xs ml-1 font-medium" :class="getAccountAmountComparison(account).trend === 'up' ? 'text-green-600' : 'text-red-600'">
+                    {{ getAccountAmountComparison(account).trend === 'up' ? '↗' : '↘' }} {{ getAccountAmountPercentageChange(account) }}%
+                  </span>
+                </div>
               </div>
 
               <div class="bg-purple-50 rounded-lg p-2 sm:p-3">
@@ -111,6 +123,22 @@
                 </div>
               </div>
             </div>
+            
+            <!-- Service Metrics Not Available Message -->
+            <div v-else-if="account.success && account.data" class="bg-white border border-gray-100 rounded-lg p-3 mt-3">
+              <div class="flex items-center justify-between mb-2">
+                <h5 class="text-xs font-medium text-gray-700 flex items-center">
+                  <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                  </svg>
+                  Service Metrics
+                </h5>
+              </div>
+              <div class="text-center py-4">
+                <p class="text-xs sm:text-sm text-gray-500">Service metrics are only available for predefined periods (Today, Yesterday, etc.)</p>
+                <p class="text-xs sm:text-sm text-gray-400 mt-1">Switch to a predefined date range to view detailed service metrics</p>
+              </div>
+            </div>
           </div>
 
           <div v-else class="text-center py-4">
@@ -168,8 +196,28 @@ const getAccountTotalAmount = (account) => {
 }
 
 const getAccountTotalOrders = (account) => {
-  if (!account.success || !account.serviceMetrics) return 0
-  return Object.values(account.serviceMetrics).reduce((sum, service) => sum + (service?.orders?.current_period ?? 0), 0)
+  if (!account.success) return 0
+  
+  console.log(`🔍 AccountDetails - Getting total orders for ${account.accountKey}:`);
+  console.log(`   Has serviceMetrics: ${!!account.serviceMetrics}`);
+  console.log(`   Has payment data: ${!!account.data?.data}`);
+  
+  // Try to get orders from service metrics first
+  if (account.serviceMetrics) {
+    const ordersFromServiceMetrics = Object.values(account.serviceMetrics).reduce((sum, service) => sum + (service?.orders?.current_period ?? 0), 0);
+    console.log(`   Orders from service metrics: ${ordersFromServiceMetrics}`);
+    return ordersFromServiceMetrics;
+  }
+  
+  // Fallback to payment data if service metrics not available
+  if (account.data?.data) {
+    const ordersFromPayments = account.data.data.reduce((sum, method) => sum + (method.count || 0), 0);
+    console.log(`   Orders from payment data: ${ordersFromPayments}`);
+    return ordersFromPayments;
+  }
+  
+  console.log(`   No orders data available`);
+  return 0
 }
 
 const getAccountPaymentMethods = (account) => {
@@ -196,6 +244,65 @@ const getAccountServiceOrderPercentage = (account, serviceType) => {
   const serviceOrders = account.serviceMetrics[serviceType]?.orders?.current_period ?? 0
   
   return accountTotalOrders > 0 ? ((serviceOrders / accountTotalOrders) * 100).toFixed(1) : '0.0'
+}
+
+const getAccountOrdersComparison = (account) => {
+  if (!account.serviceMetrics) return null
+  
+  // Calculate current period total orders
+  const currentOrders = Object.values(account.serviceMetrics).reduce((sum, service) => 
+    sum + (service?.orders?.current_period ?? 0), 0)
+  
+  // Calculate previous period total orders
+  const previousOrders = Object.values(account.serviceMetrics).reduce((sum, service) => 
+    sum + (service?.orders?.previous_period ?? 0), 0)
+  
+  if (previousOrders === 0) return null
+  
+  const difference = currentOrders - previousOrders
+  const trend = difference >= 0 ? 'up' : 'down'
+  
+  return {
+    trend,
+    difference: Math.abs(difference)
+  }
+}
+
+const getAccountAmountComparison = (account) => {
+  if (!account.comparison) return null
+  
+  return {
+    trend: account.comparison.amount.trend,
+    difference: account.comparison.amount.difference
+  }
+}
+
+const getAccountOrdersPercentageChange = (account) => {
+  if (!account.serviceMetrics) return '0.0'
+  
+  // Calculate current period total orders
+  const currentOrders = Object.values(account.serviceMetrics).reduce((sum, service) => 
+    sum + (service?.orders?.current_period ?? 0), 0)
+  
+  // Calculate previous period total orders
+  const previousOrders = Object.values(account.serviceMetrics).reduce((sum, service) => 
+    sum + (service?.orders?.previous_period ?? 0), 0)
+  
+  if (previousOrders === 0) return '0.0'
+  
+  const difference = currentOrders - previousOrders
+  const percentageChange = ((Math.abs(difference) / previousOrders) * 100).toFixed(1)
+  return `${difference >= 0 ? '+' : '-'}${percentageChange}`
+}
+
+const getAccountAmountPercentageChange = (account) => {
+  if (!account.comparison || !account.comparison.amount) return '0.0'
+  
+  const percentChange = account.comparison.amount.percentChange || 0
+  const trend = account.comparison.amount.trend || 'down'
+  
+  const percentageChange = Math.abs(percentChange).toFixed(1)
+  return `${trend === 'up' ? '+' : '-'}${percentageChange}`
 }
 
 const isServiceMetricsCollapsed = (accountKey) => {

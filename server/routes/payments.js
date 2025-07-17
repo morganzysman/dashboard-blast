@@ -171,9 +171,77 @@ router.get('/all', requireAuth, async (req, res) => {
     
     // Fetch service metrics for each account (current period only)
     console.log('🔄 Fetching service metrics for each account...');
-    const serviceMetricsPromises = userAccounts.map(account =>
-      fetchGeneralIndicators(account, { period: 'today', timezone: baseParams['filter[timezone]'] })
-    );
+    const serviceMetricsPromises = userAccounts.map(account => {
+      const serviceMetricsParams = { timezone: baseParams['filter[timezone]'] };
+      
+      if (currentParams['filter[start_date]'] && currentParams['filter[end_date]']) {
+        const startDate = currentParams['filter[start_date]'];
+        const endDate = currentParams['filter[end_date]'];
+        const today = new Date().toISOString().split('T')[0];
+        
+        // Check for predefined periods based on date patterns
+        if (startDate === today && endDate === today) {
+          serviceMetricsParams.period = 'today';
+          console.log(`   Using predefined period: today`);
+        } else {
+          // Calculate days ago from today for common patterns
+          const startDateObj = new Date(startDate);
+          const todayObj = new Date(today);
+          const daysAgo = Math.floor((todayObj - startDateObj) / (1000 * 60 * 60 * 24));
+          
+          // Map common date ranges to predefined periods
+          if (startDate === endDate) {
+            // Single day selection
+            if (daysAgo === 1) {
+              serviceMetricsParams.period = 'yesterday';
+              console.log(`   Using predefined period: yesterday`);
+            } else if (daysAgo >= 2 && daysAgo <= 7) {
+              // For days 2-7 ago, try the date but fallback to yesterday if it fails
+              serviceMetricsParams.startDate = startDate;
+              serviceMetricsParams.endDate = endDate;
+              console.log(`   Attempting custom single day: ${startDate} (${daysAgo} days ago)`);
+            } else {
+              // For dates further back, use custom date range
+              serviceMetricsParams.startDate = startDate;
+              serviceMetricsParams.endDate = endDate;
+              console.log(`   Attempting custom single day: ${startDate} (${daysAgo} days ago)`);
+            }
+          } else {
+            // Date range selection
+            const endDateObj = new Date(endDate);
+            const rangeDays = Math.floor((endDateObj - startDateObj) / (1000 * 60 * 60 * 24)) + 1;
+            
+            // Check for common week patterns
+            if (rangeDays === 7 && daysAgo === 7) {
+              serviceMetricsParams.period = 'lastweek';
+              console.log(`   Using predefined period: lastweek`);
+            } else if (rangeDays <= 7 && endDate === today) {
+              // This week or last 7 days ending today
+              if (daysAgo <= 6) {
+                serviceMetricsParams.period = 'thisweek';
+                console.log(`   Using predefined period: thisweek`);
+              } else {
+                // Custom range, try with dates
+                serviceMetricsParams.startDate = startDate;
+                serviceMetricsParams.endDate = endDate;
+                console.log(`   Attempting custom date range: ${startDate} to ${endDate}`);
+              }
+            } else {
+              // Custom date range
+              serviceMetricsParams.startDate = startDate;
+              serviceMetricsParams.endDate = endDate;
+              console.log(`   Attempting custom date range: ${startDate} to ${endDate} (${rangeDays} days)`);
+            }
+          }
+        }
+      } else {
+        // Fallback to 'today' for when no dates are specified
+        serviceMetricsParams.period = 'today';
+        console.log(`   Using default period: today`);
+      }
+      
+      return fetchGeneralIndicators(account, serviceMetricsParams);
+    });
     
     const [currentResults, previousResults, serviceMetricsResults] = await Promise.all([
       Promise.all(currentPromises),
@@ -184,6 +252,10 @@ router.get('/all', requireAuth, async (req, res) => {
     // Attach service metrics to each account
     const accountsWithServiceMetrics = currentResults.map((account, idx) => {
       const serviceMetrics = serviceMetricsResults[idx]?.data?.data || null;
+      console.log(`📊 Account ${account.accountKey}: Service metrics available = ${!!serviceMetrics}`);
+      if (serviceMetrics) {
+        console.log(`   Service metrics keys: ${Object.keys(serviceMetrics).join(', ')}`);
+      }
       return {
         ...account,
         serviceMetrics
@@ -211,20 +283,20 @@ router.get('/all', requireAuth, async (req, res) => {
     console.log(`   Previous amount: ${overallComparison.amount.previous}`);
     console.log(`   Amount difference: ${overallComparison.amount.difference}`);
     
-    // Calculate individual account comparisons
-    const accountsWithComparison = currentResults.map((currentAccount, index) => {
+    // Calculate individual account comparisons and attach to accounts with service metrics
+    const accountsWithServiceMetricsAndComparison = accountsWithServiceMetrics.map((account, index) => {
       const previousAccount = previousResults[index];
-      const comparison = calculateAccountComparison(currentAccount, previousAccount);
+      const comparison = calculateAccountComparison(account, previousAccount);
       
       return {
-        ...currentAccount,
+        ...account,
         comparison
       };
     });
     
     res.json({
       success: true,
-      accounts: accountsWithServiceMetrics,
+      accounts: accountsWithServiceMetricsAndComparison,
       aggregated: currentAggregated,
       comparison: overallComparison,
       timestamp: new Date().toISOString(),
@@ -285,21 +357,49 @@ router.get('/general-indicators', requireAuth, async (req, res) => {
     const period = queryParams.period || 'today';
     const timezone = queryParams.timezone || userTimezone;
     
+    // Check if custom date range is provided
+    const hasCustomDateRange = queryParams['filter[start_date]'] && queryParams['filter[end_date]'];
+    
     console.log(`   Period: ${period}`);
     console.log(`   Timezone: ${timezone}`);
+    console.log(`   Custom date range: ${hasCustomDateRange ? 'Yes' : 'No'}`);
+    if (hasCustomDateRange) {
+      console.log(`   Start date: ${queryParams['filter[start_date]']}`);
+      console.log(`   End date: ${queryParams['filter[end_date]']}`);
+    }
     
     // Fetch current period data
     console.log('🔄 Fetching current period general indicators data...');
-    const currentPromises = userAccounts.map(account => 
-      fetchGeneralIndicators(account, { period, timezone })
-    );
+    const currentPromises = userAccounts.map(account => {
+      const params = { period, timezone };
+      if (hasCustomDateRange) {
+        params.startDate = queryParams['filter[start_date]'];
+        params.endDate = queryParams['filter[end_date]'];
+      }
+      return fetchGeneralIndicators(account, params);
+    });
     
     // Fetch previous period data (same day last week)
     console.log('🔄 Fetching previous period general indicators data...');
     const previousPeriod = getPreviousPeriod(period);
-    const previousPromises = userAccounts.map(account => 
-      fetchGeneralIndicators(account, { period: previousPeriod, timezone })
-    );
+    const previousPromises = userAccounts.map(account => {
+      const params = { period: previousPeriod, timezone };
+      if (hasCustomDateRange) {
+        // Calculate previous period based on custom date range
+        const startDate = new Date(queryParams['filter[start_date]']);
+        const endDate = new Date(queryParams['filter[end_date]']);
+        const daysDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+        
+        const prevStartDate = new Date(startDate);
+        prevStartDate.setDate(startDate.getDate() - 7);
+        const prevEndDate = new Date(prevStartDate);
+        prevEndDate.setDate(prevStartDate.getDate() + daysDiff - 1);
+        
+        params.startDate = prevStartDate.toLocaleDateString('en-CA', { timeZone: timezone });
+        params.endDate = prevEndDate.toLocaleDateString('en-CA', { timeZone: timezone });
+      }
+      return fetchGeneralIndicators(account, params);
+    });
     
     const [currentResults, previousResults] = await Promise.all([
       Promise.all(currentPromises),

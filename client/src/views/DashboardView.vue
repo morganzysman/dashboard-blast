@@ -18,6 +18,7 @@
     <!-- Account Details Component -->
     <AccountDetails
       :analytics-data="analyticsData"
+      :key="analyticsData?.timestamp || Date.now()"
     />
 
     <!-- Loading State -->
@@ -198,6 +199,7 @@ const onDateRangeChange = () => {
   if (selectedDateRange.value !== 'custom') {
     currentDateRange.value = getDateRange(selectedDateRange.value)
     fetchAnalyticsData()
+    fetchServiceMetricsData(currentDateRange.value)
   }
 }
 
@@ -209,6 +211,7 @@ const onCustomDateChange = () => {
       end: customEndDate.value
     }
     fetchAnalyticsData()
+    fetchServiceMetricsData(currentDateRange.value)
   }
 }
 
@@ -219,16 +222,23 @@ const applyCustomDateRange = () => {
       end: customEndDate.value
     }
     fetchAnalyticsData()
+    fetchServiceMetricsData(currentDateRange.value)
   }
 }
 
-const fetchServiceMetricsData = async () => {
+const fetchServiceMetricsData = async (dateRange = null) => {
   try {
     const timezone = authStore.user?.timezone || 'America/Lima'
     const params = new URLSearchParams({
       'period': 'today',
       'timezone': timezone
     })
+
+    // If date range is provided, use custom date parameters
+    if (dateRange) {
+      params.set('filter[start_date]', dateRange.start)
+      params.set('filter[end_date]', dateRange.end)
+    }
 
     const response = await fetch(`/api/payments/general-indicators?${params.toString()}`, {
       headers: {
@@ -280,6 +290,7 @@ const fetchAnalyticsData = async () => {
     
     if (data.success) {
       analyticsData.value = data
+      analyticsData.value.timestamp = Date.now()
       console.log('📊 Analytics data loaded:', data)
     } else {
       throw new Error(data.error || 'Failed to load analytics data')
@@ -301,7 +312,7 @@ const fetchAnalyticsData = async () => {
 
 const refreshData = () => {
   fetchAnalyticsData()
-  fetchServiceMetricsData()
+  fetchServiceMetricsData(currentDateRange.value)
 }
 
 onMounted(() => {
