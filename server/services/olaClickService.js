@@ -345,4 +345,103 @@ export async function fetchOlaClickData(account, queryParams = {}) {
       accountKey: account.company_token
     };
   }
+}
+
+// Helper function to fetch general indicators data from OlaClick API
+export async function fetchGeneralIndicators(account, queryParams = {}) {
+  if (!account) {
+    throw new Error('Account not found');
+  }
+
+  // Get timezone from parameters or default to Lima, ensure it's valid
+  let timezone = queryParams.timezone || config.olaClick.defaultTimezone;
+  if (!timezone || timezone === 'undefined') {
+    timezone = config.olaClick.defaultTimezone;
+  }
+  
+  // Get period from parameters or default to 'today'
+  const period = queryParams.period || 'today';
+  
+  // Construct the URL for the request
+  const baseUrl = 'https://api.olaclick.app/ms-reports/auth/dashboard/general_indicators/details';
+  const params = {
+    period: period,
+    timezone: timezone
+  };
+  
+  const urlParams = new URLSearchParams(params);
+  const fullUrl = `${baseUrl}?${urlParams.toString()}`;
+
+  // Debug logging for API requests
+  console.log(`🔍 General Indicators API Request for ${account.company_token}:`);
+  console.log(`   URL: ${fullUrl}`);
+  console.log(`   Company Token: ${account.company_token}`);
+  console.log(`   Period: ${period}`);
+  console.log(`   Timezone: ${timezone}`);
+
+  // Construct cookie header
+  let cookieHeader;
+  try {
+    cookieHeader = constructCookieHeader(account);
+  } catch (cookieError) {
+    console.log(`   ❌ Cookie construction failed: ${cookieError.message}`);
+    throw cookieError;
+  }
+
+  // Prepare headers
+  const headers = {
+    'accept': 'application/json,multipart/form-data',
+    'accept-language': 'en-US,en;q=0.8',
+    'app-company-token': account.company_token,
+    'content-type': 'application/json',
+    'cookie': cookieHeader,
+    'origin': 'https://orders.olaclick.app',
+    'referer': 'https://orders.olaclick.app/',
+    'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36'
+  };
+
+  console.log(`   Cookie: ${cookieHeader.substring(0, 100)}...`);
+  console.log(`   Making request...`);
+
+  try {
+    const response = await axios.get(baseUrl, {
+      params,
+      headers
+    });
+
+    // Debug logging for API responses
+    console.log(`📊 General Indicators API Response for ${account.company_token}:`);
+    console.log(`   Status: ${response.status}`);
+    console.log(`   Data: ${JSON.stringify(response.data)}`);
+
+    console.log(`✅ General Indicators request successful for ${account.company_token}`);
+
+    return {
+      success: true,
+      data: response.data,
+      account: account.account_name || account.name || account.company_token,
+      accountKey: account.company_token
+    };
+  } catch (error) {
+    console.log(`❌ General Indicators request failed for ${account.company_token}: ${error.message}`);
+    
+    if (error.response) {
+      console.log(`   Status: ${error.response.status} - ${error.response.statusText}`);
+      console.log(`   Response: ${JSON.stringify(error.response.data)}`);
+      
+      // For 401 errors, show auth debugging
+      if (error.response.status === 401) {
+        console.log(`   🔍 Auth issue - check company_token and api_token`);
+      }
+    } else if (error.request) {
+      console.log(`   Network error - no response received`);
+    }
+
+    return {
+      success: false,
+      error: error.response?.data || error.message,
+      account: account.account_name || account.name || account.company_token,
+      accountKey: account.company_token
+    };
+  }
 } 

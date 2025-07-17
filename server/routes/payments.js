@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { requireAuth } from '../middleware/auth.js';
 import {
   fetchOlaClickData,
+  fetchGeneralIndicators,
   aggregateAccountsData,
   calculateComparison,
   calculateAccountComparison,
@@ -168,10 +169,26 @@ router.get('/all', requireAuth, async (req, res) => {
       fetchOlaClickData(account, previousParams)
     );
     
-    const [currentResults, previousResults] = await Promise.all([
+    // Fetch service metrics for each account (current period only)
+    console.log('🔄 Fetching service metrics for each account...');
+    const serviceMetricsPromises = userAccounts.map(account =>
+      fetchGeneralIndicators(account, { period: 'today', timezone: baseParams['filter[timezone]'] })
+    );
+    
+    const [currentResults, previousResults, serviceMetricsResults] = await Promise.all([
       Promise.all(currentPromises),
-      Promise.all(previousPromises)
+      Promise.all(previousPromises),
+      Promise.all(serviceMetricsPromises)
     ]);
+    
+    // Attach service metrics to each account
+    const accountsWithServiceMetrics = currentResults.map((account, idx) => {
+      const serviceMetrics = serviceMetricsResults[idx]?.data?.data || null;
+      return {
+        ...account,
+        serviceMetrics
+      };
+    });
     
     // Debug logging
     console.log('📊 Comparison Debug Info:');
@@ -207,7 +224,7 @@ router.get('/all', requireAuth, async (req, res) => {
     
     res.json({
       success: true,
-      accounts: accountsWithComparison,
+      accounts: accountsWithServiceMetrics,
       aggregated: currentAggregated,
       comparison: overallComparison,
       timestamp: new Date().toISOString(),
@@ -230,6 +247,234 @@ router.get('/all', requireAuth, async (req, res) => {
     });
   }
 });
+
+// Get general indicators data from all user's accounts
+router.get('/general-indicators', requireAuth, async (req, res) => {
+  try {
+    console.log('🚀 Starting /api/payments/general-indicators request');
+    const queryParams = req.query;
+    console.log(`   Original query params: ${JSON.stringify(queryParams)}`);
+    
+    // Get user's accounts and timezone with safe fallbacks
+    const userAccounts = req.user.userAccounts || [];
+    let userTimezone = req.user.userTimezone || config.olaClick.defaultTimezone;
+    
+    // Ensure timezone is valid
+    if (!userTimezone || userTimezone === 'undefined' || userTimezone === 'null') {
+      userTimezone = config.olaClick.defaultTimezone;
+    }
+    
+    console.log(`   User timezone: ${userTimezone}`);
+    
+    if (userAccounts.length === 0) {
+      return res.json({
+        success: true,
+        accounts: [],
+        aggregated: {
+          services: [],
+          totalOrders: 0,
+          totalSales: 0,
+          averageTicket: 0
+        },
+        comparison: null,
+        message: 'No accounts assigned to this user'
+      });
+    }
+    
+    // Extract parameters
+    const period = queryParams.period || 'today';
+    const timezone = queryParams.timezone || userTimezone;
+    
+    console.log(`   Period: ${period}`);
+    console.log(`   Timezone: ${timezone}`);
+    
+    // Fetch current period data
+    console.log('🔄 Fetching current period general indicators data...');
+    const currentPromises = userAccounts.map(account => 
+      fetchGeneralIndicators(account, { period, timezone })
+    );
+    
+    // Fetch previous period data (same day last week)
+    console.log('🔄 Fetching previous period general indicators data...');
+    const previousPeriod = getPreviousPeriod(period);
+    const previousPromises = userAccounts.map(account => 
+      fetchGeneralIndicators(account, { period: previousPeriod, timezone })
+    );
+    
+    const [currentResults, previousResults] = await Promise.all([
+      Promise.all(currentPromises),
+      Promise.all(previousPromises)
+    ]);
+    
+    // Debug logging
+    console.log('📊 General Indicators Results:');
+    console.log(`   Current results count: ${currentResults.length}`);
+    console.log(`   Previous results count: ${previousResults.length}`);
+    currentResults.forEach((result, index) => {
+      console.log(`   Current Account ${index} (${result.accountKey}): success=${result.success}`);
+      if (result.success && result.data) {
+        console.log(`     Services: ${Object.keys(result.data.data || {}).join(', ')}`);
+      }
+    });
+    
+    // Process and aggregate the data
+    const currentAggregated = aggregateGeneralIndicators(currentResults);
+    const previousAggregated = aggregateGeneralIndicators(previousResults);
+    
+    // Calculate comparison
+    const comparison = calculateServiceMetricsComparison(currentAggregated, previousAggregated);
+    
+    console.log('📈 Aggregated General Indicators:');
+    console.log(`   Current - Total Orders: ${currentAggregated.totalOrders}, Total Sales: ${currentAggregated.totalSales}`);
+    console.log(`   Previous - Total Orders: ${previousAggregated.totalOrders}, Total Sales: ${previousAggregated.totalSales}`);
+    console.log(`   Comparison: ${JSON.stringify(comparison)}`);
+    
+    res.json({
+      success: true,
+      accounts: currentResults,
+      aggregated: currentAggregated,
+      comparison,
+      period,
+      timezone
+    });
+    
+  } catch (error) {
+    console.error('❌ General indicators error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Helper function to aggregate general indicators data
+function aggregateGeneralIndicators(accountsData) {
+  console.log('📊 Aggregating general indicators data:');
+  console.log(`   Input accounts count: ${accountsData.length}`);
+  
+  const serviceTypes = ['TABLE', 'ONSITE', 'TAKEAWAY', 'DELIVERY'];
+  const aggregated = {
+    services: [],
+    totalOrders: 0,
+    totalSales: 0,
+    averageTicket: 0
+  };
+  
+  // Initialize service data
+  serviceTypes.forEach(serviceType => {
+    aggregated.services.push({
+      type: serviceType,
+      orders: 0,
+      sales: 0,
+      averageTicket: 0
+    });
+  });
+  
+  // Process each account's data
+  accountsData.forEach((account, index) => {
+    console.log(`   Account ${index} (${account.accountKey}): success=${account.success}`);
+    
+    if (account.success && account.data && account.data.data) {
+      console.log(`     Raw data: ${JSON.stringify(account.data.data)}`);
+      
+      // Process each service type
+      serviceTypes.forEach(serviceType => {
+        const serviceData = account.data.data[serviceType];
+        if (serviceData) {
+          const serviceIndex = aggregated.services.findIndex(s => s.type === serviceType);
+          if (serviceIndex !== -1) {
+            const orders = serviceData.orders?.current_period || 0;
+            const sales = parseFloat(serviceData.sales?.current_period || 0);
+            const avgTicket = parseFloat(serviceData.average_ticket?.current_period || 0);
+            
+            aggregated.services[serviceIndex].orders += orders;
+            aggregated.services[serviceIndex].sales += sales;
+            
+            // Calculate weighted average for average ticket
+            if (orders > 0) {
+              const currentAvg = aggregated.services[serviceIndex].averageTicket;
+              const currentOrders = aggregated.services[serviceIndex].orders - orders;
+              if (currentOrders > 0) {
+                aggregated.services[serviceIndex].averageTicket = 
+                  ((currentAvg * currentOrders) + (avgTicket * orders)) / aggregated.services[serviceIndex].orders;
+              } else {
+                aggregated.services[serviceIndex].averageTicket = avgTicket;
+              }
+            }
+            
+            console.log(`     ${serviceType}: orders=${orders}, sales=${sales}, avgTicket=${avgTicket}`);
+          }
+        }
+      });
+    } else {
+      console.log(`     No data or error: ${JSON.stringify(account.error || 'No error info')}`);
+    }
+  });
+  
+  // Calculate totals
+  aggregated.totalOrders = aggregated.services.reduce((sum, service) => sum + service.orders, 0);
+  aggregated.totalSales = aggregated.services.reduce((sum, service) => sum + service.sales, 0);
+  aggregated.averageTicket = aggregated.totalOrders > 0 ? aggregated.totalSales / aggregated.totalOrders : 0;
+  
+  console.log(`   Aggregation result: totalOrders=${aggregated.totalOrders}, totalSales=${aggregated.totalSales}, averageTicket=${aggregated.averageTicket}`);
+  return aggregated;
+}
+
+// Helper function to get previous period
+function getPreviousPeriod(currentPeriod) {
+  switch (currentPeriod) {
+    case 'today':
+      return 'yesterday';
+    case 'yesterday':
+      return '2daysago';
+    case 'thisweek':
+      return 'lastweek';
+    case 'lastweek':
+      return '2weeksago';
+    case 'thismonth':
+      return 'lastmonth';
+    case 'lastmonth':
+      return '2monthsago';
+    default:
+      return 'yesterday';
+  }
+}
+
+// Helper function to calculate service metrics comparison
+function calculateServiceMetricsComparison(current, previous) {
+  const ordersDiff = current.totalOrders - previous.totalOrders;
+  const ordersPercent = previous.totalOrders > 0 ? ((ordersDiff / previous.totalOrders) * 100) : 0;
+  
+  const salesDiff = current.totalSales - previous.totalSales;
+  const salesPercent = previous.totalSales > 0 ? ((salesDiff / previous.totalSales) * 100) : 0;
+  
+  const avgTicketDiff = current.averageTicket - previous.averageTicket;
+  const avgTicketPercent = previous.averageTicket > 0 ? ((avgTicketDiff / previous.averageTicket) * 100) : 0;
+  
+  return {
+    orders: {
+      current: current.totalOrders,
+      previous: previous.totalOrders,
+      difference: ordersDiff,
+      percentChange: ordersPercent,
+      trend: ordersDiff >= 0 ? 'up' : 'down'
+    },
+    sales: {
+      current: current.totalSales,
+      previous: previous.totalSales,
+      difference: salesDiff,
+      percentChange: salesPercent,
+      trend: salesDiff >= 0 ? 'up' : 'down'
+    },
+    averageTicket: {
+      current: current.averageTicket,
+      previous: previous.averageTicket,
+      difference: avgTicketDiff,
+      percentChange: avgTicketPercent,
+      trend: avgTicketDiff >= 0 ? 'up' : 'down'
+    }
+  };
+}
 
 // Debug endpoint to check timezone handling
 router.get('/debug/timezone', (req, res) => {

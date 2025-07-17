@@ -31,7 +31,7 @@ self.addEventListener('activate', event => {
         return Promise.all(
           cacheNames.map(cacheName => {
             console.log(`🗑️ Service Worker ${SW_VERSION}: Deleting cache:`, cacheName);
-            return caches.delete(cacheName);
+              return caches.delete(cacheName);
           })
         );
       })
@@ -65,7 +65,7 @@ self.addEventListener('fetch', event => {
       })
       .catch(error => {
         console.log('❌ Service Worker: Network failed for:', url.pathname);
-        
+    
         // Return basic offline response
         if (request.mode === 'navigate') {
           return new Response(`
@@ -82,12 +82,12 @@ self.addEventListener('fetch', event => {
             status: 503,
             headers: { 'Content-Type': 'text/html' }
           });
-        }
+      }
         
         return new Response('Network unavailable', {
-          status: 503,
-          headers: { 'Content-Type': 'text/plain' }
-        });
+      status: 503,
+      headers: { 'Content-Type': 'text/plain' }
+    });
       })
   );
 });
