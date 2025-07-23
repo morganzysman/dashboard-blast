@@ -175,65 +175,14 @@ router.get('/all', requireAuth, async (req, res) => {
       const serviceMetricsParams = { timezone: baseParams['filter[timezone]'] };
       
       if (currentParams['filter[start_date]'] && currentParams['filter[end_date]']) {
+        // Always use custom dates when provided - let the API handle them directly
         const startDate = currentParams['filter[start_date]'];
         const endDate = currentParams['filter[end_date]'];
-        const today = new Date().toISOString().split('T')[0];
         
-        // Check for predefined periods based on date patterns
-        if (startDate === today && endDate === today) {
-          serviceMetricsParams.period = 'today';
-          console.log(`   Using predefined period: today`);
-        } else {
-          // Calculate days ago from today for common patterns
-          const startDateObj = new Date(startDate);
-          const todayObj = new Date(today);
-          const daysAgo = Math.floor((todayObj - startDateObj) / (1000 * 60 * 60 * 24));
-          
-          // Map common date ranges to predefined periods
-          if (startDate === endDate) {
-            // Single day selection
-            if (daysAgo === 1) {
-              serviceMetricsParams.period = 'yesterday';
-              console.log(`   Using predefined period: yesterday`);
-            } else if (daysAgo >= 2 && daysAgo <= 7) {
-              // For days 2-7 ago, try the date but fallback to yesterday if it fails
-              serviceMetricsParams.startDate = startDate;
-              serviceMetricsParams.endDate = endDate;
-              console.log(`   Attempting custom single day: ${startDate} (${daysAgo} days ago)`);
-            } else {
-              // For dates further back, use custom date range
-              serviceMetricsParams.startDate = startDate;
-              serviceMetricsParams.endDate = endDate;
-              console.log(`   Attempting custom single day: ${startDate} (${daysAgo} days ago)`);
-            }
-          } else {
-            // Date range selection
-            const endDateObj = new Date(endDate);
-            const rangeDays = Math.floor((endDateObj - startDateObj) / (1000 * 60 * 60 * 24)) + 1;
-            
-            // Check for common week patterns
-            if (rangeDays === 7 && daysAgo === 7) {
-              serviceMetricsParams.period = 'lastweek';
-              console.log(`   Using predefined period: lastweek`);
-            } else if (rangeDays <= 7 && endDate === today) {
-              // This week or last 7 days ending today
-              if (daysAgo <= 6) {
-                serviceMetricsParams.period = 'thisweek';
-                console.log(`   Using predefined period: thisweek`);
-              } else {
-                // Custom range, try with dates
-                serviceMetricsParams.startDate = startDate;
-                serviceMetricsParams.endDate = endDate;
-                console.log(`   Attempting custom date range: ${startDate} to ${endDate}`);
-              }
-            } else {
-              // Custom date range
-              serviceMetricsParams.startDate = startDate;
-              serviceMetricsParams.endDate = endDate;
-              console.log(`   Attempting custom date range: ${startDate} to ${endDate} (${rangeDays} days)`);
-            }
-          }
-        }
+        serviceMetricsParams.startDate = startDate;
+        serviceMetricsParams.endDate = endDate;
+        
+        console.log(`   Using custom date range: ${startDate} to ${endDate}`);
       } else {
         // Fallback to 'today' for when no dates are specified
         serviceMetricsParams.period = 'today';
