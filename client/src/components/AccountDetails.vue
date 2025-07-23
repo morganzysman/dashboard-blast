@@ -16,7 +16,7 @@
 
           <div v-if="account.success && account.data" class="space-y-3">
             <!-- Account totals -->
-            <div class="grid grid-cols-3 gap-2 sm:gap-4 text-center">
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 text-center">
               <div class="bg-blue-50 rounded-lg p-2 sm:p-3">
                 <p class="text-sm sm:text-lg font-bold text-blue-600">{{ getAccountTotalOrders(account) }}</p>
                 <p class="text-xs text-blue-500">Total Orders</p>
@@ -42,6 +42,11 @@
               <div class="bg-purple-50 rounded-lg p-2 sm:p-3">
                 <p class="text-sm sm:text-lg font-bold text-purple-600">{{ account.data.data?.length || 0 }}</p>
                 <p class="text-xs text-purple-500">Methods</p>
+              </div>
+
+              <div class="bg-amber-50 rounded-lg p-2 sm:p-3">
+                <p class="text-xs sm:text-lg font-bold text-amber-600 truncate">{{ formatCurrency(getAccountTotalTips(account)) }}</p>
+                <p class="text-xs text-amber-500">Tips</p>
               </div>
             </div>
       
@@ -193,6 +198,11 @@ const getServiceColor = (serviceType) => {
 const getAccountTotalAmount = (account) => {
   if (!account.success || !account.data?.data) return 0
   return account.data.data.reduce((sum, method) => sum + (method.sum || 0), 0)
+}
+
+const getAccountTotalTips = (account) => {
+  if (!account.success || !account.tipsData?.success || !account.tipsData.data?.data) return 0
+  return account.tipsData.data.data.reduce((sum, tip) => sum + (tip.sum || 0), 0)
 }
 
 const getAccountTotalOrders = (account) => {

@@ -166,18 +166,18 @@
         </div>
       </div>
 
-      <!-- Active Accounts -->
-      <div class="card bg-gradient-to-r from-indigo-500 to-indigo-600 text-white">
+      <!-- Total Tips -->
+      <div class="card bg-gradient-to-r from-amber-500 to-orange-600 text-white">
         <div class="card-body">
           <div class="flex items-center justify-between">
             <div class="min-w-0 flex-1">
-              <p class="text-indigo-100 text-xs sm:text-sm font-medium">ACTIVE ACCOUNTS</p>
-              <p class="text-2xl sm:text-3xl font-bold">{{ analyticsData.aggregated.accountsCount }}</p>
-              <p class="text-xs sm:text-sm text-indigo-200 mt-1">Connected accounts</p>
+              <p class="text-amber-100 text-xs sm:text-sm font-medium">TOTAL TIPS</p>
+              <p class="text-xl sm:text-3xl font-bold truncate">{{ formatCurrency(analyticsData.aggregated.totalTips || 0) }}</p>
+              <p class="text-xs sm:text-sm text-amber-200 mt-1">From all accounts</p>
             </div>
-            <div class="w-10 h-10 sm:w-12 sm:h-12 bg-indigo-400 bg-opacity-30 rounded-lg flex items-center justify-center flex-shrink-0">
+            <div class="w-10 h-10 sm:w-12 sm:h-12 bg-amber-400 bg-opacity-30 rounded-lg flex items-center justify-center flex-shrink-0">
               <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
               </svg>
             </div>
           </div>

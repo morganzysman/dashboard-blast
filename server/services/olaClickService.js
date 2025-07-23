@@ -85,6 +85,7 @@ export function aggregateAccountsData(accountsData) {
   const aggregated = {};
   let totalPayments = 0;
   let totalAmount = 0;
+  let totalTips = 0;
   
   // Process each account's data
   accountsData.forEach((account, index) => {
@@ -117,6 +118,19 @@ export function aggregateAccountsData(accountsData) {
     } else {
       console.log(`     No data or error: ${JSON.stringify(account.error || 'No error info')}`);
     }
+
+    // Process tips data
+    if (account.tipsData && account.tipsData.success && account.tipsData.data && account.tipsData.data.data) {
+      console.log(`     Tips data array length: ${account.tipsData.data.data.length}`);
+      
+      account.tipsData.data.data.forEach(tip => {
+        const tipAmount = tip.sum || 0;
+        totalTips += tipAmount;
+        console.log(`     Tip amount: ${tipAmount}`);
+      });
+    } else {
+      console.log(`     No tips data or error: ${JSON.stringify(account.tipsData?.error || 'No tips info')}`);
+    }
   });
   
   // Calculate percentages
@@ -128,10 +142,11 @@ export function aggregateAccountsData(accountsData) {
     paymentMethods: Object.values(aggregated),
     totalPayments,
     totalAmount,
+    totalTips,
     accountsCount: accountsData.filter(acc => acc.success).length
   };
   
-  console.log(`   Aggregation result: totalPayments=${totalPayments}, totalAmount=${totalAmount}`);
+  console.log(`   Aggregation result: totalPayments=${totalPayments}, totalAmount=${totalAmount}, totalTips=${totalTips}`);
   return result;
 }
 
@@ -436,6 +451,130 @@ export async function fetchGeneralIndicators(account, queryParams = {}) {
     };
   } catch (error) {
     console.log(`❌ General Indicators request failed for ${account.company_token}: ${error.message}`);
+    
+    if (error.response) {
+      console.log(`   Status: ${error.response.status} - ${error.response.statusText}`);
+      console.log(`   Response: ${JSON.stringify(error.response.data)}`);
+      
+      // For 401 errors, show auth debugging
+      if (error.response.status === 401) {
+        console.log(`   🔍 Auth issue - check company_token and api_token`);
+      }
+    } else if (error.request) {
+      console.log(`   Network error - no response received`);
+    }
+
+    return {
+      success: false,
+      error: error.response?.data || error.message,
+      account: account.account_name || account.name || account.company_token,
+      accountKey: account.company_token
+    };
+  }
+}
+
+// Helper function to make tips API requests
+export async function fetchTipsData(account, queryParams = {}) {
+  if (!account) {
+    throw new Error('Account not found');
+  }
+
+  // Get timezone from parameters or default to Lima, ensure it's valid
+  let timezone = queryParams['filter[timezone]'] || config.olaClick.defaultTimezone;
+  if (!timezone || timezone === 'undefined') {
+    timezone = config.olaClick.defaultTimezone;
+  }
+  
+  // Create timezone-aware defaults
+  const todayInTimezone = getTimezoneAwareDate(null, timezone);
+  
+  const defaultParams = {
+    'filter[start_time]': '00:00:00',
+    'filter[end_time]': '23:59:59',
+    'filter[timezone]': timezone,
+    'filter[start_date]': todayInTimezone,
+    'filter[end_date]': todayInTimezone,
+    'filter[time_type]': 'pending_at',
+    'filter[status]': 'PENDING,PREPARING,READY,DRIVER_ON_THE_WAY_TO_DESTINATION,CHECK_REQUESTED,CHECK_PRINTED,DRIVER_ARRIVED_AT_DESTINATION,DELIVERED,FINALIZED',
+    'filter[max_order_limit]': 'true'
+  };
+
+  const params = { ...defaultParams, ...queryParams };
+
+  // Ensure dates are properly formatted for the specified timezone
+  if (params['filter[start_date]']) {
+    params['filter[start_date]'] = getTimezoneAwareDate(params['filter[start_date]'], timezone);
+  }
+  if (params['filter[end_date]']) {
+    params['filter[end_date]'] = getTimezoneAwareDate(params['filter[end_date]'], timezone);
+  }
+
+  // Construct the URL for the tips request
+  const baseUrl = 'https://api.olaclick.app/ms-orders/auth/orders/by_tips';
+  const urlParams = new URLSearchParams(params);
+  const fullUrl = `${baseUrl}?${urlParams.toString()}`;
+
+  // Debug logging for API requests
+  console.log(`🎯 Tips API Request for ${account.company_token}:`);
+  console.log(`   URL: ${fullUrl}`);
+  console.log(`   Company Token: ${account.company_token}`);
+  console.log(`   API Token: ${account.api_token ? account.api_token.substring(0, 20) + '...' : 'N/A'}`);
+
+  // Construct cookie header
+  let cookieHeader;
+  try {
+    cookieHeader = constructCookieHeader(account);
+  } catch (cookieError) {
+    console.log(`   ❌ Cookie construction failed: ${cookieError.message}`);
+    throw cookieError;
+  }
+
+  // Prepare headers
+  const headers = {
+    'accept': 'application/json,multipart/form-data',
+    'accept-language': 'en-US,en;q=0.8',
+    'app-company-token': account.company_token,
+    'content-type': 'application/json',
+    'cookie': cookieHeader,
+    'origin': 'https://orders.olaclick.app',
+    'referer': 'https://orders.olaclick.app/',
+    'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36'
+  };
+
+  console.log(`   Cookie: ${cookieHeader.substring(0, 100)}...`);
+  console.log(`   Making tips request...`);
+
+  try {
+    const response = await axios.get(baseUrl, {
+      params,
+      headers
+    });
+
+    // Debug logging for API responses
+    console.log(`🎯 Tips API Response for ${account.company_token}:`);
+    console.log(`   Status: ${response.status}`);
+    
+    // Calculate total tips for this response
+    let totalTips = 0;
+    if (response.data && response.data.data && Array.isArray(response.data.data)) {
+      response.data.data.forEach(tip => {
+        totalTips += tip.sum || 0;
+      });
+      console.log(`   Total Tips: ${totalTips}`);
+    } else {
+      console.log(`   ⚠️  No tips data in response`);
+    }
+
+    console.log(`✅ Tips request successful for ${account.company_token}`);
+
+    return {
+      success: true,
+      data: response.data,
+      account: account.account_name || account.name || account.company_token,
+      accountKey: account.company_token
+    };
+  } catch (error) {
+    console.log(`❌ Tips request failed for ${account.company_token}: ${error.message}`);
     
     if (error.response) {
       console.log(`   Status: ${error.response.status} - ${error.response.statusText}`);

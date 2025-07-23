@@ -3,6 +3,7 @@ import { requireAuth } from '../middleware/auth.js';
 import {
   fetchOlaClickData,
   fetchGeneralIndicators,
+  fetchTipsData,
   aggregateAccountsData,
   calculateComparison,
   calculateAccountComparison,
@@ -191,23 +192,40 @@ router.get('/all', requireAuth, async (req, res) => {
       
       return fetchGeneralIndicators(account, serviceMetricsParams);
     });
+
+    // Fetch tips data for each account (current period only)
+    console.log('🔄 Fetching tips data for each account...');
+    const tipsPromises = userAccounts.map(account => 
+      fetchTipsData(account, currentParams)
+    );
     
-    const [currentResults, previousResults, serviceMetricsResults] = await Promise.all([
+    const [currentResults, previousResults, serviceMetricsResults, tipsResults] = await Promise.all([
       Promise.all(currentPromises),
       Promise.all(previousPromises),
-      Promise.all(serviceMetricsPromises)
+      Promise.all(serviceMetricsPromises),
+      Promise.all(tipsPromises)
     ]);
     
-    // Attach service metrics to each account
+    // Attach service metrics and tips data to each account
     const accountsWithServiceMetrics = currentResults.map((account, idx) => {
       const serviceMetrics = serviceMetricsResults[idx]?.data?.data || null;
+      const tipsData = tipsResults[idx];
+      
       console.log(`📊 Account ${account.accountKey}: Service metrics available = ${!!serviceMetrics}`);
       if (serviceMetrics) {
         console.log(`   Service metrics keys: ${Object.keys(serviceMetrics).join(', ')}`);
       }
+      
+      console.log(`🎯 Account ${account.accountKey}: Tips data available = ${!!tipsData?.success}`);
+      if (tipsData?.success && tipsData.data?.data) {
+        const totalTips = tipsData.data.data.reduce((sum, tip) => sum + (tip.sum || 0), 0);
+        console.log(`   Total tips: ${totalTips}`);
+      }
+      
       return {
         ...account,
-        serviceMetrics
+        serviceMetrics,
+        tipsData
       };
     });
     
