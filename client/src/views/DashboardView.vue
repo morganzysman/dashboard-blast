@@ -230,7 +230,6 @@ const fetchServiceMetricsData = async (dateRange = null) => {
   try {
     const timezone = authStore.user?.timezone || 'America/Lima'
     const params = new URLSearchParams({
-      'period': 'today',
       'timezone': timezone
     })
 
@@ -238,6 +237,9 @@ const fetchServiceMetricsData = async (dateRange = null) => {
     if (dateRange) {
       params.set('filter[start_date]', dateRange.start)
       params.set('filter[end_date]', dateRange.end)
+    } else {
+      // Only set period when no custom date range is provided
+      params.set('period', 'today')
     }
 
     const response = await fetch(`/api/payments/general-indicators?${params.toString()}`, {
