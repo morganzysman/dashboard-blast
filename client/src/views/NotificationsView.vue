@@ -32,13 +32,35 @@
                 </span>
               </div>
               
+              <div v-if="notificationStatus.isSubscribed && notificationStatus.deviceCount" class="flex items-center justify-between">
+                <span class="text-sm font-medium text-gray-700">Connected Devices</span>
+                <span class="text-sm text-gray-600">{{ notificationStatus.deviceCount }} device{{ notificationStatus.deviceCount !== 1 ? 's' : '' }}</span>
+              </div>
+              
               <div v-if="notificationStatus.subscribedAt" class="flex items-center justify-between">
-                <span class="text-sm font-medium text-gray-700">Subscribed</span>
+                <span class="text-sm font-medium text-gray-700">Latest Subscription</span>
                 <span class="text-sm text-gray-600">{{ formatDate(notificationStatus.subscribedAt) }}</span>
               </div>
               
-              <div v-if="notificationStatus.userAgent" class="flex items-center justify-between">
-                <span class="text-sm font-medium text-gray-700">Device</span>
+              <!-- Device List -->
+              <div v-if="notificationStatus.devices && notificationStatus.devices.length > 1" class="border-t pt-4">
+                <span class="text-sm font-medium text-gray-700 mb-2 block">All Devices:</span>
+                <div class="space-y-2">
+                  <div v-for="(device, index) in notificationStatus.devices" :key="index" 
+                       class="flex items-center justify-between p-2 bg-gray-50 rounded">
+                    <div>
+                      <span class="text-sm font-medium text-gray-900">{{ device.deviceName }}</span>
+                      <div class="text-xs text-gray-500">{{ formatDate(device.subscribedAt) }}</div>
+                    </div>
+                    <div class="text-xs text-gray-400">
+                      {{ device.endpoint.substring(0, 20) }}...
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div v-else-if="notificationStatus.userAgent" class="flex items-center justify-between">
+                <span class="text-sm font-medium text-gray-700">Current Device</span>
                 <span class="text-sm text-gray-600">{{ getDeviceInfo(notificationStatus.userAgent) }}</span>
               </div>
             </div>
@@ -127,10 +149,11 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
               </svg>
               <div>
-                <p class="text-sm font-medium text-blue-800">Frequency Information</p>
+                <p class="text-sm font-medium text-blue-800">Multi-Device Support</p>
                 <p class="text-sm text-blue-700 mt-1">
-                  You will receive notifications based on your selected frequency. 
-                  Reports will only be sent if there's activity in your accounts.
+                  You can enable notifications on multiple devices (phone, tablet, computer).
+                  Reports will be sent to all your connected devices based on the selected frequency.
+                  Only active accounts will trigger notifications.
                 </p>
               </div>
             </div>

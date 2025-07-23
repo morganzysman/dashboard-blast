@@ -3,8 +3,10 @@ import cron from 'node-cron';
 import { config } from '../config/index.js';
 import {
   getAllActivePushSubscriptions,
+  getPushSubscriptions,
   storePushSubscription,
   removePushSubscription,
+  removeSpecificPushSubscription,
   trackNotificationSent,
   trackNotificationError,
   logNotificationEvent
@@ -35,56 +37,87 @@ export function scheduleDailyReports() {
         return;
       }
       
-      console.log(`📊 Found ${subscriptions.length} active subscriptions, checking frequency...`);
+      // Group subscriptions by user to avoid duplicate notifications
+      const userSubscriptionsMap = new Map();
+      subscriptions.forEach(sub => {
+        if (!userSubscriptionsMap.has(sub.userId)) {
+          userSubscriptionsMap.set(sub.userId, {
+            user: sub.user,
+            devices: []
+          });
+        }
+        userSubscriptionsMap.get(sub.userId).devices.push(sub);
+      });
+      
+      console.log(`📊 Found ${userSubscriptionsMap.size} unique users with ${subscriptions.length} total devices`);
           
-          for (const subscriptionData of subscriptions) {
-        const { userId, user, notificationFrequency, lastNotificationTime } = subscriptionData;
-            
-            if (!user.accounts || user.accounts.length === 0) {
-              console.log(`📊 Skipping user ${user.email} - no accounts assigned`);
-              continue;
-            }
+      for (const [userId, {user, devices}] of userSubscriptionsMap) {
+        if (!user.accounts || user.accounts.length === 0) {
+          console.log(`📊 Skipping user ${user.email} - no accounts assigned`);
+          continue;
+        }
         
-        // Simple logic: check if enough time has passed since last notification
+        // Use the most recent device's notification frequency and timing
+        const latestDevice = devices.sort((a, b) => new Date(b.subscribedAt) - new Date(a.subscribedAt))[0];
+        const { notificationFrequency, lastNotificationTime } = latestDevice;
+        
+        // Check if enough time has passed since last notification
         const now = new Date();
         const lastNotification = lastNotificationTime ? new Date(lastNotificationTime) : null;
         const frequencyMs = (notificationFrequency || 30) * 60 * 1000; // Convert minutes to milliseconds
         
         // If no last notification or enough time has passed
         if (!lastNotification || (now.getTime() - lastNotification.getTime()) >= frequencyMs) {
-          console.log(`📊 User ${user.email} ready for ${notificationFrequency}-minute notification`);
+          console.log(`📊 User ${user.email} ready for ${notificationFrequency}-minute notification (${devices.length} devices)`);
             
-            try {
-              // Generate report for this user
-              const report = await generateUserDailyReport(user, subscriptionData);
+          try {
+            // Generate report for this user
+            const report = await generateUserDailyReport(user, latestDevice);
+            
+            if (report) {
+              // Send notification to ALL user devices
+              let successCount = 0;
+              let errorCount = 0;
               
-              if (report) {
-                // Send notification
-                await webpush.sendNotification(
-                  subscriptionData.subscription,
-                  JSON.stringify(report)
-                );
-                
-                await trackNotificationSent(userId);
-              console.log(`📨 ${notificationFrequency}-minute report sent to: ${user.email}`);
+              for (const deviceSub of devices) {
+                try {
+                  await webpush.sendNotification(
+                    deviceSub.subscription,
+                    JSON.stringify(report)
+                  );
+                  successCount++;
+                  console.log(`📨 Sent to ${user.email} (${deviceSub.deviceName || 'Unknown Device'})`);
+                } catch (deviceError) {
+                  errorCount++;
+                  console.error(`❌ Failed to send to device ${deviceSub.deviceName}: ${deviceError.message}`);
+                  
+                  // Track error for this specific device
+                  await trackNotificationError(userId, `Device ${deviceSub.deviceName}: ${deviceError.message}`);
+                  
+                  // Remove invalid subscription (410 = Gone)
+                  if (deviceError.statusCode === 410) {
+                    await removeSpecificPushSubscription(deviceSub.endpoint);
+                    console.log(`🗑️ Removed invalid device subscription: ${deviceSub.deviceName}`);
+                  }
+                }
               }
               
-            } catch (error) {
-            console.error(`❌ Error sending ${notificationFrequency}-minute report to ${user.email}:`, error);
-              
-              await trackNotificationError(userId, error.message);
-              
-              // Remove invalid subscription (410 = Gone)
-              if (error.statusCode === 410) {
-                await removePushSubscription(userId);
-                console.log(`🗑️ Removed invalid subscription for: ${user.email}`);
+              // Track notification sent for the user (if at least one device succeeded)
+              if (successCount > 0) {
+                await trackNotificationSent(userId);
+                console.log(`✅ Report sent to ${successCount}/${devices.length} devices for: ${user.email}`);
               }
             }
+            
+          } catch (error) {
+            console.error(`❌ Error generating report for ${user.email}:`, error);
+            await trackNotificationError(userId, error.message);
+          }
         } else {
           // Calculate time remaining until next notification
           const timeRemaining = frequencyMs - (now.getTime() - lastNotification.getTime());
           const minutesRemaining = Math.ceil(timeRemaining / (60 * 1000));
-          console.log(`⏰ User ${user.email} not ready yet (${minutesRemaining} minutes remaining)`);
+          console.log(`⏰ User ${user.email} not ready yet (${minutesRemaining} minutes remaining, ${devices.length} devices)`);
         }
       }
       
@@ -237,39 +270,69 @@ export async function sendDailyReports() {
   try {
     const subscriptions = await getAllActivePushSubscriptions();
     
-    for (const subscriptionData of subscriptions) {
-      const { userId, user } = subscriptionData;
-      
+    // Group subscriptions by user to avoid duplicate notifications
+    const userSubscriptionsMap = new Map();
+    subscriptions.forEach(sub => {
+      if (!userSubscriptionsMap.has(sub.userId)) {
+        userSubscriptionsMap.set(sub.userId, {
+          user: sub.user,
+          devices: []
+        });
+      }
+      userSubscriptionsMap.get(sub.userId).devices.push(sub);
+    });
+    
+    console.log(`📊 Manual report for ${userSubscriptionsMap.size} users with ${subscriptions.length} total devices`);
+    
+    for (const [userId, {user, devices}] of userSubscriptionsMap) {
       if (!user.accounts || user.accounts.length === 0) {
         console.log(`📊 Skipping user ${user.email} - no accounts assigned`);
         continue;
       }
       
       try {
+        // Use the most recent device for report generation
+        const latestDevice = devices.sort((a, b) => new Date(b.subscribedAt) - new Date(a.subscribedAt))[0];
+        
         // Generate report for this user
-        const report = await generateUserDailyReport(user, subscriptionData);
+        const report = await generateUserDailyReport(user, latestDevice);
         
         if (report) {
-          // Send notification
-          await webpush.sendNotification(
-            subscriptionData.subscription,
-            JSON.stringify(report)
-          );
+          // Send notification to ALL user devices
+          let successCount = 0;
           
-          await trackNotificationSent(userId);
-          console.log(`📨 Manual report sent to: ${user.email}`);
+          for (const deviceSub of devices) {
+            try {
+              await webpush.sendNotification(
+                deviceSub.subscription,
+                JSON.stringify(report)
+              );
+              successCount++;
+              console.log(`📨 Manual report sent to ${user.email} (${deviceSub.deviceName || 'Unknown Device'})`);
+            } catch (deviceError) {
+              console.error(`❌ Failed to send manual report to device ${deviceSub.deviceName}: ${deviceError.message}`);
+              
+              // Track error for this specific device
+              await trackNotificationError(userId, `Manual report - Device ${deviceSub.deviceName}: ${deviceError.message}`);
+              
+              // Remove invalid subscription (410 = Gone)
+              if (deviceError.statusCode === 410) {
+                await removeSpecificPushSubscription(deviceSub.endpoint);
+                console.log(`🗑️ Removed invalid device subscription: ${deviceSub.deviceName}`);
+              }
+            }
+          }
+          
+          // Track notification sent for the user (if at least one device succeeded)
+          if (successCount > 0) {
+            await trackNotificationSent(userId);
+            console.log(`✅ Manual report sent to ${successCount}/${devices.length} devices for: ${user.email}`);
+          }
         }
         
       } catch (error) {
-        console.error(`❌ Error sending manual report to ${user.email}:`, error);
-        
+        console.error(`❌ Error generating manual report for ${user.email}:`, error);
         await trackNotificationError(userId, error.message);
-        
-        // Remove invalid subscription (410 = Gone)
-        if (error.statusCode === 410) {
-          await removePushSubscription(userId);
-          console.log(`🗑️ Removed invalid subscription for: ${user.email}`);
-        }
       }
     }
     

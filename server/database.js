@@ -561,14 +561,17 @@ export async function getUserSessionCount(userId) {
 
 // ====== PUSH SUBSCRIPTION MANAGEMENT ======
 
-// Store push subscription
+// Store push subscription (supports multiple devices per user)
 export async function storePushSubscription(userId, subscriptionData) {
+  // Extract device name from user agent
+  const deviceName = extractDeviceName(subscriptionData.userAgent);
+  
   const query = `
     INSERT INTO push_subscriptions (
-      user_id, endpoint, p256dh_key, auth_key, timezone, currency, currency_symbol, user_agent, notification_frequency
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-    ON CONFLICT (user_id) DO UPDATE SET
-      endpoint = EXCLUDED.endpoint,
+      user_id, endpoint, p256dh_key, auth_key, timezone, currency, currency_symbol, 
+      user_agent, notification_frequency, device_name
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+    ON CONFLICT (user_id, endpoint) DO UPDATE SET
       p256dh_key = EXCLUDED.p256dh_key,
       auth_key = EXCLUDED.auth_key,
       timezone = EXCLUDED.timezone,
@@ -576,11 +579,12 @@ export async function storePushSubscription(userId, subscriptionData) {
       currency_symbol = EXCLUDED.currency_symbol,
       user_agent = EXCLUDED.user_agent,
       notification_frequency = EXCLUDED.notification_frequency,
+      device_name = EXCLUDED.device_name,
       subscribed_at = CURRENT_TIMESTAMP,
       is_active = TRUE,
       error_count = 0,
       last_error = NULL
-    RETURNING id, subscribed_at
+    RETURNING id, subscribed_at, device_name
   `;
   
   const values = [
@@ -592,30 +596,54 @@ export async function storePushSubscription(userId, subscriptionData) {
     subscriptionData.currency,
     subscriptionData.currencySymbol,
     subscriptionData.userAgent,
-    subscriptionData.notificationFrequency || 30 // Default to 30 minutes
+    subscriptionData.notificationFrequency || 30, // Default to 30 minutes
+    deviceName
   ];
   
   const result = await pool.query(query, values);
   return result.rows[0];
 }
 
-// Get push subscription by user ID
-export async function getPushSubscription(userId) {
+// Helper function to extract device name from user agent
+function extractDeviceName(userAgent) {
+  if (!userAgent) return 'Unknown Device';
+  
+  // Mobile devices
+  if (userAgent.includes('iPhone')) return 'iPhone';
+  if (userAgent.includes('iPad')) return 'iPad';
+  if (userAgent.includes('Android')) {
+    if (userAgent.includes('Mobile')) return 'Android Phone';
+    return 'Android Tablet';
+  }
+  
+  // Desktop browsers
+  if (userAgent.includes('Chrome')) return 'Chrome Browser';
+  if (userAgent.includes('Firefox')) return 'Firefox Browser';
+  if (userAgent.includes('Safari') && !userAgent.includes('Chrome')) return 'Safari Browser';
+  if (userAgent.includes('Edge')) return 'Edge Browser';
+  
+  // Operating systems for desktop
+  if (userAgent.includes('Windows')) return 'Windows PC';
+  if (userAgent.includes('Macintosh')) return 'Mac';
+  if (userAgent.includes('Linux')) return 'Linux PC';
+  
+  return 'Unknown Device';
+}
+
+// Get all push subscriptions for a user (supports multiple devices)
+export async function getPushSubscriptions(userId) {
   const query = `
     SELECT ps.*, u.email, u.name
     FROM push_subscriptions ps
     JOIN users u ON ps.user_id = u.id
     WHERE ps.user_id = $1 AND ps.is_active = TRUE
+    ORDER BY ps.subscribed_at DESC
   `;
   
   const result = await pool.query(query, [userId]);
   
-  if (result.rows.length === 0) {
-    return null;
-  }
-  
-  const row = result.rows[0];
-  return {
+  return result.rows.map(row => ({
+    id: row.id,
     subscription: {
       endpoint: row.endpoint,
       keys: {
@@ -630,10 +658,17 @@ export async function getPushSubscription(userId) {
     currencySymbol: row.currency_symbol,
     subscribedAt: row.subscribed_at,
     userAgent: row.user_agent,
+    deviceName: row.device_name,
     endpoint: row.endpoint,
     notificationFrequency: row.notification_frequency,
     lastNotificationTime: row.last_notification_time
-  };
+  }));
+}
+
+// Get single push subscription by user ID (for backward compatibility)
+export async function getPushSubscription(userId) {
+  const subscriptions = await getPushSubscriptions(userId);
+  return subscriptions.length > 0 ? subscriptions[0] : null;
 }
 
 // Get all active push subscriptions
@@ -689,7 +724,7 @@ export async function updateNotificationFrequency(userId, frequency) {
   return result.rows[0];
 }
 
-// Remove push subscription
+// Remove push subscription (all devices for a user)
 export async function removePushSubscription(userId) {
   const query = `
     UPDATE push_subscriptions 
@@ -698,6 +733,17 @@ export async function removePushSubscription(userId) {
   `;
   
   await pool.query(query, [userId]);
+}
+
+// Remove specific push subscription by endpoint (single device)
+export async function removeSpecificPushSubscription(endpoint) {
+  const query = `
+    UPDATE push_subscriptions 
+    SET is_active = FALSE 
+    WHERE endpoint = $1
+  `;
+  
+  await pool.query(query, [endpoint]);
 }
 
 // Track notification sent (updated to include frequency tracking)
@@ -960,9 +1006,11 @@ export default {
   getUserSessionCount,
   storePushSubscription,
   getPushSubscription,
+  getPushSubscriptions,
   getAllActivePushSubscriptions,
   updateNotificationFrequency,
   removePushSubscription,
+  removeSpecificPushSubscription,
   trackNotificationSent,
   trackNotificationError,
   getPushSubscriptionStats,

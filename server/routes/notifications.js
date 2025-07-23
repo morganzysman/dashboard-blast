@@ -5,7 +5,9 @@ import { config } from '../config/index.js';
 import {
   storePushSubscription,
   getPushSubscription,
+  getPushSubscriptions,
   removePushSubscription,
+  removeSpecificPushSubscription,
   trackNotificationSent,
   trackNotificationError,
   logNotificationEvent,
@@ -274,18 +276,26 @@ router.post('/send-daily-reports', requireAuth, requireRole(['admin']), async (r
   }
 });
 
-// Get notification status for current user
+// Get notification status for current user (supports multiple devices)
 router.get('/status', requireAuth, async (req, res) => {
   try {
     const userId = req.user.userId;
-    const userSubscription = await getPushSubscription(userId);
+    const userSubscriptions = await getPushSubscriptions(userId);
     
     res.json({
       success: true,
-      isSubscribed: !!userSubscription,
-      subscribedAt: userSubscription?.subscribedAt || null,
-      userAgent: userSubscription?.userAgent || null,
-      endpoint: userSubscription?.endpoint || null
+      isSubscribed: userSubscriptions.length > 0,
+      deviceCount: userSubscriptions.length,
+      devices: userSubscriptions.map(sub => ({
+        deviceName: sub.deviceName,
+        subscribedAt: sub.subscribedAt,
+        userAgent: sub.userAgent,
+        endpoint: sub.endpoint.substring(0, 50) + '...' // Truncate for security
+      })),
+      // Backward compatibility - return most recent subscription
+      subscribedAt: userSubscriptions[0]?.subscribedAt || null,
+      userAgent: userSubscriptions[0]?.userAgent || null,
+      endpoint: userSubscriptions[0]?.endpoint || null
     });
   } catch (error) {
     console.error('❌ Error getting notification status:', error);
