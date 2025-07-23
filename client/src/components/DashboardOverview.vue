@@ -198,54 +198,56 @@
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- Payment Methods Breakdown -->
-    <div class="card" v-if="analyticsData && analyticsData.aggregated.paymentMethods.length > 0">
-      <div class="card-header">
-        <h3 class="text-base sm:text-lg font-medium text-gray-900">🏦 Payment Methods</h3>
-      </div>
-      <div class="card-body">
-        <!-- Stacked Bar Chart -->
-        <div class="mb-6">
-          <div class="flex items-center space-x-2 mb-2">
-            <h4 class="text-sm font-medium text-gray-700">Amount Distribution by Payment Method</h4>
-            <span class="text-xs text-gray-500">({{ formatCurrency(analyticsData.aggregated.totalAmount) }} total)</span>
+      <!-- Payment Methods Distribution -->
+      <div class="card bg-gradient-to-r from-purple-500 to-indigo-600 text-white">
+        <div class="card-body">
+          <div class="flex items-center justify-between mb-3">
+            <div class="min-w-0 flex-1">
+              <p class="text-purple-100 text-xs sm:text-sm font-medium">PAYMENT METHODS</p>
+              <p class="text-lg sm:text-xl font-bold truncate">{{ analyticsData.aggregated.paymentMethods.length }} Methods</p>
+              <p class="text-xs sm:text-sm text-purple-200 mt-1">{{ formatCurrency(analyticsData.aggregated.totalAmount) }} total</p>
+            </div>
+            <div class="w-10 h-10 sm:w-12 sm:h-12 bg-purple-400 bg-opacity-30 rounded-lg flex items-center justify-center flex-shrink-0">
+              <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+              </svg>
+            </div>
           </div>
-          <div class="w-full bg-gray-200 rounded-full h-8 overflow-hidden">
-            <div class="flex h-full">
-              <div v-for="method in analyticsData.aggregated.paymentMethods" 
-                   :key="method.name"
-                   class="h-full transition-all duration-300"
-                   :style="{ 
-                     width: method.percent + '%',
-                     backgroundColor: getPaymentMethodColor(method.name)
-                   }"
-                   :title="`${method.name}: ${formatCurrency(method.sum)} (${method.percent.toFixed(1)}%)`">
+          
+          <!-- Payment Methods Pie Chart -->
+          <div v-if="analyticsData && analyticsData.aggregated.paymentMethods.length > 0" class="mt-3">
+            <div class="flex items-center justify-center">
+              <div class="relative w-16 h-16 sm:w-20 sm:h-20">
+                <!-- Pie Chart using conic-gradient -->
+                <div 
+                  class="w-full h-full rounded-full"
+                  :style="{ background: getPaymentMethodsPieChart() }"
+                ></div>
+                <!-- Center hole for donut effect -->
+                <div class="absolute inset-2 bg-purple-600 rounded-full flex items-center justify-center">
+                  <span class="text-white text-xs font-bold">{{ analyticsData.aggregated.paymentMethods.length }}</span>
+                </div>
+              </div>
+              
+              <!-- Legend -->
+              <div class="ml-4 space-y-1 text-xs max-w-24">
+                <div v-for="method in analyticsData.aggregated.paymentMethods.slice(0, 3)" :key="method.name" 
+                     class="flex items-center space-x-1">
+                  <div class="w-2 h-2 rounded-full flex-shrink-0" :style="{ backgroundColor: getPaymentMethodColor(method.name) }"></div>
+                  <span class="text-purple-100 truncate capitalize">{{ method.name }}</span>
+                  <span class="text-purple-200">{{ method.percent.toFixed(0) }}%</span>
+                </div>
+                <div v-if="analyticsData.aggregated.paymentMethods.length > 3" class="text-purple-200">
+                  +{{ analyticsData.aggregated.paymentMethods.length - 3 }} more
+                </div>
               </div>
             </div>
           </div>
         </div>
-
-        <!-- Payment Methods Grid -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          <div v-for="method in analyticsData.aggregated.paymentMethods" :key="method.name" 
-               class="bg-gray-50 rounded-lg p-3 sm:p-4">
-            <div class="flex items-center space-x-2 sm:space-x-3 mb-2">
-              <div class="w-3 h-3 rounded-full flex-shrink-0" :style="{ backgroundColor: getPaymentMethodColor(method.name) }"></div>
-              <p class="font-medium text-gray-900 capitalize text-sm sm:text-base truncate">{{ method.name }}</p>
-            </div>
-            <div class="space-y-1">
-              <p class="font-bold text-gray-900 text-sm sm:text-base">{{ formatCurrency(method.sum) }}</p>
-              <div class="flex items-center justify-between text-xs sm:text-sm text-gray-500">
-                <span>{{ method.count }} transactions</span>
-                <span>{{ method.percent.toFixed(1) }}%</span>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
+
 
 
 
@@ -531,5 +533,27 @@ const refreshData = () => {
 // Toggle Service Metrics visibility
 const toggleServiceMetrics = () => {
   isServiceMetricsVisible.value = !isServiceMetricsVisible.value
+}
+
+// Generate pie chart for payment methods using conic-gradient
+const getPaymentMethodsPieChart = () => {
+  if (!props.analyticsData || !props.analyticsData.aggregated.paymentMethods.length) {
+    return 'conic-gradient(#6B7280 0deg 360deg)'
+  }
+
+  const methods = props.analyticsData.aggregated.paymentMethods
+  let currentAngle = 0
+  const gradientStops = []
+
+  methods.forEach((method, index) => {
+    const color = getPaymentMethodColor(method.name)
+    const percentage = method.percent
+    const degrees = (percentage / 100) * 360
+    
+    gradientStops.push(`${color} ${currentAngle}deg ${currentAngle + degrees}deg`)
+    currentAngle += degrees
+  })
+
+  return `conic-gradient(${gradientStops.join(', ')})`
 }
 </script> 
