@@ -237,7 +237,7 @@ router.get('/all', requireAuth, async (req, res) => {
     console.log(`   Previous results count: ${previousResults.length}`);
     
     // Calculate aggregated data for current period
-    const currentAggregated = aggregateAccountsData(currentResults);
+    const currentAggregated = aggregateAccountsData(accountsWithServiceMetrics);
     
     // Calculate overall comparison
     const overallComparison = calculateComparison(currentResults, previousResults);
