@@ -160,6 +160,23 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  // Handle session expiration (called by API interceptor)
+  const handleSessionExpired = async () => {
+    console.log('🔒 Handling session expiration...')
+    
+    // Clear state
+    user.value = null
+    sessionId.value = null
+    error.value = 'Your session has expired. Please log in again.'
+    
+    // Clear localStorage
+    localStorage.removeItem('sessionId')
+    localStorage.removeItem('user')
+    
+    // Don't make API call to logout since session is already expired
+    console.log('👋 Session expired - user logged out')
+  }
+
   // Initialize store
   const initialize = () => {
     restoreSession()
@@ -187,6 +204,7 @@ export const useAuthStore = defineStore('auth', () => {
     restoreSession,
     clearError,
     updateUser,
+    handleSessionExpired,
     initialize,
   }
 }) 

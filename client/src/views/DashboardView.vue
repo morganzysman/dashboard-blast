@@ -64,6 +64,7 @@ import { ref, onMounted, computed, nextTick } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import DashboardOverview from '../components/DashboardOverview.vue'
 import AccountDetails from '../components/AccountDetails.vue'
+import api from '../utils/api'
 
 const authStore = useAuthStore()
 
@@ -242,17 +243,7 @@ const fetchServiceMetricsData = async (dateRange = null) => {
       params.set('period', 'today')
     }
 
-    const response = await fetch(`/api/payments/general-indicators?${params.toString()}`, {
-      headers: {
-        'X-Session-ID': authStore.sessionId
-      }
-    })
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch service metrics data: ${response.status}`)
-    }
-
-    const data = await response.json()
+    const data = await api.get(`/api/payments/general-indicators?${params.toString()}`)
     
     if (data.success) {
       serviceMetricsData.value = data
@@ -263,6 +254,7 @@ const fetchServiceMetricsData = async (dateRange = null) => {
   } catch (err) {
     console.error('❌ Service metrics fetch error:', err)
     // Don't show error notification for service metrics as it's optional
+    // The api wrapper already handles session expiration
   }
 }
 
@@ -278,17 +270,7 @@ const fetchAnalyticsData = async () => {
       'filter[timezone]': timezone
     })
 
-    const response = await fetch(`/api/payments/all?${params.toString()}`, {
-      headers: {
-        'X-Session-ID': authStore.sessionId
-      }
-    })
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch analytics data: ${response.status}`)
-    }
-
-    const data = await response.json()
+    const data = await api.get(`/api/payments/all?${params.toString()}`)
     
     if (data.success) {
       analyticsData.value = data
@@ -299,14 +281,17 @@ const fetchAnalyticsData = async () => {
     }
   } catch (err) {
     console.error('❌ Analytics fetch error:', err)
-    error.value = err.message
     
-    // Show notification
-    window.showNotification?.({
-      type: 'error',
-      title: 'Analytics Error',
-      message: 'Failed to load analytics data'
-    })
+    // Only show error if it's not a session expiration (handled by api wrapper)
+    if (err.status !== 401) {
+      error.value = err.message
+      
+      window.showNotification?.({
+        type: 'error',
+        title: 'Analytics Error',
+        message: 'Failed to load analytics data'
+      })
+    }
   } finally {
     loading.value = false
   }

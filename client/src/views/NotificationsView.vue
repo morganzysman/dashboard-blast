@@ -167,6 +167,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useAuthStore } from '../stores/auth'
+import api from '../utils/api'
 
 const authStore = useAuthStore()
 
@@ -209,18 +210,11 @@ const checkBrowserSupport = () => {
 
 const fetchNotificationStatus = async () => {
   try {
-    const response = await fetch('/api/notifications/status', {
-      headers: {
-        'X-Session-ID': authStore.sessionId,
-      },
-    })
-
-    if (response.ok) {
-      const data = await response.json()
-      notificationStatus.value = data
-    }
+    const data = await api.get('/api/notifications/status')
+    notificationStatus.value = data
   } catch (error) {
     console.error('Error fetching notification status:', error)
+    // API wrapper handles session expiration automatically
   }
 }
 
@@ -326,32 +320,27 @@ const unsubscribeFromNotifications = async () => {
   loading.value = true
   
   try {
-    const response = await fetch('/api/notifications/unsubscribe', {
-      method: 'POST',
-      headers: {
-        'X-Session-ID': authStore.sessionId,
-      },
+    await api.post('/api/notifications/unsubscribe')
+    
+    await fetchNotificationStatus()
+    notificationSettings.value = { frequency: 30, lastNotificationTime: null }
+    
+    window.showNotification?.({
+      type: 'success',
+      title: 'Notifications Disabled',
+      message: 'You will no longer receive push notifications'
     })
-
-    if (response.ok) {
-      await fetchNotificationStatus()
-      notificationSettings.value = { frequency: 30, lastNotificationTime: null }
-      
-      window.showNotification?.({
-        type: 'success',
-        title: 'Notifications Disabled',
-        message: 'You will no longer receive push notifications'
-      })
-    } else {
-      throw new Error('Failed to unsubscribe from notifications')
-    }
   } catch (error) {
     console.error('Unsubscribe error:', error)
-    window.showNotification?.({
-      type: 'error',
-      title: 'Unsubscribe Failed',
-      message: error.message
-    })
+    
+    // Only show error notification if it's not session expiration (handled by API wrapper)
+    if (error.status !== 401) {
+      window.showNotification?.({
+        type: 'error',
+        title: 'Unsubscribe Failed',
+        message: error.message
+      })
+    }
   } finally {
     loading.value = false
   }

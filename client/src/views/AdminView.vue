@@ -254,6 +254,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import UserModal from '../components/UserModal.vue'
+import api from '../utils/api'
 
 const authStore = useAuthStore()
 
@@ -291,30 +292,19 @@ const totalAccounts = computed(() => users.value.reduce((sum, user) => sum + use
 const fetchUsers = async () => {
   loading.value = true
   try {
-    const response = await fetch('/api/admin/users', {
-      headers: {
-        'X-Session-ID': authStore.sessionId,
-      },
-    })
-
-    if (response.ok) {
-      const data = await response.json()
-      users.value = data.users
-    } else {
-      console.error('Failed to fetch users')
+    const data = await api.get('/api/admin/users')
+    users.value = data.users
+  } catch (error) {
+    console.error('Error fetching users:', error)
+    
+    // Only show error notification if it's not session expiration (handled by API wrapper)
+    if (error.status !== 401) {
       window.showNotification?.({
         type: 'error',
         title: 'Error',
         message: 'Failed to fetch users'
       })
     }
-  } catch (error) {
-    console.error('Error fetching users:', error)
-    window.showNotification?.({
-      type: 'error',
-      title: 'Error',
-      message: 'Failed to fetch users'
-    })
   } finally {
     loading.value = false
   }
