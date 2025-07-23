@@ -338,10 +338,14 @@ router.get('/general-indicators', requireAuth, async (req, res) => {
     // Fetch current period data
     console.log('🔄 Fetching current period general indicators data...');
     const currentPromises = userAccounts.map(account => {
-      const params = { period, timezone };
+      const params = { timezone };
       if (hasCustomDateRange) {
+        // Use custom dates when provided
         params.startDate = queryParams['filter[start_date]'];
         params.endDate = queryParams['filter[end_date]'];
+      } else {
+        // Only use period when no custom dates are specified
+        params.period = period;
       }
       return fetchGeneralIndicators(account, params);
     });
@@ -350,7 +354,7 @@ router.get('/general-indicators', requireAuth, async (req, res) => {
     console.log('🔄 Fetching previous period general indicators data...');
     const previousPeriod = getPreviousPeriod(period);
     const previousPromises = userAccounts.map(account => {
-      const params = { period: previousPeriod, timezone };
+      const params = { timezone };
       if (hasCustomDateRange) {
         // Calculate previous period based on custom date range
         const startDate = new Date(queryParams['filter[start_date]']);
@@ -364,6 +368,9 @@ router.get('/general-indicators', requireAuth, async (req, res) => {
         
         params.startDate = prevStartDate.toLocaleDateString('en-CA', { timeZone: timezone });
         params.endDate = prevEndDate.toLocaleDateString('en-CA', { timeZone: timezone });
+      } else {
+        // Only use period when no custom dates are specified
+        params.period = previousPeriod;
       }
       return fetchGeneralIndicators(account, params);
     });
