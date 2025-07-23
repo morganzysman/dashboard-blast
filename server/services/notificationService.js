@@ -11,7 +11,7 @@ import {
   trackNotificationError,
   logNotificationEvent
 } from '../database.js';
-import { fetchOlaClickData } from './olaClickService.js';
+import { fetchOlaClickData, getTimezoneAwareDate } from './olaClickService.js';
 
 // Configure Web Push
 export function configureWebPush() {
@@ -146,9 +146,8 @@ async function generateUserDailyReport(user, subscriptionData) {
     const currencySymbol = subscriptionData.currencySymbol || 'S/';
     const frequency = subscriptionData.notificationFrequency || 30;
     
-    // Get today's date in user's timezone
-    const today = new Date();
-    const todayString = today.toISOString().split('T')[0];
+    // Get today's date in user's timezone (properly timezone-aware)
+    const todayString = getTimezoneAwareDate(null, timezone);
     
     // Prepare parameters for OlaClick API
     const baseParams = {
