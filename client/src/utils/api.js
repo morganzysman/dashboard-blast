@@ -1,6 +1,5 @@
 // API utility with automatic session handling and error intercepting
 import { useAuthStore } from '../stores/auth'
-import router from '../router'
 
 class ApiError extends Error {
   constructor(message, status, data) {
@@ -56,8 +55,8 @@ export async function apiRequest(url, options = {}) {
       await authStore.handleSessionExpired()
       
       // Only redirect if not already on login page
-      if (router.currentRoute.value.name !== 'Login') {
-        router.push({ name: 'Login' })
+      if (!window.location.pathname.includes('/login')) {
+        window.location.href = '/login'
       }
       
       throw new ApiError('Session expired', 401, data)
