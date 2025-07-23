@@ -148,9 +148,6 @@
           
           <!-- Account Distribution Bar -->
           <div v-if="analyticsData && analyticsData.accounts.length > 1" class="mt-3">
-            <div class="flex items-center space-x-1 mb-2">
-              <span class="text-green-100 text-xs font-medium">By Account:</span>
-            </div>
             <div class="relative w-full bg-green-700 bg-opacity-30 rounded-full h-6 overflow-hidden">
               <div class="flex h-full relative">
                 <div v-for="account in getAccountTotalsForChart()" 
@@ -255,9 +252,26 @@
     <!-- Service Metrics -->
     <div class="card" v-if="serviceMetricsData && serviceMetricsData.aggregated.services.length > 0">
       <div class="card-header">
-        <h3 class="text-base sm:text-lg font-medium text-gray-900">📊 Service Metrics</h3>
+        <div class="flex items-center justify-between">
+          <h3 class="text-base sm:text-lg font-medium text-gray-900">📊 Service Metrics</h3>
+          <button 
+            @click="toggleServiceMetrics"
+            class="flex items-center space-x-1 px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-colors duration-200"
+          >
+            <span class="text-gray-600">{{ isServiceMetricsVisible ? 'Hide' : 'Show' }}</span>
+            <svg 
+              class="w-4 h-4 text-gray-600 transition-transform duration-200" 
+              :class="{ 'rotate-180': isServiceMetricsVisible }"
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </button>
+        </div>
       </div>
-      <div class="card-body">
+      <div class="card-body" v-show="isServiceMetricsVisible">
         <!-- Service Distribution Chart -->
         <div class="mb-6">
           <div class="flex items-center space-x-2 mb-2">
@@ -333,6 +347,9 @@ const emit = defineEmits([
 ])
 
 const authStore = useAuthStore()
+
+// Service Metrics visibility state (hidden by default)
+const isServiceMetricsVisible = ref(false)
 
 const paymentMethodColors = {
   'cash': '#10B981',
@@ -509,5 +526,10 @@ const applyCustomDateRange = () => {
 
 const refreshData = () => {
   emit('refresh-data')
+}
+
+// Toggle Service Metrics visibility
+const toggleServiceMetrics = () => {
+  isServiceMetricsVisible.value = !isServiceMetricsVisible.value
 }
 </script> 
