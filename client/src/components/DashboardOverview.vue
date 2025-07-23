@@ -120,10 +120,10 @@
         </div>
       </div>
 
-      <!-- Total Amount --> 
+      <!-- Total Amount with Account Distribution --> 
       <div class="card bg-gradient-to-r from-green-500 to-green-600 text-white">
         <div class="card-body">
-          <div class="flex items-center justify-between">
+          <div class="flex items-center justify-between mb-3">
             <div class="min-w-0 flex-1">
               <p class="text-green-100 text-xs sm:text-sm font-medium">TOTAL AMOUNT</p>
               <p class="text-xl sm:text-3xl font-bold truncate">{{ formatCurrency(analyticsData.aggregated.totalAmount) }}</p>
@@ -145,23 +145,41 @@
               </svg>
             </div>
           </div>
-        </div>
-      </div>
-
-      <!-- Payment Methods -->
-      <div class="card bg-gradient-to-r from-purple-500 to-purple-600 text-white">
-        <div class="card-body">
-          <div class="flex items-center justify-between">
-            <div class="min-w-0 flex-1">
-              <p class="text-purple-100 text-xs sm:text-sm font-medium">PAYMENT METHODS</p>
-              <p class="text-2xl sm:text-3xl font-bold">{{ analyticsData.aggregated.paymentMethods.length }}</p>
-              <p class="text-xs sm:text-sm text-purple-200 mt-1">Active methods</p>
+          
+          <!-- Account Distribution Bar -->
+          <div v-if="analyticsData && analyticsData.accounts.length > 1" class="mt-3">
+            <div class="flex items-center space-x-1 mb-2">
+              <span class="text-green-100 text-xs font-medium">By Account:</span>
             </div>
-            <div class="w-10 h-10 sm:w-12 sm:h-12 bg-purple-400 bg-opacity-30 rounded-lg flex items-center justify-center flex-shrink-0">
-              <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
-              </svg>
+            <div class="relative w-full bg-green-700 bg-opacity-30 rounded-full h-6 overflow-hidden">
+              <div class="flex h-full relative">
+                <div v-for="account in getAccountTotalsForChart()" 
+                     :key="account.accountKey"
+                     class="h-full transition-all duration-300 relative group"
+                     :style="{ 
+                       width: account.percent + '%',
+                       backgroundColor: getAccountColor(account.accountKey)
+                     }">
+                  <!-- Account label overlay - only show for segments > 15% -->
+                  <div v-if="account.percent > 15" 
+                       class="absolute inset-0 flex flex-col items-center justify-center px-1">
+                    <span class="text-white text-xs font-semibold truncate leading-tight">{{ account.account.split(' ')[0] }}</span>
+                    <span class="text-white text-xs opacity-90 leading-tight">{{ formatCurrency(account.totalAmount) }}</span>
+                  </div>
+                  
+                  <!-- Tooltip for all segments -->
+                  <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
+                    {{ account.account }}<br/>
+                    {{ formatCurrency(account.totalAmount) }} ({{ account.percent.toFixed(1) }}%)
+                  </div>
+                </div>
+              </div>
             </div>
+          </div>
+          
+          <!-- Single account message -->
+          <div v-else-if="analyticsData && analyticsData.accounts.length === 1" class="mt-3">
+            <span class="text-green-100 text-xs">{{ analyticsData.accounts[0].account }}</span>
           </div>
         </div>
       </div>
@@ -232,52 +250,7 @@
       </div>
     </div>
 
-    <!-- Account Totals Breakdown -->
-    <div class="card" v-if="analyticsData && analyticsData.accounts.length > 0">
-      <div class="card-header">
-        <h3 class="text-base sm:text-lg font-medium text-gray-900">🏪 Account Totals</h3>
-      </div>
-      <div class="card-body">
-        <!-- Stacked Bar Chart -->
-        <div class="mb-6">
-          <div class="flex items-center space-x-2 mb-2">
-            <h4 class="text-sm font-medium text-gray-700">Amount Distribution by Account</h4>
-            <span class="text-xs text-gray-500">({{ formatCurrency(analyticsData.aggregated.totalAmount) }} total)</span>
-          </div>
-          <div class="w-full bg-gray-200 rounded-full h-8 overflow-hidden">
-            <div class="flex h-full">
-              <div v-for="account in getAccountTotalsForChart()" 
-                   :key="account.accountKey"
-                   class="h-full transition-all duration-300"
-                   :style="{ 
-                     width: account.percent + '%',
-                     backgroundColor: getAccountColor(account.accountKey)
-                   }"
-                   :title="`${account.account}: ${formatCurrency(account.totalAmount)} (${account.percent.toFixed(1)}%)`">
-              </div>
-            </div>
-          </div>
-        </div>
 
-        <!-- Account Totals Grid -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-          <div v-for="account in getAccountTotalsForChart()" :key="account.accountKey" 
-               class="bg-gray-50 rounded-lg p-3 sm:p-4">
-            <div class="flex items-center space-x-2 sm:space-x-3 mb-2">
-              <div class="w-3 h-3 rounded-full flex-shrink-0" :style="{ backgroundColor: getAccountColor(account.accountKey) }"></div>
-              <p class="font-medium text-gray-900 text-sm sm:text-base truncate">{{ account.account }}</p>
-            </div>
-            <div class="space-y-1">
-              <p class="font-bold text-gray-900 text-sm sm:text-base">{{ formatCurrency(account.totalAmount) }}</p>
-              <div class="flex items-center justify-between text-xs sm:text-sm text-gray-500">
-                <span>{{ account.totalPayments }} transactions</span>
-                <span>{{ account.percent.toFixed(1) }}%</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
 
     <!-- Service Metrics -->
     <div class="card" v-if="serviceMetricsData && serviceMetricsData.aggregated.services.length > 0">
