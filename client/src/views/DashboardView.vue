@@ -230,18 +230,15 @@ const applyCustomDateRange = () => {
 const fetchServiceMetricsData = async (dateRange = null) => {
   try {
     const timezone = authStore.user?.timezone || 'America/Lima'
+    
+    // Always use explicit dates - frontend is responsible for calculating them
+    const effectiveDateRange = dateRange || currentDateRange.value
+    
     const params = new URLSearchParams({
-      'timezone': timezone
+      'filter[start_date]': effectiveDateRange.start,
+      'filter[end_date]': effectiveDateRange.end,
+      'filter[timezone]': timezone
     })
-
-    // If date range is provided, use custom date parameters
-    if (dateRange) {
-      params.set('filter[start_date]', dateRange.start)
-      params.set('filter[end_date]', dateRange.end)
-    } else {
-      // Only set period when no custom date range is provided
-      params.set('period', 'today')
-    }
 
     const data = await api.get(`/api/payments/general-indicators?${params.toString()}`)
     
@@ -307,7 +304,7 @@ onMounted(() => {
   // Initialize with today's date range
   currentDateRange.value = getDateRange('today')
   fetchAnalyticsData()
-  fetchServiceMetricsData()
+  fetchServiceMetricsData(currentDateRange.value)
 })
 </script>
 

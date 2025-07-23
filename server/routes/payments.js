@@ -320,58 +320,53 @@ router.get('/general-indicators', requireAuth, async (req, res) => {
       });
     }
     
-    // Extract parameters
-    const period = queryParams.period || 'today';
-    const timezone = queryParams.timezone || userTimezone;
+    // Extract parameters - always expect explicit dates
+    const timezone = queryParams['filter[timezone]'] || userTimezone;
+    const startDate = queryParams['filter[start_date]'];
+    const endDate = queryParams['filter[end_date]'];
     
-    // Check if custom date range is provided
-    const hasCustomDateRange = queryParams['filter[start_date]'] && queryParams['filter[end_date]'];
-    
-    console.log(`   Period: ${period}`);
-    console.log(`   Timezone: ${timezone}`);
-    console.log(`   Custom date range: ${hasCustomDateRange ? 'Yes' : 'No'}`);
-    if (hasCustomDateRange) {
-      console.log(`   Start date: ${queryParams['filter[start_date]']}`);
-      console.log(`   End date: ${queryParams['filter[end_date]']}`);
+    // Validate required date parameters
+    if (!startDate || !endDate) {
+      return res.status(400).json({
+        success: false,
+        error: 'Start date and end date are required. Use filter[start_date] and filter[end_date] parameters.'
+      });
     }
+    
+    console.log(`   Timezone: ${timezone}`);
+    console.log(`   Start date: ${startDate}`);
+    console.log(`   End date: ${endDate}`);
     
     // Fetch current period data
     console.log('🔄 Fetching current period general indicators data...');
     const currentPromises = userAccounts.map(account => {
-      const params = { timezone };
-      if (hasCustomDateRange) {
-        // Use custom dates when provided
-        params.startDate = queryParams['filter[start_date]'];
-        params.endDate = queryParams['filter[end_date]'];
-      } else {
-        // Only use period when no custom dates are specified
-        params.period = period;
-      }
+      const params = { 
+        timezone,
+        startDate,
+        endDate
+      };
       return fetchGeneralIndicators(account, params);
     });
     
-    // Fetch previous period data (same day last week)
+    // Fetch previous period data (one week before the current period)
     console.log('🔄 Fetching previous period general indicators data...');
-    const previousPeriod = getPreviousPeriod(period);
     const previousPromises = userAccounts.map(account => {
-      const params = { timezone };
-      if (hasCustomDateRange) {
-        // Calculate previous period based on custom date range
-        const startDate = new Date(queryParams['filter[start_date]']);
-        const endDate = new Date(queryParams['filter[end_date]']);
-        const daysDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
-        
-        const prevStartDate = new Date(startDate);
-        prevStartDate.setDate(startDate.getDate() - 7);
-        const prevEndDate = new Date(prevStartDate);
-        prevEndDate.setDate(prevStartDate.getDate() + daysDiff - 1);
-        
-        params.startDate = prevStartDate.toLocaleDateString('en-CA', { timeZone: timezone });
-        params.endDate = prevEndDate.toLocaleDateString('en-CA', { timeZone: timezone });
-      } else {
-        // Only use period when no custom dates are specified
-        params.period = previousPeriod;
-      }
+      // Calculate previous period based on provided date range (one week before)
+      const currentStartDate = new Date(startDate);
+      const currentEndDate = new Date(endDate);
+      const daysDiff = Math.ceil((currentEndDate - currentStartDate) / (1000 * 60 * 60 * 24));
+      
+      const prevStartDate = new Date(currentStartDate);
+      prevStartDate.setDate(currentStartDate.getDate() - 7);
+      const prevEndDate = new Date(prevStartDate);
+      prevEndDate.setDate(prevStartDate.getDate() + daysDiff);
+      
+      const params = {
+        timezone,
+        startDate: prevStartDate.toLocaleDateString('en-CA', { timeZone: timezone }),
+        endDate: prevEndDate.toLocaleDateString('en-CA', { timeZone: timezone })
+      };
+      
       return fetchGeneralIndicators(account, params);
     });
     
@@ -494,25 +489,7 @@ function aggregateGeneralIndicators(accountsData) {
   return aggregated;
 }
 
-// Helper function to get previous period
-function getPreviousPeriod(currentPeriod) {
-  switch (currentPeriod) {
-    case 'today':
-      return 'yesterday';
-    case 'yesterday':
-      return '2daysago';
-    case 'thisweek':
-      return 'lastweek';
-    case 'lastweek':
-      return '2weeksago';
-    case 'thismonth':
-      return 'lastmonth';
-    case 'lastmonth':
-      return '2monthsago';
-    default:
-      return 'yesterday';
-  }
-}
+// Helper function removed - no longer needed since we always use explicit dates
 
 // Helper function to calculate service metrics comparison
 function calculateServiceMetricsComparison(current, previous) {
