@@ -39,11 +39,6 @@
                 </div>
               </div>
 
-              <div class="bg-purple-50 rounded-lg p-2 sm:p-3">
-                <p class="text-sm sm:text-lg font-bold text-purple-600">{{ account.data.data?.length || 0 }}</p>
-                <p class="text-xs text-purple-500">Methods</p>
-              </div>
-
               <div class="bg-amber-50 rounded-lg p-2 sm:p-3">
                 <p class="text-xs sm:text-lg font-bold text-amber-600 truncate">{{ formatCurrency(getAccountTotalTips(account)) }}</p>
                 <p class="text-xs text-amber-500">Tips</p>
