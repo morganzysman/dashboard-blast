@@ -52,10 +52,10 @@ function getUserAccountsMap(userAccounts) {
   return accountsMap;
 }
 
-// Get payment data from all user's accounts
-router.get('/all', requireAuth, async (req, res) => {
+// Get payment data from all user's accounts (refactored version of /all)
+router.get('/', requireAuth, async (req, res) => {
   try {
-    console.log('🚀 Starting /api/payments/all request');
+    console.log('🚀 Starting /api/payments request');
     const queryParams = req.query;
     console.log(`   Original query params: ${JSON.stringify(queryParams)}`);
     
@@ -78,6 +78,225 @@ router.get('/all', requireAuth, async (req, res) => {
           paymentMethods: [],
           totalPayments: 0,
           totalAmount: 0,
+          totalTips: 0,
+          accountsCount: 0
+        },
+        comparison: null,
+        message: 'No accounts assigned to this user'
+      });
+    }
+    
+    // Extract and flatten filter parameters
+    let baseParams = {};
+    if (queryParams.filter && typeof queryParams.filter === 'object') {
+      // Frontend sent nested filter object
+      Object.keys(queryParams.filter).forEach(key => {
+        baseParams[`filter[${key}]`] = queryParams.filter[key];
+      });
+      console.log('📋 Extracted nested filter parameters');
+    } else {
+      // Frontend sent flat parameters
+      Object.keys(queryParams).forEach(key => {
+        if (key.startsWith('filter[')) {
+          baseParams[key] = queryParams[key];
+        }
+      });
+      console.log('📋 Using flat filter parameters');
+    }
+    
+    // Use user's timezone if not specified, ensure it's valid
+    if (!baseParams['filter[timezone]'] || baseParams['filter[timezone]'] === 'undefined') {
+      baseParams['filter[timezone]'] = userTimezone;
+    }
+    
+    console.log(`   Base filter params: ${JSON.stringify(baseParams)}`);
+    
+    // Get current period parameters
+    const currentParams = { ...baseParams };
+    
+    // Get previous period parameters (7 days ago)
+    const previousParams = { ...baseParams };
+    
+    if (currentParams['filter[start_date]'] && currentParams['filter[end_date]']) {
+      console.log('📅 Using provided date range');
+      
+      // Get timezone from parameters, ensure it's valid
+      let timezone = currentParams['filter[timezone]'] || config.olaClick.defaultTimezone;
+      if (!timezone || timezone === 'undefined') {
+        timezone = config.olaClick.defaultTimezone;
+      }
+      
+      // Use timezone-aware date processing
+      const startDateStr = currentParams['filter[start_date]'];
+      const endDateStr = currentParams['filter[end_date]'];
+      
+      console.log(`   Provided start date: ${startDateStr}`);
+      console.log(`   Provided end date: ${endDateStr}`);
+      console.log(`   Using timezone: ${timezone}`);
+      
+      // Validate date format and validity
+      if (!isValidDateString(startDateStr) || !isValidDateString(endDateStr)) {
+        console.log(`   ❌ Invalid date format - startDate: ${startDateStr}, endDate: ${endDateStr}`);
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid date format. Dates must be in YYYY-MM-DD format and valid.',
+          details: {
+            startDate: startDateStr,
+            endDate: endDateStr,
+            startDateValid: isValidDateString(startDateStr),
+            endDateValid: isValidDateString(endDateStr)
+          }
+        });
+      }
+      
+      // Create timezone-aware dates
+      const startDate = new Date(startDateStr + 'T00:00:00');
+      const endDate = new Date(endDateStr + 'T00:00:00');
+      
+      // Calculate the number of days in the current period
+      const periodDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+      
+      // For comparison, we want to go back exactly one week from the START of the period
+      // This ensures consistent comparison baseline
+      const prevStartDate = new Date(startDate);
+      prevStartDate.setDate(startDate.getDate() - 7);
+      
+      // The previous period should have the same duration as current period
+      const prevEndDate = new Date(prevStartDate);
+      prevEndDate.setDate(prevStartDate.getDate() + periodDays - 1);
+      
+      // Format dates for the specific timezone
+      previousParams['filter[start_date]'] = prevStartDate.toLocaleDateString('en-CA', { timeZone: timezone });
+      previousParams['filter[end_date]'] = prevEndDate.toLocaleDateString('en-CA', { timeZone: timezone });
+      
+      console.log(`   Period duration: ${periodDays} days`);
+      console.log(`   Calculated previous start: ${previousParams['filter[start_date]']}`);
+      console.log(`   Calculated previous end: ${previousParams['filter[end_date]']}`);
+      console.log(`   📅 Comparison: ${startDateStr} to ${endDateStr} vs ${previousParams['filter[start_date]']} to ${previousParams['filter[end_date]']}`);
+    } else {
+      console.log('📅 Using default date ranges (today vs same day last week)');
+      
+      // Get timezone from parameters or default to Lima, ensure it's valid
+      let timezone = currentParams['filter[timezone]'] || config.olaClick.defaultTimezone;
+      if (!timezone || timezone === 'undefined') {
+        timezone = config.olaClick.defaultTimezone;
+      }
+      
+      // Use timezone-aware date calculation
+      const todayInTimezone = getTimezoneAwareDate(null, timezone);
+      const sameDayLastWeekInTimezone = getDateDaysAgoInTimezone(7, timezone);
+      
+      currentParams['filter[start_date]'] = todayInTimezone;
+      currentParams['filter[end_date]'] = todayInTimezone;
+      previousParams['filter[start_date]'] = sameDayLastWeekInTimezone;
+      previousParams['filter[end_date]'] = sameDayLastWeekInTimezone;
+      
+      console.log(`   Using timezone: ${timezone}`);
+      console.log(`   Today in ${timezone}: ${todayInTimezone}`);
+      console.log(`   Same day last week in ${timezone}: ${sameDayLastWeekInTimezone}`);
+      console.log(`   📅 Comparison: Today vs Same Day Last Week`);
+    }
+    
+    console.log('📋 Final parameter sets:');
+    console.log(`   Current params: ${JSON.stringify(currentParams)}`);
+    console.log(`   Previous params: ${JSON.stringify(previousParams)}`);
+    
+    // Fetch current period data
+    console.log('🔄 Fetching current period payment data...');
+    const currentPromises = userAccounts.map(account => 
+      fetchOlaClickData(account, currentParams)
+    );
+    
+    // Fetch previous period data
+    console.log('🔄 Fetching previous period payment data...');
+    const previousPromises = userAccounts.map(account => 
+      fetchOlaClickData(account, previousParams)
+    );
+    
+    // Fetch tips data for each account (current period only)
+    console.log('🔄 Fetching tips data for each account...');
+    const tipsPromises = userAccounts.map(account => 
+      fetchTipsData(account, currentParams)
+    );
+    
+    const [currentResults, previousResults, tipsResults] = await Promise.all([
+      Promise.all(currentPromises),
+      Promise.all(previousPromises),
+      Promise.all(tipsPromises)
+    ]);
+    
+    // Attach tips data to accounts
+    currentResults.forEach((account, index) => {
+      if (tipsResults[index] && tipsResults[index].success) {
+        account.tipsData = tipsResults[index];
+      }
+    });
+    
+    // Aggregate current period data
+    console.log('📊 Aggregating current period data...');
+    const aggregated = aggregateAccountsData(currentResults);
+    
+    // Aggregate previous period data for comparison
+    console.log('📊 Aggregating previous period data...');
+    const previousAggregated = aggregateAccountsData(previousResults);
+    
+    // Calculate comparison
+    console.log('📈 Calculating comparison...');
+    const comparison = calculateComparison(aggregated, previousAggregated);
+    
+    console.log('📈 Final aggregated data:');
+    console.log(`   Total Payments: ${aggregated.totalPayments}`);
+    console.log(`   Total Amount: ${aggregated.totalAmount}`);
+    console.log(`   Total Tips: ${aggregated.totalTips}`);
+    console.log(`   Payment Methods: ${aggregated.paymentMethods.length}`);
+    console.log(`   Accounts: ${aggregated.accountsCount}`);
+    
+    res.json({
+      success: true,
+      accounts: currentResults,
+      aggregated,
+      comparison,
+      timezone: currentParams['filter[timezone]']
+    });
+    
+  } catch (error) {
+    console.error('❌ Payments endpoint error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Get payment data from all user's accounts (legacy endpoint - for backward compatibility)
+router.get('/all', requireAuth, async (req, res) => {
+  try {
+    console.log('🚀 Starting /api/payments/all request (legacy endpoint)');
+    console.log('⚠️  This endpoint is deprecated. Please use /api/payments instead.');
+    
+    const queryParams = req.query;
+    console.log(`   Original query params: ${JSON.stringify(queryParams)}`);
+    
+    // Get user's accounts and timezone with safe fallbacks
+    const userAccounts = req.user.userAccounts || [];
+    let userTimezone = req.user.userTimezone || config.olaClick.defaultTimezone;
+    
+    // Ensure timezone is valid
+    if (!userTimezone || userTimezone === 'undefined' || userTimezone === 'null') {
+      userTimezone = config.olaClick.defaultTimezone;
+    }
+    
+    console.log(`   User timezone: ${userTimezone}`);
+    
+    if (userAccounts.length === 0) {
+      return res.json({
+        success: true,
+        accounts: [],
+        aggregated: {
+          paymentMethods: [],
+          totalPayments: 0,
+          totalAmount: 0,
+          totalTips: 0,
           accountsCount: 0
         },
         comparison: null,
@@ -316,11 +535,12 @@ router.get('/all', requireAuth, async (req, res) => {
         }
       }
     });
+    
   } catch (error) {
     console.error('❌ Error in /api/payments/all:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: error.message 
+    res.status(500).json({
+      success: false,
+      error: error.message
     });
   }
 });
@@ -606,6 +826,175 @@ function calculateServiceMetricsComparison(current, previous) {
     }
   };
 }
+
+// Get order data from all user's accounts (new endpoint for order-related data)
+router.get('/orders', requireAuth, async (req, res) => {
+  try {
+    console.log('🚀 Starting /api/orders request');
+    const queryParams = req.query;
+    console.log(`   Original query params: ${JSON.stringify(queryParams)}`);
+    
+    // Get user's accounts and timezone with safe fallbacks
+    const userAccounts = req.user.userAccounts || [];
+    let userTimezone = req.user.userTimezone || config.olaClick.defaultTimezone;
+    
+    // Ensure timezone is valid
+    if (!userTimezone || userTimezone === 'undefined' || userTimezone === 'null') {
+      userTimezone = config.olaClick.defaultTimezone;
+    }
+    
+    console.log(`   User timezone: ${userTimezone}`);
+    
+    if (userAccounts.length === 0) {
+      return res.json({
+        success: true,
+        accounts: [],
+        aggregated: {
+          services: [],
+          totalOrders: 0,
+          totalSales: 0,
+          averageTicket: 0,
+          accountsCount: 0
+        },
+        comparison: null,
+        message: 'No accounts assigned to this user'
+      });
+    }
+    
+    // Extract and flatten filter parameters (same logic as other endpoints)
+    let baseParams = {};
+    if (queryParams.filter && typeof queryParams.filter === 'object') {
+      // Frontend sent nested filter object
+      Object.keys(queryParams.filter).forEach(key => {
+        baseParams[`filter[${key}]`] = queryParams.filter[key];
+      });
+      console.log('📋 Extracted nested filter parameters');
+    } else {
+      // Frontend sent flat parameters
+      Object.keys(queryParams).forEach(key => {
+        if (key.startsWith('filter[')) {
+          baseParams[key] = queryParams[key];
+        }
+      });
+      console.log('📋 Using flat filter parameters');
+    }
+    
+    // Extract parameters - always expect explicit dates
+    const timezone = baseParams['filter[timezone]'] || userTimezone;
+    const startDate = baseParams['filter[start_date]'];
+    const endDate = baseParams['filter[end_date]'];
+    
+    // Debug: Log the extracted parameters
+    console.log(`   Base filter params: ${JSON.stringify(baseParams)}`);
+    console.log(`   Extracted timezone: ${timezone}`);
+    console.log(`   Extracted startDate: ${startDate}`);
+    console.log(`   Extracted endDate: ${endDate}`);
+    
+    // Validate required date parameters
+    if (!startDate || !endDate) {
+      console.log(`   ❌ Missing parameters - startDate: ${startDate}, endDate: ${endDate}`);
+      return res.status(400).json({
+        success: false,
+        error: 'Start date and end date are required. Use filter[start_date] and filter[end_date] parameters.'
+      });
+    }
+    
+    // Validate date format and validity
+    if (!isValidDateString(startDate) || !isValidDateString(endDate)) {
+      console.log(`   ❌ Invalid date format - startDate: ${startDate}, endDate: ${endDate}`);
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid date format. Dates must be in YYYY-MM-DD format and valid.',
+        details: {
+          startDate: startDate,
+          endDate: endDate,
+          startDateValid: isValidDateString(startDate),
+          endDateValid: isValidDateString(endDate)
+        }
+      });
+    }
+    
+    console.log(`   Timezone: ${timezone}`);
+    console.log(`   Start date: ${startDate}`);
+    console.log(`   End date: ${endDate}`);
+    
+    // Fetch current period data
+    console.log('🔄 Fetching current period order data...');
+    const currentPromises = userAccounts.map(account => {
+      const params = { 
+        timezone,
+        startDate,
+        endDate
+      };
+      return fetchGeneralIndicators(account, params);
+    });
+    
+    // Fetch previous period data (one week before the current period)
+    console.log('🔄 Fetching previous period order data...');
+    const previousPromises = userAccounts.map(account => {
+      // Calculate previous period based on provided date range (one week before)
+      const currentStartDate = new Date(startDate);
+      const currentEndDate = new Date(endDate);
+      const daysDiff = Math.ceil((currentEndDate - currentStartDate) / (1000 * 60 * 60 * 24));
+      
+      const prevStartDate = new Date(currentStartDate);
+      prevStartDate.setDate(currentStartDate.getDate() - 7);
+      const prevEndDate = new Date(prevStartDate);
+      prevEndDate.setDate(prevStartDate.getDate() + daysDiff);
+      
+      const params = {
+        timezone,
+        startDate: prevStartDate.toLocaleDateString('en-CA', { timeZone: timezone }),
+        endDate: prevEndDate.toLocaleDateString('en-CA', { timeZone: timezone })
+      };
+      
+      return fetchGeneralIndicators(account, params);
+    });
+    
+    const [currentResults, previousResults] = await Promise.all([
+      Promise.all(currentPromises),
+      Promise.all(previousPromises)
+    ]);
+    
+    // Debug logging
+    console.log('📊 Order Results:');
+    console.log(`   Current results count: ${currentResults.length}`);
+    console.log(`   Previous results count: ${previousResults.length}`);
+    currentResults.forEach((result, index) => {
+      console.log(`   Current Account ${index} (${result.accountKey}): success=${result.success}`);
+      if (result.success && result.data) {
+        console.log(`     Services: ${Object.keys(result.data.data || {}).join(', ')}`);
+      }
+    });
+    
+    // Process and aggregate the data
+    const currentAggregated = aggregateGeneralIndicators(currentResults);
+    const previousAggregated = aggregateGeneralIndicators(previousResults);
+    
+    // Calculate comparison
+    const comparison = calculateServiceMetricsComparison(currentAggregated, previousAggregated);
+    
+    console.log('📈 Aggregated Order Data:');
+    console.log(`   Current - Total Orders: ${currentAggregated.totalOrders}, Total Sales: ${currentAggregated.totalSales}`);
+    console.log(`   Previous - Total Orders: ${previousAggregated.totalOrders}, Total Sales: ${previousAggregated.totalSales}`);
+    console.log(`   Comparison: ${JSON.stringify(comparison)}`);
+    
+    res.json({
+      success: true,
+      accounts: currentResults,
+      aggregated: currentAggregated,
+      comparison,
+      timezone
+    });
+    
+  } catch (error) {
+    console.error('❌ Orders endpoint error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
 
 // Debug endpoint to check timezone handling
 router.get('/debug/timezone', (req, res) => {
