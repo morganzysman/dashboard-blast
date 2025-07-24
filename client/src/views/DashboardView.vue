@@ -88,14 +88,32 @@ const formatDate = (date) => {
 const getCurrentDateInTimezone = () => {
   const timezone = authStore.user?.timezone || 'America/Lima'
   
-  // Get current date in the user's timezone using a more reliable method
+  // Use a more reliable method to get current date in timezone
   const now = new Date()
-  const timezoneDate = new Date(now.toLocaleString('en-CA', { timeZone: timezone }))
   
-  // Format as YYYY-MM-DD
-  const year = timezoneDate.getFullYear()
-  const month = String(timezoneDate.getMonth() + 1).padStart(2, '0')
-  const day = String(timezoneDate.getDate()).padStart(2, '0')
+  // Get the date parts in the target timezone
+  const timezoneString = now.toLocaleString('en-CA', { 
+    timeZone: timezone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  })
+  
+  // Parse the timezone string (format: YYYY-MM-DD)
+  const [year, month, day] = timezoneString.split('-')
+  
+  // Validate the parsed values
+  if (!year || !month || !day || isNaN(year) || isNaN(month) || isNaN(day)) {
+    console.error(`❌ Failed to parse timezone date: ${timezoneString}, timezone: ${timezone}`)
+    // Fallback to UTC date
+    const utcDate = new Date()
+    const fallbackYear = utcDate.getUTCFullYear()
+    const fallbackMonth = String(utcDate.getUTCMonth() + 1).padStart(2, '0')
+    const fallbackDay = String(utcDate.getUTCDate()).padStart(2, '0')
+    const fallbackResult = `${fallbackYear}-${fallbackMonth}-${fallbackDay}`
+    console.log(`🔍 getCurrentDateInTimezone fallback: ${fallbackResult} (timezone: ${timezone})`)
+    return fallbackResult
+  }
   
   const result = `${year}-${month}-${day}`
   console.log(`🔍 getCurrentDateInTimezone: ${result} (timezone: ${timezone})`)
@@ -104,19 +122,23 @@ const getCurrentDateInTimezone = () => {
 
 // Get date in user's timezone
 const getDateInTimezone = (date, timezone) => {
-  // Use the same reliable method as getCurrentDateInTimezone
-  const timezoneDate = new Date(date.toLocaleString('en-CA', { timeZone: timezone }))
+  // Use a more reliable method to get date in timezone
+  const timezoneString = date.toLocaleString('en-CA', { 
+    timeZone: timezone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  })
   
-  // Check if the date is valid
-  if (isNaN(timezoneDate.getTime())) {
-    console.error(`❌ Invalid date after timezone conversion: ${date}, timezone: ${timezone}`)
+  // Parse the timezone string (format: YYYY-MM-DD)
+  const [year, month, day] = timezoneString.split('-')
+  
+  // Validate the parsed values
+  if (!year || !month || !day || isNaN(year) || isNaN(month) || isNaN(day)) {
+    console.error(`❌ Failed to parse timezone date: ${timezoneString}, input: ${date}, timezone: ${timezone}`)
     // Fallback to current date in timezone
     return getCurrentDateInTimezone()
   }
-  
-  const year = timezoneDate.getFullYear()
-  const month = String(timezoneDate.getMonth() + 1).padStart(2, '0')
-  const day = String(timezoneDate.getDate()).padStart(2, '0')
   
   const result = `${year}-${month}-${day}`
   console.log(`🔍 getDateInTimezone: ${result} (input: ${date}, timezone: ${timezone})`)
