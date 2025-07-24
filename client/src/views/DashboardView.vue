@@ -250,6 +250,8 @@ const fetchServiceMetricsData = async (dateRange = null) => {
     }
   } catch (err) {
     console.error('❌ Service metrics fetch error:', err)
+    // Clear service metrics data when endpoint fails
+    serviceMetricsData.value = null
     // Don't show error notification for service metrics as it's optional
     // The api wrapper already handles session expiration
   }
