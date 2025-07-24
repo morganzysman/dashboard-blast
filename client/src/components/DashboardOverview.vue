@@ -424,16 +424,7 @@ const getTotalOrders = () => {
   return 0
 }
 
-const getOrdersComparison = () => {
-  // Use orders comparison data if available
-  if (props.ordersData && props.ordersData.comparison) {
-    return {
-      trend: props.ordersData.comparison.orders.trend,
-      difference: props.ordersData.comparison.orders.difference
-    }
-  }
-  return null
-}
+
 
 // Event handlers
 const onDateRangeChange = () => {

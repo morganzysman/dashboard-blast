@@ -5,10 +5,7 @@ import {
   fetchGeneralIndicators,
   fetchTipsData,
   aggregateAccountsData,
-  calculateComparison,
-  calculateAccountComparison,
-  getTimezoneAwareDate,
-  getDateDaysAgoInTimezone
+  getTimezoneAwareDate
 } from '../services/olaClickService.js';
 import { config } from '../config/index.js';
 
@@ -81,7 +78,6 @@ router.get('/', requireAuth, async (req, res) => {
           totalTips: 0,
           accountsCount: 0
         },
-        comparison: null,
         message: 'No accounts assigned to this user'
       });
     }
@@ -113,9 +109,6 @@ router.get('/', requireAuth, async (req, res) => {
     
     // Get current period parameters
     const currentParams = { ...baseParams };
-    
-    // Get previous period parameters (7 days ago)
-    const previousParams = { ...baseParams };
     
     if (currentParams['filter[start_date]'] && currentParams['filter[end_date]']) {
       console.log('📅 Using provided date range');
@@ -153,28 +146,9 @@ router.get('/', requireAuth, async (req, res) => {
       const startDate = new Date(startDateStr + 'T00:00:00');
       const endDate = new Date(endDateStr + 'T00:00:00');
       
-      // Calculate the number of days in the current period
-      const periodDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
-      
-      // For comparison, we want to go back exactly one week from the START of the period
-      // This ensures consistent comparison baseline
-      const prevStartDate = new Date(startDate);
-      prevStartDate.setDate(startDate.getDate() - 7);
-      
-      // The previous period should have the same duration as current period
-      const prevEndDate = new Date(prevStartDate);
-      prevEndDate.setDate(prevStartDate.getDate() + periodDays - 1);
-      
-      // Format dates for the specific timezone
-      previousParams['filter[start_date]'] = prevStartDate.toLocaleDateString('en-CA', { timeZone: timezone });
-      previousParams['filter[end_date]'] = prevEndDate.toLocaleDateString('en-CA', { timeZone: timezone });
-      
-      console.log(`   Period duration: ${periodDays} days`);
-      console.log(`   Calculated previous start: ${previousParams['filter[start_date]']}`);
-      console.log(`   Calculated previous end: ${previousParams['filter[end_date]']}`);
-      console.log(`   📅 Comparison: ${startDateStr} to ${endDateStr} vs ${previousParams['filter[start_date]']} to ${previousParams['filter[end_date]']}`);
+
     } else {
-      console.log('📅 Using default date ranges (today vs same day last week)');
+      console.log('📅 Using default date ranges (today)');
       
       // Get timezone from parameters or default to Lima, ensure it's valid
       let timezone = currentParams['filter[timezone]'] || config.olaClick.defaultTimezone;
@@ -184,33 +158,21 @@ router.get('/', requireAuth, async (req, res) => {
       
       // Use timezone-aware date calculation
       const todayInTimezone = getTimezoneAwareDate(null, timezone);
-      const sameDayLastWeekInTimezone = getDateDaysAgoInTimezone(7, timezone);
       
       currentParams['filter[start_date]'] = todayInTimezone;
       currentParams['filter[end_date]'] = todayInTimezone;
-      previousParams['filter[start_date]'] = sameDayLastWeekInTimezone;
-      previousParams['filter[end_date]'] = sameDayLastWeekInTimezone;
       
       console.log(`   Using timezone: ${timezone}`);
       console.log(`   Today in ${timezone}: ${todayInTimezone}`);
-      console.log(`   Same day last week in ${timezone}: ${sameDayLastWeekInTimezone}`);
-      console.log(`   📅 Comparison: Today vs Same Day Last Week`);
     }
     
     console.log('📋 Final parameter sets:');
     console.log(`   Current params: ${JSON.stringify(currentParams)}`);
-    console.log(`   Previous params: ${JSON.stringify(previousParams)}`);
     
     // Fetch current period data
     console.log('🔄 Fetching current period payment data...');
     const currentPromises = userAccounts.map(account => 
       fetchOlaClickData(account, currentParams)
-    );
-    
-    // Fetch previous period data
-    console.log('🔄 Fetching previous period payment data...');
-    const previousPromises = userAccounts.map(account => 
-      fetchOlaClickData(account, previousParams)
     );
     
     // Fetch tips data for each account (current period only)
@@ -219,9 +181,8 @@ router.get('/', requireAuth, async (req, res) => {
       fetchTipsData(account, currentParams)
     );
     
-    const [currentResults, previousResults, tipsResults] = await Promise.all([
+    const [currentResults, tipsResults] = await Promise.all([
       Promise.all(currentPromises),
-      Promise.all(previousPromises),
       Promise.all(tipsPromises)
     ]);
     
@@ -236,14 +197,6 @@ router.get('/', requireAuth, async (req, res) => {
     console.log('📊 Aggregating current period data...');
     const aggregated = aggregateAccountsData(currentResults);
     
-    // Aggregate previous period data for comparison
-    console.log('📊 Aggregating previous period data...');
-    const previousAggregated = aggregateAccountsData(previousResults);
-    
-    // Calculate comparison
-    console.log('📈 Calculating comparison...');
-    const comparison = calculateComparison(currentResults, previousResults);
-    
     console.log('📈 Final aggregated data:');
     console.log(`   Total Payments: ${aggregated.totalPayments}`);
     console.log(`   Total Amount: ${aggregated.totalAmount}`);
@@ -255,7 +208,6 @@ router.get('/', requireAuth, async (req, res) => {
       success: true,
       accounts: currentResults,
       aggregated,
-      comparison,
       timezone: currentParams['filter[timezone]']
     });
     
@@ -345,41 +297,7 @@ function aggregateGeneralIndicators(accountsData) {
 
 // Helper function removed - no longer needed since we always use explicit dates
 
-// Helper function to calculate service metrics comparison
-function calculateServiceMetricsComparison(current, previous) {
-  const ordersDiff = current.totalOrders - previous.totalOrders;
-  const ordersPercent = previous.totalOrders > 0 ? ((ordersDiff / previous.totalOrders) * 100) : 0;
-  
-  const salesDiff = current.totalSales - previous.totalSales;
-  const salesPercent = previous.totalSales > 0 ? ((salesDiff / previous.totalSales) * 100) : 0;
-  
-  const avgTicketDiff = current.averageTicket - previous.averageTicket;
-  const avgTicketPercent = previous.averageTicket > 0 ? ((avgTicketDiff / previous.averageTicket) * 100) : 0;
-  
-  return {
-    orders: {
-      current: current.totalOrders,
-      previous: previous.totalOrders,
-      difference: ordersDiff,
-      percentChange: ordersPercent,
-      trend: ordersDiff >= 0 ? 'up' : 'down'
-    },
-    sales: {
-      current: current.totalSales,
-      previous: previous.totalSales,
-      difference: salesDiff,
-      percentChange: salesPercent,
-      trend: salesDiff >= 0 ? 'up' : 'down'
-    },
-    averageTicket: {
-      current: current.averageTicket,
-      previous: previous.averageTicket,
-      difference: avgTicketDiff,
-      percentChange: avgTicketPercent,
-      trend: avgTicketDiff >= 0 ? 'up' : 'down'
-    }
-  };
-}
+
 
 
 

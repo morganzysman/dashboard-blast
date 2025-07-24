@@ -20,23 +20,13 @@
               <div class="bg-blue-50 rounded-lg p-2 sm:p-3">
                 <p class="text-sm sm:text-lg font-bold text-blue-600">{{ getAccountTotalOrders(account) }}</p>
                 <p class="text-xs text-blue-500">Total Orders</p>
-                <div class="flex items-center justify-center mt-1" v-if="getAccountOrdersComparison(account)">
-                  <span class="text-xs text-gray-500"> vs last week</span>
-                  <span class="text-xs ml-1 font-medium" :class="getAccountOrdersComparison(account).trend === 'up' ? 'text-green-600' : 'text-red-600'">
-                    {{ getAccountOrdersComparison(account).trend === 'up' ? '↗' : '↘' }} {{ getAccountOrdersPercentageChange(account) }}%
-                  </span>
-                </div>
+
               </div>
 
               <div class="bg-green-50 rounded-lg p-2 sm:p-3">
                 <p class="text-xs sm:text-lg font-bold text-green-600 truncate">{{ formatCurrency(getAccountTotalAmount(account)) }}</p>
                 <p class="text-xs text-green-500">Total</p>
-                <div class="flex items-center justify-center mt-1" v-if="getAccountAmountComparison(account)">
-                  <span class="text-xs text-gray-500"> vs last week</span>
-                  <span class="text-xs ml-1 font-medium" :class="getAccountAmountComparison(account).trend === 'up' ? 'text-green-600' : 'text-red-600'">
-                    {{ getAccountAmountComparison(account).trend === 'up' ? '↗' : '↘' }} {{ getAccountAmountPercentageChange(account) }}%
-                  </span>
-                </div>
+
               </div>
 
               <div class="bg-amber-50 rounded-lg p-2 sm:p-3">
@@ -244,43 +234,7 @@ const getAccountServiceOrderPercentage = (account, serviceType) => {
   return accountTotalOrders > 0 ? ((serviceOrders / accountTotalOrders) * 100).toFixed(1) : '0.0'
 }
 
-const getAccountOrdersComparison = (account) => {
-  if (!props.ordersData || !props.ordersData.comparison) return null
-  
-  return {
-    trend: props.ordersData.comparison.orders.trend,
-    difference: props.ordersData.comparison.orders.difference
-  }
-}
 
-const getAccountAmountComparison = (account) => {
-  if (!account.comparison) return null
-  
-  return {
-    trend: account.comparison.amount.trend,
-    difference: account.comparison.amount.difference
-  }
-}
-
-const getAccountOrdersPercentageChange = (account) => {
-  if (!props.ordersData || !props.ordersData.comparison) return '0.0'
-  
-  const percentChange = props.ordersData.comparison.orders.percentChange || 0
-  const trend = props.ordersData.comparison.orders.trend || 'down'
-  
-  const percentageChange = Math.abs(percentChange).toFixed(1)
-  return `${trend === 'up' ? '+' : '-'}${percentageChange}`
-}
-
-const getAccountAmountPercentageChange = (account) => {
-  if (!account.comparison || !account.comparison.amount) return '0.0'
-  
-  const percentChange = account.comparison.amount.percentChange || 0
-  const trend = account.comparison.amount.trend || 'down'
-  
-  const percentageChange = Math.abs(percentChange).toFixed(1)
-  return `${trend === 'up' ? '+' : '-'}${percentageChange}`
-}
 
 const isServiceMetricsCollapsed = (accountKey) => {
   return collapsedServiceMetrics.value.has(accountKey)

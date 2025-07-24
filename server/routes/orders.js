@@ -67,41 +67,7 @@ function aggregateOrdersData(accountsData) {
   };
 }
 
-// Helper function to calculate orders comparison
-function calculateOrdersComparison(current, previous) {
-  const ordersDiff = current.totalOrders - previous.totalOrders;
-  const ordersPercent = previous.totalOrders > 0 ? ((ordersDiff / previous.totalOrders) * 100) : 0;
-  
-  const salesDiff = current.totalSales - previous.totalSales;
-  const salesPercent = previous.totalSales > 0 ? ((salesDiff / previous.totalSales) * 100) : 0;
-  
-  const avgTicketDiff = current.averageTicket - previous.averageTicket;
-  const avgTicketPercent = previous.averageTicket > 0 ? ((avgTicketDiff / previous.averageTicket) * 100) : 0;
-  
-  return {
-    orders: {
-      current: current.totalOrders,
-      previous: previous.totalOrders,
-      difference: ordersDiff,
-      percentChange: ordersPercent,
-      trend: ordersDiff >= 0 ? 'up' : 'down'
-    },
-    sales: {
-      current: current.totalSales,
-      previous: previous.totalSales,
-      difference: salesDiff,
-      percentChange: salesPercent,
-      trend: salesDiff >= 0 ? 'up' : 'down'
-    },
-    averageTicket: {
-      current: current.averageTicket,
-      previous: previous.averageTicket,
-      difference: avgTicketDiff,
-      percentChange: avgTicketPercent,
-      trend: avgTicketDiff >= 0 ? 'up' : 'down'
-    }
-  };
-}
+
 
 // Helper function to validate date format and ensure it's a valid date
 function isValidDateString(dateStr) {
@@ -236,55 +202,11 @@ router.get('/', requireAuth, async (req, res) => {
       return fetchGeneralIndicators(account, params);
     });
     
-    // Fetch previous period data (one week before the current period)
-    console.log('🔄 Fetching previous period order data...');
-    const previousPromises = userAccounts.map(account => {
-      // Calculate previous period based on provided date range (one week before)
-      const currentStartDate = new Date(startDate);
-      const currentEndDate = new Date(endDate);
-      const daysDiff = Math.ceil((currentEndDate - currentStartDate) / (1000 * 60 * 60 * 24));
-      
-      const prevStartDate = new Date(currentStartDate);
-      prevStartDate.setDate(currentStartDate.getDate() - 7);
-      const prevEndDate = new Date(prevStartDate);
-      prevEndDate.setDate(prevStartDate.getDate() + daysDiff);
-      
-      const params = {
-        timezone,
-        startDate: prevStartDate.toLocaleDateString('en-CA', { timeZone: timezone }),
-        endDate: prevEndDate.toLocaleDateString('en-CA', { timeZone: timezone })
-      };
-      
-      return fetchGeneralIndicators(account, params);
-    });
-    
-    const [currentResults, previousResults] = await Promise.all([
-      Promise.all(currentPromises),
-      Promise.all(previousPromises)
-    ]);
-    
-    // Debug logging
-    console.log('📊 Order Results:');
-    console.log(`   Current results count: ${currentResults.length}`);
-    console.log(`   Previous results count: ${previousResults.length}`);
-    currentResults.forEach((result, index) => {
-      console.log(`   Current Account ${index} (${result.accountKey}): success=${result.success}`);
-      if (result.success && result.data) {
-        console.log(`     Services: ${Object.keys(result.data.data || {}).join(', ')}`);
-      }
-    });
-    
     // Process and aggregate the data
     const currentAggregated = aggregateOrdersData(currentResults);
-    const previousAggregated = aggregateOrdersData(previousResults);
-    
-    // Calculate comparison
-    const comparison = calculateOrdersComparison(currentAggregated, previousAggregated);
     
     console.log('📈 Aggregated Order Data:');
-    console.log(`   Current - Total Orders: ${currentAggregated.totalOrders}, Total Sales: ${currentAggregated.totalSales}`);
-    console.log(`   Previous - Total Orders: ${previousAggregated.totalOrders}, Total Sales: ${previousAggregated.totalSales}`);
-    console.log(`   Comparison: ${JSON.stringify(comparison)}`);
+    console.log(`   Total Orders: ${currentAggregated.totalOrders}, Total Sales: ${currentAggregated.totalSales}`);
     
     res.json({
       success: true,
@@ -295,7 +217,6 @@ router.get('/', requireAuth, async (req, res) => {
         averageTicket: currentAggregated.averageTicket,
         accountsCount: currentAggregated.accounts.length
       },
-      comparison,
       timezone
     });
     
