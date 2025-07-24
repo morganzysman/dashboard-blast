@@ -294,6 +294,9 @@ router.get('/general-indicators', requireAuth, async (req, res) => {
     const queryParams = req.query;
     console.log(`   Original query params: ${JSON.stringify(queryParams)}`);
     
+    // Debug: Log all query parameter keys
+    console.log(`   Query parameter keys: ${Object.keys(queryParams).join(', ')}`);
+    
     // Get user's accounts and timezone with safe fallbacks
     const userAccounts = req.user.userAccounts || [];
     let userTimezone = req.user.userTimezone || config.olaClick.defaultTimezone;
@@ -325,8 +328,14 @@ router.get('/general-indicators', requireAuth, async (req, res) => {
     const startDate = queryParams['filter[start_date]'];
     const endDate = queryParams['filter[end_date]'];
     
+    // Debug: Log the extracted parameters
+    console.log(`   Extracted timezone: ${timezone}`);
+    console.log(`   Extracted startDate: ${startDate}`);
+    console.log(`   Extracted endDate: ${endDate}`);
+    
     // Validate required date parameters
     if (!startDate || !endDate) {
+      console.log(`   ❌ Missing parameters - startDate: ${startDate}, endDate: ${endDate}`);
       return res.status(400).json({
         success: false,
         error: 'Start date and end date are required. Use filter[start_date] and filter[end_date] parameters.'
