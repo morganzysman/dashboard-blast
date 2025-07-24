@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import { requireAuth } from '../middleware/auth.js';
 import {
-  fetchGeneralIndicators
+  fetchGeneralIndicators,
+  fetchServiceMetrics
 } from '../services/olaClickService.js';
 import { config } from '../config/index.js';
 
@@ -315,5 +316,116 @@ router.get('/', requireAuth, async (req, res) => {
     });
   }
 });
+
+// Get service metrics data (only available for "today")
+router.get('/service-metrics', requireAuth, async (req, res) => {
+  try {
+    console.log(`📊 Service Metrics request received`);
+    console.log(`   Query params: ${JSON.stringify(req.query)}`);
+    
+    // Get user's accounts
+    const userAccounts = await getUserAccounts(req.user.id);
+    
+    if (!userAccounts || userAccounts.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'No accounts found for user'
+      });
+    }
+    
+    console.log(`📊 Service Metrics - Found ${userAccounts.length} accounts`);
+    
+    // Fetch service metrics for all accounts
+    const serviceMetricsPromises = userAccounts.map(account => 
+      fetchServiceMetrics(account, {
+        timezone: req.query.timezone || config.olaClick.defaultTimezone
+      })
+    );
+    
+    const serviceMetricsResults = await Promise.all(serviceMetricsPromises);
+    
+    console.log(`📊 Service Metrics Results:`);
+    console.log(`   Results count: ${serviceMetricsResults.length}`);
+    
+    serviceMetricsResults.forEach((result, index) => {
+      console.log(`   Account ${index} (${result.account}): success=${result.success}`);
+      if (result.success && result.data) {
+        console.log(`     Data: ${JSON.stringify(result.data)}`);
+      }
+    });
+    
+    // Aggregate service metrics data
+    const aggregatedData = aggregateServiceMetricsData(serviceMetricsResults);
+    
+    console.log(`📊 Aggregated Service Metrics Data:`, aggregatedData);
+    
+    res.json({
+      success: true,
+      data: aggregatedData
+    });
+    
+  } catch (error) {
+    console.error(`❌ Service Metrics error: ${error.message}`);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Helper function to aggregate service metrics data
+function aggregateServiceMetricsData(accountsData) {
+  if (!accountsData || accountsData.length === 0) {
+    return {
+      TABLE: { orders: 0, sales: 0, average_ticket: 0 },
+      ONSITE: { orders: 0, sales: 0, average_ticket: 0 },
+      TAKEAWAY: { orders: 0, sales: 0, average_ticket: 0 },
+      DELIVERY: { orders: 0, sales: 0, average_ticket: 0 }
+    };
+  }
+  
+  const aggregated = {
+    TABLE: { orders: 0, sales: 0, average_ticket: 0 },
+    ONSITE: { orders: 0, sales: 0, average_ticket: 0 },
+    TAKEAWAY: { orders: 0, sales: 0, average_ticket: 0 },
+    DELIVERY: { orders: 0, sales: 0, average_ticket: 0 }
+  };
+  
+  let totalOrders = 0;
+  let totalSales = 0;
+  
+  accountsData.forEach(account => {
+    if (account.success && account.data && account.data.data) {
+      const data = account.data.data;
+      
+      // Process each service type
+      Object.keys(data).forEach(serviceType => {
+        const serviceData = data[serviceType];
+        if (serviceData && serviceData.orders && serviceData.sales) {
+          const orders = serviceData.orders.current_period || 0;
+          const sales = serviceData.sales.current_period || 0;
+          const avgTicket = orders > 0 ? sales / orders : 0;
+          
+          aggregated[serviceType].orders += orders;
+          aggregated[serviceType].sales += sales;
+          aggregated[serviceType].average_ticket = avgTicket;
+          
+          totalOrders += orders;
+          totalSales += sales;
+        }
+      });
+    }
+  });
+  
+  // Calculate overall average ticket
+  const overallAvgTicket = totalOrders > 0 ? totalSales / totalOrders : 0;
+  
+  console.log(`📊 Service Metrics Aggregation:`);
+  console.log(`   Total Orders: ${totalOrders}`);
+  console.log(`   Total Sales: ${totalSales}`);
+  console.log(`   Overall Avg Ticket: ${overallAvgTicket}`);
+  
+  return aggregated;
+}
 
 export default router; 

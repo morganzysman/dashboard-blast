@@ -460,75 +460,83 @@ export async function fetchGeneralIndicators(account, queryParams = {}) {
       }
     };
 
-    // Process the actual orders data from the meta object
-    if (response.data && response.data.meta) {
-      console.log(`🔍 Processing orders meta data: ${JSON.stringify(response.data.meta)}`);
+    // Process the actual orders data from the response
+    if (response.data && response.data.data && Array.isArray(response.data.data)) {
+      console.log(`🔍 Processing orders data: ${response.data.data.length} orders found`);
       
-      // Extract orders data from meta object
-      const meta = response.data.meta;
-      let totalOrders = 0;
-      let totalSales = 0;
+      // Extract orders data from the data array
+      const orders = response.data.data;
+      const meta = response.data.meta || {};
       
-      // Process orders by service type
-      if (meta.orders_by_service_type) {
-        Object.keys(meta.orders_by_service_type).forEach(serviceType => {
-          const serviceData = meta.orders_by_service_type[serviceType];
-          const orders = serviceData.count || 0;
-          const sales = serviceData.total || 0;
-          const avgTicket = orders > 0 ? sales / orders : 0;
-          
-          // Map to our expected format
-          const mappedServiceType = serviceType.toUpperCase();
-          if (transformedData.data[mappedServiceType]) {
-            transformedData.data[mappedServiceType] = {
-              orders: { current_period: orders },
-              sales: { current_period: sales },
-              average_ticket: { current_period: avgTicket }
-            };
+      let totalOrders = orders.length;
+      let totalSales = meta.total_amount || 0;
+      let avgTicket = totalOrders > 0 ? totalSales / totalOrders : 0;
+      
+      // Count orders by service type
+      const serviceTypeCounts = {
+        TABLE: 0,
+        ONSITE: 0,
+        TAKEAWAY: 0,
+        DELIVERY: 0
+      };
+      
+      // Process each order to determine service type
+      orders.forEach(order => {
+        // Determine service type based on order properties
+        let serviceType = 'TABLE'; // default
+        
+        // Check for service_type field (this is the primary indicator)
+        if (order.service_type) {
+          const serviceTypeUpper = order.service_type.toUpperCase();
+          if (serviceTypeUpper === 'DELIVERY') {
+            serviceType = 'DELIVERY';
+          } else if (serviceTypeUpper === 'TAKEAWAY') {
+            serviceType = 'TAKEAWAY';
+          } else if (serviceTypeUpper === 'ONSITE') {
+            serviceType = 'ONSITE';
+          } else if (serviceTypeUpper === 'TABLE') {
+            serviceType = 'TABLE';
           }
-          
-          totalOrders += orders;
-          totalSales += sales;
-        });
-      }
+        }
+        // Fallback to delivery_type if service_type is not available
+        else if (order.delivery_type) {
+          const deliveryTypeUpper = order.delivery_type.toUpperCase();
+          if (deliveryTypeUpper === 'DELIVERY') {
+            serviceType = 'DELIVERY';
+          } else if (deliveryTypeUpper === 'TAKEAWAY') {
+            serviceType = 'TAKEAWAY';
+          } else if (deliveryTypeUpper === 'ONSITE') {
+            serviceType = 'ONSITE';
+          } else if (deliveryTypeUpper === 'TABLE') {
+            serviceType = 'TABLE';
+          }
+        }
+        
+        // Count this order
+        if (serviceTypeCounts[serviceType] !== undefined) {
+          serviceTypeCounts[serviceType]++;
+        }
+      });
       
-      // If no service type breakdown, try total orders
-      if (totalOrders === 0 && meta.total_orders) {
-        totalOrders = meta.total_orders;
-        totalSales = meta.total_sales || 0;
-        const avgTicket = totalOrders > 0 ? totalSales / totalOrders : 0;
-        
-        // Distribute across service types as fallback
-        const ordersPerType = Math.floor(totalOrders / 4);
-        transformedData.data.ONSITE = {
-          orders: { current_period: ordersPerType },
-          sales: { current_period: ordersPerType * avgTicket },
-          average_ticket: { current_period: avgTicket }
-        };
-        
-        transformedData.data.TAKEAWAY = {
-          orders: { current_period: ordersPerType },
-          sales: { current_period: ordersPerType * avgTicket },
-          average_ticket: { current_period: avgTicket }
-        };
-        
-        transformedData.data.DELIVERY = {
-          orders: { current_period: ordersPerType },
-          sales: { current_period: ordersPerType * avgTicket },
-          average_ticket: { current_period: avgTicket }
-        };
-        
-        const remainingOrders = totalOrders - (ordersPerType * 3);
-        transformedData.data.TABLE = {
-          orders: { current_period: remainingOrders },
-          sales: { current_period: remainingOrders * avgTicket },
-          average_ticket: { current_period: avgTicket }
-        };
-      }
+      // Calculate sales distribution (simplified - distribute total sales proportionally)
+      const totalCountedOrders = Object.values(serviceTypeCounts).reduce((sum, count) => sum + count, 0);
       
-      console.log(`📊 Processed ${totalOrders} orders from meta data`);
+      Object.keys(serviceTypeCounts).forEach(serviceType => {
+        const orderCount = serviceTypeCounts[serviceType];
+        const serviceSales = totalCountedOrders > 0 ? (orderCount / totalCountedOrders) * totalSales : 0;
+        const serviceAvgTicket = orderCount > 0 ? serviceSales / orderCount : 0;
+        
+        transformedData.data[serviceType] = {
+          orders: { current_period: orderCount },
+          sales: { current_period: serviceSales },
+          average_ticket: { current_period: serviceAvgTicket }
+        };
+      });
+      
+      console.log(`📊 Processed ${totalOrders} orders with ${totalSales} total sales`);
+      console.log(`📊 Service type breakdown:`, serviceTypeCounts);
     } else {
-      console.log(`⚠️  No meta data found in response`);
+      console.log(`⚠️  No orders data found in response`);
     }
 
     console.log(`✅ Orders request successful for ${account.company_token}`);
@@ -550,6 +558,97 @@ export async function fetchGeneralIndicators(account, queryParams = {}) {
       if (error.response.status === 401) {
         console.log(`   🔍 Auth issue - check company_token and api_token`);
       }
+    } else if (error.request) {
+      console.log(`   Network error - no response received`);
+    }
+
+    return {
+      success: false,
+      error: error.response?.data || error.message,
+      account: account.account_name || account.name || account.company_token,
+      accountKey: account.company_token
+    };
+  }
+}
+
+// Helper function to fetch service metrics (only works for "today")
+export async function fetchServiceMetrics(account, queryParams = {}) {
+  if (!account) {
+    throw new Error('Account not found');
+  }
+
+  // Get timezone from parameters or default to Lima
+  let timezone = queryParams.timezone || config.olaClick.defaultTimezone;
+  if (!timezone || timezone === 'undefined') {
+    timezone = config.olaClick.defaultTimezone;
+  }
+  
+  // This endpoint only works for "today" period
+  const baseUrl = 'https://api.olaclick.app/ms-reports/auth/dashboard/general_indicators';
+  const params = {
+    period: 'today',
+    timezone: timezone
+  };
+  
+  const urlParams = new URLSearchParams(params);
+  const fullUrl = `${baseUrl}?${urlParams.toString()}`;
+
+  // Debug logging for API requests
+  console.log(`🔍 Service Metrics API Request for ${account.company_token}:`);
+  console.log(`   URL: ${fullUrl}`);
+  console.log(`   Company Token: ${account.company_token}`);
+  console.log(`   Period: today`);
+  console.log(`   Timezone: ${timezone}`);
+
+  // Construct cookie header
+  let cookieHeader;
+  try {
+    cookieHeader = constructCookieHeader(account);
+  } catch (cookieError) {
+    console.log(`   ❌ Cookie construction failed: ${cookieError.message}`);
+    throw cookieError;
+  }
+
+  // Prepare headers
+  const headers = {
+    'accept': 'application/json,multipart/form-data',
+    'accept-language': 'en-US,en;q=0.8',
+    'app-company-token': account.company_token,
+    'content-type': 'application/json',
+    'cookie': cookieHeader,
+    'origin': 'https://orders.olaclick.app',
+    'referer': 'https://orders.olaclick.app/',
+    'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36'
+  };
+
+  console.log(`   Cookie: ${cookieHeader.substring(0, 100)}...`);
+  console.log(`   Making request...`);
+
+  try {
+    const response = await axios.get(baseUrl, {
+      params,
+      headers
+    });
+
+    // Debug logging for API responses
+    console.log(`📊 Service Metrics API Response for ${account.company_token}:`);
+    console.log(`   Status: ${response.status}`);
+    console.log(`   Data: ${JSON.stringify(response.data)}`);
+
+    console.log(`✅ Service Metrics request successful for ${account.company_token}`);
+
+    return {
+      success: true,
+      data: response.data,
+      account: account.account_name || account.name || account.company_token,
+      accountKey: account.company_token
+    };
+  } catch (error) {
+    console.log(`❌ Service Metrics request failed for ${account.company_token}: ${error.message}`);
+    
+    if (error.response) {
+      console.log(`   Status: ${error.response.status} - ${error.response.statusText}`);
+      console.log(`   Response: ${JSON.stringify(error.response.data)}`);
     } else if (error.request) {
       console.log(`   Network error - no response received`);
     }
