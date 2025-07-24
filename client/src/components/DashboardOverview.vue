@@ -148,7 +148,10 @@
           
           <!-- Account Distribution Bar -->
           <div v-if="analyticsData && analyticsData.accounts.length > 1" class="mt-3">
-            <div class="relative w-full bg-green-700 bg-opacity-30 rounded-full h-6 overflow-hidden">
+            <div class="flex items-center space-x-1 mb-2">
+              <span class="text-green-100 text-xs font-medium">By Account:</span>
+            </div>
+            <div class="relative w-full bg-green-700 bg-opacity-30 rounded-full h-6 overflow-hidden mb-3">
               <div class="flex h-full relative">
                 <div v-for="account in getAccountTotalsForChart()" 
                      :key="account.accountKey"
@@ -161,7 +164,7 @@
                   <div v-if="account.percent > 15" 
                        class="absolute inset-0 flex flex-col items-center justify-center px-1">
                     <span class="text-white text-xs font-semibold truncate leading-tight">{{ account.account.split(' ')[0] }}</span>
-                    <span class="text-white text-xs opacity-90 leading-tight">{{ formatCurrency(account.totalAmount) }}</span>
+                    <span class="text-white text-xs opacity-90 leading-tight">{{ account.percent.toFixed(0) }}%</span>
                   </div>
                   
                   <!-- Tooltip for all segments -->
@@ -170,6 +173,24 @@
                     {{ formatCurrency(account.totalAmount) }} ({{ account.percent.toFixed(1) }}%)
                   </div>
                 </div>
+              </div>
+            </div>
+            
+            <!-- Account Distribution Legend -->
+            <div class="space-y-1 text-xs max-h-16 overflow-y-auto">
+              <div v-for="account in getAccountTotalsForChart().slice(0, 3)" :key="account.accountKey" 
+                   class="flex items-center justify-between">
+                <div class="flex items-center space-x-1 min-w-0 flex-1">
+                  <div class="w-2 h-2 rounded-full flex-shrink-0" :style="{ backgroundColor: getAccountColor(account.accountKey) }"></div>
+                  <span class="text-green-100 truncate">{{ account.account.split(' ')[0] }}</span>
+                </div>
+                <div class="flex items-center space-x-1 text-green-200">
+                  <span class="font-medium">{{ formatCurrency(account.totalAmount) }}</span>
+                  <span>({{ account.percent.toFixed(0) }}%)</span>
+                </div>
+              </div>
+              <div v-if="getAccountTotalsForChart().length > 3" class="text-green-200 text-center">
+                +{{ getAccountTotalsForChart().length - 3 }} more accounts
               </div>
             </div>
           </div>
@@ -205,13 +226,6 @@
           <div class="flex items-center justify-between mb-3">
             <div class="min-w-0 flex-1">
               <p class="text-purple-100 text-xs sm:text-sm font-medium">PAYMENT METHODS</p>
-              <p class="text-lg sm:text-xl font-bold truncate">{{ analyticsData.aggregated.paymentMethods.length }} Methods</p>
-              <p class="text-xs sm:text-sm text-purple-200 mt-1">{{ formatCurrency(analyticsData.aggregated.totalAmount) }} total</p>
-            </div>
-            <div class="w-10 h-10 sm:w-12 sm:h-12 bg-purple-400 bg-opacity-30 rounded-lg flex items-center justify-center flex-shrink-0">
-              <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
-              </svg>
             </div>
           </div>
           
@@ -231,12 +245,13 @@
               </div>
               
               <!-- Legend -->
-              <div class="ml-4 space-y-1 text-xs max-w-24">
+              <div class="ml-4 space-y-1 text-xs max-w-32">
                 <div v-for="method in analyticsData.aggregated.paymentMethods.slice(0, 3)" :key="method.name" 
                      class="flex items-center space-x-1">
                   <div class="w-2 h-2 rounded-full flex-shrink-0" :style="{ backgroundColor: getPaymentMethodColor(method.name) }"></div>
                   <span class="text-purple-100 truncate capitalize">{{ method.name }}</span>
                   <span class="text-purple-200">{{ method.percent.toFixed(0) }}%</span>
+                  <span class="text-purple-100 font-semibold ml-1">{{ formatCurrency(method.sum) }}</span>
                 </div>
                 <div v-if="analyticsData.aggregated.paymentMethods.length > 3" class="text-purple-200">
                   +{{ analyticsData.aggregated.paymentMethods.length - 3 }} more
