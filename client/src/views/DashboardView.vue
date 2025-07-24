@@ -234,13 +234,22 @@ const fetchServiceMetricsData = async (dateRange = null) => {
     // Always use explicit dates - frontend is responsible for calculating them
     const effectiveDateRange = dateRange || currentDateRange.value
     
+    console.log('🔍 Service metrics request params:', {
+      start: effectiveDateRange.start,
+      end: effectiveDateRange.end,
+      timezone: timezone
+    })
+    
     const params = new URLSearchParams({
       'filter[start_date]': effectiveDateRange.start,
       'filter[end_date]': effectiveDateRange.end,
       'filter[timezone]': timezone
     })
 
-    const data = await api.get(`/api/payments/general-indicators?${params.toString()}`)
+    const url = `/api/payments/general-indicators?${params.toString()}`
+    console.log('🔍 Service metrics request URL:', url)
+
+    const data = await api.get(url)
     
     if (data.success) {
       serviceMetricsData.value = data
