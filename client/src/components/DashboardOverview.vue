@@ -113,9 +113,6 @@
           
           <!-- Orders Distribution Pie Chart -->
           <div v-if="analyticsData && analyticsData.accounts.length > 1" class="mt-3">
-            <div class="flex items-center space-x-1 mb-2">
-              <span class="text-blue-100 text-xs font-medium">By Account:</span>
-            </div>
             <div class="flex items-center justify-center">
               <div class="relative w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0">
                 <!-- Pie Chart using conic-gradient -->
@@ -135,7 +132,7 @@
                      class="flex items-center justify-between min-w-0">
                   <div class="flex items-center space-x-1 min-w-0">
                     <div class="w-2 h-2 rounded-full flex-shrink-0" :style="{ backgroundColor: getAccountColor(account.accountKey) }"></div>
-                    <span class="text-blue-100">{{ account.account.split(' ')[0] }}</span>
+                    <span class="text-blue-100">{{ account.account }}</span>
                     <span class="text-blue-200">{{ account.percent.toFixed(0) }}%</span>
                   </div>
                   <span class="text-blue-100 font-medium ml-2">{{ account.totalOrders }}</span>
