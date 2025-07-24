@@ -96,10 +96,10 @@
 
     <!-- Overall Performance Cards -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6" v-if="analyticsData">
-      <!-- Total Orders -->
+      <!-- Total Orders with Account Distribution -->
       <div class="card bg-gradient-to-r from-blue-500 to-blue-600 text-white">
         <div class="card-body">
-          <div class="flex items-center justify-between">
+          <div class="flex items-center justify-between mb-3">
             <div class="min-w-0 flex-1">
               <p class="text-blue-100 text-xs sm:text-sm font-medium">TOTAL ORDERS</p>
               <p class="text-lg sm:text-xl font-bold truncate">{{ getTotalOrders() }}</p>
@@ -109,6 +109,47 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
               </svg>
             </div>
+          </div>
+          
+          <!-- Orders Distribution Pie Chart -->
+          <div v-if="analyticsData && analyticsData.accounts.length > 1" class="mt-3">
+            <div class="flex items-center space-x-1 mb-2">
+              <span class="text-blue-100 text-xs font-medium">By Account:</span>
+            </div>
+            <div class="flex items-center justify-center">
+              <div class="relative w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0">
+                <!-- Pie Chart using conic-gradient -->
+                <div 
+                  class="w-full h-full rounded-full"
+                  :style="{ background: getOrdersPieChart() }"
+                ></div>
+                <!-- Center hole for donut effect -->
+                <div class="absolute inset-2 bg-blue-600 rounded-full flex items-center justify-center">
+                  <span class="text-white text-xs font-bold">{{ analyticsData.accounts.length }}</span>
+                </div>
+              </div>
+              
+              <!-- Legend -->
+              <div class="ml-3 space-y-1 text-xs min-w-0 flex-1">
+                <div v-for="account in getOrdersDistributionForChart().slice(0, 3)" :key="account.accountKey" 
+                     class="flex items-center justify-between min-w-0">
+                  <div class="flex items-center space-x-1 min-w-0">
+                    <div class="w-2 h-2 rounded-full flex-shrink-0" :style="{ backgroundColor: getAccountColor(account.accountKey) }"></div>
+                    <span class="text-blue-100">{{ account.account.split(' ')[0] }}</span>
+                    <span class="text-blue-200">{{ account.percent.toFixed(0) }}%</span>
+                  </div>
+                  <span class="text-blue-100 font-medium ml-2">{{ account.totalOrders }}</span>
+                </div>
+                <div v-if="getOrdersDistributionForChart().length > 3" class="text-blue-200">
+                  +{{ getOrdersDistributionForChart().length - 3 }} more
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Single account message -->
+          <div v-else-if="analyticsData && analyticsData.accounts.length === 1" class="mt-3">
+            <span class="text-blue-100 text-xs">{{ analyticsData.accounts[0].account }}</span>
           </div>
         </div>
       </div>
@@ -426,6 +467,24 @@ const getAccountTotalAmount = (account) => {
   return account.data.data.reduce((sum, method) => sum + (method.sum || 0), 0)
 }
 
+const getAccountTotalOrders = (account) => {
+  if (!account.success) return 0
+  
+  // Try to get orders from service metrics first
+  if (account.serviceMetrics) {
+    const ordersFromServiceMetrics = Object.values(account.serviceMetrics).reduce((sum, service) => sum + (service?.orders?.current_period ?? 0), 0);
+    return ordersFromServiceMetrics;
+  }
+  
+  // Fallback to payment data if service metrics not available
+  if (account.data?.data) {
+    const ordersFromPayments = account.data.data.reduce((sum, method) => sum + (method.count || 0), 0);
+    return ordersFromPayments;
+  }
+  
+  return 0
+}
+
 const getServiceColor = (serviceType) => {
   const colors = {
     'TABLE': '#4F46E5', // Indigo
@@ -538,6 +597,53 @@ const getAccountsPieChart = () => {
   const gradientStops = []
 
   accounts.forEach((account, index) => {
+    const color = getAccountColor(account.accountKey)
+    const percentage = account.percent
+    const degrees = (percentage / 100) * 360
+    
+    gradientStops.push(`${color} ${currentAngle}deg ${currentAngle + degrees}deg`)
+    currentAngle += degrees
+  })
+
+  return `conic-gradient(${gradientStops.join(', ')})`
+}
+
+// Get orders distribution for chart
+const getOrdersDistributionForChart = () => {
+  if (!props.analyticsData || props.analyticsData.accounts.length === 0) {
+    return []
+  }
+
+  const ordersDistribution = props.analyticsData.accounts.map(account => {
+    const totalOrders = getAccountTotalOrders(account)
+    return {
+      accountKey: account.accountKey,
+      account: account.account,
+      totalOrders: totalOrders,
+      percent: 0 // Will be calculated below
+    }
+  })
+
+  // Calculate total orders across all accounts for the chart
+  const totalOrdersAcrossAllAccounts = ordersDistribution.reduce((sum, account) => sum + account.totalOrders, 0)
+
+  return ordersDistribution.map(account => ({
+    ...account,
+    percent: totalOrdersAcrossAllAccounts > 0 ? (account.totalOrders / totalOrdersAcrossAllAccounts) * 100 : 0
+  })).sort((a, b) => b.totalOrders - a.totalOrders) // Sort by total orders descending
+}
+
+// Generate pie chart for orders distribution using conic-gradient
+const getOrdersPieChart = () => {
+  const ordersDistribution = getOrdersDistributionForChart()
+  if (!ordersDistribution || !ordersDistribution.length) {
+    return 'conic-gradient(#6B7280 0deg 360deg)'
+  }
+
+  let currentAngle = 0
+  const gradientStops = []
+
+  ordersDistribution.forEach((account, index) => {
     const color = getAccountColor(account.accountKey)
     const percentage = account.percent
     const degrees = (percentage / 100) * 360
