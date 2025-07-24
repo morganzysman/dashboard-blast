@@ -502,13 +502,15 @@ const getServiceMetricsForChart = () => {
 }
 
 const getTotalOrders = () => {
-  // Use service metrics data if available, otherwise fall back to payment data
-  if (props.serviceMetricsData && props.serviceMetricsData.aggregated) {
-    return props.serviceMetricsData.aggregated.totalOrders
-  }
-  // Fallback to payment data
-  if (props.analyticsData) {
-    return props.analyticsData.aggregated.totalPayments
+  // Calculate total orders from analytics data (same source as account details)
+  if (props.analyticsData && props.analyticsData.accounts) {
+    return props.analyticsData.accounts.reduce((total, account) => {
+      if (account.serviceMetrics) {
+        return total + Object.values(account.serviceMetrics).reduce((sum, service) => 
+          sum + (service?.orders?.current_period ?? 0), 0)
+      }
+      return total
+    }, 0)
   }
   return 0
 }
