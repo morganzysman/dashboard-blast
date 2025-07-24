@@ -61,10 +61,33 @@ self.addEventListener('fetch', event => {
     fetch(request)
       .then(response => {
         console.log('🌐 Service Worker: Fresh fetch for:', url.pathname);
+        
+        // Log API responses for debugging
+        if (url.pathname.startsWith('/api/')) {
+          console.log('📊 Service Worker: API Response for', url.pathname, {
+            status: response.status,
+            statusText: response.statusText,
+            headers: Object.fromEntries(response.headers.entries())
+          });
+          
+          // Clone response to read body without consuming it
+          const responseClone = response.clone();
+          responseClone.text().then(text => {
+            try {
+              const data = JSON.parse(text);
+              console.log('📊 Service Worker: API Response data for', url.pathname, data);
+            } catch (e) {
+              console.log('📊 Service Worker: API Response text for', url.pathname, text.substring(0, 200) + '...');
+            }
+          }).catch(err => {
+            console.log('📊 Service Worker: Could not read API response for', url.pathname, err);
+          });
+        }
+        
         return response;
       })
       .catch(error => {
-        console.log('❌ Service Worker: Network failed for:', url.pathname);
+        console.log('❌ Service Worker: Network failed for:', url.pathname, error);
     
         // Return basic offline response
         if (request.mode === 'navigate') {
