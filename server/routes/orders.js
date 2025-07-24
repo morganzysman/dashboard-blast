@@ -68,7 +68,6 @@ function aggregateOrdersData(accountsData) {
 }
 
 
-
 // Helper function to validate date format and ensure it's a valid date
 function isValidDateString(dateStr) {
   if (!dateStr || typeof dateStr !== 'string') {
