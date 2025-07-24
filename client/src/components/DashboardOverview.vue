@@ -467,16 +467,10 @@ const getAccountTotalAmount = (account) => {
 const getAccountTotalOrders = (account) => {
   if (!account.success) return 0
   
-  // Try to get orders from service metrics first
+  // Only use service metrics data for orders - this is the correct source that updates with dates
   if (account.serviceMetrics) {
     const ordersFromServiceMetrics = Object.values(account.serviceMetrics).reduce((sum, service) => sum + (service?.orders?.current_period ?? 0), 0);
     return ordersFromServiceMetrics;
-  }
-  
-  // Fallback to payment data if service metrics not available
-  if (account.data?.data) {
-    const ordersFromPayments = account.data.data.reduce((sum, method) => sum + (method.count || 0), 0);
-    return ordersFromPayments;
   }
   
   return 0
@@ -612,16 +606,13 @@ const getOrdersDistributionForChart = () => {
   }
 
   const ordersDistribution = props.analyticsData.accounts.map(account => {
-    // Use service metrics data if available, otherwise fall back to payment data
+    // Only use service metrics data for orders - this is the correct source that updates with dates
     let totalOrders = 0
     
     if (account.serviceMetrics) {
       // Sum orders from all service types for this account
       totalOrders = Object.values(account.serviceMetrics).reduce((sum, service) => 
         sum + (service?.orders?.current_period ?? 0), 0)
-    } else if (account.data?.data) {
-      // Fallback to payment data if service metrics not available
-      totalOrders = account.data.data.reduce((sum, method) => sum + (method.count || 0), 0)
     }
     
     return {
