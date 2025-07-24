@@ -1,24 +1,23 @@
 <template>
   <div class="space-y-4 lg:space-y-6">
-    <!-- Header -->
-    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-      <div>
-        <h2 class="text-xl sm:text-2xl font-bold text-gray-900">📊 Performance Overview</h2>
-        <p class="text-sm sm:text-base text-gray-600">Real-time analytics from your OlaClick accounts</p>
-      </div>
-    </div>
-
-    <!-- Date Range Picker -->
+    <!-- Header with Date Picker -->
     <div class="card">
       <div class="card-body">
-        <div class="flex flex-col space-y-4 sm:space-y-0 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
-          <div class="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
-            <label class="text-sm font-medium text-gray-700">📅 Date Range:</label>
+        <!-- Header and Date Range on same line -->
+        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-4">
+          <div class="min-w-0">
+            <h2 class="text-lg sm:text-xl font-bold text-gray-900">📊 Performance Overview</h2>
+            <p class="text-xs sm:text-sm text-gray-600">Real-time analytics from your OlaClick accounts</p>
+          </div>
+          
+          <!-- Date Range Picker -->
+          <div class="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-2 flex-shrink-0">
+            <label class="text-xs sm:text-sm font-medium text-gray-700">📅 Date Range:</label>
             <select 
               :value="selectedDateRange" 
               @input="$emit('update:selectedDateRange', $event.target.value)"
               @change="onDateRangeChange" 
-              class="form-input w-full sm:w-auto text-sm"
+              class="form-input w-full sm:w-auto text-xs sm:text-sm"
             >
               <option value="today">Today</option>
               <option value="yesterday">Yesterday</option>
@@ -31,6 +30,11 @@
               <option value="custom">Custom Range</option>
             </select>
           </div>
+        </div>
+
+        <!-- Custom Date Inputs and Actions -->
+        <div class="flex flex-col space-y-3 sm:space-y-0 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
+          <!-- Custom Date Inputs -->
 
           <!-- Custom Date Inputs -->
           <div v-if="selectedDateRange === 'custom'" class="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
@@ -126,18 +130,7 @@
           <div class="flex items-center justify-between mb-3">
             <div class="min-w-0 flex-1">
               <p class="text-green-100 text-xs sm:text-sm font-medium">TOTAL AMOUNT</p>
-              <p class="text-xl sm:text-3xl font-bold truncate">{{ formatCurrency(analyticsData.aggregated.totalAmount) }}</p>
-              <div class="flex items-center mt-1" v-if="analyticsData.comparison">
-                <span class="text-xs sm:text-sm" :class="analyticsData.comparison.amount.trend === 'up' ? 'text-green-200' : 'text-red-200'">
-                  {{ analyticsData.comparison.amount.trend === 'up' ? '↗' : '↘' }}
-                  {{
-                    analyticsData.aggregated.totalAmount
-                      ? ((Math.abs(analyticsData.comparison.amount.difference) / analyticsData.aggregated.totalAmount) * 100).toFixed(1)
-                      : '0.0'
-                  }}%
-                </span>
-                <span class="text-xs text-green-200 ml-1">vs Prev. same period</span>
-              </div>
+              <p class="text-lg sm:text-xl font-bold truncate">{{ formatCurrency(analyticsData.aggregated.totalAmount) }}</p>
             </div>
             <div class="w-10 h-10 sm:w-12 sm:h-12 bg-green-400 bg-opacity-30 rounded-lg flex items-center justify-center flex-shrink-0">
               <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -152,7 +145,7 @@
               <span class="text-green-100 text-xs font-medium">By Account:</span>
             </div>
             <div class="flex items-center justify-center">
-              <div class="relative w-16 h-16 sm:w-20 sm:h-20">
+              <div class="relative w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0">
                 <!-- Pie Chart using conic-gradient -->
                 <div 
                   class="w-full h-full rounded-full"
@@ -165,12 +158,15 @@
               </div>
               
               <!-- Legend -->
-              <div class="ml-4 space-y-1 text-xs max-w-24">
+              <div class="ml-3 space-y-1 text-xs min-w-0 flex-1">
                 <div v-for="account in getAccountTotalsForChart().slice(0, 3)" :key="account.accountKey" 
-                     class="flex items-center space-x-1">
-                  <div class="w-2 h-2 rounded-full flex-shrink-0" :style="{ backgroundColor: getAccountColor(account.accountKey) }"></div>
-                  <span class="text-green-100 truncate">{{ account.account.split(' ')[0] }}</span>
-                  <span class="text-green-200">{{ account.percent.toFixed(0) }}%</span>
+                     class="flex items-center justify-between min-w-0">
+                  <div class="flex items-center space-x-1 min-w-0">
+                    <div class="w-2 h-2 rounded-full flex-shrink-0" :style="{ backgroundColor: getAccountColor(account.accountKey) }"></div>
+                    <span class="text-green-100">{{ account.account.split(' ')[0] }}</span>
+                    <span class="text-green-200">{{ account.percent.toFixed(0) }}%</span>
+                  </div>
+                  <span class="text-green-100 font-medium ml-2">{{ formatCurrency(account.totalAmount) }}</span>
                 </div>
                 <div v-if="getAccountTotalsForChart().length > 3" class="text-green-200">
                   +{{ getAccountTotalsForChart().length - 3 }} more
@@ -192,13 +188,20 @@
           <div class="flex items-center justify-between mb-3">
             <div class="min-w-0 flex-1">
               <p class="text-purple-100 text-xs sm:text-sm font-medium">PAYMENT METHODS</p>
+              <p class="text-lg sm:text-xl font-bold">{{ analyticsData.aggregated.paymentMethods.length }} Methods</p>
+              <p class="text-xs sm:text-sm text-purple-200">{{ formatCurrency(analyticsData.aggregated.totalAmount) }} total</p>
+            </div>
+            <div class="w-10 h-10 sm:w-12 sm:h-12 bg-purple-400 bg-opacity-30 rounded-lg flex items-center justify-center flex-shrink-0">
+              <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+              </svg>
             </div>
           </div>
           
           <!-- Payment Methods Pie Chart -->
           <div v-if="analyticsData && analyticsData.aggregated.paymentMethods.length > 0" class="mt-3">
             <div class="flex items-center justify-center">
-              <div class="relative w-16 h-16 sm:w-20 sm:h-20">
+              <div class="relative w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0">
                 <!-- Pie Chart using conic-gradient -->
                 <div 
                   class="w-full h-full rounded-full"
@@ -211,13 +214,15 @@
               </div>
               
               <!-- Legend -->
-              <div class="ml-4 space-y-1 text-xs max-w-32">
+              <div class="ml-3 space-y-1 text-xs min-w-0 flex-1">
                 <div v-for="method in analyticsData.aggregated.paymentMethods.slice(0, 3)" :key="method.name" 
-                     class="flex items-center space-x-1">
-                  <div class="w-2 h-2 rounded-full flex-shrink-0" :style="{ backgroundColor: getPaymentMethodColor(method.name) }"></div>
-                  <span class="text-purple-100 truncate capitalize">{{ method.name }}</span>
-                  <span class="text-purple-200">{{ method.percent.toFixed(0) }}%</span>
-                  <span class="text-purple-100 font-semibold ml-1">{{ formatCurrency(method.sum) }}</span>
+                     class="flex items-center justify-between min-w-0">
+                  <div class="flex items-center space-x-1 min-w-0">
+                    <div class="w-2 h-2 rounded-full flex-shrink-0" :style="{ backgroundColor: getPaymentMethodColor(method.name) }"></div>
+                    <span class="text-purple-100 capitalize">{{ method.name }}</span>
+                    <span class="text-purple-200">{{ method.percent.toFixed(0) }}%</span>
+                  </div>
+                  <span class="text-purple-100 font-medium ml-2">{{ formatCurrency(method.sum) }}</span>
                 </div>
                 <div v-if="analyticsData.aggregated.paymentMethods.length > 3" class="text-purple-200">
                   +{{ analyticsData.aggregated.paymentMethods.length - 3 }} more
