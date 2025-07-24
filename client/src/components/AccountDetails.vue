@@ -35,8 +35,36 @@
               </div>
             </div>
       
-            <!-- Account Service Metrics -->
-            <div v-if="account.serviceMetrics" class="bg-white border border-gray-100 rounded-lg p-3 mt-3">
+  
+
+            <!-- Account Payment Methods -->
+            <div v-if="account.data.data && account.data.data.length > 0" class="bg-white border border-gray-100 rounded-lg p-3">
+              <h5 class="text-xs font-medium text-gray-700 mb-2 flex items-center">
+                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+                </svg>
+                Payment Methods
+              </h5>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div v-for="method in getAccountPaymentMethods(account)" :key="method.name" 
+                     class="bg-gray-50 rounded p-2">
+                  <div class="flex items-center space-x-2 mb-1">
+                    <div class="w-2 h-2 rounded-full flex-shrink-0" :style="{ backgroundColor: getPaymentMethodColor(method.name) }"></div>
+                    <p class="font-medium text-gray-900 capitalize text-xs truncate">{{ method.name }}</p>
+                  </div>
+                  <div class="space-y-0.5">
+                    <p class="font-bold text-gray-900 text-xs">{{ formatCurrency(method.sum) }}</p>
+                    <div class="flex items-center justify-between text-xs text-gray-500">
+                      <span>{{ method.count }} transactions</span>
+                      <span>{{ method.percent.toFixed(1) }}%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+                      <!-- Account Service Metrics -->
+                      <div v-if="account.serviceMetrics" class="bg-white border border-gray-100 rounded-lg p-3 mt-3">
               <div class="flex items-center justify-between mb-2">
                 <h5 class="text-xs font-medium text-gray-700 flex items-center">
                   <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -102,33 +130,6 @@
                 <p class="text-xs sm:text-sm text-gray-400 mt-1">Switch to a predefined date range to view detailed service metrics</p>
               </div>
             </div>
-
-            <!-- Account Payment Methods -->
-            <div v-if="account.data.data && account.data.data.length > 0" class="bg-white border border-gray-100 rounded-lg p-3">
-              <h5 class="text-xs font-medium text-gray-700 mb-2 flex items-center">
-                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
-                </svg>
-                Payment Methods
-              </h5>
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <div v-for="method in getAccountPaymentMethods(account)" :key="method.name" 
-                     class="bg-gray-50 rounded p-2">
-                  <div class="flex items-center space-x-2 mb-1">
-                    <div class="w-2 h-2 rounded-full flex-shrink-0" :style="{ backgroundColor: getPaymentMethodColor(method.name) }"></div>
-                    <p class="font-medium text-gray-900 capitalize text-xs truncate">{{ method.name }}</p>
-                  </div>
-                  <div class="space-y-0.5">
-                    <p class="font-bold text-gray-900 text-xs">{{ formatCurrency(method.sum) }}</p>
-                    <div class="flex items-center justify-between text-xs text-gray-500">
-                      <span>{{ method.count }} transactions</span>
-                      <span>{{ method.percent.toFixed(1) }}%</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
 
           </div>
 
