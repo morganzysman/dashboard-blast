@@ -468,7 +468,7 @@ export async function fetchGeneralIndicators(account, queryParams = {}) {
       const orders = response.data.data;
       const meta = response.data.meta || {};
       
-      let totalOrders = orders.length;
+      let totalOrders = meta.total;
       let totalSales = meta.total_amount || 0;
       let avgTicket = totalOrders > 0 ? totalSales / totalOrders : 0;
       
