@@ -202,6 +202,8 @@ router.get('/', requireAuth, async (req, res) => {
       return fetchGeneralIndicators(account, params);
     });
     
+    const currentResults = await Promise.all(currentPromises);
+    
     // Process and aggregate the data
     const currentAggregated = aggregateOrdersData(currentResults);
     
