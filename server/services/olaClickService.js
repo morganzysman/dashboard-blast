@@ -387,9 +387,8 @@ export async function fetchGeneralIndicators(account, queryParams = {}) {
   }
   
   // Construct the URL for the request
-  // TEMPORARY: Using the same endpoint as payments but with different parameters
-  // The general_indicators endpoint doesn't seem to support date filtering properly
-  const baseUrl = config.olaClick.baseUrl; // Use the same endpoint as payments
+  // Try different endpoint for orders data
+  const baseUrl = 'https://api.olaclick.app/ms-orders/auth/orders/by_service_types';
   const params = {
     'filter[start_date]': startDate,
     'filter[end_date]': endDate,
@@ -449,8 +448,8 @@ export async function fetchGeneralIndicators(account, queryParams = {}) {
     console.log(`   Data: ${JSON.stringify(response.data)}`);
 
     // Transform the response to match the expected format for orders
-    // The payments endpoint returns payment methods, but we need to transform it to orders format
-    const transformedData = {
+    // Try to process the actual response data
+    let transformedData = {
       data: {
         TABLE: { orders: { current_period: 0 }, sales: { current_period: 0 }, average_ticket: { current_period: 0 } },
         ONSITE: { orders: { current_period: 0 }, sales: { current_period: 0 }, average_ticket: { current_period: 0 } },
@@ -459,9 +458,26 @@ export async function fetchGeneralIndicators(account, queryParams = {}) {
       }
     };
 
-    // TODO: We need to find the correct endpoint for orders data
-    // For now, return empty data structure
-    console.log(`⚠️  Using temporary orders data structure - need to find correct endpoint`);
+    // Try to process the actual response if it contains service type data
+    if (response.data && response.data.data && Array.isArray(response.data.data)) {
+      console.log(`🔍 Processing service types data: ${JSON.stringify(response.data.data)}`);
+      
+      // Map service types to our expected format
+      response.data.data.forEach(service => {
+        if (service.name && service.count && service.sum) {
+          const serviceType = service.name.toUpperCase();
+          if (transformedData.data[serviceType]) {
+            transformedData.data[serviceType] = {
+              orders: { current_period: service.count },
+              sales: { current_period: service.sum },
+              average_ticket: { current_period: service.count > 0 ? service.sum / service.count : 0 }
+            };
+          }
+        }
+      });
+    } else {
+      console.log(`⚠️  No service types data found in response`);
+    }
 
     console.log(`✅ Orders request successful for ${account.company_token}`);
 
