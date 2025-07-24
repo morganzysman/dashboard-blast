@@ -242,7 +242,7 @@ router.get('/', requireAuth, async (req, res) => {
     
     // Calculate comparison
     console.log('📈 Calculating comparison...');
-    const comparison = calculateComparison(aggregated, previousAggregated);
+    const comparison = calculateComparison(currentResults, previousResults);
     
     console.log('📈 Final aggregated data:');
     console.log(`   Total Payments: ${aggregated.totalPayments}`);
