@@ -472,69 +472,14 @@ export async function fetchGeneralIndicators(account, queryParams = {}) {
       let totalSales = meta.total_amount || 0;
       let avgTicket = totalOrders > 0 ? totalSales / totalOrders : 0;
       
-      // Count orders by service type
-      const serviceTypeCounts = {
-        TABLE: 0,
-        ONSITE: 0,
-        TAKEAWAY: 0,
-        DELIVERY: 0
+      // Simple aggregated data
+      transformedData = {
+        orders: totalOrders,
+        sales: totalSales,
+        averageTicket: avgTicket
       };
       
-      // Process each order to determine service type
-      orders.forEach(order => {
-        // Determine service type based on order properties
-        let serviceType = 'TABLE'; // default
-        
-        // Check for service_type field (this is the primary indicator)
-        if (order.service_type) {
-          const serviceTypeUpper = order.service_type.toUpperCase();
-          if (serviceTypeUpper === 'DELIVERY') {
-            serviceType = 'DELIVERY';
-          } else if (serviceTypeUpper === 'TAKEAWAY') {
-            serviceType = 'TAKEAWAY';
-          } else if (serviceTypeUpper === 'ONSITE') {
-            serviceType = 'ONSITE';
-          } else if (serviceTypeUpper === 'TABLE') {
-            serviceType = 'TABLE';
-          }
-        }
-        // Fallback to delivery_type if service_type is not available
-        else if (order.delivery_type) {
-          const deliveryTypeUpper = order.delivery_type.toUpperCase();
-          if (deliveryTypeUpper === 'DELIVERY') {
-            serviceType = 'DELIVERY';
-          } else if (deliveryTypeUpper === 'TAKEAWAY') {
-            serviceType = 'TAKEAWAY';
-          } else if (deliveryTypeUpper === 'ONSITE') {
-            serviceType = 'ONSITE';
-          } else if (deliveryTypeUpper === 'TABLE') {
-            serviceType = 'TABLE';
-          }
-        }
-        
-        // Count this order
-        if (serviceTypeCounts[serviceType] !== undefined) {
-          serviceTypeCounts[serviceType]++;
-        }
-      });
-      
-      // Calculate sales distribution (simplified - distribute total sales proportionally)
-      const totalCountedOrders = Object.values(serviceTypeCounts).reduce((sum, count) => sum + count, 0);
-      
-      Object.keys(serviceTypeCounts).forEach(serviceType => {
-        const orderCount = serviceTypeCounts[serviceType];
-        const serviceSales = totalCountedOrders > 0 ? (orderCount / totalCountedOrders) * totalSales : 0;
-        const serviceAvgTicket = orderCount > 0 ? serviceSales / orderCount : 0;
-        
-        transformedData.data[serviceType] = {
-          orders: { current_period: orderCount },
-          sales: { current_period: serviceSales },
-          average_ticket: { current_period: serviceAvgTicket }
-        };
-      });
-      
       console.log(`📊 Processed ${totalOrders} orders with ${totalSales} total sales`);
-      console.log(`📊 Service type breakdown:`, serviceTypeCounts);
     } else {
       console.log(`⚠️  No orders data found in response`);
     }

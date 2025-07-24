@@ -8,81 +8,67 @@ import { config } from '../config/index.js';
 
 const router = Router();
 
-// Helper function to aggregate general indicators data
-function aggregateGeneralIndicators(accountsData) {
-  console.log('📊 Aggregating general indicators data:');
+// Helper function to aggregate orders data
+function aggregateOrdersData(accountsData) {
+  console.log('📊 Aggregating orders data:');
   console.log(`   Input accounts count: ${accountsData.length}`);
   
-  const serviceTypes = ['TABLE', 'ONSITE', 'TAKEAWAY', 'DELIVERY'];
-  const aggregated = {
-    services: [],
-    totalOrders: 0,
-    totalSales: 0,
-    averageTicket: 0
-  };
+  if (!accountsData || accountsData.length === 0) {
+    return {
+      totalOrders: 0,
+      totalSales: 0,
+      averageTicket: 0,
+      accounts: []
+    };
+  }
   
-  // Initialize service data
-  serviceTypes.forEach(serviceType => {
-    aggregated.services.push({
-      type: serviceType,
-      orders: 0,
-      sales: 0,
-      averageTicket: 0
-    });
-  });
+  let totalOrders = 0;
+  let totalSales = 0;
+  const accounts = [];
   
-  // Process each account's data
   accountsData.forEach((account, index) => {
     console.log(`   Account ${index} (${account.accountKey}): success=${account.success}`);
     
-    if (account.success && account.data && account.data.data) {
-      console.log(`     Raw data: ${JSON.stringify(account.data.data)}`);
+    if (account.success && account.data) {
+      const data = account.data;
+      console.log(`     Raw data: ${JSON.stringify(data)}`);
       
-      // Process each service type
-      serviceTypes.forEach(serviceType => {
-        const serviceData = account.data.data[serviceType];
-        if (serviceData) {
-          const serviceIndex = aggregated.services.findIndex(s => s.type === serviceType);
-          if (serviceIndex !== -1) {
-            const orders = serviceData.orders?.current_period || 0;
-            const sales = parseFloat(serviceData.sales?.current_period || 0);
-            const avgTicket = parseFloat(serviceData.average_ticket?.current_period || 0);
-            
-            aggregated.services[serviceIndex].orders += orders;
-            aggregated.services[serviceIndex].sales += sales;
-            
-            // Calculate weighted average for average ticket
-            if (orders > 0) {
-              const currentAvg = aggregated.services[serviceIndex].averageTicket;
-              const currentOrders = aggregated.services[serviceIndex].orders - orders;
-              if (currentOrders > 0) {
-                aggregated.services[serviceIndex].averageTicket = 
-                  ((currentAvg * currentOrders) + (avgTicket * orders)) / aggregated.services[serviceIndex].orders;
-              } else {
-                aggregated.services[serviceIndex].averageTicket = avgTicket;
-              }
-            }
-            
-            console.log(`     ${serviceType}: orders=${orders}, sales=${sales}, avgTicket=${avgTicket}`);
-          }
-        }
+      // Extract simple orders and sales data
+      const accountOrders = data.orders || 0;
+      const accountSales = data.sales || 0;
+      const accountAvgTicket = data.averageTicket || 0;
+      
+      totalOrders += accountOrders;
+      totalSales += accountSales;
+      
+      accounts.push({
+        account: account.account,
+        accountKey: account.accountKey,
+        orders: accountOrders,
+        sales: accountSales,
+        averageTicket: accountAvgTicket
       });
+      
+      console.log(`     Orders: ${accountOrders}, Sales: ${accountSales}, Avg Ticket: ${accountAvgTicket}`);
     } else {
       console.log(`     No data or error: ${JSON.stringify(account.error || 'No error info')}`);
     }
   });
   
-  // Calculate totals
-  aggregated.totalOrders = aggregated.services.reduce((sum, service) => sum + service.orders, 0);
-  aggregated.totalSales = aggregated.services.reduce((sum, service) => sum + service.sales, 0);
-  aggregated.averageTicket = aggregated.totalOrders > 0 ? aggregated.totalSales / aggregated.totalOrders : 0;
+  const averageTicket = totalOrders > 0 ? totalSales / totalOrders : 0;
   
-  console.log(`   Aggregation result: totalOrders=${aggregated.totalOrders}, totalSales=${aggregated.totalSales}, averageTicket=${aggregated.averageTicket}`);
-  return aggregated;
+  console.log(`   Aggregation result: totalOrders=${totalOrders}, totalSales=${totalSales}, averageTicket=${averageTicket}`);
+  
+  return {
+    totalOrders,
+    totalSales,
+    averageTicket,
+    accounts
+  };
 }
 
-// Helper function to calculate service metrics comparison
-function calculateServiceMetricsComparison(current, previous) {
+// Helper function to calculate orders comparison
+function calculateOrdersComparison(current, previous) {
   const ordersDiff = current.totalOrders - previous.totalOrders;
   const ordersPercent = previous.totalOrders > 0 ? ((ordersDiff / previous.totalOrders) * 100) : 0;
   
@@ -289,11 +275,11 @@ router.get('/', requireAuth, async (req, res) => {
     });
     
     // Process and aggregate the data
-    const currentAggregated = aggregateGeneralIndicators(currentResults);
-    const previousAggregated = aggregateGeneralIndicators(previousResults);
+    const currentAggregated = aggregateOrdersData(currentResults);
+    const previousAggregated = aggregateOrdersData(previousResults);
     
     // Calculate comparison
-    const comparison = calculateServiceMetricsComparison(currentAggregated, previousAggregated);
+    const comparison = calculateOrdersComparison(currentAggregated, previousAggregated);
     
     console.log('📈 Aggregated Order Data:');
     console.log(`   Current - Total Orders: ${currentAggregated.totalOrders}, Total Sales: ${currentAggregated.totalSales}`);
@@ -302,8 +288,13 @@ router.get('/', requireAuth, async (req, res) => {
     
     res.json({
       success: true,
-      accounts: currentResults,
-      aggregated: currentAggregated,
+      accounts: currentAggregated.accounts,
+      aggregated: {
+        totalOrders: currentAggregated.totalOrders,
+        totalSales: currentAggregated.totalSales,
+        averageTicket: currentAggregated.averageTicket,
+        accountsCount: currentAggregated.accounts.length
+      },
       comparison,
       timezone
     });
