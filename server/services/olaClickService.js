@@ -387,7 +387,7 @@ export async function fetchGeneralIndicators(account, queryParams = {}) {
   }
   
   // Construct the URL for the request
-  // Try orders endpoint that might return actual orders data
+  // Use the correct orders endpoint with proper parameters
   const baseUrl = 'https://api.olaclick.app/ms-orders/auth/orders';
   const params = {
     'filter[start_date]': startDate,
@@ -396,8 +396,10 @@ export async function fetchGeneralIndicators(account, queryParams = {}) {
     'filter[start_time]': '00:00:00',
     'filter[end_time]': '23:59:59',
     'filter[time_type]': 'pending_at',
-    'filter[status]': 'PENDING,PREPARING,READY,DRIVER_ON_THE_WAY_TO_DESTINATION,CHECK_REQUESTED,CHECK_PRINTED,DRIVER_ARRIVED_AT_DESTINATION,DELIVERED,FINALIZED',
-    'filter[max_order_limit]': 'true'
+    'filter[status]': 'PENDING,PREPARING,READY,DRIVER_ON_THE_WAY_TO_DESTINATION,CHECK_REQUESTED,CHECK_PRINTED,DRIVER_ARRIVED_AT_DESTINATION,DELIVERED,FINALIZED,CANCELLED',
+    'filter[max_order_limit]': 'true',
+    'per_page': 25,
+    'page': 1
   };
   
   const urlParams = new URLSearchParams(params);
@@ -458,27 +460,46 @@ export async function fetchGeneralIndicators(account, queryParams = {}) {
       }
     };
 
-    // Try to process the actual response if it contains orders data
-    if (response.data && response.data.data && Array.isArray(response.data.data)) {
-      console.log(`🔍 Processing orders data: ${JSON.stringify(response.data.data)}`);
+    // Process the actual orders data from the meta object
+    if (response.data && response.data.meta) {
+      console.log(`🔍 Processing orders meta data: ${JSON.stringify(response.data.meta)}`);
       
-      // Try to map payment methods to service types as a fallback
-      // This is a temporary solution until we find the correct endpoint
+      // Extract orders data from meta object
+      const meta = response.data.meta;
       let totalOrders = 0;
       let totalSales = 0;
       
-      response.data.data.forEach(payment => {
-        if (payment.count && payment.sum) {
-          totalOrders += payment.count;
-          totalSales += payment.sum;
-        }
-      });
+      // Process orders by service type
+      if (meta.orders_by_service_type) {
+        Object.keys(meta.orders_by_service_type).forEach(serviceType => {
+          const serviceData = meta.orders_by_service_type[serviceType];
+          const orders = serviceData.count || 0;
+          const sales = serviceData.total || 0;
+          const avgTicket = orders > 0 ? sales / orders : 0;
+          
+          // Map to our expected format
+          const mappedServiceType = serviceType.toUpperCase();
+          if (transformedData.data[mappedServiceType]) {
+            transformedData.data[mappedServiceType] = {
+              orders: { current_period: orders },
+              sales: { current_period: sales },
+              average_ticket: { current_period: avgTicket }
+            };
+          }
+          
+          totalOrders += orders;
+          totalSales += sales;
+        });
+      }
       
-      // Distribute orders across service types (temporary logic)
-      if (totalOrders > 0) {
-        const avgTicket = totalSales / totalOrders;
-        const ordersPerType = Math.floor(totalOrders / 4); // Distribute across 4 service types
+      // If no service type breakdown, try total orders
+      if (totalOrders === 0 && meta.total_orders) {
+        totalOrders = meta.total_orders;
+        totalSales = meta.total_sales || 0;
+        const avgTicket = totalOrders > 0 ? totalSales / totalOrders : 0;
         
+        // Distribute across service types as fallback
+        const ordersPerType = Math.floor(totalOrders / 4);
         transformedData.data.ONSITE = {
           orders: { current_period: ordersPerType },
           sales: { current_period: ordersPerType * avgTicket },
@@ -497,7 +518,6 @@ export async function fetchGeneralIndicators(account, queryParams = {}) {
           average_ticket: { current_period: avgTicket }
         };
         
-        // Put remaining orders in TABLE
         const remainingOrders = totalOrders - (ordersPerType * 3);
         transformedData.data.TABLE = {
           orders: { current_period: remainingOrders },
@@ -506,9 +526,9 @@ export async function fetchGeneralIndicators(account, queryParams = {}) {
         };
       }
       
-      console.log(`📊 Distributed ${totalOrders} orders across service types`);
+      console.log(`📊 Processed ${totalOrders} orders from meta data`);
     } else {
-      console.log(`⚠️  No orders data found in response`);
+      console.log(`⚠️  No meta data found in response`);
     }
 
     console.log(`✅ Orders request successful for ${account.company_token}`);
