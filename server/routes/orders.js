@@ -236,12 +236,16 @@ router.get('/', requireAuth, async (req, res) => {
     
     // Fetch current period data
     console.log('🔄 Fetching current period order data...');
+    console.log(`   📅 Date range: ${startDate} to ${endDate}`);
+    console.log(`   📅 Days difference: ${Math.ceil((new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24))} days`);
+    
     const currentPromises = userAccounts.map(account => {
       const params = { 
         timezone,
         startDate,
         endDate
       };
+      console.log(`   🔍 Account ${account.company_token}: params=${JSON.stringify(params)}`);
       return fetchGeneralIndicators(account, params);
     });
     

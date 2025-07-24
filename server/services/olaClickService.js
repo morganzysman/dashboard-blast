@@ -404,6 +404,7 @@ export async function fetchGeneralIndicators(account, queryParams = {}) {
   console.log(`   Start Date: ${startDate}`);
   console.log(`   End Date: ${endDate}`);
   console.log(`   Timezone: ${timezone}`);
+  console.log(`   📊 Date range: ${startDate} to ${endDate} (${Math.ceil((new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24))} days)`);
 
   // Construct cookie header
   let cookieHeader;
