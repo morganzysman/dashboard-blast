@@ -104,18 +104,30 @@ const getCurrentDateInTimezone = () => {
 
 // Get date in user's timezone
 const getDateInTimezone = (date, timezone) => {
-  const timezoneDate = new Date(date.toLocaleString('en-US', { timeZone: timezone }))
+  // Use the same reliable method as getCurrentDateInTimezone
+  const timezoneDate = new Date(date.toLocaleString('en-CA', { timeZone: timezone }))
+  
+  // Check if the date is valid
+  if (isNaN(timezoneDate.getTime())) {
+    console.error(`❌ Invalid date after timezone conversion: ${date}, timezone: ${timezone}`)
+    // Fallback to current date in timezone
+    return getCurrentDateInTimezone()
+  }
   
   const year = timezoneDate.getFullYear()
   const month = String(timezoneDate.getMonth() + 1).padStart(2, '0')
   const day = String(timezoneDate.getDate()).padStart(2, '0')
   
-  return `${year}-${month}-${day}`
+  const result = `${year}-${month}-${day}`
+  console.log(`🔍 getDateInTimezone: ${result} (input: ${date}, timezone: ${timezone})`)
+  return result
 }
 
 const getDateRange = (rangeType) => {
   const timezone = authStore.user?.timezone || 'America/Lima'
   const today = new Date()
+  
+  console.log(`🔍 getDateRange called with rangeType: ${rangeType}, timezone: ${timezone}`)
   
   switch (rangeType) {
     case 'today':
@@ -239,7 +251,11 @@ const fetchServiceMetricsData = async (dateRange = null) => {
     console.log('🔍 Service metrics request params:', {
       start: effectiveDateRange.start,
       end: effectiveDateRange.end,
-      timezone: timezone
+      timezone: timezone,
+      startType: typeof effectiveDateRange.start,
+      endType: typeof effectiveDateRange.end,
+      startValid: !isNaN(new Date(effectiveDateRange.start)),
+      endValid: !isNaN(new Date(effectiveDateRange.end))
     })
     
     const params = new URLSearchParams({

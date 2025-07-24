@@ -184,10 +184,6 @@ router.get('/all', requireAuth, async (req, res) => {
         serviceMetricsParams.endDate = endDate;
         
         console.log(`   Using custom date range: ${startDate} to ${endDate}`);
-      } else {
-        // Fallback to 'today' for when no dates are specified
-        serviceMetricsParams.period = 'today';
-        console.log(`   Using default period: today`);
       }
       
       return fetchGeneralIndicators(account, serviceMetricsParams);

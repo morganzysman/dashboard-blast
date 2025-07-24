@@ -523,15 +523,6 @@ const getOrdersComparison = () => {
       difference: props.serviceMetricsData.comparison.orders.difference
     }
   }
-  
-  // Fallback to payment data comparison if available
-  if (props.analyticsData && props.analyticsData.comparison) {
-    return {
-      trend: props.analyticsData.comparison.payments.trend,
-      difference: props.analyticsData.comparison.payments.difference
-    }
-  }
-  
   return null
 }
 

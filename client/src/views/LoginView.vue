@@ -66,7 +66,7 @@
               <span v-else>Sign in</span>
             </button>
           </div>
-          <span class="text-sm text-gray-600 text-center">v1.0.2</span>
+          <span class="text-sm text-gray-600 text-center">v1.0.3</span>
         </form>
       </div>
     </div>
