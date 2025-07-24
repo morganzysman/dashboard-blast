@@ -14,6 +14,33 @@ import { config } from '../config/index.js';
 
 const router = Router();
 
+// Helper function to validate date format and ensure it's a valid date
+function isValidDateString(dateStr) {
+  if (!dateStr || typeof dateStr !== 'string') {
+    return false;
+  }
+  
+  // Check for YYYY-MM-DD format
+  const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+  if (!dateRegex.test(dateStr)) {
+    return false;
+  }
+  
+  // Check if it's a valid date
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) {
+    return false;
+  }
+  
+  // Additional validation: ensure the parsed date matches the input string
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const formattedDate = `${year}-${month}-${day}`;
+  
+  return formattedDate === dateStr;
+}
+
 // Helper function to get user's accounts as a map
 function getUserAccountsMap(userAccounts) {
   const accountsMap = {};
@@ -105,6 +132,21 @@ router.get('/all', requireAuth, async (req, res) => {
       console.log(`   Provided start date: ${startDateStr}`);
       console.log(`   Provided end date: ${endDateStr}`);
       console.log(`   Using timezone: ${timezone}`);
+      
+      // Validate date format and validity
+      if (!isValidDateString(startDateStr) || !isValidDateString(endDateStr)) {
+        console.log(`   ❌ Invalid date format - startDate: ${startDateStr}, endDate: ${endDateStr}`);
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid date format. Dates must be in YYYY-MM-DD format and valid.',
+          details: {
+            startDate: startDateStr,
+            endDate: endDateStr,
+            startDateValid: isValidDateString(startDateStr),
+            endDateValid: isValidDateString(endDateStr)
+          }
+        });
+      }
       
       // Create timezone-aware dates
       const startDate = new Date(startDateStr + 'T00:00:00');
@@ -354,6 +396,21 @@ router.get('/general-indicators', requireAuth, async (req, res) => {
       return res.status(400).json({
         success: false,
         error: 'Start date and end date are required. Use filter[start_date] and filter[end_date] parameters.'
+      });
+    }
+    
+    // Validate date format and validity
+    if (!isValidDateString(startDate) || !isValidDateString(endDate)) {
+      console.log(`   ❌ Invalid date format - startDate: ${startDate}, endDate: ${endDate}`);
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid date format. Dates must be in YYYY-MM-DD format and valid.',
+        details: {
+          startDate: startDate,
+          endDate: endDate,
+          startDateValid: isValidDateString(startDate),
+          endDateValid: isValidDateString(endDate)
+        }
       });
     }
     
