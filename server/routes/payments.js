@@ -323,12 +323,31 @@ router.get('/general-indicators', requireAuth, async (req, res) => {
       });
     }
     
+    // Extract and flatten filter parameters (same logic as /api/payments/all)
+    let baseParams = {};
+    if (queryParams.filter && typeof queryParams.filter === 'object') {
+      // Frontend sent nested filter object
+      Object.keys(queryParams.filter).forEach(key => {
+        baseParams[`filter[${key}]`] = queryParams.filter[key];
+      });
+      console.log('📋 Extracted nested filter parameters');
+    } else {
+      // Frontend sent flat parameters
+      Object.keys(queryParams).forEach(key => {
+        if (key.startsWith('filter[')) {
+          baseParams[key] = queryParams[key];
+        }
+      });
+      console.log('📋 Using flat filter parameters');
+    }
+    
     // Extract parameters - always expect explicit dates
-    const timezone = queryParams['filter[timezone]'] || userTimezone;
-    const startDate = queryParams['filter[start_date]'];
-    const endDate = queryParams['filter[end_date]'];
+    const timezone = baseParams['filter[timezone]'] || userTimezone;
+    const startDate = baseParams['filter[start_date]'];
+    const endDate = baseParams['filter[end_date]'];
     
     // Debug: Log the extracted parameters
+    console.log(`   Base filter params: ${JSON.stringify(baseParams)}`);
     console.log(`   Extracted timezone: ${timezone}`);
     console.log(`   Extracted startDate: ${startDate}`);
     console.log(`   Extracted endDate: ${endDate}`);

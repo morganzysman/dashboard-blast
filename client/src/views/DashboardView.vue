@@ -88,16 +88,18 @@ const formatDate = (date) => {
 const getCurrentDateInTimezone = () => {
   const timezone = authStore.user?.timezone || 'America/Lima'
   
-  // Create a date object for the current time in the user's timezone
+  // Get current date in the user's timezone using a more reliable method
   const now = new Date()
-  const timezoneDate = new Date(now.toLocaleString('en-US', { timeZone: timezone }))
+  const timezoneDate = new Date(now.toLocaleString('en-CA', { timeZone: timezone }))
   
   // Format as YYYY-MM-DD
   const year = timezoneDate.getFullYear()
   const month = String(timezoneDate.getMonth() + 1).padStart(2, '0')
   const day = String(timezoneDate.getDate()).padStart(2, '0')
   
-  return `${year}-${month}-${day}`
+  const result = `${year}-${month}-${day}`
+  console.log(`🔍 getCurrentDateInTimezone: ${result} (timezone: ${timezone})`)
+  return result
 }
 
 // Get date in user's timezone
@@ -248,6 +250,8 @@ const fetchServiceMetricsData = async (dateRange = null) => {
 
     const url = `/api/payments/general-indicators?${params.toString()}`
     console.log('🔍 Service metrics request URL:', url)
+    console.log('🔍 Service metrics params.toString():', params.toString())
+    console.log('🔍 Service metrics params entries:', Array.from(params.entries()))
 
     const data = await api.get(url)
     
