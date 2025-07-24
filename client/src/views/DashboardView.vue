@@ -3,7 +3,7 @@
     <!-- Dashboard Overview Component -->
     <DashboardOverview
       :analytics-data="analyticsData"
-      :service-metrics-data="serviceMetricsData"
+      :orders-data="ordersData"
       :loading="loading"
       v-model:selected-date-range="selectedDateRange"
       v-model:custom-start-date="customStartDate"
@@ -69,7 +69,7 @@ import api from '../utils/api'
 const authStore = useAuthStore()
 
 const analyticsData = ref(null)
-const serviceMetricsData = ref(null)
+const ordersData = ref(null)
 const loading = ref(false)
 const error = ref('')
 
@@ -236,7 +236,7 @@ const onDateRangeChange = () => {
   if (selectedDateRange.value !== 'custom') {
     currentDateRange.value = getDateRange(selectedDateRange.value)
     fetchAnalyticsData()
-    fetchServiceMetricsData(currentDateRange.value)
+    fetchOrdersData(currentDateRange.value)
   }
 }
 
@@ -248,7 +248,7 @@ const onCustomDateChange = () => {
       end: customEndDate.value
     }
     fetchAnalyticsData()
-    fetchServiceMetricsData(currentDateRange.value)
+    fetchOrdersData(currentDateRange.value)
   }
 }
 
@@ -259,18 +259,18 @@ const applyCustomDateRange = () => {
       end: customEndDate.value
     }
     fetchAnalyticsData()
-    fetchServiceMetricsData(currentDateRange.value)
+    fetchOrdersData(currentDateRange.value)
   }
 }
 
-const fetchServiceMetricsData = async (dateRange = null) => {
+const fetchOrdersData = async (dateRange = null) => {
   try {
     const timezone = authStore.user?.timezone || 'America/Lima'
     
     // Always use explicit dates - frontend is responsible for calculating them
     const effectiveDateRange = dateRange || currentDateRange.value
     
-    console.log('🔍 Service metrics request params:', {
+    console.log('🔍 Orders request params:', {
       start: effectiveDateRange.start,
       end: effectiveDateRange.end,
       timezone: timezone,
@@ -286,24 +286,25 @@ const fetchServiceMetricsData = async (dateRange = null) => {
       'filter[timezone]': timezone
     })
 
-    const url = `/api/payments/general-indicators?${params.toString()}`
-    console.log('🔍 Service metrics request URL:', url)
-    console.log('🔍 Service metrics params.toString():', params.toString())
-    console.log('🔍 Service metrics params entries:', Array.from(params.entries()))
+    // Use new /api/orders endpoint for order-related data
+    const url = `/api/orders?${params.toString()}`
+    console.log('🔍 Orders request URL:', url)
+    console.log('🔍 Orders params.toString():', params.toString())
+    console.log('🔍 Orders params entries:', Array.from(params.entries()))
 
     const data = await api.get(url)
     
     if (data.success) {
-      serviceMetricsData.value = data
-      console.log('📊 Service metrics data loaded:', data)
+      ordersData.value = data
+      console.log('📊 Orders data loaded:', data)
     } else {
-      throw new Error(data.error || 'Failed to load service metrics data')
+      throw new Error(data.error || 'Failed to load orders data')
     }
   } catch (err) {
-    console.error('❌ Service metrics fetch error:', err)
-    // Clear service metrics data when endpoint fails
-    serviceMetricsData.value = null
-    // Don't show error notification for service metrics as it's optional
+    console.error('❌ Orders fetch error:', err)
+    // Clear orders data when endpoint fails
+    ordersData.value = null
+    // Don't show error notification for orders as it's optional
     // The api wrapper already handles session expiration
   }
 }
@@ -320,7 +321,8 @@ const fetchAnalyticsData = async () => {
       'filter[timezone]': timezone
     })
 
-    const data = await api.get(`/api/payments/all?${params.toString()}`)
+    // Use new /api/payments endpoint (refactored version of /all)
+    const data = await api.get(`/api/payments?${params.toString()}`)
     
     if (data.success) {
       analyticsData.value = data
@@ -349,7 +351,7 @@ const fetchAnalyticsData = async () => {
 
 const refreshData = () => {
   fetchAnalyticsData()
-  fetchServiceMetricsData(currentDateRange.value)
+  fetchOrdersData(currentDateRange.value)
 }
 
 onMounted(() => {
@@ -357,7 +359,7 @@ onMounted(() => {
   // Initialize with today's date range
   currentDateRange.value = getDateRange('today')
   fetchAnalyticsData()
-  fetchServiceMetricsData(currentDateRange.value)
+  fetchOrdersData(currentDateRange.value)
 })
 </script>
 

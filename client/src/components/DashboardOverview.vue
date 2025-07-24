@@ -260,7 +260,7 @@
 
 
     <!-- Service Metrics -->
-    <div class="card" v-if="serviceMetricsData && serviceMetricsData.aggregated.services.length > 0">
+          <div class="card" v-if="ordersData && ordersData.aggregated.services.length > 0">
       <div class="card-header">
         <div class="flex items-center justify-between">
           <h3 class="text-base sm:text-lg font-medium text-gray-900">📊 Service Metrics</h3>
@@ -286,7 +286,7 @@
         <div class="mb-6">
           <div class="flex items-center space-x-2 mb-2">
             <h4 class="text-sm font-medium text-gray-700">Orders Distribution by Service Type</h4>
-            <span class="text-xs text-gray-500">({{ serviceMetricsData.aggregated.totalOrders }} total orders)</span>
+            <span class="text-xs text-gray-500">({{ ordersData.aggregated.totalOrders }} total orders)</span>
           </div>
           <div class="w-full bg-gray-200 rounded-full h-8 overflow-hidden">
             <div class="flex h-full">
@@ -305,7 +305,7 @@
 
         <!-- Service Metrics Grid -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          <div v-for="service in serviceMetricsData.aggregated.services" :key="service.type" 
+                      <div v-for="service in ordersData.aggregated.services" :key="service.type" 
                class="bg-gray-50 rounded-lg p-3 sm:p-4">
             <div class="flex items-center space-x-2 sm:space-x-3 mb-2">
               <div class="w-3 h-3 rounded-full flex-shrink-0" :style="{ backgroundColor: getServiceColor(service.type) }"></div>
@@ -338,7 +338,7 @@ import { useAuthStore } from '../stores/auth'
 
 const props = defineProps({
   analyticsData: Object,
-  serviceMetricsData: Object,
+  ordersData: Object,
   loading: Boolean,
   selectedDateRange: String,
   customStartDate: String,
@@ -487,12 +487,12 @@ const getServiceColor = (serviceType) => {
 }
 
 const getServiceMetricsForChart = () => {
-  if (!props.serviceMetricsData || props.serviceMetricsData.aggregated.totalOrders === 0) {
+  if (!props.ordersData || props.ordersData.aggregated.totalOrders === 0) {
     return []
   }
 
-  const totalOrders = props.serviceMetricsData.aggregated.totalOrders
-  return props.serviceMetricsData.aggregated.services
+  const totalOrders = props.ordersData.aggregated.totalOrders
+  return props.ordersData.aggregated.services
     .filter(service => service.orders > 0)
     .map(service => ({
       ...service,
@@ -516,11 +516,11 @@ const getTotalOrders = () => {
 }
 
 const getOrdersComparison = () => {
-  // Use service metrics comparison data if available
-  if (props.serviceMetricsData && props.serviceMetricsData.comparison) {
+  // Use orders comparison data if available
+  if (props.ordersData && props.ordersData.comparison) {
     return {
-      trend: props.serviceMetricsData.comparison.orders.trend,
-      difference: props.serviceMetricsData.comparison.orders.difference
+      trend: props.ordersData.comparison.orders.trend,
+      difference: props.ordersData.comparison.orders.difference
     }
   }
   return null
