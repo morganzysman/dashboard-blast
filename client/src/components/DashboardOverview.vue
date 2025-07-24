@@ -102,18 +102,7 @@
           <div class="flex items-center justify-between">
             <div class="min-w-0 flex-1">
               <p class="text-blue-100 text-xs sm:text-sm font-medium">TOTAL ORDERS</p>
-              <p class="text-2xl sm:text-3xl font-bold truncate">{{ getTotalOrders() }}</p>
-              <div class="flex items-center mt-1" v-if="getOrdersComparison()">
-                <span class="text-xs sm:text-sm" :class="getOrdersComparison().trend === 'up' ? 'text-green-200' : 'text-red-200'">
-                  {{ getOrdersComparison().trend === 'up' ? '↗' : '↘' }}
-                  {{
-                    getTotalOrders()
-                      ? ((Math.abs(getOrdersComparison().difference) / getTotalOrders()) * 100).toFixed(1)
-                      : '0.0'
-                  }}%
-                </span>
-                <span class="text-xs text-blue-200 ml-1">vs Prev. same period</span>
-              </div>
+              <p class="text-lg sm:text-xl font-bold truncate">{{ getTotalOrders() }}</p>
             </div>
             <div class="w-10 h-10 sm:w-12 sm:h-12 bg-blue-400 bg-opacity-30 rounded-lg flex items-center justify-center flex-shrink-0">
               <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -141,9 +130,6 @@
           
           <!-- Account Distribution Pie Chart -->
           <div v-if="analyticsData && analyticsData.accounts.length > 1" class="mt-3">
-            <div class="flex items-center space-x-1 mb-2">
-              <span class="text-green-100 text-xs font-medium">By Account:</span>
-            </div>
             <div class="flex items-center justify-center">
               <div class="relative w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0">
                 <!-- Pie Chart using conic-gradient -->
@@ -163,7 +149,7 @@
                      class="flex items-center justify-between min-w-0">
                   <div class="flex items-center space-x-1 min-w-0">
                     <div class="w-2 h-2 rounded-full flex-shrink-0" :style="{ backgroundColor: getAccountColor(account.accountKey) }"></div>
-                    <span class="text-green-100">{{ account.account.split(' ')[0] }}</span>
+                    <span class="text-green-100">{{ account.account }}</span>
                     <span class="text-green-200">{{ account.percent.toFixed(0) }}%</span>
                   </div>
                   <span class="text-green-100 font-medium ml-2">{{ formatCurrency(account.totalAmount) }}</span>
@@ -188,8 +174,6 @@
           <div class="flex items-center justify-between mb-3">
             <div class="min-w-0 flex-1">
               <p class="text-purple-100 text-xs sm:text-sm font-medium">PAYMENT METHODS</p>
-              <p class="text-lg sm:text-xl font-bold">{{ analyticsData.aggregated.paymentMethods.length }} Methods</p>
-              <p class="text-xs sm:text-sm text-purple-200">{{ formatCurrency(analyticsData.aggregated.totalAmount) }} total</p>
             </div>
             <div class="w-10 h-10 sm:w-12 sm:h-12 bg-purple-400 bg-opacity-30 rounded-lg flex items-center justify-center flex-shrink-0">
               <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
