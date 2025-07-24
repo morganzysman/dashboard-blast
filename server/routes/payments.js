@@ -4,7 +4,6 @@ import {
   fetchOlaClickData,
   fetchGeneralIndicators,
   fetchTipsData,
-  fetchServiceMetrics,
   aggregateAccountsData,
   getTimezoneAwareDate
 } from '../services/olaClickService.js';
@@ -131,14 +130,6 @@ router.get('/', requireAuth, async (req, res) => {
     console.log('📋 Final parameter sets:');
     console.log(`   Current params: ${JSON.stringify(currentParams)}`);
     
-    // Check if the date range corresponds to "today"
-    const timezone = currentParams['filter[timezone]'] || config.olaClick.defaultTimezone;
-    const todayInTimezone = getTimezoneAwareDate(null, timezone);
-    const isToday = currentParams['filter[start_date]'] === todayInTimezone && 
-                   currentParams['filter[end_date]'] === todayInTimezone;
-    
-    console.log(`📅 Date range check: isToday=${isToday}`);
-    
     // Fetch current period data
     console.log('🔄 Fetching current period payment data...');
     const currentPromises = userAccounts.map(account => 
@@ -151,16 +142,6 @@ router.get('/', requireAuth, async (req, res) => {
       fetchTipsData(account, currentParams)
     );
     
-    // Fetch service metrics data if today
-    let serviceMetricsResults = null;
-    if (isToday) {
-      console.log('🔄 Fetching service metrics data for today...');
-      const serviceMetricsPromises = userAccounts.map(account => 
-        fetchServiceMetrics(account, { timezone })
-      );
-      serviceMetricsResults = await Promise.all(serviceMetricsPromises);
-    }
-    
     const [currentResults, tipsResults] = await Promise.all([
       Promise.all(currentPromises),
       Promise.all(tipsPromises)
@@ -172,15 +153,6 @@ router.get('/', requireAuth, async (req, res) => {
         account.tipsData = tipsResults[index];
       }
     });
-    
-    // Attach service metrics data to accounts if available
-    if (serviceMetricsResults) {
-      currentResults.forEach((account, index) => {
-        if (serviceMetricsResults[index] && serviceMetricsResults[index].success) {
-          account.serviceMetrics = serviceMetricsResults[index].data?.data || null;
-        }
-      });
-    }
     
     // Aggregate current period data
     console.log('📊 Aggregating current period data...');

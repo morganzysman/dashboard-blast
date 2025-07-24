@@ -2,7 +2,7 @@
   <div class="space-y-4 lg:space-y-6">
     <!-- Dashboard Overview Component -->
                 <DashboardOverview
-              :analytics-data="analyticsData"
+              :analytics-data="analyticsDataWithServiceMetrics"
               :orders-data="ordersData"
               :loading="loading"
               v-model:selected-date-range="selectedDateRange"
@@ -17,7 +17,7 @@
 
     <!-- Account Details Component -->
     <AccountDetails
-      :analytics-data="analyticsData"
+      :analytics-data="analyticsDataWithServiceMetrics"
       :orders-data="ordersData"
       :key="analyticsData?.timestamp || Date.now()"
     />
@@ -71,6 +71,7 @@ const authStore = useAuthStore()
 
 const analyticsData = ref(null)
 const ordersData = ref(null)
+const serviceMetricsData = ref(null)
 const loading = ref(false)
 const error = ref('')
 
@@ -234,34 +235,21 @@ const getDateRange = (rangeType) => {
 
 // Date range handlers
 const onDateRangeChange = () => {
-  if (selectedDateRange.value !== 'custom') {
-    currentDateRange.value = getDateRange(selectedDateRange.value)
-    fetchAnalyticsData()
-    fetchOrdersData(currentDateRange.value)
-  }
+  console.log('📅 Date range changed, refreshing data...')
+  fetchAnalyticsData()
+  fetchOrdersData(currentDateRange.value)
+  fetchServiceMetricsData()
 }
 
 const onCustomDateChange = () => {
-  // Auto-apply if both dates are selected
-  if (customStartDate.value && customEndDate.value) {
-    currentDateRange.value = {
-      start: customStartDate.value,
-      end: customEndDate.value
-    }
-    fetchAnalyticsData()
-    fetchOrdersData(currentDateRange.value)
-  }
+  console.log('📅 Custom date changed')
 }
 
 const applyCustomDateRange = () => {
-  if (customStartDate.value && customEndDate.value) {
-    currentDateRange.value = {
-      start: customStartDate.value,
-      end: customEndDate.value
-    }
-    fetchAnalyticsData()
-    fetchOrdersData(currentDateRange.value)
-  }
+  console.log('📅 Applying custom date range...')
+  fetchAnalyticsData()
+  fetchOrdersData(currentDateRange.value)
+  fetchServiceMetricsData()
 }
 
 const fetchOrdersData = async (dateRange = null) => {
@@ -350,11 +338,74 @@ const fetchAnalyticsData = async () => {
   }
 }
 
+// Check if current date range corresponds to "today"
+const isToday = computed(() => {
+  if (!currentDateRange.value.start || !currentDateRange.value.end) return false
+  
+  const timezone = authStore.user?.timezone || 'America/Lima'
+  const todayInTimezone = getCurrentDateInTimezone()
+  
+  return currentDateRange.value.start === todayInTimezone && 
+         currentDateRange.value.end === todayInTimezone
+})
 
+// Fetch service metrics data (only available for "today")
+const fetchServiceMetricsData = async () => {
+  if (!isToday.value) {
+    serviceMetricsData.value = null
+    return
+  }
+  
+  try {
+    const timezone = authStore.user?.timezone || 'America/Lima'
+    const params = new URLSearchParams({
+      timezone: timezone
+    })
+
+    const data = await api.get(`/api/orders/service-metrics?${params.toString()}`)
+    
+    if (data.success) {
+      serviceMetricsData.value = data.data
+      console.log('📊 Service metrics data loaded:', data.data)
+    } else {
+      console.warn('⚠️ Service metrics data failed to load:', data.error)
+      serviceMetricsData.value = null
+    }
+  } catch (err) {
+    console.error('❌ Service metrics fetch error:', err)
+    serviceMetricsData.value = null
+  }
+}
+
+// Attach service metrics data to account data
+const attachServiceMetricsToAccounts = (accounts) => {
+  if (!accounts || !serviceMetricsData.value) return accounts
+  
+  return accounts.map(account => {
+    // Find matching service metrics data for this account
+    const accountServiceMetrics = serviceMetricsData.value[account.accountKey] || null
+    
+    return {
+      ...account,
+      serviceMetrics: accountServiceMetrics
+    }
+  })
+}
+
+// Enhanced analytics data with service metrics
+const analyticsDataWithServiceMetrics = computed(() => {
+  if (!analyticsData.value) return null
+  
+  return {
+    ...analyticsData.value,
+    accounts: attachServiceMetricsToAccounts(analyticsData.value.accounts)
+  }
+})
 
 const refreshData = () => {
   fetchAnalyticsData()
   fetchOrdersData(currentDateRange.value)
+  fetchServiceMetricsData()
 }
 
 onMounted(() => {
@@ -363,6 +414,7 @@ onMounted(() => {
   currentDateRange.value = getDateRange('today')
   fetchAnalyticsData()
   fetchOrdersData(currentDateRange.value)
+  fetchServiceMetricsData()
 })
 </script>
 
