@@ -22,6 +22,7 @@
     <!-- Account Details Component -->
     <AccountDetails
       :analytics-data="analyticsData"
+      :orders-data="ordersData"
       :key="analyticsData?.timestamp || Date.now()"
     />
 

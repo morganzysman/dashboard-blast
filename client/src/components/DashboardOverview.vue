@@ -525,15 +525,9 @@ const getServiceColor = (serviceType) => {
 }
 
 const getTotalOrders = () => {
-  // Calculate total orders from analytics data (same source as account details)
-  if (props.analyticsData && props.analyticsData.accounts) {
-    return props.analyticsData.accounts.reduce((total, account) => {
-      if (account.serviceMetrics) {
-        return total + Object.values(account.serviceMetrics).reduce((sum, service) => 
-          sum + (service?.orders?.current_period ?? 0), 0)
-      }
-      return total
-    }, 0)
+  // Use the new simplified orders data structure
+  if (props.ordersData && props.ordersData.aggregated) {
+    return props.ordersData.aggregated.totalOrders || 0
   }
   return 0
 }
@@ -614,24 +608,15 @@ const getAccountsPieChart = () => {
 
 // Get orders distribution for chart
 const getOrdersDistributionForChart = () => {
-  if (!props.analyticsData || props.analyticsData.accounts.length === 0) {
+  if (!props.ordersData || !props.ordersData.accounts || props.ordersData.accounts.length === 0) {
     return []
   }
 
-  const ordersDistribution = props.analyticsData.accounts.map(account => {
-    // Only use service metrics data for orders - this is the correct source that updates with dates
-    let totalOrders = 0
-    
-    if (account.serviceMetrics) {
-      // Sum orders from all service types for this account
-      totalOrders = Object.values(account.serviceMetrics).reduce((sum, service) => 
-        sum + (service?.orders?.current_period ?? 0), 0)
-    }
-    
+  const ordersDistribution = props.ordersData.accounts.map(account => {
     return {
       accountKey: account.accountKey,
       account: account.account,
-      totalOrders: totalOrders,
+      totalOrders: account.orders || 0,
       percent: 0 // Will be calculated below
     }
   })
