@@ -217,9 +217,9 @@
               <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
               </svg>
-            </div>
-          </div>
-          
+        </div>
+      </div>
+
           <!-- Payment Methods Pie Chart -->
           <div v-if="analyticsData && analyticsData.aggregated.paymentMethods.length > 0" class="mt-3">
             <div class="flex items-center justify-center">
@@ -232,9 +232,9 @@
                 <!-- Center hole for donut effect -->
                 <div class="absolute inset-2 bg-purple-600 rounded-full flex items-center justify-center">
                   <span class="text-white text-xs font-bold">{{ analyticsData.aggregated.paymentMethods.length }}</span>
-                </div>
-              </div>
-              
+      </div>
+    </div>
+
               <!-- Legend -->
               <div class="ml-3 space-y-1 text-xs min-w-0 flex-1">
                 <div v-for="method in analyticsData.aggregated.paymentMethods.slice(0, 3)" :key="method.name" 
@@ -243,12 +243,12 @@
                     <div class="w-2 h-2 rounded-full flex-shrink-0" :style="{ backgroundColor: getPaymentMethodColor(method.name) }"></div>
                     <span class="text-purple-100 capitalize">{{ method.name }}</span>
                     <span class="text-purple-200">{{ method.percent.toFixed(0) }}%</span>
-                  </div>
+      </div>
                   <span class="text-purple-100 font-medium ml-2">{{ formatCurrency(method.sum) }}</span>
-                </div>
+          </div>
                 <div v-if="analyticsData.aggregated.paymentMethods.length > 3" class="text-purple-200">
                   +{{ analyticsData.aggregated.paymentMethods.length - 3 }} more
-                </div>
+            </div>
               </div>
             </div>
           </div>
@@ -536,7 +536,7 @@ const getOrdersPieChart = () => {
 }
 
 
-</script>
+</script> 
 
 <style scoped>
 .loading-spinner {
