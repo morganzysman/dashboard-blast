@@ -203,25 +203,12 @@ const getAccountTotalTips = (account) => {
 const getAccountTotalOrders = (account) => {
   if (!account.success) return 0
   
-  console.log(`🔍 AccountDetails - Getting total orders for ${account.accountKey}:`);
-  console.log(`   Has serviceMetrics: ${!!account.serviceMetrics}`);
-  console.log(`   Has payment data: ${!!account.data?.data}`);
-  
-  // Try to get orders from service metrics first
+  // Only use service metrics data for orders - this is the correct source that updates with dates
   if (account.serviceMetrics) {
     const ordersFromServiceMetrics = Object.values(account.serviceMetrics).reduce((sum, service) => sum + (service?.orders?.current_period ?? 0), 0);
-    console.log(`   Orders from service metrics: ${ordersFromServiceMetrics}`);
     return ordersFromServiceMetrics;
   }
   
-  // Fallback to payment data if service metrics not available
-  if (account.data?.data) {
-    const ordersFromPayments = account.data.data.reduce((sum, method) => sum + (method.count || 0), 0);
-    console.log(`   Orders from payment data: ${ordersFromPayments}`);
-    return ordersFromPayments;
-  }
-  
-  console.log(`   No orders data available`);
   return 0
 }
 
