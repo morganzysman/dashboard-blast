@@ -20,6 +20,7 @@ import {
 // Import route modules
 import authRoutes from './routes/auth.js';
 import paymentsRoutes from './routes/payments.js';
+import ordersRoutes from './routes/orders.js';
 import adminRoutes from './routes/admin.js';
 import notificationRoutes from './routes/notifications.js';
 
@@ -111,6 +112,7 @@ try {
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/payments', paymentsRoutes);
+app.use('/api/orders', ordersRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/notifications', notificationRoutes);
 
