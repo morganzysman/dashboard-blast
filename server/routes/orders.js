@@ -1,13 +1,120 @@
 import { Router } from 'express';
 import { requireAuth } from '../middleware/auth.js';
 import {
-  fetchGeneralIndicators,
-  aggregateGeneralIndicators,
-  calculateServiceMetricsComparison
+  fetchGeneralIndicators
 } from '../services/olaClickService.js';
 import { config } from '../config/index.js';
 
 const router = Router();
+
+// Helper function to aggregate general indicators data
+function aggregateGeneralIndicators(accountsData) {
+  console.log('📊 Aggregating general indicators data:');
+  console.log(`   Input accounts count: ${accountsData.length}`);
+  
+  const serviceTypes = ['TABLE', 'ONSITE', 'TAKEAWAY', 'DELIVERY'];
+  const aggregated = {
+    services: [],
+    totalOrders: 0,
+    totalSales: 0,
+    averageTicket: 0
+  };
+  
+  // Initialize service data
+  serviceTypes.forEach(serviceType => {
+    aggregated.services.push({
+      type: serviceType,
+      orders: 0,
+      sales: 0,
+      averageTicket: 0
+    });
+  });
+  
+  // Process each account's data
+  accountsData.forEach((account, index) => {
+    console.log(`   Account ${index} (${account.accountKey}): success=${account.success}`);
+    
+    if (account.success && account.data && account.data.data) {
+      console.log(`     Raw data: ${JSON.stringify(account.data.data)}`);
+      
+      // Process each service type
+      serviceTypes.forEach(serviceType => {
+        const serviceData = account.data.data[serviceType];
+        if (serviceData) {
+          const serviceIndex = aggregated.services.findIndex(s => s.type === serviceType);
+          if (serviceIndex !== -1) {
+            const orders = serviceData.orders?.current_period || 0;
+            const sales = parseFloat(serviceData.sales?.current_period || 0);
+            const avgTicket = parseFloat(serviceData.average_ticket?.current_period || 0);
+            
+            aggregated.services[serviceIndex].orders += orders;
+            aggregated.services[serviceIndex].sales += sales;
+            
+            // Calculate weighted average for average ticket
+            if (orders > 0) {
+              const currentAvg = aggregated.services[serviceIndex].averageTicket;
+              const currentOrders = aggregated.services[serviceIndex].orders - orders;
+              if (currentOrders > 0) {
+                aggregated.services[serviceIndex].averageTicket = 
+                  ((currentAvg * currentOrders) + (avgTicket * orders)) / aggregated.services[serviceIndex].orders;
+              } else {
+                aggregated.services[serviceIndex].averageTicket = avgTicket;
+              }
+            }
+            
+            console.log(`     ${serviceType}: orders=${orders}, sales=${sales}, avgTicket=${avgTicket}`);
+          }
+        }
+      });
+    } else {
+      console.log(`     No data or error: ${JSON.stringify(account.error || 'No error info')}`);
+    }
+  });
+  
+  // Calculate totals
+  aggregated.totalOrders = aggregated.services.reduce((sum, service) => sum + service.orders, 0);
+  aggregated.totalSales = aggregated.services.reduce((sum, service) => sum + service.sales, 0);
+  aggregated.averageTicket = aggregated.totalOrders > 0 ? aggregated.totalSales / aggregated.totalOrders : 0;
+  
+  console.log(`   Aggregation result: totalOrders=${aggregated.totalOrders}, totalSales=${aggregated.totalSales}, averageTicket=${aggregated.averageTicket}`);
+  return aggregated;
+}
+
+// Helper function to calculate service metrics comparison
+function calculateServiceMetricsComparison(current, previous) {
+  const ordersDiff = current.totalOrders - previous.totalOrders;
+  const ordersPercent = previous.totalOrders > 0 ? ((ordersDiff / previous.totalOrders) * 100) : 0;
+  
+  const salesDiff = current.totalSales - previous.totalSales;
+  const salesPercent = previous.totalSales > 0 ? ((salesDiff / previous.totalSales) * 100) : 0;
+  
+  const avgTicketDiff = current.averageTicket - previous.averageTicket;
+  const avgTicketPercent = previous.averageTicket > 0 ? ((avgTicketDiff / previous.averageTicket) * 100) : 0;
+  
+  return {
+    orders: {
+      current: current.totalOrders,
+      previous: previous.totalOrders,
+      difference: ordersDiff,
+      percentChange: ordersPercent,
+      trend: ordersDiff >= 0 ? 'up' : 'down'
+    },
+    sales: {
+      current: current.totalSales,
+      previous: previous.totalSales,
+      difference: salesDiff,
+      percentChange: salesPercent,
+      trend: salesDiff >= 0 ? 'up' : 'down'
+    },
+    averageTicket: {
+      current: current.averageTicket,
+      previous: previous.averageTicket,
+      difference: avgTicketDiff,
+      percentChange: avgTicketPercent,
+      trend: avgTicketDiff >= 0 ? 'up' : 'down'
+    }
+  };
+}
 
 // Helper function to validate date format and ensure it's a valid date
 function isValidDateString(dateStr) {
