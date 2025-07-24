@@ -4,10 +4,12 @@ import {
   fetchOlaClickData,
   fetchGeneralIndicators,
   fetchTipsData,
+  fetchServiceMetrics,
   aggregateAccountsData,
   getTimezoneAwareDate
 } from '../services/olaClickService.js';
 import { config } from '../config/index.js';
+import { getUserAccounts } from '../database.js';
 
 const router = Router();
 
@@ -52,101 +54,62 @@ function getUserAccountsMap(userAccounts) {
 // Get payment data from all user's accounts (refactored version of /all)
 router.get('/', requireAuth, async (req, res) => {
   try {
-    console.log('🚀 Starting /api/payments request');
-    const queryParams = req.query;
-    console.log(`   Original query params: ${JSON.stringify(queryParams)}`);
+    console.log(`📊 Payments request received`);
+    console.log(`   Query params: ${JSON.stringify(req.query)}`);
     
-    // Get user's accounts and timezone with safe fallbacks
-    const userAccounts = req.user.userAccounts || [];
-    let userTimezone = req.user.userTimezone || config.olaClick.defaultTimezone;
+    // Get user's accounts
+    const userAccounts = await getUserAccounts(req.user.id);
     
-    // Ensure timezone is valid
-    if (!userTimezone || userTimezone === 'undefined' || userTimezone === 'null') {
-      userTimezone = config.olaClick.defaultTimezone;
-    }
-    
-    console.log(`   User timezone: ${userTimezone}`);
-    
-    if (userAccounts.length === 0) {
-      return res.json({
-        success: true,
-        accounts: [],
-        aggregated: {
-          paymentMethods: [],
-          totalPayments: 0,
-          totalAmount: 0,
-          totalTips: 0,
-          accountsCount: 0
-        },
-        message: 'No accounts assigned to this user'
+    if (!userAccounts || userAccounts.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'No accounts found for user'
       });
     }
     
-    // Extract and flatten filter parameters
-    let baseParams = {};
-    if (queryParams.filter && typeof queryParams.filter === 'object') {
-      // Frontend sent nested filter object
-      Object.keys(queryParams.filter).forEach(key => {
-        baseParams[`filter[${key}]`] = queryParams.filter[key];
-      });
-      console.log('📋 Extracted nested filter parameters');
-    } else {
-      // Frontend sent flat parameters
-      Object.keys(queryParams).forEach(key => {
-        if (key.startsWith('filter[')) {
-          baseParams[key] = queryParams[key];
-        }
-      });
-      console.log('📋 Using flat filter parameters');
-    }
+    console.log(`📊 Found ${userAccounts.length} accounts`);
     
-    // Use user's timezone if not specified, ensure it's valid
-    if (!baseParams['filter[timezone]'] || baseParams['filter[timezone]'] === 'undefined') {
-      baseParams['filter[timezone]'] = userTimezone;
-    }
+    // Parse parameters (handle both nested and flat parameters)
+    let currentParams = {};
     
-    console.log(`   Base filter params: ${JSON.stringify(baseParams)}`);
-    
-    // Get current period parameters
-    const currentParams = { ...baseParams };
-    
-    if (currentParams['filter[start_date]'] && currentParams['filter[end_date]']) {
-      console.log('📅 Using provided date range');
-      
-      // Get timezone from parameters, ensure it's valid
-      let timezone = currentParams['filter[timezone]'] || config.olaClick.defaultTimezone;
-      if (!timezone || timezone === 'undefined') {
-        timezone = config.olaClick.defaultTimezone;
+    // Handle nested filter parameters (e.g., filter[start_date])
+    Object.keys(req.query).forEach(key => {
+      if (key.startsWith('filter[') && key.endsWith(']')) {
+        const paramName = key.slice(7, -1); // Remove 'filter[' and ']'
+        currentParams[`filter[${paramName}]`] = req.query[key];
+      } else {
+        currentParams[key] = req.query[key];
       }
-      
-      // Use timezone-aware date processing
-      const startDateStr = currentParams['filter[start_date]'];
-      const endDateStr = currentParams['filter[end_date]'];
-      
-      console.log(`   Provided start date: ${startDateStr}`);
-      console.log(`   Provided end date: ${endDateStr}`);
-      console.log(`   Using timezone: ${timezone}`);
-      
-      // Validate date format and validity
-      if (!isValidDateString(startDateStr) || !isValidDateString(endDateStr)) {
-        console.log(`   ❌ Invalid date format - startDate: ${startDateStr}, endDate: ${endDateStr}`);
+    });
+    
+    console.log(`📋 Parsed parameters: ${JSON.stringify(currentParams)}`);
+    
+    // Validate date parameters
+    const startDate = currentParams['filter[start_date]'];
+    const endDate = currentParams['filter[end_date]'];
+    
+    if (startDate && endDate) {
+      // Validate date format (YYYY-MM-DD)
+      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+      if (!dateRegex.test(startDate) || !dateRegex.test(endDate)) {
         return res.status(400).json({
           success: false,
-          error: 'Invalid date format. Dates must be in YYYY-MM-DD format and valid.',
-          details: {
-            startDate: startDateStr,
-            endDate: endDateStr,
-            startDateValid: isValidDateString(startDateStr),
-            endDateValid: isValidDateString(endDateStr)
-          }
+          error: 'Invalid date format. Use YYYY-MM-DD format.'
         });
       }
       
-      // Create timezone-aware dates
-      const startDate = new Date(startDateStr + 'T00:00:00');
-      const endDate = new Date(endDateStr + 'T00:00:00');
+      // Validate date values
+      const startDateObj = new Date(startDate);
+      const endDateObj = new Date(endDate);
       
-
+      if (isNaN(startDateObj.getTime()) || isNaN(endDateObj.getTime())) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid date values.'
+        });
+      }
+      
+      console.log(`📅 Using provided date range: ${startDate} to ${endDate}`);
     } else {
       console.log('📅 Using default date ranges (today)');
       
@@ -169,6 +132,14 @@ router.get('/', requireAuth, async (req, res) => {
     console.log('📋 Final parameter sets:');
     console.log(`   Current params: ${JSON.stringify(currentParams)}`);
     
+    // Check if the date range corresponds to "today"
+    const timezone = currentParams['filter[timezone]'] || config.olaClick.defaultTimezone;
+    const todayInTimezone = getTimezoneAwareDate(null, timezone);
+    const isToday = currentParams['filter[start_date]'] === todayInTimezone && 
+                   currentParams['filter[end_date]'] === todayInTimezone;
+    
+    console.log(`📅 Date range check: isToday=${isToday}`);
+    
     // Fetch current period data
     console.log('🔄 Fetching current period payment data...');
     const currentPromises = userAccounts.map(account => 
@@ -180,6 +151,16 @@ router.get('/', requireAuth, async (req, res) => {
     const tipsPromises = userAccounts.map(account => 
       fetchTipsData(account, currentParams)
     );
+    
+    // Fetch service metrics data if today
+    let serviceMetricsResults = null;
+    if (isToday) {
+      console.log('🔄 Fetching service metrics data for today...');
+      const serviceMetricsPromises = userAccounts.map(account => 
+        fetchServiceMetrics(account, { timezone })
+      );
+      serviceMetricsResults = await Promise.all(serviceMetricsPromises);
+    }
     
     const [currentResults, tipsResults] = await Promise.all([
       Promise.all(currentPromises),
@@ -193,6 +174,15 @@ router.get('/', requireAuth, async (req, res) => {
       }
     });
     
+    // Attach service metrics data to accounts if available
+    if (serviceMetricsResults) {
+      currentResults.forEach((account, index) => {
+        if (serviceMetricsResults[index] && serviceMetricsResults[index].success) {
+          account.serviceMetrics = serviceMetricsResults[index].data?.data || null;
+        }
+      });
+    }
+    
     // Aggregate current period data
     console.log('📊 Aggregating current period data...');
     const aggregated = aggregateAccountsData(currentResults);
@@ -201,18 +191,16 @@ router.get('/', requireAuth, async (req, res) => {
     console.log(`   Total Payments: ${aggregated.totalPayments}`);
     console.log(`   Total Amount: ${aggregated.totalAmount}`);
     console.log(`   Total Tips: ${aggregated.totalTips}`);
-    console.log(`   Payment Methods: ${aggregated.paymentMethods.length}`);
-    console.log(`   Accounts: ${aggregated.accountsCount}`);
+    console.log(`   Payment Methods: ${Object.keys(aggregated.paymentMethods).length}`);
     
     res.json({
       success: true,
-      accounts: currentResults,
       aggregated,
-      timezone: currentParams['filter[timezone]']
+      accounts: currentResults
     });
     
   } catch (error) {
-    console.error('❌ Payments endpoint error:', error);
+    console.error(`❌ Payments error: ${error.message}`);
     res.status(500).json({
       success: false,
       error: error.message
