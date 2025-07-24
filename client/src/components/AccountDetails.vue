@@ -6,38 +6,27 @@
         <div class="card-body">
           <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 sm:gap-4 mb-4">
             <div class="min-w-0 flex-1">
-              <h4 class="font-medium text-gray-900 text-sm sm:text-base truncate">{{ account.account }}</h4>
-              <p class="text-xs sm:text-sm text-gray-500 truncate">{{ account.accountKey }}</p>
-            </div>
-            <span class="badge self-start" :class="account.success ? 'badge-success' : 'badge-danger'">
-              {{ account.success ? 'Active' : 'Error' }}
-            </span>
-          </div>
+              <span class="badge inline self-start" :class="account.success ? 'badge-success' : 'badge-danger'">
+                {{ account.success ? 'Active' : 'Error' }}
+              </span>
 
+              <h4 class="font-medium text-gray-900 text-sm sm:text-base truncate ml-1">
+                {{ account.account }}</h4>
+            </div>
+            
           <div v-if="account.success && account.data" class="space-y-3">
             <!-- Account totals -->
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4 text-center">
-              <div class="bg-blue-50 rounded-lg p-2 sm:p-3">
-                <p class="text-sm sm:text-lg font-bold text-blue-600">{{ getAccountTotalOrders(account) }}</p>
-                <p class="text-xs text-blue-500">Total Orders</p>
-
-              </div>
-
-              <div class="bg-green-50 rounded-lg p-2 sm:p-3">
-                <p class="text-xs sm:text-lg font-bold text-green-600 truncate">{{ formatCurrency(getAccountTotalAmount(account)) }}</p>
-                <p class="text-xs text-green-500">Total</p>
-
-              </div>
-
+            <div class="text-center">
               <div class="bg-amber-50 rounded-lg p-2 sm:p-3">
                 <p class="text-xs sm:text-lg font-bold text-amber-600 truncate">{{ formatCurrency(getAccountTotalTips(account)) }}</p>
                 <p class="text-xs text-amber-500">Tips</p>
               </div>
             </div>
-      
-  
+          </div>
+          </div>
 
-            <!-- Account Payment Methods -->
+          <div v-if="account.success && account.data" class="space-y-3">
+                  <!-- Account Payment Methods -->
             <div v-if="account.data.data && account.data.data.length > 0" class="bg-white border border-gray-100 rounded-lg p-3">
               <h5 class="text-xs font-medium text-gray-700 mb-2 flex items-center">
                 <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
