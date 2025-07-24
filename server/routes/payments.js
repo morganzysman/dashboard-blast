@@ -9,7 +9,6 @@ import {
   getTimezoneAwareDate
 } from '../services/olaClickService.js';
 import { config } from '../config/index.js';
-import { getUserAccounts } from '../database.js';
 
 const router = Router();
 
@@ -58,7 +57,7 @@ router.get('/', requireAuth, async (req, res) => {
     console.log(`   Query params: ${JSON.stringify(req.query)}`);
     
     // Get user's accounts
-    const userAccounts = await getUserAccounts(req.user.id);
+    const userAccounts = req.user.userAccounts || [];
     
     if (!userAccounts || userAccounts.length === 0) {
       return res.status(404).json({

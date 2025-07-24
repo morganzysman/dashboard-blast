@@ -237,7 +237,7 @@ router.get('/service-metrics', requireAuth, async (req, res) => {
     console.log(`   Query params: ${JSON.stringify(req.query)}`);
     
     // Get user's accounts
-    const userAccounts = await getUserAccounts(req.user.id);
+    const userAccounts = req.user.userAccounts || [];
     
     if (!userAccounts || userAccounts.length === 0) {
       return res.status(404).json({
