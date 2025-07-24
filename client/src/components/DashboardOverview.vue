@@ -259,111 +259,7 @@
 
 
 
-    <!-- Service Metrics -->
-    <div class="card">
-      <div class="card-header">
-        <div class="flex items-center justify-between">
-          <h3 class="text-base sm:text-lg font-medium text-gray-900">📊 Service Metrics</h3>
-          <button 
-            @click="emit('service-metrics-toggle')"
-            class="flex items-center space-x-1 px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-colors duration-200"
-            :disabled="selectedDateRange !== 'today'"
-          >
-            <span class="text-gray-600">{{ serviceMetricsExpanded ? 'Hide' : 'Show' }}</span>
-            <svg 
-              class="w-4 h-4 text-gray-600 transition-transform duration-200" 
-              :class="{ 'rotate-180': serviceMetricsExpanded }"
-              fill="none" 
-              stroke="currentColor" 
-              viewBox="0 0 24 24"
-            >
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-            </svg>
-          </button>
-        </div>
-      </div>
-      
-      <!-- Service Metrics Content -->
-      <div class="card-body" v-show="serviceMetricsExpanded">
-        <!-- Feature not available for non-today dates -->
-        <div v-if="selectedDateRange !== 'today'" class="text-center py-8">
-          <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-            </svg>
-          </div>
-          <h4 class="text-lg font-medium text-gray-900 mb-2">Service Metrics Not Available</h4>
-          <p class="text-sm text-gray-600">Service metrics are only available for "Today"</p>
-          <p class="text-xs text-gray-500 mt-1">Switch to "Today" to view detailed service metrics</p>
-        </div>
-        
-        <!-- Loading state -->
-        <div v-else-if="serviceMetricsLoading" class="text-center py-8">
-          <div class="loading-spinner mx-auto mb-4"></div>
-          <p class="text-gray-600">Loading service metrics...</p>
-        </div>
-        
-        <!-- Service metrics data -->
-        <div v-else-if="serviceMetricsData && serviceMetricsData.data" class="space-y-6">
-          <!-- Service Distribution Chart -->
-          <div class="mb-6">
-            <div class="flex items-center space-x-2 mb-2">
-              <h4 class="text-sm font-medium text-gray-700">Orders Distribution by Service Type</h4>
-              <span class="text-xs text-gray-500">({{ getTotalServiceOrders() }} total orders)</span>
-            </div>
-            <div class="w-full bg-gray-200 rounded-full h-8 overflow-hidden">
-              <div class="flex h-full">
-                <div v-for="service in getServiceMetricsForChart()" 
-                     :key="service.type"
-                     class="h-full transition-all duration-300"
-                     :style="{ 
-                       width: service.percent + '%',
-                       backgroundColor: getServiceColor(service.type)
-                     }"
-                     :title="`${service.type}: ${service.orders} orders (${service.percent.toFixed(1)}%)`">
-                </div>
-              </div>
-            </div>
-          </div>
 
-          <!-- Service Metrics Grid -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            <div v-for="service in getServiceMetricsList()" :key="service.type" 
-                 class="bg-gray-50 rounded-lg p-3 sm:p-4">
-              <div class="flex items-center space-x-2 sm:space-x-3 mb-2">
-                <div class="w-3 h-3 rounded-full flex-shrink-0" :style="{ backgroundColor: getServiceColor(service.type) }"></div>
-                <p class="font-medium text-gray-900 text-sm sm:text-base">{{ service.type }}</p>
-              </div>
-              <div class="space-y-2">
-                <div class="flex items-center justify-between">
-                  <span class="text-xs text-gray-500">Orders</span>
-                  <span class="font-bold text-gray-900 text-sm">{{ service.orders }}</span>
-                </div>
-                <div class="flex items-center justify-between">
-                  <span class="text-xs text-gray-500">Sales</span>
-                  <span class="font-bold text-gray-900 text-sm">{{ formatCurrency(service.sales) }}</span>
-                </div>
-                <div class="flex items-center justify-between">
-                  <span class="text-xs text-gray-500">Avg. Ticket</span>
-                  <span class="font-bold text-gray-900 text-sm">{{ formatCurrency(service.averageTicket) }}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <!-- No data state -->
-        <div v-else class="text-center py-8">
-          <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-            </svg>
-          </div>
-          <h4 class="text-lg font-medium text-gray-900 mb-2">No Service Metrics Data</h4>
-          <p class="text-sm text-gray-600">No service metrics data available for today</p>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -374,9 +270,6 @@ import { useAuthStore } from '../stores/auth'
 const props = defineProps({
   analyticsData: Object,
   ordersData: Object,
-  serviceMetricsData: Object,
-  serviceMetricsLoading: Boolean,
-  serviceMetricsExpanded: Boolean,
   loading: Boolean,
   selectedDateRange: String,
   customStartDate: String,
@@ -391,8 +284,7 @@ const emit = defineEmits([
   'date-range-change',
   'custom-date-change', 
   'apply-custom-date-range',
-  'refresh-data',
-  'service-metrics-toggle'
+  'refresh-data'
 ])
 
 const authStore = useAuthStore()
@@ -652,48 +544,7 @@ const getOrdersPieChart = () => {
   return `conic-gradient(${gradientStops.join(', ')})`
 }
 
-// Service Metrics Functions
-const getServiceMetricsList = () => {
-  if (!props.serviceMetricsData || !props.serviceMetricsData.data) {
-    return []
-  }
-  
-  const data = props.serviceMetricsData.data
-  const services = []
-  
-  Object.keys(data).forEach(serviceType => {
-    const serviceData = data[serviceType]
-    if (serviceData && serviceData.orders > 0) {
-      services.push({
-        type: serviceType,
-        orders: serviceData.orders,
-        sales: serviceData.sales,
-        averageTicket: serviceData.average_ticket
-      })
-    }
-  })
-  
-  return services.sort((a, b) => b.orders - a.orders) // Sort by orders descending
-}
 
-const getServiceMetricsForChart = () => {
-  const services = getServiceMetricsList()
-  if (!services.length) {
-    return []
-  }
-  
-  const totalOrders = services.reduce((sum, service) => sum + service.orders, 0)
-  
-  return services.map(service => ({
-    ...service,
-    percent: totalOrders > 0 ? (service.orders / totalOrders) * 100 : 0
-  }))
-}
-
-const getTotalServiceOrders = () => {
-  const services = getServiceMetricsList()
-  return services.reduce((sum, service) => sum + service.orders, 0)
-}
 </script>
 
 <style scoped>

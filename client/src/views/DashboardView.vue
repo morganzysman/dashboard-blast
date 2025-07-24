@@ -1,23 +1,19 @@
 <template>
   <div class="space-y-4 lg:space-y-6">
     <!-- Dashboard Overview Component -->
-    <DashboardOverview
-      :analytics-data="analyticsData"
-      :orders-data="ordersData"
-      :service-metrics-data="serviceMetricsData"
-      :service-metrics-loading="serviceMetricsLoading"
-      :service-metrics-expanded="serviceMetricsExpanded"
-      :loading="loading"
-      v-model:selected-date-range="selectedDateRange"
-      v-model:custom-start-date="customStartDate"
-      v-model:custom-end-date="customEndDate"
-      :current-date-range="currentDateRange"
-      @date-range-change="onDateRangeChange"
-      @custom-date-change="onCustomDateChange"
-      @apply-custom-date-range="applyCustomDateRange"
-      @refresh-data="refreshData"
-      @service-metrics-toggle="onServiceMetricsToggle"
-    />
+                <DashboardOverview
+              :analytics-data="analyticsData"
+              :orders-data="ordersData"
+              :loading="loading"
+              v-model:selected-date-range="selectedDateRange"
+              v-model:custom-start-date="customStartDate"
+              v-model:custom-end-date="customEndDate"
+              :current-date-range="currentDateRange"
+              @date-range-change="onDateRangeChange"
+              @custom-date-change="onCustomDateChange"
+              @apply-custom-date-range="applyCustomDateRange"
+              @refresh-data="refreshData"
+            />
 
     <!-- Account Details Component -->
     <AccountDetails
@@ -75,11 +71,8 @@ const authStore = useAuthStore()
 
 const analyticsData = ref(null)
 const ordersData = ref(null)
-const serviceMetricsData = ref(null)
 const loading = ref(false)
 const error = ref('')
-const serviceMetricsLoading = ref(false)
-const serviceMetricsExpanded = ref(false)
 
 // Date Range State
 const selectedDateRange = ref('today')
@@ -245,11 +238,6 @@ const onDateRangeChange = () => {
     currentDateRange.value = getDateRange(selectedDateRange.value)
     fetchAnalyticsData()
     fetchOrdersData(currentDateRange.value)
-    
-    // Clear service metrics if date is not "today"
-    if (selectedDateRange.value !== 'today') {
-      serviceMetricsData.value = null
-    }
   }
 }
 
@@ -362,52 +350,11 @@ const fetchAnalyticsData = async () => {
   }
 }
 
-const fetchServiceMetricsData = async () => {
-  // Only fetch if expanded and date is "today"
-  if (!serviceMetricsExpanded.value || selectedDateRange.value !== 'today') {
-    return
-  }
-  
-  serviceMetricsLoading.value = true
-  
-  try {
-    const timezone = authStore.user?.timezone || 'America/Lima'
-    const params = new URLSearchParams({
-      'timezone': timezone
-    })
 
-    const data = await api.get(`/api/orders/service-metrics?${params.toString()}`)
-    
-    if (data.success) {
-      serviceMetricsData.value = data
-      console.log('📊 Service metrics data loaded:', data)
-    } else {
-      throw new Error(data.error || 'Failed to load service metrics data')
-    }
-  } catch (err) {
-    console.error('❌ Service metrics fetch error:', err)
-    serviceMetricsData.value = null
-  } finally {
-    serviceMetricsLoading.value = false
-  }
-}
-
-const onServiceMetricsToggle = () => {
-  serviceMetricsExpanded.value = !serviceMetricsExpanded.value
-  
-  if (serviceMetricsExpanded.value && selectedDateRange.value === 'today') {
-    fetchServiceMetricsData()
-  }
-}
 
 const refreshData = () => {
   fetchAnalyticsData()
   fetchOrdersData(currentDateRange.value)
-  
-  // Refresh service metrics if expanded and date is "today"
-  if (serviceMetricsExpanded.value && selectedDateRange.value === 'today') {
-    fetchServiceMetricsData()
-  }
 }
 
 onMounted(() => {
