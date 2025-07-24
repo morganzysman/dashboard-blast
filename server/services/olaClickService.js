@@ -138,8 +138,11 @@ export function aggregateAccountsData(accountsData) {
     method.percent = totalAmount > 0 ? (method.sum / totalAmount * 100) : 0;
   });
   
+  // Sort payment methods by usage (count) in descending order
+  const sortedPaymentMethods = Object.values(aggregated).sort((a, b) => b.count - a.count);
+  
   const result = {
-    paymentMethods: Object.values(aggregated),
+    paymentMethods: sortedPaymentMethods,
     totalPayments,
     totalAmount,
     totalTips,
