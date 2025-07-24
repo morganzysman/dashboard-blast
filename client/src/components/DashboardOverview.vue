@@ -91,7 +91,7 @@
     </div>
 
     <!-- Overall Performance Cards -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6" v-if="analyticsData">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6" v-if="analyticsData">
       <!-- Total Orders -->
       <div class="card bg-gradient-to-r from-blue-500 to-blue-600 text-white">
         <div class="card-body">
@@ -146,51 +146,35 @@
             </div>
           </div>
           
-          <!-- Account Distribution Bar -->
+          <!-- Account Distribution Pie Chart -->
           <div v-if="analyticsData && analyticsData.accounts.length > 1" class="mt-3">
             <div class="flex items-center space-x-1 mb-2">
               <span class="text-green-100 text-xs font-medium">By Account:</span>
             </div>
-            <div class="relative w-full bg-green-700 bg-opacity-30 rounded-full h-6 overflow-hidden mb-3">
-              <div class="flex h-full relative">
-                <div v-for="account in getAccountTotalsForChart()" 
-                     :key="account.accountKey"
-                     class="h-full transition-all duration-300 relative group"
-                     :style="{ 
-                       width: account.percent + '%',
-                       backgroundColor: getAccountColor(account.accountKey)
-                     }">
-                  <!-- Account label overlay - only show for segments > 15% -->
-                  <div v-if="account.percent > 15" 
-                       class="absolute inset-0 flex flex-col items-center justify-center px-1">
-                    <span class="text-white text-xs font-semibold truncate leading-tight">{{ account.account.split(' ')[0] }}</span>
-                    <span class="text-white text-xs opacity-90 leading-tight">{{ account.percent.toFixed(0) }}%</span>
-                  </div>
-                  
-                  <!-- Tooltip for all segments -->
-                  <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
-                    {{ account.account }}<br/>
-                    {{ formatCurrency(account.totalAmount) }} ({{ account.percent.toFixed(1) }}%)
-                  </div>
+            <div class="flex items-center justify-center">
+              <div class="relative w-16 h-16 sm:w-20 sm:h-20">
+                <!-- Pie Chart using conic-gradient -->
+                <div 
+                  class="w-full h-full rounded-full"
+                  :style="{ background: getAccountsPieChart() }"
+                ></div>
+                <!-- Center hole for donut effect -->
+                <div class="absolute inset-2 bg-green-600 rounded-full flex items-center justify-center">
+                  <span class="text-white text-xs font-bold">{{ analyticsData.accounts.length }}</span>
                 </div>
               </div>
-            </div>
-            
-            <!-- Account Distribution Legend -->
-            <div class="space-y-1 text-xs max-h-16 overflow-y-auto">
-              <div v-for="account in getAccountTotalsForChart().slice(0, 3)" :key="account.accountKey" 
-                   class="flex items-center justify-between">
-                <div class="flex items-center space-x-1 min-w-0 flex-1">
+              
+              <!-- Legend -->
+              <div class="ml-4 space-y-1 text-xs max-w-24">
+                <div v-for="account in getAccountTotalsForChart().slice(0, 3)" :key="account.accountKey" 
+                     class="flex items-center space-x-1">
                   <div class="w-2 h-2 rounded-full flex-shrink-0" :style="{ backgroundColor: getAccountColor(account.accountKey) }"></div>
                   <span class="text-green-100 truncate">{{ account.account.split(' ')[0] }}</span>
+                  <span class="text-green-200">{{ account.percent.toFixed(0) }}%</span>
                 </div>
-                <div class="flex items-center space-x-1 text-green-200">
-                  <span class="font-medium">{{ formatCurrency(account.totalAmount) }}</span>
-                  <span>({{ account.percent.toFixed(0) }}%)</span>
+                <div v-if="getAccountTotalsForChart().length > 3" class="text-green-200">
+                  +{{ getAccountTotalsForChart().length - 3 }} more
                 </div>
-              </div>
-              <div v-if="getAccountTotalsForChart().length > 3" class="text-green-200 text-center">
-                +{{ getAccountTotalsForChart().length - 3 }} more accounts
               </div>
             </div>
           </div>
@@ -198,24 +182,6 @@
           <!-- Single account message -->
           <div v-else-if="analyticsData && analyticsData.accounts.length === 1" class="mt-3">
             <span class="text-green-100 text-xs">{{ analyticsData.accounts[0].account }}</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Total Tips -->
-      <div class="card bg-gradient-to-r from-amber-500 to-orange-600 text-white">
-        <div class="card-body">
-          <div class="flex items-center justify-between">
-            <div class="min-w-0 flex-1">
-              <p class="text-amber-100 text-xs sm:text-sm font-medium">TOTAL TIPS</p>
-              <p class="text-xl sm:text-3xl font-bold truncate">{{ formatCurrency(analyticsData.aggregated.totalTips || 0) }}</p>
-              <p class="text-xs sm:text-sm text-amber-200 mt-1">From all accounts</p>
-            </div>
-            <div class="w-10 h-10 sm:w-12 sm:h-12 bg-amber-400 bg-opacity-30 rounded-lg flex items-center justify-center flex-shrink-0">
-              <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
-              </svg>
-            </div>
           </div>
         </div>
       </div>
@@ -563,6 +529,28 @@ const getPaymentMethodsPieChart = () => {
   methods.forEach((method, index) => {
     const color = getPaymentMethodColor(method.name)
     const percentage = method.percent
+    const degrees = (percentage / 100) * 360
+    
+    gradientStops.push(`${color} ${currentAngle}deg ${currentAngle + degrees}deg`)
+    currentAngle += degrees
+  })
+
+  return `conic-gradient(${gradientStops.join(', ')})`
+}
+
+// Generate pie chart for accounts using conic-gradient
+const getAccountsPieChart = () => {
+  const accounts = getAccountTotalsForChart()
+  if (!accounts || !accounts.length) {
+    return 'conic-gradient(#6B7280 0deg 360deg)'
+  }
+
+  let currentAngle = 0
+  const gradientStops = []
+
+  accounts.forEach((account, index) => {
+    const color = getAccountColor(account.accountKey)
+    const percentage = account.percent
     const degrees = (percentage / 100) * 360
     
     gradientStops.push(`${color} ${currentAngle}deg ${currentAngle + degrees}deg`)
