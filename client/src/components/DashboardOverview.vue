@@ -612,7 +612,18 @@ const getOrdersDistributionForChart = () => {
   }
 
   const ordersDistribution = props.analyticsData.accounts.map(account => {
-    const totalOrders = getAccountTotalOrders(account)
+    // Use service metrics data if available, otherwise fall back to payment data
+    let totalOrders = 0
+    
+    if (account.serviceMetrics) {
+      // Sum orders from all service types for this account
+      totalOrders = Object.values(account.serviceMetrics).reduce((sum, service) => 
+        sum + (service?.orders?.current_period ?? 0), 0)
+    } else if (account.data?.data) {
+      // Fallback to payment data if service metrics not available
+      totalOrders = account.data.data.reduce((sum, method) => sum + (method.count || 0), 0)
+    }
+    
     return {
       accountKey: account.accountKey,
       account: account.account,
