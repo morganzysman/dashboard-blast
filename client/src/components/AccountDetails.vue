@@ -16,7 +16,7 @@
 
           <div v-if="account.success && account.data" class="space-y-3">
             <!-- Account totals -->
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 text-center">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4 text-center">
               <div class="bg-blue-50 rounded-lg p-2 sm:p-3">
                 <p class="text-sm sm:text-lg font-bold text-blue-600">{{ getAccountTotalOrders(account) }}</p>
                 <p class="text-xs text-blue-500">Total Orders</p>
