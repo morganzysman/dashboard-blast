@@ -403,7 +403,6 @@ router.get('/general-indicators', requireAuth, async (req, res) => {
       accounts: currentResults,
       aggregated: currentAggregated,
       comparison,
-      period,
       timezone
     });
     
