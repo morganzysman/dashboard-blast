@@ -472,14 +472,39 @@ export async function fetchGeneralIndicators(account, queryParams = {}) {
       let totalSales = meta.total_amount || 0;
       let avgTicket = totalOrders > 0 ? totalSales / totalOrders : 0;
       
-      // Simple aggregated data
+      // Calculate kitchen performance metrics
+      const ordersWithPrepTime = orders.filter(order => 
+        order.preparing_at && order.prepared_at && 
+        order.status !== 'CANCELLED'
+      );
+      
+      let averagePreparationTime = 0;
+      if (ordersWithPrepTime.length > 0) {
+        const totalPrepTime = ordersWithPrepTime.reduce((sum, order) => {
+          const preparingTime = new Date(order.preparing_at);
+          const preparedTime = new Date(order.prepared_at);
+          const prepTimeMinutes = (preparedTime - preparingTime) / (1000 * 60); // Convert to minutes
+          return sum + Math.max(0, prepTimeMinutes); // Ensure positive values
+        }, 0);
+        averagePreparationTime = totalPrepTime / ordersWithPrepTime.length;
+      }
+      
+      console.log(`📊 Kitchen Performance: ${ordersWithPrepTime.length} orders with prep time, avg: ${averagePreparationTime.toFixed(1)} minutes`);
+      
+      // Enhanced data with kitchen performance
       transformedData = {
         orders: totalOrders,
         sales: totalSales,
-        averageTicket: avgTicket
+        averageTicket: avgTicket,
+        kitchenPerformance: {
+          averagePreparationTime: averagePreparationTime,
+          ordersWithPrepTime: ordersWithPrepTime.length,
+          totalOrders: totalOrders
+        },
+        detailedOrders: orders // Include detailed orders for frontend processing
       };
       
-      console.log(`📊 Processed ${totalOrders} orders with ${totalSales} total sales`);
+      console.log(`📊 Processed ${totalOrders} orders with ${totalSales} total sales, avg prep time: ${averagePreparationTime.toFixed(1)} min`);
     } else {
       console.log(`⚠️  No orders data found in response`);
     }

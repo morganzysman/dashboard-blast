@@ -13,6 +13,7 @@ import LoginView from './views/LoginView.vue'
 import DashboardView from './views/DashboardView.vue'
 import AdminView from './views/AdminView.vue'
 import NotificationsView from './views/NotificationsView.vue'
+import RentabilityView from './views/RentabilityView.vue'
 
 // Import stores
 import { useAuthStore } from './stores/auth'
@@ -44,6 +45,12 @@ const routes = [
     path: '/notifications',
     name: 'Notifications',
     component: NotificationsView,
+    meta: { requiresAuth: true, excludeRoles: ['super-admin'] }
+  },
+  {
+    path: '/rentability',
+    name: 'Rentability',
+    component: RentabilityView,
     meta: { requiresAuth: true, excludeRoles: ['super-admin'] }
   }
 ]

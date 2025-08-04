@@ -66,20 +66,27 @@ router.post('/login', async (req, res) => {
     );
     
     console.log(`✅ User logged in: ${user.email} (${user.accounts?.length || 0} accounts)`);
+    console.log(`🔍 Debug login response - user.accounts:`, user.accounts);
+    console.log(`🔍 Debug login response - typeof user.accounts:`, typeof user.accounts);
+    
+    const userData = {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      timezone: user.timezone || 'America/Lima',
+      currency: user.currency || 'PEN',
+      currencySymbol: user.currency_symbol || 'S/',
+      accounts: user.accounts || [],
+      accountsCount: user.accounts?.length || 0
+    };
+    
+    console.log(`🔍 Debug final userData being sent:`, JSON.stringify(userData, null, 2));
     
     res.json({
       success: true,
       sessionId,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        timezone: user.timezone || 'America/Lima',
-        currency: user.currency || 'PEN',
-        currencySymbol: user.currency_symbol || 'S/',
-        accountsCount: user.accounts?.length || 0
-      }
+      user: userData
     });
     
   } catch (error) {
@@ -127,19 +134,26 @@ router.get('/verify', async (req, res) => {
     }
     
     console.log(`✅ Session verified for user: ${sessionData.user.email} (ID: ${sessionToken.substring(0, 8)}...) - Expires: ${new Date(sessionData.expiresAt).toLocaleString()}`);
+    console.log(`🔍 Debug session verify - sessionData.user.accounts:`, sessionData.user.accounts);
+    console.log(`🔍 Debug session verify - typeof sessionData.user.accounts:`, typeof sessionData.user.accounts);
+    
+    const userData = {
+      id: sessionData.user.id,
+      name: sessionData.user.name,
+      email: sessionData.user.email,
+      role: sessionData.user.role,
+      timezone: sessionData.user.timezone || 'America/Lima',
+      currency: sessionData.user.currency || 'PEN',
+      currencySymbol: sessionData.user.currencySymbol || 'S/',
+      accounts: sessionData.user.accounts || [],
+      accountsCount: sessionData.user.accounts?.length || 0
+    };
+    
+    console.log(`🔍 Debug final userData being sent:`, JSON.stringify(userData, null, 2));
     
     res.json({
       success: true,
-      user: {
-        id: sessionData.user.id,
-        name: sessionData.user.name,
-        email: sessionData.user.email,
-        role: sessionData.user.role,
-        timezone: sessionData.user.timezone || 'America/Lima',
-        currency: sessionData.user.currency || 'PEN',
-        currencySymbol: sessionData.user.currencySymbol || 'S/',
-        accountsCount: sessionData.user.accounts?.length || 0
-      }
+      user: userData
     });
     
   } catch (error) {

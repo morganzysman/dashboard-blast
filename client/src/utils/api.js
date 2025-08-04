@@ -150,7 +150,39 @@ export const api = {
     },
     body: formData,
     ...options
-  })
+  }),
+  
+  // Utility costs methods
+  getUtilityCosts: (companyToken = null) => {
+    const url = companyToken ? `/api/utility-costs/${companyToken}` : '/api/utility-costs'
+    return apiRequest(url, { method: 'GET' })
+  },
+  
+  // Payment method costs methods
+  getPaymentMethodCosts: (companyToken = null) => {
+    const url = companyToken ? `/api/payment-method-costs/${companyToken}` : '/api/payment-method-costs'
+    return apiRequest(url, { method: 'GET' })
+  },
+  
+  savePaymentMethodCost: (data) => {
+    return apiRequest('/api/payment-method-costs', { 
+      method: 'POST', 
+      body: JSON.stringify(data) 
+    })
+  },
+  
+  bulkUpdatePaymentMethodCosts: (companyToken, costs) => {
+    return apiRequest(`/api/payment-method-costs/bulk/${companyToken}`, {
+      method: 'POST',
+      body: JSON.stringify({ costs })
+    })
+  },
+  
+  deletePaymentMethodCost: (companyToken, paymentMethodCode) => {
+    return apiRequest(`/api/payment-method-costs/${companyToken}/${paymentMethodCode}`, {
+      method: 'DELETE'
+    })
+  }
 }
 
 export default api 

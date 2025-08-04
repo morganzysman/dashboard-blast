@@ -1,0 +1,212 @@
+{
+  "data": [
+    {
+      "id": "2a689983-36b6-436e-8abb-7b2f197fd0a3",
+      "code": "cash",
+      "country_code": null,
+      "position": 1,
+      "provider_id": null,
+      "provider_code": null,
+      "provider": null
+    },
+    {
+      "id": "7cbab49b-d4c4-4eef-ad28-d2f221eb4dff",
+      "code": "card",
+      "country_code": null,
+      "position": 2,
+      "provider_id": null,
+      "provider_code": null,
+      "provider": null
+    },
+    {
+      "id": "a7a980a0-68f4-11ec-870d-0f37fb22b0f8",
+      "code": "credit_card",
+      "country_code": null,
+      "position": 3,
+      "provider_id": null,
+      "provider_code": null,
+      "provider": null
+    },
+    {
+      "id": "a7aba540-68f4-11ec-919d-f9dbf26e6a5b",
+      "code": "debit_card",
+      "country_code": null,
+      "position": 4,
+      "provider_id": null,
+      "provider_code": null,
+      "provider": null
+    },
+    {
+      "id": "efc76a80-c79e-11eb-831e-a5122b14ec73",
+      "code": "visa",
+      "country_code": null,
+      "position": 5,
+      "provider_id": null,
+      "provider_code": null,
+      "provider": null
+    },
+    {
+      "id": "efc987d0-c79e-11eb-9b12-8173a409ab96",
+      "code": "mastercard",
+      "country_code": null,
+      "position": 6,
+      "provider_id": null,
+      "provider_code": null,
+      "provider": null
+    },
+    {
+      "id": "efb905b0-c79e-11eb-928c-fd045ff215a5",
+      "code": "amex",
+      "country_code": null,
+      "position": 7,
+      "provider_id": null,
+      "provider_code": null,
+      "provider": null
+    },
+    {
+      "id": "a7b42100-68f4-11ec-8687-f3c36da162c7",
+      "code": "diners",
+      "country_code": null,
+      "position": 8,
+      "provider_id": null,
+      "provider_code": null,
+      "provider": null
+    },
+    {
+      "id": "c31f42e6-86e7-4dee-ae62-40fb523d99a9",
+      "code": "transfer",
+      "country_code": null,
+      "position": 9,
+      "provider_id": null,
+      "provider_code": null,
+      "provider": null
+    },
+    {
+      "id": "cda35c3c-d97d-4312-8f46-331525955ed6",
+      "code": "yape",
+      "country_code": "PE",
+      "position": 11,
+      "provider_id": null,
+      "provider_code": null,
+      "provider": null
+    },
+    {
+      "id": "a7be0840-68f4-11ec-b2fd-01c9b25cf78f",
+      "code": "online_payment",
+      "country_code": null,
+      "position": 12,
+      "provider_id": null,
+      "provider_code": null,
+      "provider": null
+    },
+    {
+      "id": "efce5c90-c79e-11eb-b596-2953f55f7bce",
+      "code": "paypal",
+      "country_code": null,
+      "position": 13,
+      "provider_id": null,
+      "provider_code": null,
+      "provider": null
+    },
+    {
+      "id": "a81a6470-68f4-11ec-92c6-9585a0ed5b6d",
+      "code": "pago_efectivo",
+      "country_code": "PE",
+      "position": 49,
+      "provider_id": null,
+      "provider_code": null,
+      "provider": null
+    },
+    {
+      "id": "efabca10-c79e-11eb-85f3-698870e9cfd0",
+      "code": "lukita",
+      "country_code": "PE",
+      "position": 50,
+      "provider_id": null,
+      "provider_code": null,
+      "provider": null
+    },
+    {
+      "id": "efb5df60-c79e-11eb-a39e-39b43976a67f",
+      "code": "plin",
+      "country_code": "PE",
+      "position": 51,
+      "provider_id": null,
+      "provider_code": null,
+      "provider": null
+    },
+    {
+      "id": "adfb52c0-9e2a-11eb-80a1-9f0383a97eba",
+      "code": "bitcoin",
+      "country_code": null,
+      "position": 55,
+      "provider_id": null,
+      "provider_code": null,
+      "provider": null
+    },
+    {
+      "id": "d5619d80-6cd8-11ed-aa3c-f57f9c15f34b",
+      "code": "mercado_pago",
+      "country_code": "PE",
+      "position": 70,
+      "provider_id": null,
+      "provider_code": null,
+      "provider": null
+    },
+    {
+      "id": "9c2b4dc2-3fed-4c4c-b71e-78e96e748b53",
+      "code": "other",
+      "country_code": null,
+      "position": 95,
+      "provider_id": null,
+      "provider_code": null,
+      "provider": null
+    },
+    {
+      "id": "8d64732b-e7a4-4fd4-9832-cf603dd1c568",
+      "code": "google_pay",
+      "country_code": null,
+      "position": 102,
+      "provider_id": null,
+      "provider_code": null,
+      "provider": null
+    },
+    {
+      "id": "912deff1-1bc8-4d44-90ee-3ac9c5ee5d14",
+      "code": "apple_pay",
+      "country_code": null,
+      "position": 103,
+      "provider_id": null,
+      "provider_code": null,
+      "provider": null
+    },
+    {
+      "id": "f17d708b-b1e0-4314-9a39-c7c8e3f380c8",
+      "code": "d24_card",
+      "country_code": "PE",
+      "position": 1002,
+      "provider_id": "f17d708b-b1e0-4314-9a39-c7c8e3f380c8",
+      "provider_code": "CC",
+      "provider": {
+        "id": "f17d708b-b1e0-4314-9a39-c7c8e3f380c8",
+        "name": "d24",
+        "created_at": "2024-04-17T00:08:14.507Z",
+        "updated_at": "2024-04-17T00:08:14.507Z"
+      }
+    },
+    {
+      "id": "516845a6-8c2e-4ccd-9986-1d508bc2e82d",
+      "code": "d24_yape",
+      "country_code": "PE",
+      "position": 1003,
+      "provider_id": "f17d708b-b1e0-4314-9a39-c7c8e3f380c8",
+      "provider_code": "YP",
+      "provider": {
+        "id": "f17d708b-b1e0-4314-9a39-c7c8e3f380c8",
+        "name": "d24",
+        "created_at": "2024-04-17T00:08:14.507Z",
+        "updated_at": "2024-04-17T00:08:14.507Z"
+      }
+    }
+  ]
+}

@@ -37,6 +37,11 @@ function aggregateOrdersData(accountsData) {
       const accountOrders = data.orders || 0;
       const accountSales = data.sales || 0;
       const accountAvgTicket = data.averageTicket || 0;
+      const kitchenPerformance = data.kitchenPerformance || {
+        averagePreparationTime: 0,
+        ordersWithPrepTime: 0,
+        totalOrders: 0
+      };
       
       totalOrders += accountOrders;
       totalSales += accountSales;
@@ -46,7 +51,8 @@ function aggregateOrdersData(accountsData) {
         accountKey: account.accountKey,
         orders: accountOrders,
         sales: accountSales,
-        averageTicket: accountAvgTicket
+        averageTicket: accountAvgTicket,
+        kitchenPerformance: kitchenPerformance
       });
       
       console.log(`     Orders: ${accountOrders}, Sales: ${accountSales}, Avg Ticket: ${accountAvgTicket}`);

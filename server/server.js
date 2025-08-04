@@ -23,6 +23,8 @@ import paymentsRoutes from './routes/payments.js';
 import ordersRoutes from './routes/orders.js';
 import adminRoutes from './routes/admin.js';
 import notificationRoutes from './routes/notifications.js';
+import utilityCostsRoutes from './routes/utility-costs.js';
+import paymentMethodCostsRoutes from './routes/payment-method-costs.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -115,6 +117,8 @@ app.use('/api/payments', paymentsRoutes);
 app.use('/api/orders', ordersRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/utility-costs', utilityCostsRoutes);
+app.use('/api/payment-method-costs', paymentMethodCostsRoutes);
 
 // Serve notifications debug page
 app.get('/notifications-debug', (req, res) => {
