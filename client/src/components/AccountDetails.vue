@@ -38,45 +38,51 @@
                 <p class="text-xs text-purple-500">{{ formatGainPeriodLabel() }} Gain</p>
                 
                 <!-- Detailed Tooltip -->
-                <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-80 bg-gray-900 text-white text-xs rounded-lg p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50">
+                <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-96 bg-gray-900 text-white rounded-lg p-5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50 shadow-xl">
                   <div class="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
                   
-                  <h4 class="font-bold text-purple-300 mb-2">💰 Gain Breakdown ({{ formatGainPeriodLabel() }})</h4>
+                  <h4 class="font-bold text-purple-300 mb-4 text-sm">💰 Gain Breakdown ({{ formatGainPeriodLabel() }})</h4>
                   
-                  <div v-if="account.success && account.data?.data" class="space-y-2">
+                  <div v-if="account.success && account.data?.data" class="space-y-4">
                     <!-- Revenue by Payment Method -->
                     <div>
-                      <h5 class="font-semibold text-blue-300 mb-1">📊 Revenue by Payment Method:</h5>
-                      <div v-for="method in getAccountGainBreakdown(account).paymentMethodBreakdown" :key="method.method" class="flex justify-between text-xs">
-                        <span class="capitalize">{{ method.method }}:</span>
-                        <span>{{ formatCurrency(method.revenue) }} - {{ formatCurrency(method.fees) }} = <span class="text-green-300">{{ formatCurrency(method.netRevenue) }}</span></span>
+                      <h5 class="font-semibold text-blue-300 mb-3 text-sm">📊 Revenue by Payment Method:</h5>
+                      <div v-for="method in getAccountGainBreakdown(account).paymentMethodBreakdown" :key="method.method" class="mb-2">
+                        <div class="flex justify-between items-center mb-1">
+                          <span class="capitalize text-sm font-medium">{{ method.method }}:</span>
+                          <span class="text-green-300 font-bold">{{ formatCurrency(method.netRevenue) }}</span>
+                        </div>
+                        <div class="text-xs text-gray-400 text-right">
+                          {{ formatCurrency(method.revenue) }} 
+                          <span v-if="method.fees > 0">- {{ formatCurrency(method.fees) }} fees</span>
+                        </div>
                       </div>
                     </div>
                     
                     <!-- Cost Breakdown -->
-                    <div class="border-t border-gray-700 pt-2">
-                      <h5 class="font-semibold text-red-300 mb-1">📉 Costs:</h5>
-                      <div class="space-y-1 text-xs">
-                        <div class="flex justify-between">
-                          <span>Payment Fees:</span>
-                          <span class="text-red-300">-{{ formatCurrency(getAccountGainBreakdown(account).paymentFees) }}</span>
+                    <div class="border-t border-gray-700 pt-3">
+                      <h5 class="font-semibold text-red-300 mb-3 text-sm">📉 Costs:</h5>
+                      <div class="space-y-2">
+                        <div class="flex justify-between items-center">
+                          <span class="text-sm">Payment Fees:</span>
+                          <span class="text-red-300 font-bold">-{{ formatCurrency(getAccountGainBreakdown(account).paymentFees) }}</span>
                         </div>
-                        <div class="flex justify-between">
-                          <span>Food Costs (30%):</span>
-                          <span class="text-red-300">-{{ formatCurrency(getAccountGainBreakdown(account).foodCosts) }}</span>
+                        <div class="flex justify-between items-center">
+                          <span class="text-sm">Food Costs (30%):</span>
+                          <span class="text-red-300 font-bold">-{{ formatCurrency(getAccountGainBreakdown(account).foodCosts) }}</span>
                         </div>
-                        <div class="flex justify-between">
-                          <span>Utility Costs ({{ getAccountGainBreakdown(account).daysInPeriod }} days):</span>
-                          <span class="text-red-300">-{{ formatCurrency(getAccountGainBreakdown(account).utilityCosts) }}</span>
+                        <div class="flex justify-between items-center">
+                          <span class="text-sm">Utility Costs ({{ getAccountGainBreakdown(account).daysInPeriod }} days):</span>
+                          <span class="text-red-300 font-bold">-{{ formatCurrency(getAccountGainBreakdown(account).utilityCosts) }}</span>
                         </div>
                       </div>
                     </div>
                     
                     <!-- Final Result -->
-                    <div class="border-t border-gray-700 pt-2">
-                      <div class="flex justify-between font-bold">
-                        <span>Final Gain:</span>
-                        <span :class="getAccountDailyGain(account) > 0 ? 'text-green-300' : 'text-red-300'">
+                    <div class="border-t-2 border-gray-600 pt-3 mt-3">
+                      <div class="flex justify-between items-center">
+                        <span class="text-lg font-bold">Final Gain:</span>
+                        <span class="text-lg font-bold" :class="getAccountDailyGain(account) > 0 ? 'text-green-300' : 'text-red-300'">
                           {{ formatCurrency(getAccountGainBreakdown(account).finalGain) }}
                         </span>
                       </div>
