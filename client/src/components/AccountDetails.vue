@@ -38,8 +38,8 @@
                 <p class="text-xs text-purple-500">{{ formatGainPeriodLabel() }} Gain</p>
                 
                 <!-- Detailed Tooltip -->
-                <div class="absolute bottom-full right-0 mb-2 w-96 bg-gray-900 text-white rounded-lg p-5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50 shadow-xl">
-                  <div class="absolute top-full right-6 border-4 border-transparent border-t-gray-900"></div>
+                <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 lg:left-auto lg:right-0 lg:transform-none mb-2 w-96 max-w-[90vw] bg-gray-900 text-white rounded-lg p-5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50 shadow-xl">
+                  <div class="absolute top-full left-1/2 transform -translate-x-1/2 lg:left-auto lg:right-6 lg:transform-none border-4 border-transparent border-t-gray-900"></div>
                   
                   <h4 class="font-bold text-purple-300 mb-4 text-sm">💰 Gain Breakdown ({{ formatGainPeriodLabel() }})</h4>
                   
