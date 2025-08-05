@@ -57,6 +57,13 @@
                           <span v-if="method.fees > 0">- {{ formatCurrency(method.fees) }} fees</span>
                         </div>
                       </div>
+                      <!-- Total Revenue -->
+                      <div class="border-t border-blue-700 pt-2 mt-3">
+                        <div class="flex justify-between items-center">
+                          <span class="text-sm font-bold text-blue-300">Total Revenue:</span>
+                          <span class="text-blue-300 font-bold">{{ formatCurrency(getAccountGainBreakdown(account).totalRevenue) }}</span>
+                        </div>
+                      </div>
                     </div>
                     
                     <!-- Cost Breakdown -->
@@ -74,6 +81,13 @@
                         <div class="flex justify-between items-center">
                           <span class="text-sm">Utility Costs ({{ getAccountGainBreakdown(account).daysInPeriod }} days):</span>
                           <span class="text-red-300 font-bold">-{{ formatCurrency(getAccountGainBreakdown(account).utilityCosts) }}</span>
+                        </div>
+                      </div>
+                      <!-- Total Costs -->
+                      <div class="border-t border-red-700 pt-2 mt-3">
+                        <div class="flex justify-between items-center">
+                          <span class="text-sm font-bold text-red-300">Total Costs:</span>
+                          <span class="text-red-300 font-bold">-{{ formatCurrency(getAccountGainBreakdown(account).totalCosts) }}</span>
                         </div>
                       </div>
                     </div>
@@ -341,6 +355,7 @@ const getAccountGainBreakdown = (account) => {
   if (!account.success || !account.data?.data) {
     return {
       totalRevenue: 0,
+      totalCosts: 0,
       paymentFees: 0,
       foodCosts: 0,
       utilityCosts: 0,
@@ -388,10 +403,12 @@ const getAccountGainBreakdown = (account) => {
   const dailyUtilityCost = utilityCost ? (utilityCost.total_daily || 0) : 0
   const totalUtilityCosts = dailyUtilityCost * daysInPeriod
   
-  const finalGain = (totalRevenue - totalPaymentFees - foodCosts - totalUtilityCosts)
+  const totalCosts = totalPaymentFees + foodCosts + totalUtilityCosts
+  const finalGain = totalRevenue - totalCosts
   
   return {
     totalRevenue,
+    totalCosts,
     paymentFees: totalPaymentFees,
     foodCosts,
     utilityCosts: totalUtilityCosts,
