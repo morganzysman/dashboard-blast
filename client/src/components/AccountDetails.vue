@@ -267,34 +267,7 @@ const paymentMethodColors = {
 }
 
 // Fetch utility costs and payment method costs for all accounts
-const fetchUtilityCosts = async () => {
-  if (!props.analyticsData || !props.analyticsData.accounts) return
-  
-  for (const account of props.analyticsData.accounts) {
-    if (account.success && account.accountKey) {
-      try {
-        // Fetch utility costs
-        const utilityCostsData = await api.getUtilityCosts(account.accountKey)
-        if (utilityCostsData.success && utilityCostsData.data) {
-          utilityCosts.value.set(account.accountKey, utilityCostsData.data)
-        }
-        
-        // Fetch payment method costs
-        const paymentCostsData = await api.getPaymentMethodCosts(account.accountKey)
-        if (paymentCostsData.success && paymentCostsData.data) {
-          // Convert array to map for easy lookup
-          const costsMap = new Map()
-          paymentCostsData.data.forEach(cost => {
-            costsMap.set(cost.payment_method_code, cost)
-          })
-          paymentMethodCosts.value.set(account.accountKey, costsMap)
-        }
-      } catch (err) {
-        console.warn(`Failed to fetch costs for ${account.accountKey}:`, err)
-      }
-    }
-  }
-}
+const fetchUtilityCosts = async () => {}
 
 // Calculate realistic gain: considers payment fees, food costs, utility costs, and date range
 const getAccountDailyGain = (account) => {
@@ -584,10 +557,7 @@ const toggleServiceMetricsCollapse = (accountKey) => {
   }
 }
 
-// Fetch utility costs when component mounts or analytics data changes
-onMounted(() => {
-  fetchUtilityCosts()
-})
+// Costs now provided by server-side analytics profitability; skip fetching here
 
 // Watch for analytics data changes and refetch utility costs
 watch(

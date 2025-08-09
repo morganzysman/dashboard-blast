@@ -129,7 +129,9 @@ router.get('/profitability', requireAuth, async (req, res) => {
           utilityCosts: 0,
           operatingProfit: 0,
           operatingMargin: 0,
-          tips: 0
+          tips: 0,
+          daysInPeriod: daysDiff,
+          paymentMethodBreakdown: []
         }
       }
       const methods = accRes.data.data
@@ -148,6 +150,7 @@ router.get('/profitability', requireAuth, async (req, res) => {
 
       // Distributions
       const costsMap = accountKeyToPaymentCosts.get(accRes.accountKey) || new Map()
+      const paymentMethodBreakdown = []
       for (const m of methods) {
         const method = (m.name || 'other').toLowerCase()
         const revenue = m.sum || 0
@@ -158,6 +161,15 @@ router.get('/profitability', requireAuth, async (req, res) => {
         const totalFees = pctFee + fixedFee
         feesByMethod[method] = (feesByMethod[method] || 0) + totalFees
         netByMethod[method] = (netByMethod[method] || 0) + (revenue - totalFees)
+
+        paymentMethodBreakdown.push({
+          method,
+          revenue,
+          fees: totalFees,
+          netRevenue: revenue - totalFees,
+          transactionCount: count,
+          costConfig: cfg
+        })
       }
 
       companyGross += gross
@@ -179,7 +191,9 @@ router.get('/profitability', requireAuth, async (req, res) => {
         utilityCosts: util,
         operatingProfit: profit,
         operatingMargin: margin,
-        tips: tipsAmount
+        tips: tipsAmount,
+        daysInPeriod: daysDiff,
+        paymentMethodBreakdown
       }
     })
 
