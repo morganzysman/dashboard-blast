@@ -157,6 +157,12 @@ export const api = {
     const url = companyToken ? `/api/utility-costs/${companyToken}` : '/api/utility-costs'
     return apiRequest(url, { method: 'GET' })
   },
+  // Payroll endpoints
+  getMyEntries: () => apiRequest('/api/payroll/me/entries', { method: 'GET' }),
+  getAdminEntries: (companyToken) => apiRequest(`/api/payroll/admin/${companyToken}/entries`, { method: 'GET' }),
+  clock: (companyToken, qrSecret) => apiRequest('/api/payroll/clock', { method: 'POST', body: JSON.stringify({ company_token: companyToken, qr_secret: qrSecret }) }),
+  markPaid: (companyToken) => apiRequest(`/api/payroll/admin/${companyToken}/pay`, { method: 'POST' }),
+  updateEntry: (id, payload) => apiRequest(`/api/payroll/admin/entries/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
   
   // Payment method costs methods
   getPaymentMethodCosts: (companyToken = null) => {

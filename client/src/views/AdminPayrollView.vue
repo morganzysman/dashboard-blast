@@ -85,7 +85,7 @@ const periodLabel = computed(() => `${period.value.start} → ${period.value.end
 
 const loadEntries = async () => {
   if (!companyToken.value) return
-  const res = await api.get(`/api/payroll/admin/${companyToken.value}/entries`)
+  const res = await api.getAdminEntries(companyToken.value)
   if (res.success) {
     entries.value = res.data
     period.value = res.period
@@ -130,7 +130,7 @@ const markPaid = async () => {
   if (!companyToken.value) return
   try {
     paying.value = true
-    const res = await api.post(`/api/payroll/admin/${companyToken.value}/pay`)
+  const res = await api.markPaid(companyToken.value)
     if (res.success) {
       window.showNotification?.({ type: 'success', title: 'Payroll', message: 'Period marked as paid. Entries locked.' })
       loadEntries()
@@ -153,7 +153,7 @@ const saveEdit = async () => {
     clock_in_at: e.clock_in_at ? new Date(e.clock_in_at).toISOString() : null,
     clock_out_at: e.clock_out_at ? new Date(e.clock_out_at).toISOString() : null
   }
-  const res = await api.put(`/api/payroll/admin/entries/${e.id}`, body)
+  const res = await api.updateEntry(e.id, body)
   if (res.success) {
     editEntry.value = null
     loadEntries()

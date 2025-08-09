@@ -45,7 +45,7 @@ const submitClock = async () => {
     submitting.value = true
     message.value = ''
     success.value = false
-    const res = await api.post('/api/payroll/clock', { company_token: companyToken.value, qr_secret: qrSecret.value })
+    const res = await api.clock(companyToken.value, qrSecret.value)
     if (res.success) {
       success.value = true
       const action = res.data?.action

@@ -65,7 +65,7 @@ const formatDuration = (secs) => {
 const formatDateTime = (iso) => new Date(iso).toLocaleString('en-CL', { timeZone: 'America/Santiago' })
 
 const loadEntries = async () => {
-  const res = await api.get('/api/payroll/me/entries')
+  const res = await api.getMyEntries()
   if (res.success) {
     entries.value = res.data
     period.value = res.period
