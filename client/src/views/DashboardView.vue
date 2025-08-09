@@ -4,6 +4,7 @@
                 <DashboardOverview
               :analytics-data="analyticsDataWithServiceMetrics"
               :orders-data="ordersData"
+              :profitability-data="profitabilityData"
               :loading="loading"
               v-model:selected-date-range="selectedDateRange"
               v-model:custom-start-date="customStartDate"
@@ -73,6 +74,7 @@ const authStore = useAuthStore()
 
 const analyticsData = ref(null)
 const ordersData = ref(null)
+const profitabilityData = ref(null)
 const serviceMetricsData = ref(null)
 const loading = ref(false)
 const error = ref('')
@@ -421,6 +423,7 @@ const refreshData = () => {
   fetchAnalyticsData()
   fetchOrdersData(currentDateRange.value)
   fetchServiceMetricsData()
+  fetchProfitabilityData()
 }
 
 onMounted(() => {
@@ -428,7 +431,28 @@ onMounted(() => {
   fetchAnalyticsData()
   fetchOrdersData(currentDateRange.value)
   fetchServiceMetricsData()
+  fetchProfitabilityData()
 })
+
+// Fetch server-side aggregated profitability data
+const fetchProfitabilityData = async () => {
+  try {
+    const timezone = authStore.user?.timezone || 'America/Lima'
+    const data = await api.getProfitability(
+      currentDateRange.value.start,
+      currentDateRange.value.end,
+      timezone
+    )
+    if (data.success) {
+      profitabilityData.value = data.data
+    } else {
+      profitabilityData.value = null
+    }
+  } catch (err) {
+    console.warn('⚠️ Profitability fetch failed:', err)
+    profitabilityData.value = null
+  }
+}
 </script>
 
 <style scoped>

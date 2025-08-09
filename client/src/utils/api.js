@@ -182,6 +182,16 @@ export const api = {
     return apiRequest(`/api/payment-method-costs/${companyToken}/${paymentMethodCode}`, {
       method: 'DELETE'
     })
+  },
+
+  // Analytics endpoints
+  getProfitability: (startDate, endDate, timezone) => {
+    const params = new URLSearchParams({
+      'filter[start_date]': startDate,
+      'filter[end_date]': endDate,
+      'filter[timezone]': timezone
+    })
+    return apiRequest(`/api/analytics/profitability?${params.toString()}`, { method: 'GET' })
   }
 }
 

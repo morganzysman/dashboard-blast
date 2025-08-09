@@ -25,6 +25,7 @@ import adminRoutes from './routes/admin.js';
 import notificationRoutes from './routes/notifications.js';
 import utilityCostsRoutes from './routes/utility-costs.js';
 import paymentMethodCostsRoutes from './routes/payment-method-costs.js';
+import analyticsRoutes from './routes/analytics.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -119,6 +120,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/utility-costs', utilityCostsRoutes);
 app.use('/api/payment-method-costs', paymentMethodCostsRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 // Serve notifications debug page
 app.get('/notifications-debug', (req, res) => {

@@ -425,6 +425,7 @@ import { calculateDaysInPeriod as calcDays } from '../composables/useProfitabili
 const props = defineProps({
   analyticsData: Object,
   ordersData: Object,
+  profitabilityData: Object,
   loading: Boolean,
   selectedDateRange: String,
   customStartDate: String,
