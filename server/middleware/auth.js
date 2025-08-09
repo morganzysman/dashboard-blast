@@ -90,11 +90,13 @@ export function requireAuth(req, res, next) {
         userId: sessionData.user.id,
         userEmail: sessionData.user.email,
         userName: sessionData.user.name,
+        role: sessionData.user.role,
         userRole: sessionData.user.role,
         userAccounts: sessionData.user.accounts || [],
         userTimezone: sessionData.user.timezone || config.olaClick.defaultTimezone,
         userCurrency: sessionData.user.currency || config.olaClick.defaultCurrency,
-        userCurrencySymbol: sessionData.user.currencySymbol || config.olaClick.defaultCurrencySymbol
+        userCurrencySymbol: sessionData.user.currencySymbol || config.olaClick.defaultCurrencySymbol,
+        companyId: sessionData.user.company_id || null
       };
       
       next();

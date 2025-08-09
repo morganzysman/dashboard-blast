@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { requireAuth, requireRole, hashPassword } from '../middleware/auth.js';
+import { pool } from '../database.js';
 import {
   getAllUsers,
   createUserWithAccounts,
@@ -15,7 +16,19 @@ const router = Router();
 router.get('/users', requireAuth, requireRole(['admin', 'super-admin']), async (req, res) => {
   try {
     const includeInactive = req.query.include_inactive === 'true';
-    const users = await getAllUsers(includeInactive);
+    // Super-admin sees all, admin sees only users in their company
+    let users
+    if (req.user.role === 'super-admin') {
+      users = await getAllUsers(includeInactive)
+    } else {
+      const q = await pool.query(
+        `SELECT u.* FROM users u
+         WHERE ($1::boolean OR u.is_active = TRUE)
+           AND u.company_id = $2`,
+        [includeInactive, req.user.companyId || null]
+      )
+      users = q.rows
+    }
     
     // Remove sensitive data
     const safeUsers = users.map(user => ({
@@ -51,7 +64,7 @@ router.get('/users', requireAuth, requireRole(['admin', 'super-admin']), async (
 // Create new user with accounts (super-admin only)
 router.post('/users', requireAuth, requireRole(['admin', 'super-admin']), async (req, res) => {
   try {
-    const { email, name, role, password, accounts, timezone, currency } = req.body;
+    const { email, name, role, password, accounts, timezone, currency, company_id } = req.body;
     
     // Validate required fields
     if (!email || !name || !password) {
@@ -93,6 +106,9 @@ router.post('/users', requireAuth, requireRole(['admin', 'super-admin']), async 
       return res.status(403).json({ success: false, error: 'Admins cannot create super-admin users' });
     }
 
+    // Enforce company scoping: admin can only create within own company
+    const assignedCompanyId = req.user.role === 'admin' ? (req.user.companyId || null) : (company_id || null)
+    userData.companyId = assignedCompanyId
     const user = await createUserWithAccounts(userData, accounts || []);
     
     // Log user creation

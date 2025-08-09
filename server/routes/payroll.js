@@ -56,7 +56,9 @@ router.post('/clock', requireAuth, async (req, res) => {
 
     const userId = req.user.userId
     const userAccounts = req.user.userAccounts || []
-    if (!userAccounts.some(a => a.company_token === company_token)) {
+    // Employee can only clock against accounts belonging to their company
+    const belongs = userAccounts.some(a => a.company_token === company_token)
+    if (!belongs) {
       return res.status(403).json({ success: false, error: 'Access denied' })
     }
 
