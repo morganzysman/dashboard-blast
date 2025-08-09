@@ -257,6 +257,7 @@ import UserModal from '../components/UserModal.vue'
 import api from '../utils/api'
 
 const authStore = useAuthStore()
+const isSuperAdmin = computed(() => authStore.user?.role === 'super-admin')
 
 // State
 const users = ref([])

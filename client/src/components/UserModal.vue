@@ -62,6 +62,13 @@
           </select>
         </div>
 
+        <!-- Company Selection (super-admin only) -->
+        <div v-if="isSuperAdmin">
+          <label class="form-label">Company (Tenant)</label>
+          <input v-model="form.company_id" class="form-input" placeholder="Company ID (UUID)" />
+          <p class="text-xs text-gray-500 mt-1">As super-admin, set the tenant company. Admins default to their own company.</p>
+        </div>
+
         <!-- User Settings -->
         <div class="grid grid-cols-2 gap-4">
           <div>
@@ -215,6 +222,9 @@
 
 <script setup>
 import { ref, reactive, watch } from 'vue'
+import { useAuthStore } from '../stores/auth'
+const auth = useAuthStore()
+const isSuperAdmin = auth.user?.role === 'super-admin'
 
 const props = defineProps({
   user: {
@@ -239,7 +249,8 @@ const form = reactive({
   role: '',
   timezone: 'America/Lima',
   currency: 'PEN',
-  accounts: []
+  accounts: [],
+  company_id: ''
 })
 
 const newAccount = reactive({
@@ -271,7 +282,8 @@ const handleSubmit = () => {
     role: form.role,
     timezone: form.timezone,
     currency: form.currency,
-    accounts: form.accounts
+    accounts: form.accounts,
+    company_id: form.company_id || undefined
   }
 
   if (!props.isEdit) {
