@@ -20,6 +20,7 @@
     <AccountDetails
       :analytics-data="analyticsDataWithServiceMetrics"
       :orders-data="ordersData"
+      :profitability-data="profitabilityData"
       :current-date-range="currentDateRange"
       :selected-date-range="selectedDateRange"
       :key="analyticsData?.timestamp || Date.now()"
