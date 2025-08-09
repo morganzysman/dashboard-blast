@@ -240,22 +240,20 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, watch } from 'vue'
+import { ref } from 'vue'
 import { useAuthStore } from '../stores/auth'
-import api from '../utils/api'
 import { calculateDaysInPeriod as calcDays } from '../composables/useProfitability'
 
 const props = defineProps({
   analyticsData: Object,
   ordersData: Object,
+  profitabilityData: Object,
   currentDateRange: Object,
   selectedDateRange: String
 })
 
 const authStore = useAuthStore()
 const collapsedServiceMetrics = ref(new Set())
-const utilityCosts = ref(new Map()) // Map of company_token -> utility cost data
-const paymentMethodCosts = ref(new Map()) // Map of company_token -> payment method costs
 
 const paymentMethodColors = {
   'cash': '#10B981',
@@ -266,53 +264,17 @@ const paymentMethodColors = {
   'transfer': '#EF4444'
 }
 
-// Fetch utility costs and payment method costs for all accounts
-const fetchUtilityCosts = async () => {}
+// Server provides profitability; no client-side cost fetching required
 
-// Calculate realistic gain: considers payment fees, food costs, utility costs, and date range
+// Helper to get server profitability data for this account
+const getServerAccount = (account) => {
+  return props.profitabilityData?.accounts?.find(a => a.accountKey === account.accountKey)
+}
+
+// Daily/period gain from server
 const getAccountDailyGain = (account) => {
-  if (!account.success || !account.data?.data) return 0
-  
-  // Calculate number of days in the selected period
-  const daysInPeriod = calcDays(props.currentDateRange)
-  
-  // Get payment method costs for this account
-  const accountPaymentCosts = paymentMethodCosts.value.get(account.accountKey) || new Map()
-  
-  // Calculate revenue after payment processing fees
-  let totalRevenueAfterFees = 0
-  
-  for (const paymentMethod of account.data.data) {
-    const methodName = paymentMethod.name?.toLowerCase() || 'other'
-    const revenue = paymentMethod.sum || 0
-    const transactionCount = paymentMethod.count || 0
-    
-    // Get cost configuration for this payment method
-    const costConfig = accountPaymentCosts.get(methodName) || { cost_percentage: 0, fixed_cost: 0 }
-    
-    // Calculate fees: (revenue * percentage) + (transaction_count * fixed_cost)
-    const percentageFee = revenue * (costConfig.cost_percentage / 100)
-    const fixedFee = transactionCount * (costConfig.fixed_cost || 0)
-    const totalFees = percentageFee + fixedFee
-    
-    // Revenue after payment processing fees
-    totalRevenueAfterFees += (revenue - totalFees)
-  }
-  
-  // Subtract food costs (30% of original revenue)
-  const totalRevenue = account.data.data.reduce((sum, method) => sum + (method.sum || 0), 0)
-  const foodCosts = totalRevenue * 0.3
-  const revenueAfterFoodCosts = totalRevenueAfterFees - foodCosts
-  
-  // Get utility costs for this account
-  const utilityCost = utilityCosts.value.get(account.accountKey)
-  const dailyUtilityCost = utilityCost ? (utilityCost.total_daily || 0) : 0
-  const totalUtilityCosts = dailyUtilityCost * daysInPeriod
-  
-  // Final gain = revenue after fees and food costs - utility costs
-  const totalGain = revenueAfterFoodCosts - totalUtilityCosts
-  
-  return totalGain
+  const acc = getServerAccount(account)
+  return acc?.operatingProfit || 0
 }
 
 // Calculate number of days in the current date range
@@ -358,58 +320,31 @@ const getAccountGainBreakdown = (account) => {
       foodCosts: 0,
       utilityCosts: 0,
       finalGain: 0,
-      daysInPeriod: 1,
+      daysInPeriod: calcDays(props.currentDateRange),
       paymentMethodBreakdown: []
     }
   }
-  
-  const daysInPeriod = calculateDaysInPeriod()
-  const accountPaymentCosts = paymentMethodCosts.value.get(account.accountKey) || new Map()
-  
-  let totalRevenue = 0
-  let totalPaymentFees = 0
-  const paymentMethodBreakdown = []
-  
-  // Calculate breakdown by payment method
-  for (const paymentMethod of account.data.data) {
-    const methodName = paymentMethod.name?.toLowerCase() || 'other'
-    const revenue = paymentMethod.sum || 0
-    const transactionCount = paymentMethod.count || 0
-    
-    const costConfig = accountPaymentCosts.get(methodName) || { cost_percentage: 0, fixed_cost: 0 }
-    
-    const percentageFee = revenue * (costConfig.cost_percentage / 100)
-    const fixedFee = transactionCount * (costConfig.fixed_cost || 0)
-    const totalFees = percentageFee + fixedFee
-    const netRevenue = revenue - totalFees
-    
-    totalRevenue += revenue
-    totalPaymentFees += totalFees
-    
-    paymentMethodBreakdown.push({
-      method: methodName,
-      revenue,
-      fees: totalFees,
-      netRevenue,
-      transactionCount,
-      costConfig
-    })
-  }
-  
+  const daysInPeriod = calcDays(props.currentDateRange)
+  const paymentMethodBreakdown = account.data.data.map(pm => ({
+    method: pm.name?.toLowerCase() || 'other',
+    revenue: pm.sum || 0,
+    fees: 0,
+    netRevenue: pm.sum || 0,
+    transactionCount: pm.count || 0,
+    costConfig: { cost_percentage: 0, fixed_cost: 0 }
+  }))
+  const totalRevenue = paymentMethodBreakdown.reduce((s, m) => s + (m.revenue || 0), 0)
+  const paymentFees = 0
   const foodCosts = totalRevenue * 0.3
-  const utilityCost = utilityCosts.value.get(account.accountKey)
-  const dailyUtilityCost = utilityCost ? (utilityCost.total_daily || 0) : 0
-  const totalUtilityCosts = dailyUtilityCost * daysInPeriod
-  
-  const totalCosts = totalPaymentFees + foodCosts + totalUtilityCosts
+  const utilityCosts = 0
+  const totalCosts = paymentFees + foodCosts + utilityCosts
   const finalGain = totalRevenue - totalCosts
-  
   return {
     totalRevenue,
     totalCosts,
-    paymentFees: totalPaymentFees,
+    paymentFees,
     foodCosts,
-    utilityCosts: totalUtilityCosts,
+    utilityCosts,
     finalGain,
     daysInPeriod,
     paymentMethodBreakdown
@@ -507,27 +442,21 @@ const getAccountAvgTicket = (account) => {
   return totalOrders > 0 ? totalAmount / totalOrders : 0
 }
 
-// Payment fees now computed server-side in profitability (kept zero here)
-const getAccountPaymentFees = (account) => 0
+// Payment fees from server
+const getAccountPaymentFees = (account) => getServerAccount(account)?.paymentFees || 0
 
 // Net sales after fees
-const getAccountNetSalesAfterFees = (account) => {
-  return getAccountTotalAmount(account) - getAccountPaymentFees(account)
-}
+const getAccountNetSalesAfterFees = (account) => getServerAccount(account)?.netAfterFees || 0
 
 // Operating margin = operating profit / gross
-const getAccountOperatingMargin = (account) => {
-  const gross = getAccountTotalAmount(account)
-  if (gross <= 0) return 0
-  const profit = getAccountDailyGain(account)
-  return profit / gross
-}
+const getAccountOperatingMargin = (account) => getServerAccount(account)?.operatingMargin || 0
 
 // Profit per order
 const getAccountProfitPerOrder = (account) => {
-  const orders = getAccountTotalOrders(account)
+  const acc = getServerAccount(account)
+  const orders = acc?.orders ?? 0
   if (orders <= 0) return 0
-  return getAccountDailyGain(account) / orders
+  return (acc?.operatingProfit || 0) / orders
 }
 
 const getAccountPaymentMethods = (account) => {
@@ -570,17 +499,7 @@ const toggleServiceMetricsCollapse = (accountKey) => {
   }
 }
 
-// Costs now provided by server-side analytics profitability; skip fetching here
-
-// Watch for analytics data changes and refetch utility costs
-watch(
-  () => props.analyticsData?.accounts?.map(acc => acc.accountKey).join(','),
-  (newAccountKeys) => {
-    if (newAccountKeys) {
-      fetchUtilityCosts()
-    }
-  }
-)
+// No watchers required
 
 
 </script>
