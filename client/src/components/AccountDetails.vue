@@ -110,6 +110,28 @@
               </div>
             </div>
           </div>
+
+          <!-- Additional Profitability Chips -->
+          <div class="mb-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+              <div class="bg-emerald-50 rounded-lg p-3 text-center">
+                <p class="text-sm sm:text-lg font-bold text-emerald-600 truncate">{{ formatCurrency(getAccountNetSalesAfterFees(account)) }}</p>
+                <p class="text-xs text-emerald-500">Net Sales after Fees</p>
+              </div>
+              <div class="bg-rose-50 rounded-lg p-3 text-center">
+                <p class="text-sm sm:text-lg font-bold text-rose-600 truncate">{{ formatCurrency(getAccountPaymentFees(account)) }}</p>
+                <p class="text-xs text-rose-500">Payment Fees</p>
+              </div>
+              <div class="bg-cyan-50 rounded-lg p-3 text-center">
+                <p class="text-sm sm:text-lg font-bold text-cyan-600 truncate">{{ (getAccountOperatingMargin(account) * 100).toFixed(1) }}%</p>
+                <p class="text-xs text-cyan-500">Operating Margin</p>
+              </div>
+              <div class="bg-indigo-50 rounded-lg p-3 text-center">
+                <p class="text-sm sm:text-lg font-bold text-indigo-600 truncate">{{ formatCurrency(getAccountProfitPerOrder(account)) }}</p>
+                <p class="text-xs text-indigo-500">Profit / Order</p>
+              </div>
+            </div>
+          </div>
           <div v-if="account.success && account.data" class="space-y-3">
           
             <!-- Account Payment Methods -->
@@ -221,6 +243,7 @@
 import { ref, onMounted, computed, watch } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import api from '../utils/api'
+import { calculateDaysInPeriod as calcDays } from '../composables/useProfitability'
 
 const props = defineProps({
   analyticsData: Object,
@@ -278,7 +301,7 @@ const getAccountDailyGain = (account) => {
   if (!account.success || !account.data?.data) return 0
   
   // Calculate number of days in the selected period
-  const daysInPeriod = calculateDaysInPeriod()
+  const daysInPeriod = calcDays(props.currentDateRange)
   
   // Get payment method costs for this account
   const accountPaymentCosts = paymentMethodCosts.value.get(account.accountKey) || new Map()
@@ -320,22 +343,11 @@ const getAccountDailyGain = (account) => {
 }
 
 // Calculate number of days in the current date range
-const calculateDaysInPeriod = () => {
-  if (!props.currentDateRange || !props.currentDateRange.start || !props.currentDateRange.end) {
-    return 1 // Default to 1 day if no date range
-  }
-  
-  const startDate = new Date(props.currentDateRange.start)
-  const endDate = new Date(props.currentDateRange.end)
-  const timeDiff = endDate.getTime() - startDate.getTime()
-  const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1 // +1 to include both start and end dates
-  
-  return Math.max(1, daysDiff) // At least 1 day
-}
+const calculateDaysInPeriod = () => calcDays(props.currentDateRange)
 
 // Format gain period label based on selected date range and number of days
 const formatGainPeriodLabel = () => {
-  const daysInPeriod = calculateDaysInPeriod()
+  const daysInPeriod = calcDays(props.currentDateRange)
   
   if (props.selectedDateRange === 'today') {
     return 'Daily'
@@ -507,6 +519,43 @@ const getAccountAvgTicket = (account) => {
   const totalAmount = account.data.data.reduce((sum, method) => sum + (method.sum || 0), 0)
   const totalOrders = account.data.data.reduce((sum, method) => sum + (method.count || 0), 0)
   return totalOrders > 0 ? totalAmount / totalOrders : 0
+}
+
+// Payment fees for this account
+const getAccountPaymentFees = (account) => {
+  if (!account.success || !account.data?.data) return 0
+  const accountPaymentCosts = paymentMethodCosts.value.get(account.accountKey) || new Map()
+  let fees = 0
+  for (const paymentMethod of account.data.data) {
+    const methodName = paymentMethod.name?.toLowerCase() || 'other'
+    const revenue = paymentMethod.sum || 0
+    const transactionCount = paymentMethod.count || 0
+    const costConfig = accountPaymentCosts.get(methodName) || { cost_percentage: 0, fixed_cost: 0 }
+    const percentageFee = revenue * (costConfig.cost_percentage / 100)
+    const fixedFee = transactionCount * (costConfig.fixed_cost || 0)
+    fees += percentageFee + fixedFee
+  }
+  return fees
+}
+
+// Net sales after fees
+const getAccountNetSalesAfterFees = (account) => {
+  return getAccountTotalAmount(account) - getAccountPaymentFees(account)
+}
+
+// Operating margin = operating profit / gross
+const getAccountOperatingMargin = (account) => {
+  const gross = getAccountTotalAmount(account)
+  if (gross <= 0) return 0
+  const profit = getAccountDailyGain(account)
+  return profit / gross
+}
+
+// Profit per order
+const getAccountProfitPerOrder = (account) => {
+  const orders = getAccountTotalOrders(account)
+  if (orders <= 0) return 0
+  return getAccountDailyGain(account) / orders
 }
 
 const getAccountPaymentMethods = (account) => {

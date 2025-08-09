@@ -95,7 +95,7 @@
     </div>
 
     <!-- Overall Performance Cards -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6" v-if="analyticsData">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6" v-if="analyticsData">
       <!-- Total Orders with Account Distribution -->
       <div class="card bg-gradient-to-r from-blue-500 to-blue-600 text-white">
         <div class="card-body">
@@ -235,6 +235,141 @@
       </div>
     </div>
 
+    <!-- Company-level Profitability KPIs -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6" v-if="analyticsData">
+      <!-- Net Sales After Fees -->
+      <div class="card bg-gradient-to-r from-emerald-500 to-emerald-600 text-white">
+        <div class="card-body">
+          <div class="flex items-center justify-between mb-3">
+            <div class="min-w-0 flex-1">
+              <p class="text-emerald-100 text-xs sm:text-sm font-medium">NET SALES AFTER FEES</p>
+              <p class="text-lg sm:text-xl font-bold truncate">{{ formatCurrency(getAggregatedNetSalesAfterFees()) }}</p>
+            </div>
+            <div class="w-10 h-10 sm:w-12 sm:h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center flex-shrink-0">
+              <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 11V7a4 4 0 118 0v4m-1 10H6a2 2 0 01-2-2V10a2 2 0 012-2h12a2 2 0 012 2v9a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+          </div>
+          <p class="text-xs text-emerald-100">Gross {{ formatCurrency(getAggregatedGrossSales()) }} − Fees {{ formatCurrency(getAggregatedPaymentFees()) }}</p>
+        </div>
+      </div>
+
+      <!-- Payment Fees -->
+      <div class="card bg-gradient-to-r from-rose-500 to-rose-600 text-white">
+        <div class="card-body">
+          <div class="flex items-center justify-between mb-3">
+            <div class="min-w-0 flex-1">
+              <p class="text-rose-100 text-xs sm:text-sm font-medium">PAYMENT FEES</p>
+              <p class="text-lg sm:text-xl font-bold truncate">{{ formatCurrency(getAggregatedPaymentFees()) }}</p>
+            </div>
+            <div class="w-10 h-10 sm:w-12 sm:h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center flex-shrink-0">
+              <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-3.866 0-7 1.79-7 4s3.134 4 7 4 7-1.79 7-4-3.134-4-7-4zm0 0V4m0 8v8" />
+              </svg>
+            </div>
+          </div>
+          <p class="text-xs text-rose-100">Blended fee rate {{ (getAggregatedFeeRate()*100).toFixed(1) }}%</p>
+        </div>
+      </div>
+
+      <!-- Operating Margin -->
+      <div class="card bg-gradient-to-r from-cyan-500 to-cyan-600 text-white">
+        <div class="card-body">
+          <div class="flex items-center justify-between mb-3">
+            <div class="min-w-0 flex-1">
+              <p class="text-cyan-100 text-xs sm:text-sm font-medium">OPERATING MARGIN</p>
+              <p class="text-lg sm:text-xl font-bold truncate">{{ (getAggregatedOperatingMargin()*100).toFixed(1) }}%</p>
+            </div>
+            <div class="w-10 h-10 sm:w-12 sm:h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center flex-shrink-0">
+              <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3v18h18M7 13l3 3 7-7" />
+              </svg>
+            </div>
+          </div>
+          <p class="text-xs text-cyan-100">Includes 30% food and utilities</p>
+        </div>
+      </div>
+
+      <!-- Tips and Tip Rate -->
+      <div class="card bg-gradient-to-r from-amber-500 to-amber-600 text-white">
+        <div class="card-body">
+          <div class="flex items-center justify-between mb-3">
+            <div class="min-w-0 flex-1">
+              <p class="text-amber-100 text-xs sm:text-sm font-medium">TIPS</p>
+              <p class="text-lg sm:text-xl font-bold truncate">{{ formatCurrency(getAggregatedTips()) }}</p>
+            </div>
+            <div class="w-10 h-10 sm:w-12 sm:h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center flex-shrink-0">
+              <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2" />
+              </svg>
+            </div>
+          </div>
+          <p class="text-xs text-amber-100">Tip rate {{ (getAggregatedTipRate()*100).toFixed(1) }}%</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Fees and Net Revenue by Payment Method -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6" v-if="analyticsData">
+      <!-- Fees by Method -->
+      <div class="card bg-white">
+        <div class="card-body">
+          <div class="flex items-center justify-between mb-3">
+            <div class="min-w-0 flex-1">
+              <p class="text-xs sm:text-sm font-medium text-gray-700">Fees by Payment Method</p>
+            </div>
+          </div>
+          <div class="flex items-center justify-center">
+            <div class="relative w-20 h-20 sm:w-24 sm:h-24">
+              <div class="w-full h-full rounded-full" :style="{ background: getFeesByMethodPieChart() }"></div>
+              <div class="absolute inset-3 bg-gray-50 rounded-full flex items-center justify-center">
+                <span class="text-gray-700 text-xs font-bold">{{ Object.keys(getFeesByMethodDistribution()).length }}</span>
+              </div>
+            </div>
+            <div class="ml-4 space-y-1 text-xs min-w-0 flex-1">
+              <div v-for="item in getTopFeesByMethod(3)" :key="item.method" class="flex items-center justify-between min-w-0">
+                <div class="flex items-center space-x-1 min-w-0">
+                  <div class="w-2 h-2 rounded-full flex-shrink-0" :style="{ backgroundColor: getPaymentMethodColor(item.method) }"></div>
+                  <span class="text-gray-700 capitalize">{{ item.method }}</span>
+                  <span class="text-gray-500">{{ item.percent.toFixed(0) }}%</span>
+                </div>
+                <span class="text-gray-700 font-medium ml-2">{{ formatCurrency(item.fees) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Net Revenue by Method -->
+      <div class="card bg-white">
+        <div class="card-body">
+          <div class="flex items-center justify-between mb-3">
+            <div class="min-w-0 flex-1">
+              <p class="text-xs sm:text-sm font-medium text-gray-700">Net Revenue by Payment Method</p>
+            </div>
+          </div>
+          <div class="flex items-center justify-center">
+            <div class="relative w-20 h-20 sm:w-24 sm:h-24">
+              <div class="w-full h-full rounded-full" :style="{ background: getNetRevenueByMethodPieChart() }"></div>
+              <div class="absolute inset-3 bg-gray-50 rounded-full flex items-center justify-center">
+                <span class="text-gray-700 text-xs font-bold">{{ Object.keys(getNetRevenueByMethodDistribution()).length }}</span>
+              </div>
+            </div>
+            <div class="ml-4 space-y-1 text-xs min-w-0 flex-1">
+              <div v-for="item in getTopNetRevenueByMethod(3)" :key="item.method" class="flex items-center justify-between min-w-0">
+                <div class="flex items-center space-x-1 min-w-0">
+                  <div class="w-2 h-2 rounded-full flex-shrink-0" :style="{ backgroundColor: getPaymentMethodColor(item.method) }"></div>
+                  <span class="text-gray-700 capitalize">{{ item.method }}</span>
+                  <span class="text-gray-500">{{ item.percent.toFixed(0) }}%</span>
+                </div>
+                <span class="text-gray-700 font-medium ml-2">{{ formatCurrency(item.netRevenue) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
               <!-- Legend -->
               <div class="ml-3 space-y-1 text-xs min-w-0 flex-1">
                 <div v-for="method in analyticsData.aggregated.paymentMethods.slice(0, 3)" :key="method.name" 
@@ -254,6 +389,24 @@
           </div>
         </div>
       </div>
+
+      <!-- Aggregated Daily Gain -->
+      <div class="card bg-gradient-to-r from-purple-600 to-pink-600 text-white">
+        <div class="card-body">
+          <div class="flex items-center justify-between mb-3">
+            <div class="min-w-0 flex-1">
+              <p class="text-purple-100 text-xs sm:text-sm font-medium">{{ formatGainPeriodLabel() }} GAIN</p>
+              <p class="text-lg sm:text-xl font-bold truncate" :class="getAggregatedGainClass()">{{ formatCurrency(getAggregatedDailyGain()) }}</p>
+            </div>
+            <div class="w-10 h-10 sm:w-12 sm:h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center flex-shrink-0">
+              <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+              </svg>
+            </div>
+          </div>
+          <p class="text-xs text-purple-100">Includes fees, 30% food costs, and utility costs</p>
+        </div>
+      </div>
     </div>
 
 
@@ -264,8 +417,10 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useAuthStore } from '../stores/auth'
+import api from '../utils/api'
+import { calculateDaysInPeriod as calcDays } from '../composables/useProfitability'
 
 const props = defineProps({
   analyticsData: Object,
@@ -300,6 +455,98 @@ const paymentMethodColors = {
   'transfer': '#EF4444'
 }
 
+// Costs caches
+const utilityCosts = ref(new Map())
+const paymentMethodCosts = ref(new Map())
+
+// Fetch utility and payment method costs for all accounts
+const fetchUtilityAndPaymentCosts = async () => {
+  if (!props.analyticsData || !props.analyticsData.accounts) return
+  for (const account of props.analyticsData.accounts) {
+    if (account.success && account.accountKey) {
+      try {
+        const utilityCostsData = await api.getUtilityCosts(account.accountKey)
+        if (utilityCostsData.success && utilityCostsData.data) {
+          utilityCosts.value.set(account.accountKey, utilityCostsData.data)
+        }
+        const paymentCostsData = await api.getPaymentMethodCosts(account.accountKey)
+        if (paymentCostsData.success && paymentCostsData.data) {
+          const costsMap = new Map()
+          paymentCostsData.data.forEach(cost => {
+            costsMap.set(cost.payment_method_code, cost)
+          })
+          paymentMethodCosts.value.set(account.accountKey, costsMap)
+        }
+      } catch (err) {
+        console.warn(`Failed to fetch costs for ${account.accountKey}:`, err)
+      }
+    }
+  }
+}
+
+// Calculate number of days in the current date range
+const calculateDaysInPeriod = () => calcDays(props.currentDateRange)
+
+// Format gain period label
+const formatGainPeriodLabel = () => {
+  const daysInPeriod = calculateDaysInPeriod()
+  if (props.selectedDateRange === 'today') return 'Daily'
+  if (daysInPeriod === 1) return 'Daily'
+  if (daysInPeriod <= 31) return `${daysInPeriod}-Day`
+  return 'Period'
+}
+
+// Per-account daily gain using same logic as AccountDetails
+const getAccountDailyGain = (account) => {
+  if (!account.success || !account.data?.data) return 0
+  const daysInPeriod = calculateDaysInPeriod()
+  const accountPaymentCosts = paymentMethodCosts.value.get(account.accountKey) || new Map()
+  let totalRevenueAfterFees = 0
+  for (const paymentMethod of account.data.data) {
+    const methodName = paymentMethod.name?.toLowerCase() || 'other'
+    const revenue = paymentMethod.sum || 0
+    const transactionCount = paymentMethod.count || 0
+    const costConfig = accountPaymentCosts.get(methodName) || { cost_percentage: 0, fixed_cost: 0 }
+    const percentageFee = revenue * (costConfig.cost_percentage / 100)
+    const fixedFee = transactionCount * (costConfig.fixed_cost || 0)
+    const totalFees = percentageFee + fixedFee
+    totalRevenueAfterFees += (revenue - totalFees)
+  }
+  const totalRevenue = account.data.data.reduce((sum, method) => sum + (method.sum || 0), 0)
+  const foodCosts = totalRevenue * 0.3
+  const revenueAfterFoodCosts = totalRevenueAfterFees - foodCosts
+  const utilityCost = utilityCosts.value.get(account.accountKey)
+  const dailyUtilityCost = utilityCost ? (utilityCost.total_daily || 0) : 0
+  const totalUtilityCosts = dailyUtilityCost * daysInPeriod
+  const totalGain = revenueAfterFoodCosts - totalUtilityCosts
+  return totalGain
+}
+
+// Aggregated gain across all accounts
+const getAggregatedDailyGain = () => {
+  if (!props.analyticsData || !props.analyticsData.accounts) return 0
+  return props.analyticsData.accounts.reduce((sum, account) => sum + getAccountDailyGain(account), 0)
+}
+
+const getAggregatedGainClass = () => {
+  const gain = getAggregatedDailyGain()
+  if (gain > 0) return 'text-green-100'
+  if (gain < 0) return 'text-red-100'
+  return 'text-white'
+}
+
+onMounted(() => {
+  fetchUtilityAndPaymentCosts()
+})
+
+watch(
+  () => props.analyticsData?.accounts?.map(acc => acc.accountKey).join(',') || '',
+  (newKeys, oldKeys) => {
+    if (newKeys !== oldKeys) {
+      fetchUtilityAndPaymentCosts()
+    }
+  }
+)
 // Computed properties
 const todayString = computed(() => {
   return getCurrentDateInTimezone()
@@ -422,6 +669,166 @@ const getTotalOrders = () => {
     return props.ordersData.aggregated.totalOrders || 0
   }
   return 0
+}
+
+// Aggregated gross sales
+const getAggregatedGrossSales = () => {
+  return props.analyticsData?.aggregated?.totalAmount || 0
+}
+
+// Helper: compute fees for an account's payment methods
+const computeAccountPaymentFees = (account) => {
+  if (!account.success || !account.data?.data) return 0
+  const accountPaymentCosts = paymentMethodCosts.value.get(account.accountKey) || new Map()
+  let fees = 0
+  for (const paymentMethod of account.data.data) {
+    const methodName = paymentMethod.name?.toLowerCase() || 'other'
+    const revenue = paymentMethod.sum || 0
+    const transactionCount = paymentMethod.count || 0
+    const costConfig = accountPaymentCosts.get(methodName) || { cost_percentage: 0, fixed_cost: 0 }
+    const percentageFee = revenue * (costConfig.cost_percentage / 100)
+    const fixedFee = transactionCount * (costConfig.fixed_cost || 0)
+    fees += percentageFee + fixedFee
+  }
+  return fees
+}
+
+// Aggregated payment fees across all accounts
+const getAggregatedPaymentFees = () => {
+  if (!props.analyticsData?.accounts) return 0
+  return props.analyticsData.accounts.reduce((sum, account) => sum + computeAccountPaymentFees(account), 0)
+}
+
+// Net sales after fees
+const getAggregatedNetSalesAfterFees = () => {
+  return getAggregatedGrossSales() - getAggregatedPaymentFees()
+}
+
+// Blended fee rate
+const getAggregatedFeeRate = () => {
+  const gross = getAggregatedGrossSales()
+  if (gross <= 0) return 0
+  return getAggregatedPaymentFees() / gross
+}
+
+// Tips
+const getAggregatedTips = () => {
+  return props.analyticsData?.aggregated?.totalTips || 0
+}
+
+const getAggregatedTipRate = () => {
+  const gross = getAggregatedGrossSales()
+  if (gross <= 0) return 0
+  return getAggregatedTips() / gross
+}
+
+// Operating margin = operating profit / gross
+const getAggregatedOperatingMargin = () => {
+  const gross = getAggregatedGrossSales()
+  if (gross <= 0) return 0
+  const operatingProfit = getAggregatedDailyGain()
+  return operatingProfit / gross
+}
+
+// Fees by payment method (distribution)
+const getFeesByMethodDistribution = () => {
+  const feesByMethod = {}
+  if (!props.analyticsData?.accounts) return feesByMethod
+  for (const account of props.analyticsData.accounts) {
+    if (!account.success || !account.data?.data) continue
+    const accountPaymentCosts = paymentMethodCosts.value.get(account.accountKey) || new Map()
+    for (const paymentMethod of account.data.data) {
+      const methodName = (paymentMethod.name?.toLowerCase() || 'other')
+      const revenue = paymentMethod.sum || 0
+      const transactionCount = paymentMethod.count || 0
+      const costConfig = accountPaymentCosts.get(methodName) || { cost_percentage: 0, fixed_cost: 0 }
+      const percentageFee = revenue * (costConfig.cost_percentage / 100)
+      const fixedFee = transactionCount * (costConfig.fixed_cost || 0)
+      const totalFees = percentageFee + fixedFee
+      feesByMethod[methodName] = (feesByMethod[methodName] || 0) + totalFees
+    }
+  }
+  return feesByMethod
+}
+
+const getTopFeesByMethod = (n = 3) => {
+  const dist = getFeesByMethodDistribution()
+  const entries = Object.entries(dist).map(([method, fees]) => ({ method, fees }))
+  const totalFees = entries.reduce((s, e) => s + e.fees, 0)
+  return entries
+    .map(e => ({ ...e, percent: totalFees > 0 ? (e.fees / totalFees) * 100 : 0 }))
+    .sort((a, b) => b.fees - a.fees)
+    .slice(0, n)
+}
+
+const getFeesByMethodPieChart = () => {
+  const dist = getFeesByMethodDistribution()
+  const entries = Object.entries(dist).map(([method, fees]) => ({ method, fees }))
+  if (entries.length === 0) return 'conic-gradient(#E5E7EB 0deg 360deg)'
+  const total = entries.reduce((s, e) => s + e.fees, 0)
+  let currentAngle = 0
+  const stops = entries
+    .map(e => ({ ...e, percent: total > 0 ? (e.fees / total) * 100 : 0 }))
+    .sort((a, b) => b.fees - a.fees)
+    .map(e => {
+      const color = getPaymentMethodColor(e.method)
+      const degrees = (e.percent / 100) * 360
+      const stop = `${color} ${currentAngle}deg ${currentAngle + degrees}deg`
+      currentAngle += degrees
+      return stop
+    })
+  return `conic-gradient(${stops.join(', ')})`
+}
+
+// Net revenue by payment method (distribution)
+const getNetRevenueByMethodDistribution = () => {
+  const netByMethod = {}
+  if (!props.analyticsData?.accounts) return netByMethod
+  for (const account of props.analyticsData.accounts) {
+    if (!account.success || !account.data?.data) continue
+    const accountPaymentCosts = paymentMethodCosts.value.get(account.accountKey) || new Map()
+    for (const paymentMethod of account.data.data) {
+      const methodName = (paymentMethod.name?.toLowerCase() || 'other')
+      const revenue = paymentMethod.sum || 0
+      const transactionCount = paymentMethod.count || 0
+      const costConfig = accountPaymentCosts.get(methodName) || { cost_percentage: 0, fixed_cost: 0 }
+      const percentageFee = revenue * (costConfig.cost_percentage / 100)
+      const fixedFee = transactionCount * (costConfig.fixed_cost || 0)
+      const totalFees = percentageFee + fixedFee
+      const netRevenue = revenue - totalFees
+      netByMethod[methodName] = (netByMethod[methodName] || 0) + netRevenue
+    }
+  }
+  return netByMethod
+}
+
+const getTopNetRevenueByMethod = (n = 3) => {
+  const dist = getNetRevenueByMethodDistribution()
+  const entries = Object.entries(dist).map(([method, netRevenue]) => ({ method, netRevenue }))
+  const totalNet = entries.reduce((s, e) => s + e.netRevenue, 0)
+  return entries
+    .map(e => ({ ...e, percent: totalNet > 0 ? (e.netRevenue / totalNet) * 100 : 0 }))
+    .sort((a, b) => b.netRevenue - a.netRevenue)
+    .slice(0, n)
+}
+
+const getNetRevenueByMethodPieChart = () => {
+  const dist = getNetRevenueByMethodDistribution()
+  const entries = Object.entries(dist).map(([method, netRevenue]) => ({ method, netRevenue }))
+  if (entries.length === 0) return 'conic-gradient(#E5E7EB 0deg 360deg)'
+  const total = entries.reduce((s, e) => s + e.netRevenue, 0)
+  let currentAngle = 0
+  const stops = entries
+    .map(e => ({ ...e, percent: total > 0 ? (e.netRevenue / total) * 100 : 0 }))
+    .sort((a, b) => b.netRevenue - a.netRevenue)
+    .map(e => {
+      const color = getPaymentMethodColor(e.method)
+      const degrees = (e.percent / 100) * 360
+      const stop = `${color} ${currentAngle}deg ${currentAngle + degrees}deg`
+      currentAngle += degrees
+      return stop
+    })
+  return `conic-gradient(${stops.join(', ')})`
 }
 
 
