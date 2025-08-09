@@ -69,6 +69,48 @@
         Rentability
       </router-link>
 
+      <!-- Employee: Clock -->
+      <router-link
+        v-if="!authStore.isSuperAdmin && authStore.user?.role !== 'viewer'"
+        to="/clock"
+        class="sidebar-nav-item"
+        :class="{ active: $route.name === 'EmployeeClock' }"
+        @click="$emit('close')"
+      >
+        <svg class="sidebar-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3M12 22a10 10 0 110-20 10 10 0 010 20z" />
+        </svg>
+        Clock In/Out
+      </router-link>
+
+      <!-- Employee: Timesheet -->
+      <router-link
+        v-if="!authStore.isSuperAdmin && authStore.user?.role !== 'viewer'"
+        to="/timesheet"
+        class="sidebar-nav-item"
+        :class="{ active: $route.name === 'EmployeeTimesheet' }"
+        @click="$emit('close')"
+      >
+        <svg class="sidebar-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h8M8 11h8M8 15h5M4 6a2 2 0 012-2h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V6z" />
+        </svg>
+        My Timesheet
+      </router-link>
+
+      <!-- Admin: Payroll -->
+      <router-link
+        v-if="authStore.user?.role === 'admin' || authStore.isSuperAdmin"
+        to="/admin/payroll"
+        class="sidebar-nav-item"
+        :class="{ active: $route.name === 'AdminPayroll' }"
+        @click="$emit('close')"
+      >
+        <svg class="sidebar-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h10M7 20h10M7 5h10" />
+        </svg>
+        Payroll
+      </router-link>
+
       <!-- Super Admin only - User Management -->
       <router-link
         v-if="authStore.isSuperAdmin"
