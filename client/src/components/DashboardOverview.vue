@@ -419,7 +419,6 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useAuthStore } from '../stores/auth'
-import api from '../utils/api'
 import { calculateDaysInPeriod as calcDays } from '../composables/useProfitability'
 
 const props = defineProps({
@@ -456,34 +455,7 @@ const paymentMethodColors = {
   'transfer': '#EF4444'
 }
 
-// Costs caches
-const utilityCosts = ref(new Map())
-const paymentMethodCosts = ref(new Map())
-
-// Fetch utility and payment method costs for all accounts
-const fetchUtilityAndPaymentCosts = async () => {
-  if (!props.analyticsData || !props.analyticsData.accounts) return
-  for (const account of props.analyticsData.accounts) {
-    if (account.success && account.accountKey) {
-      try {
-        const utilityCostsData = await api.getUtilityCosts(account.accountKey)
-        if (utilityCostsData.success && utilityCostsData.data) {
-          utilityCosts.value.set(account.accountKey, utilityCostsData.data)
-        }
-        const paymentCostsData = await api.getPaymentMethodCosts(account.accountKey)
-        if (paymentCostsData.success && paymentCostsData.data) {
-          const costsMap = new Map()
-          paymentCostsData.data.forEach(cost => {
-            costsMap.set(cost.payment_method_code, cost)
-          })
-          paymentMethodCosts.value.set(account.accountKey, costsMap)
-        }
-      } catch (err) {
-        console.warn(`Failed to fetch costs for ${account.accountKey}:`, err)
-      }
-    }
-  }
-}
+// Client-side cost fetching removed; server provides profitability and distributions
 
 // Calculate number of days in the current date range
 const calculateDaysInPeriod = () => calcDays(props.currentDateRange)
@@ -497,31 +469,7 @@ const formatGainPeriodLabel = () => {
   return 'Period'
 }
 
-// Per-account daily gain using same logic as AccountDetails
-const getAccountDailyGain = (account) => {
-  if (!account.success || !account.data?.data) return 0
-  const daysInPeriod = calculateDaysInPeriod()
-  const accountPaymentCosts = paymentMethodCosts.value.get(account.accountKey) || new Map()
-  let totalRevenueAfterFees = 0
-  for (const paymentMethod of account.data.data) {
-    const methodName = paymentMethod.name?.toLowerCase() || 'other'
-    const revenue = paymentMethod.sum || 0
-    const transactionCount = paymentMethod.count || 0
-    const costConfig = accountPaymentCosts.get(methodName) || { cost_percentage: 0, fixed_cost: 0 }
-    const percentageFee = revenue * (costConfig.cost_percentage / 100)
-    const fixedFee = transactionCount * (costConfig.fixed_cost || 0)
-    const totalFees = percentageFee + fixedFee
-    totalRevenueAfterFees += (revenue - totalFees)
-  }
-  const totalRevenue = account.data.data.reduce((sum, method) => sum + (method.sum || 0), 0)
-  const foodCosts = totalRevenue * 0.3
-  const revenueAfterFoodCosts = totalRevenueAfterFees - foodCosts
-  const utilityCost = utilityCosts.value.get(account.accountKey)
-  const dailyUtilityCost = utilityCost ? (utilityCost.total_daily || 0) : 0
-  const totalUtilityCosts = dailyUtilityCost * daysInPeriod
-  const totalGain = revenueAfterFoodCosts - totalUtilityCosts
-  return totalGain
-}
+// Per-account gain is now provided by server; for overview aggregated card we rely on company.operatingProfit
 
 // Aggregated gain across all accounts
 const getAggregatedDailyGain = () => {
@@ -529,8 +477,7 @@ const getAggregatedDailyGain = () => {
   if (props.profitabilityData?.company) {
     return props.profitabilityData.company.operatingProfit || 0
   }
-  if (!props.analyticsData || !props.analyticsData.accounts) return 0
-  return props.analyticsData.accounts.reduce((sum, account) => sum + getAccountDailyGain(account), 0)
+  return 0
 }
 
 const getAggregatedGainClass = () => {
@@ -540,18 +487,7 @@ const getAggregatedGainClass = () => {
   return 'text-white'
 }
 
-onMounted(() => {
-  fetchUtilityAndPaymentCosts()
-})
-
-watch(
-  () => props.analyticsData?.accounts?.map(acc => acc.accountKey).join(',') || '',
-  (newKeys, oldKeys) => {
-    if (newKeys !== oldKeys) {
-      fetchUtilityAndPaymentCosts()
-    }
-  }
-)
+// No client-side cost fetching
 // Computed properties
 const todayString = computed(() => {
   return getCurrentDateInTimezone()
@@ -684,30 +620,14 @@ const getAggregatedGrossSales = () => {
   return props.analyticsData?.aggregated?.totalAmount || 0
 }
 
-// Helper: compute fees for an account's payment methods
-const computeAccountPaymentFees = (account) => {
-  if (!account.success || !account.data?.data) return 0
-  const accountPaymentCosts = paymentMethodCosts.value.get(account.accountKey) || new Map()
-  let fees = 0
-  for (const paymentMethod of account.data.data) {
-    const methodName = paymentMethod.name?.toLowerCase() || 'other'
-    const revenue = paymentMethod.sum || 0
-    const transactionCount = paymentMethod.count || 0
-    const costConfig = accountPaymentCosts.get(methodName) || { cost_percentage: 0, fixed_cost: 0 }
-    const percentageFee = revenue * (costConfig.cost_percentage / 100)
-    const fixedFee = transactionCount * (costConfig.fixed_cost || 0)
-    fees += percentageFee + fixedFee
-  }
-  return fees
-}
+// Client-side fee computation removed
 
 // Aggregated payment fees across all accounts
 const getAggregatedPaymentFees = () => {
   if (props.profitabilityData?.company) {
     return props.profitabilityData.company.paymentFees || 0
   }
-  if (!props.analyticsData?.accounts) return 0
-  return props.analyticsData.accounts.reduce((sum, account) => sum + computeAccountPaymentFees(account), 0)
+  return 0
 }
 
 // Net sales after fees
@@ -762,23 +682,7 @@ const getFeesByMethodDistribution = () => {
   if (props.profitabilityData?.distributions?.feesByMethod) {
     return props.profitabilityData.distributions.feesByMethod
   }
-  const feesByMethod = {}
-  if (!props.analyticsData?.accounts) return feesByMethod
-  for (const account of props.analyticsData.accounts) {
-    if (!account.success || !account.data?.data) continue
-    const accountPaymentCosts = paymentMethodCosts.value.get(account.accountKey) || new Map()
-    for (const paymentMethod of account.data.data) {
-      const methodName = (paymentMethod.name?.toLowerCase() || 'other')
-      const revenue = paymentMethod.sum || 0
-      const transactionCount = paymentMethod.count || 0
-      const costConfig = accountPaymentCosts.get(methodName) || { cost_percentage: 0, fixed_cost: 0 }
-      const percentageFee = revenue * (costConfig.cost_percentage / 100)
-      const fixedFee = transactionCount * (costConfig.fixed_cost || 0)
-      const totalFees = percentageFee + fixedFee
-      feesByMethod[methodName] = (feesByMethod[methodName] || 0) + totalFees
-    }
-  }
-  return feesByMethod
+  return {}
 }
 
 const getTopFeesByMethod = (n = 3) => {
@@ -815,24 +719,7 @@ const getNetRevenueByMethodDistribution = () => {
   if (props.profitabilityData?.distributions?.netRevenueByMethod) {
     return props.profitabilityData.distributions.netRevenueByMethod
   }
-  const netByMethod = {}
-  if (!props.analyticsData?.accounts) return netByMethod
-  for (const account of props.analyticsData.accounts) {
-    if (!account.success || !account.data?.data) continue
-    const accountPaymentCosts = paymentMethodCosts.value.get(account.accountKey) || new Map()
-    for (const paymentMethod of account.data.data) {
-      const methodName = (paymentMethod.name?.toLowerCase() || 'other')
-      const revenue = paymentMethod.sum || 0
-      const transactionCount = paymentMethod.count || 0
-      const costConfig = accountPaymentCosts.get(methodName) || { cost_percentage: 0, fixed_cost: 0 }
-      const percentageFee = revenue * (costConfig.cost_percentage / 100)
-      const fixedFee = transactionCount * (costConfig.fixed_cost || 0)
-      const totalFees = percentageFee + fixedFee
-      const netRevenue = revenue - totalFees
-      netByMethod[methodName] = (netByMethod[methodName] || 0) + netRevenue
-    }
-  }
-  return netByMethod
+  return {}
 }
 
 const getTopNetRevenueByMethod = (n = 3) => {

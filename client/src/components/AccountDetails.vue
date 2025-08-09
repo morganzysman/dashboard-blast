@@ -521,22 +521,8 @@ const getAccountAvgTicket = (account) => {
   return totalOrders > 0 ? totalAmount / totalOrders : 0
 }
 
-// Payment fees for this account
-const getAccountPaymentFees = (account) => {
-  if (!account.success || !account.data?.data) return 0
-  const accountPaymentCosts = paymentMethodCosts.value.get(account.accountKey) || new Map()
-  let fees = 0
-  for (const paymentMethod of account.data.data) {
-    const methodName = paymentMethod.name?.toLowerCase() || 'other'
-    const revenue = paymentMethod.sum || 0
-    const transactionCount = paymentMethod.count || 0
-    const costConfig = accountPaymentCosts.get(methodName) || { cost_percentage: 0, fixed_cost: 0 }
-    const percentageFee = revenue * (costConfig.cost_percentage / 100)
-    const fixedFee = transactionCount * (costConfig.fixed_cost || 0)
-    fees += percentageFee + fixedFee
-  }
-  return fees
-}
+// Payment fees now computed server-side in profitability (kept zero here)
+const getAccountPaymentFees = (account) => 0
 
 // Net sales after fees
 const getAccountNetSalesAfterFees = (account) => {
