@@ -111,9 +111,9 @@
         Payroll
       </router-link>
 
-      <!-- Super Admin only - User Management -->
+      <!-- Admin and Super Admin - User Management -->
       <router-link
-        v-if="authStore.isSuperAdmin"
+        v-if="authStore.isSuperAdmin || authStore.user?.role === 'admin'"
         to="/admin"
         class="sidebar-nav-item"
         :class="{ active: $route.name === 'Admin' }"

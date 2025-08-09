@@ -12,7 +12,7 @@ import {
 const router = Router();
 
 // Get all users (super-admin only)
-router.get('/users', requireAuth, requireRole(['super-admin']), async (req, res) => {
+router.get('/users', requireAuth, requireRole(['admin', 'super-admin']), async (req, res) => {
   try {
     const includeInactive = req.query.include_inactive === 'true';
     const users = await getAllUsers(includeInactive);
@@ -49,7 +49,7 @@ router.get('/users', requireAuth, requireRole(['super-admin']), async (req, res)
 });
 
 // Create new user with accounts (super-admin only)
-router.post('/users', requireAuth, requireRole(['super-admin']), async (req, res) => {
+router.post('/users', requireAuth, requireRole(['admin', 'super-admin']), async (req, res) => {
   try {
     const { email, name, role, password, accounts, timezone, currency } = req.body;
     
@@ -62,6 +62,7 @@ router.post('/users', requireAuth, requireRole(['super-admin']), async (req, res
     }
     
     // Validate role
+    // Admins cannot create super-admin users
     const validRoles = ['admin', 'user', 'viewer'];
     if (role && !validRoles.includes(role)) {
       return res.status(400).json({
@@ -87,6 +88,11 @@ router.post('/users', requireAuth, requireRole(['super-admin']), async (req, res
                      currency === 'GBP' ? '£' : 'S/'
     };
     
+    // If requester is admin, forbid creating super-admin explicitly
+    if (req.user.role === 'admin' && (role === 'super-admin')) {
+      return res.status(403).json({ success: false, error: 'Admins cannot create super-admin users' });
+    }
+
     const user = await createUserWithAccounts(userData, accounts || []);
     
     // Log user creation
@@ -199,7 +205,7 @@ router.put('/users/:userId/accounts', requireAuth, requireRole(['super-admin']),
 });
 
 // Update user role (super-admin only)
-router.put('/users/:userId/role', requireAuth, requireRole(['super-admin']), async (req, res) => {
+router.put('/users/:userId/role', requireAuth, requireRole(['admin', 'super-admin']), async (req, res) => {
   try {
     const { userId } = req.params;
     const { role } = req.body;
@@ -212,6 +218,11 @@ router.put('/users/:userId/role', requireAuth, requireRole(['super-admin']), asy
       });
     }
     
+    // Admins cannot set super-admin on anyone
+    if (req.user.role === 'admin' && role === 'super-admin') {
+      return res.status(403).json({ success: false, error: 'Admins cannot assign super-admin role' })
+    }
+
     const updatedUser = await updateUserRole(userId, role);
     
     if (!updatedUser) {

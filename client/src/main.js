@@ -60,7 +60,7 @@ const routes = [
     path: '/admin',
     name: 'Admin',
     component: AdminView,
-    meta: { requiresAuth: true, requiresRole: ['super-admin'] }
+    meta: { requiresAuth: true, requiresRole: ['admin', 'super-admin'] }
   },
   {
     path: '/notifications',
