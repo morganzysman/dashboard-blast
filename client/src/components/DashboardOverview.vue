@@ -525,6 +525,10 @@ const getAccountDailyGain = (account) => {
 
 // Aggregated gain across all accounts
 const getAggregatedDailyGain = () => {
+  // Prefer server-side profitability if available
+  if (props.profitabilityData?.company) {
+    return props.profitabilityData.company.operatingProfit || 0
+  }
   if (!props.analyticsData || !props.analyticsData.accounts) return 0
   return props.analyticsData.accounts.reduce((sum, account) => sum + getAccountDailyGain(account), 0)
 }
@@ -674,6 +678,9 @@ const getTotalOrders = () => {
 
 // Aggregated gross sales
 const getAggregatedGrossSales = () => {
+  if (props.profitabilityData?.company) {
+    return props.profitabilityData.company.grossSales || 0
+  }
   return props.analyticsData?.aggregated?.totalAmount || 0
 }
 
@@ -696,17 +703,26 @@ const computeAccountPaymentFees = (account) => {
 
 // Aggregated payment fees across all accounts
 const getAggregatedPaymentFees = () => {
+  if (props.profitabilityData?.company) {
+    return props.profitabilityData.company.paymentFees || 0
+  }
   if (!props.analyticsData?.accounts) return 0
   return props.analyticsData.accounts.reduce((sum, account) => sum + computeAccountPaymentFees(account), 0)
 }
 
 // Net sales after fees
 const getAggregatedNetSalesAfterFees = () => {
+  if (props.profitabilityData?.company) {
+    return props.profitabilityData.company.netAfterFees || 0
+  }
   return getAggregatedGrossSales() - getAggregatedPaymentFees()
 }
 
 // Blended fee rate
 const getAggregatedFeeRate = () => {
+  if (props.profitabilityData?.company) {
+    return props.profitabilityData.company.feeRate || 0
+  }
   const gross = getAggregatedGrossSales()
   if (gross <= 0) return 0
   return getAggregatedPaymentFees() / gross
@@ -714,10 +730,16 @@ const getAggregatedFeeRate = () => {
 
 // Tips
 const getAggregatedTips = () => {
+  if (props.profitabilityData?.company) {
+    return props.profitabilityData.company.tips || 0
+  }
   return props.analyticsData?.aggregated?.totalTips || 0
 }
 
 const getAggregatedTipRate = () => {
+  if (props.profitabilityData?.company) {
+    return props.profitabilityData.company.tipRate || 0
+  }
   const gross = getAggregatedGrossSales()
   if (gross <= 0) return 0
   return getAggregatedTips() / gross
@@ -725,6 +747,9 @@ const getAggregatedTipRate = () => {
 
 // Operating margin = operating profit / gross
 const getAggregatedOperatingMargin = () => {
+  if (props.profitabilityData?.company) {
+    return props.profitabilityData.company.operatingMargin || 0
+  }
   const gross = getAggregatedGrossSales()
   if (gross <= 0) return 0
   const operatingProfit = getAggregatedDailyGain()
@@ -733,6 +758,10 @@ const getAggregatedOperatingMargin = () => {
 
 // Fees by payment method (distribution)
 const getFeesByMethodDistribution = () => {
+  // Prefer server-side distributions
+  if (props.profitabilityData?.distributions?.feesByMethod) {
+    return props.profitabilityData.distributions.feesByMethod
+  }
   const feesByMethod = {}
   if (!props.analyticsData?.accounts) return feesByMethod
   for (const account of props.analyticsData.accounts) {
@@ -783,6 +812,9 @@ const getFeesByMethodPieChart = () => {
 
 // Net revenue by payment method (distribution)
 const getNetRevenueByMethodDistribution = () => {
+  if (props.profitabilityData?.distributions?.netRevenueByMethod) {
+    return props.profitabilityData.distributions.netRevenueByMethod
+  }
   const netByMethod = {}
   if (!props.analyticsData?.accounts) return netByMethod
   for (const account of props.analyticsData.accounts) {
