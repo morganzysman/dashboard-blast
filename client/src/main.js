@@ -14,6 +14,9 @@ import DashboardView from './views/DashboardView.vue'
 import AdminView from './views/AdminView.vue'
 import NotificationsView from './views/NotificationsView.vue'
 import RentabilityView from './views/RentabilityView.vue'
+import EmployeeClockView from './views/EmployeeClockView.vue'
+import EmployeeTimesheetView from './views/EmployeeTimesheetView.vue'
+import AdminPayrollView from './views/AdminPayrollView.vue'
 
 // Import stores
 import { useAuthStore } from './stores/auth'
@@ -23,6 +26,24 @@ const pinia = createPinia()
 
 // Define routes
 const routes = [
+  {
+    path: '/clock',
+    name: 'EmployeeClock',
+    component: EmployeeClockView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/timesheet',
+    name: 'EmployeeTimesheet',
+    component: EmployeeTimesheetView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/admin/payroll',
+    name: 'AdminPayroll',
+    component: AdminPayrollView,
+    meta: { requiresAuth: true, requiresRole: ['admin', 'super-admin'] }
+  },
   {
     path: '/',
     name: 'Dashboard',
