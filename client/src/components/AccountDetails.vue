@@ -288,18 +288,22 @@ const formatGainPeriodLabel = () => {
 const getAccountGainBreakdown = (account) => {
   const serverAcc = props.profitabilityData?.accounts?.find(a => a.accountKey === account.accountKey)
   if (serverAcc && serverAcc.paymentMethodBreakdown) {
-    return {
-      totalRevenue: serverAcc.grossSales || 0,
-      totalCosts: (serverAcc.paymentFees || 0) + (serverAcc.foodCosts || 0) + (serverAcc.utilityCosts || 0) + (serverAcc.payrollCosts || 0),
-      paymentFees: serverAcc.paymentFees || 0,
-      foodCosts: serverAcc.foodCosts || 0,
-      utilityCosts: serverAcc.utilityCosts || 0,
-      payrollCosts: serverAcc.payrollCosts || 0,
-      payrollEntries: serverAcc.payrollEntries || 0,
-      finalGain: serverAcc.operatingProfit || 0,
-      daysInPeriod: serverAcc.daysInPeriod || 1,
-      paymentMethodBreakdown: serverAcc.paymentMethodBreakdown
+    // If server has non-zero revenue, use it
+    if ((serverAcc.grossSales || 0) > 0) {
+      return {
+        totalRevenue: serverAcc.grossSales || 0,
+        totalCosts: (serverAcc.paymentFees || 0) + (serverAcc.foodCosts || 0) + (serverAcc.utilityCosts || 0) + (serverAcc.payrollCosts || 0),
+        paymentFees: serverAcc.paymentFees || 0,
+        foodCosts: serverAcc.foodCosts || 0,
+        utilityCosts: serverAcc.utilityCosts || 0,
+        payrollCosts: serverAcc.payrollCosts || 0,
+        payrollEntries: serverAcc.payrollEntries || 0,
+        finalGain: serverAcc.operatingProfit || 0,
+        daysInPeriod: serverAcc.daysInPeriod || 1,
+        paymentMethodBreakdown: serverAcc.paymentMethodBreakdown
+      }
     }
+    // Otherwise, fall back to client-side revenue from analytics payments data
   }
   if (!account.success || !account.data?.data) {
     return {
@@ -314,7 +318,7 @@ const getAccountGainBreakdown = (account) => {
     }
   }
   const daysInPeriod = calcDays(props.currentDateRange)
-  const paymentMethodBreakdown = account.data.data.map(pm => ({
+  const paymentMethodBreakdown = (account.data.data || []).map(pm => ({
     method: pm.name?.toLowerCase() || 'other',
     revenue: pm.sum || 0,
     fees: 0,

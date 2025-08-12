@@ -398,7 +398,12 @@ const getAggregatedDailyGain = () => {
   if (props.profitabilityData?.company) {
     return props.profitabilityData.company.operatingProfit || 0
   }
-  return 0
+  // Fallback: estimate from analytics totals when server data missing
+  const gross = props.analyticsData?.aggregated?.totalAmount || 0
+  if (gross <= 0) return 0
+  const food = gross * 0.3
+  // No fees/utilities breakdown available in fallback; assume zero
+  return gross - food
 }
 
 const getAggregatedGainClass = () => {
