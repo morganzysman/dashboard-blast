@@ -1,4 +1,10 @@
 // Server configuration and environment variables
+const rawAppBaseUrl = process.env.APP_BASE_URL || ''
+// Ensure app base URL includes protocol; default to https if missing
+const normalizedAppBaseUrl = rawAppBaseUrl
+  ? (/^https?:\/\//i.test(rawAppBaseUrl) ? rawAppBaseUrl : `https://${rawAppBaseUrl}`)
+  : ''
+
 export const config = {
   port: process.env.PORT || 3001,
   nodeEnv: process.env.NODE_ENV || 'development',
@@ -36,7 +42,7 @@ export const config = {
     ]
   },
   // App base URL (used for absolute QR links, etc.)
-  appBaseUrl: process.env.APP_BASE_URL || ''
+  appBaseUrl: normalizedAppBaseUrl
 };
 
 // Check for production warnings
