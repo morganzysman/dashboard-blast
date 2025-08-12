@@ -59,11 +59,11 @@ router.get('/', requireAuth, async (req, res) => {
         created_at,
         updated_at
       FROM utility_costs 
-      WHERE user_id = $1
+      WHERE company_id = $1
       ORDER BY account_name
     `;
     
-    const result = await pool.query(query, [req.user.userId]);
+    const result = await pool.query(query, [req.user.companyId]);
     
     console.log(`📊 Found ${result.rows.length} utility cost records`);
     
@@ -107,10 +107,10 @@ router.get('/:companyToken', requireAuth, async (req, res) => {
         created_at,
         updated_at
       FROM utility_costs 
-      WHERE user_id = $1 AND company_token = $2
+      WHERE company_id = $1 AND company_token = $2
     `;
     
-    const result = await pool.query(query, [req.user.userId, companyToken]);
+    const result = await pool.query(query, [req.user.companyId, companyToken]);
     
     if (result.rows.length === 0) {
       return res.status(404).json({
@@ -160,9 +160,10 @@ router.post('/', requireAuth, async (req, res) => {
       });
     }
     
-    // Check if user has access to this account
-    const userAccounts = req.user.userAccounts || [];
-    const hasAccess = userAccounts.some(acc => acc.company_token === company_token);
+    // Check if company_token belongs to user's company
+    const q = await pool.query('SELECT company_id FROM company_accounts WHERE company_token = $1', [company_token])
+    const companyId = q.rows[0]?.company_id || null
+    const hasAccess = !!(req.user.companyId && companyId && req.user.companyId === companyId)
     
     if (!hasAccess) {
       return res.status(403).json({
@@ -171,7 +172,7 @@ router.post('/', requireAuth, async (req, res) => {
       });
     }
     
-    // Prepare the upsert query
+    // Prepare the upsert query (company-level)
     const fields = Object.keys(costs);
     const values = Object.values(costs);
     const placeholders = values.map((_, index) => `$${index + 4}`).join(', ');
@@ -179,11 +180,11 @@ router.post('/', requireAuth, async (req, res) => {
     
     const query = `
       INSERT INTO utility_costs (
-        user_id, company_token, account_name, ${fields.join(', ')}
+        company_id, company_token, account_name, ${fields.join(', ')}
       ) VALUES (
         $1, $2, $3, ${placeholders}
       )
-      ON CONFLICT (user_id, company_token) 
+      ON CONFLICT (company_id, company_token) 
       DO UPDATE SET 
         account_name = $3,
         ${updateClauses},
@@ -208,7 +209,7 @@ router.post('/', requireAuth, async (req, res) => {
         updated_at
     `;
     
-    const queryParams = [req.user.userId, company_token, account_name, ...values];
+    const queryParams = [req.user.companyId, company_token, account_name, ...values];
     const result = await pool.query(query, queryParams);
     
     console.log(`✅ Successfully saved utility costs for account: ${company_token}`);
@@ -236,11 +237,11 @@ router.delete('/:companyToken', requireAuth, async (req, res) => {
     
     const query = `
       DELETE FROM utility_costs 
-      WHERE user_id = $1 AND company_token = $2
+      WHERE company_id = $1 AND company_token = $2
       RETURNING company_token, account_name
     `;
     
-    const result = await pool.query(query, [req.user.userId, companyToken]);
+    const result = await pool.query(query, [req.user.companyId, companyToken]);
     
     if (result.rows.length === 0) {
       return res.status(404).json({

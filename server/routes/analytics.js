@@ -20,7 +20,12 @@ router.get('/profitability', requireAuth, async (req, res) => {
       }
     })
 
-    const timezone = currentParams['filter[timezone]'] || req.user.userTimezone || 'America/Lima'
+    // Fetch company timezone
+    let timezone = currentParams['filter[timezone]']
+    if (!timezone) {
+      const tzQ = await pool.query('SELECT timezone FROM companies WHERE id = $1', [req.user.companyId])
+      timezone = tzQ.rows[0]?.timezone || 'America/Lima'
+    }
     let startDate = currentParams['filter[start_date]']
     let endDate = currentParams['filter[end_date]']
 
@@ -35,7 +40,12 @@ router.get('/profitability', requireAuth, async (req, res) => {
     const endObj = new Date(endDate)
     const daysDiff = Math.max(1, Math.ceil((endObj.getTime() - startObj.getTime()) / (1000 * 3600 * 24)) + 1)
 
-    const userAccounts = req.user.userAccounts || []
+    // Fetch accounts by user's company
+    let userAccounts = []
+    if (req.user.companyId) {
+      const q = await pool.query('SELECT company_token, api_token FROM company_accounts WHERE company_id = $1', [req.user.companyId])
+      userAccounts = q.rows.map(r => ({ company_token: r.company_token, api_token: r.api_token }))
+    }
     if (userAccounts.length === 0) {
       return res.json({ success: true, data: { period: { start: startDate, end: endDate, days: daysDiff }, company: { grossSales: 0, paymentFees: 0, netAfterFees: 0, foodCosts: 0, utilityCosts: 0, operatingProfit: 0, operatingMargin: 0, feeRate: 0, tips: 0, tipRate: 0 }, accounts: [], distributions: { feesByMethod: {}, netRevenueByMethod: {} } } })
     }
@@ -61,17 +71,17 @@ router.get('/profitability', requireAuth, async (req, res) => {
     const utilityQuery = `
       SELECT company_token, total_daily
       FROM utility_costs
-      WHERE user_id = $1 AND company_token IN (${accPlaceholders})
+      WHERE company_id = $1 AND company_token IN (${accPlaceholders})
     `
     const paymentCostsQuery = `
       SELECT company_token, payment_method_code, cost_percentage, fixed_cost
       FROM payment_method_costs
-      WHERE user_id = $1 AND company_token IN (${accPlaceholders})
+      WHERE company_id = $1 AND company_token IN (${accPlaceholders})
     `
 
     const [utilityRes, paymentCostsRes] = await Promise.all([
-      pool.query(utilityQuery, [req.user.userId, ...accountTokens]),
-      pool.query(paymentCostsQuery, [req.user.userId, ...accountTokens])
+      pool.query(utilityQuery, [req.user.companyId, ...accountTokens]),
+      pool.query(paymentCostsQuery, [req.user.companyId, ...accountTokens])
     ])
 
     const accountKeyToUtility = new Map()

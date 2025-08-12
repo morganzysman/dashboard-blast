@@ -103,12 +103,17 @@ const toggleUserMenu = () => {
 }
 
 const pageTitle = computed(() => {
+  const isAdminSuite = authStore.isSuperAdmin || authStore.isAdmin
+  const base = isAdminSuite ? 'OlaClick Management Suite' : 'OlaClick Workforce'
   const routeNames = {
-    Dashboard: 'Dashboard',
-    Admin: 'Admin Dashboard',
-    Notifications: 'Notifications'
+    Admin: 'OlaClick Management Suite',
+    Dashboard: base,
+    Notifications: base,
+    EmployeeClock: base,
+    EmployeeTimesheet: base,
+    Companies: 'OlaClick Management Suite'
   }
-  return routeNames[route.name] || 'OlaClick Analytics'
+  return routeNames[route.name] || base
 })
 
 const pageSubtitle = computed(() => {

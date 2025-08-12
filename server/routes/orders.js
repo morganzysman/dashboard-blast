@@ -5,6 +5,7 @@ import {
   fetchServiceMetrics
 } from '../services/olaClickService.js';
 import { config } from '../config/index.js';
+import { pool } from '../database.js';
 
 const router = Router();
 
@@ -108,8 +109,45 @@ router.get('/', requireAuth, async (req, res) => {
     const queryParams = req.query;
     console.log(`   Original query params: ${JSON.stringify(queryParams)}`);
     
-    // Get user's accounts and timezone with safe fallbacks
-    const userAccounts = req.user.userAccounts || [];
+    // Resolve accessible accounts from company tenancy
+    const requestedCompanyId = req.query.company_id || null;
+    const requestedToken = req.query.company_token || null;
+    let rows = [];
+    if (req.user.role === 'super-admin') {
+      if (requestedCompanyId) {
+        const q = await pool.query(
+          `SELECT company_id, company_token, account_name, api_token FROM company_accounts WHERE company_id = $1 ORDER BY account_name`,
+          [requestedCompanyId]
+        );
+        rows = q.rows;
+      } else {
+        const q = await pool.query(
+          `SELECT company_id, company_token, account_name, api_token FROM company_accounts ORDER BY account_name`
+        );
+        rows = q.rows;
+      }
+    } else {
+      const companyId = req.user.companyId;
+      if (requestedCompanyId && requestedCompanyId !== companyId) {
+        return res.status(403).json({ success: false, error: 'Forbidden' });
+      }
+      if (companyId) {
+        const q = await pool.query(
+          `SELECT company_id, company_token, account_name, api_token FROM company_accounts WHERE company_id = $1 ORDER BY account_name`,
+          [companyId]
+        );
+        rows = q.rows;
+      }
+    }
+    if (requestedToken) {
+      rows = rows.filter(r => r.company_token === requestedToken);
+    }
+    const userAccounts = rows.map(r => ({
+      company_id: r.company_id,
+      company_token: r.company_token,
+      account_name: r.account_name,
+      api_token: r.api_token
+    }));
     let userTimezone = req.user.userTimezone || config.olaClick.defaultTimezone;
     
     // Ensure timezone is valid
@@ -120,19 +158,7 @@ router.get('/', requireAuth, async (req, res) => {
     console.log(`   User timezone: ${userTimezone}`);
     
     if (userAccounts.length === 0) {
-      return res.json({
-        success: true,
-        accounts: [],
-        aggregated: {
-          services: [],
-          totalOrders: 0,
-          totalSales: 0,
-          averageTicket: 0,
-          accountsCount: 0
-        },
-        comparison: null,
-        message: 'No accounts assigned to this user'
-      });
+      return res.status(404).json({ success: false, error: 'No accounts found for user' });
     }
     
     // Extract and flatten filter parameters (same logic as other endpoints)
@@ -242,14 +268,48 @@ router.get('/service-metrics', requireAuth, async (req, res) => {
     console.log(`📊 Service Metrics request received`);
     console.log(`   Query params: ${JSON.stringify(req.query)}`);
     
-    // Get user's accounts
-    const userAccounts = req.user.userAccounts || [];
-    
+    // Resolve accessible accounts similar to /api/orders
+    const requestedCompanyId = req.query.company_id || null;
+    const requestedToken = req.query.company_token || null;
+    let rows = [];
+    if (req.user.role === 'super-admin') {
+      if (requestedCompanyId) {
+        const q = await pool.query(
+          `SELECT company_id, company_token, account_name, api_token FROM company_accounts WHERE company_id = $1 ORDER BY account_name`,
+          [requestedCompanyId]
+        );
+        rows = q.rows;
+      } else {
+        const q = await pool.query(
+          `SELECT company_id, company_token, account_name, api_token FROM company_accounts ORDER BY account_name`
+        );
+        rows = q.rows;
+      }
+    } else {
+      const companyId = req.user.companyId;
+      if (requestedCompanyId && requestedCompanyId !== companyId) {
+        return res.status(403).json({ success: false, error: 'Forbidden' });
+      }
+      if (companyId) {
+        const q = await pool.query(
+          `SELECT company_id, company_token, account_name, api_token FROM company_accounts WHERE company_id = $1 ORDER BY account_name`,
+          [companyId]
+        );
+        rows = q.rows;
+      }
+    }
+    if (requestedToken) {
+      rows = rows.filter(r => r.company_token === requestedToken);
+    }
+    const userAccounts = rows.map(r => ({
+      company_id: r.company_id,
+      company_token: r.company_token,
+      account_name: r.account_name,
+      api_token: r.api_token
+    }));
+
     if (!userAccounts || userAccounts.length === 0) {
-      return res.status(404).json({
-        success: false,
-        error: 'No accounts found for user'
-      });
+      return res.status(404).json({ success: false, error: 'No accounts found for user' });
     }
     
     console.log(`📊 Service Metrics - Found ${userAccounts.length} accounts`);

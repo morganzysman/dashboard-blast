@@ -247,20 +247,17 @@ export async function testConnection() {
 // Create a new user
 export async function createUser(userData) {
   const query = `
-    INSERT INTO users (email, name, role, hashed_password, accounts, timezone, currency, currency_symbol)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-    RETURNING id, email, name, role, timezone, currency, currency_symbol, created_at
+    INSERT INTO users (email, name, role, hashed_password, company_id)
+    VALUES ($1, $2, $3, $4, $5)
+    RETURNING id, email, name, role, created_at, company_id
   `;
   
   const values = [
     userData.email,
     userData.name,
-    userData.role || 'user',
+    userData.role || 'employee',
     userData.hashedPassword,
-    JSON.stringify(userData.accounts || []),
-    userData.timezone || 'America/Lima',
-    userData.currency || 'PEN',
-    userData.currencySymbol || 'S/'
+    userData.companyId || null
   ];
   
   const result = await pool.query(query, values);
@@ -269,48 +266,40 @@ export async function createUser(userData) {
 
 // Create user with accounts (for super-admin interface)
 export async function createUserWithAccounts(userData, accounts = []) {
+  // New model: users are attached to a company. Accounts are managed at company level.
   const query = `
-    INSERT INTO users (email, name, role, hashed_password, accounts, timezone, currency, currency_symbol)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-    RETURNING id, email, name, role, timezone, currency, currency_symbol, created_at, accounts
+    INSERT INTO users (email, name, role, hashed_password, company_id)
+    VALUES ($1, $2, $3, $4, $5)
+    RETURNING id, email, name, role, created_at, company_id
   `;
-  
+
   const values = [
     userData.email,
     userData.name,
-    userData.role || 'user',
+    userData.role || 'employee',
     userData.hashedPassword,
-    JSON.stringify(accounts),
-    userData.timezone || 'America/Lima',
-    userData.currency || 'PEN',
-    userData.currencySymbol || 'S/'
+    userData.companyId || null
   ];
-  
+
   const result = await pool.query(query, values);
-  const user = result.rows[0];
-  return {
-    ...user,
-    accounts: user.accounts || []
-  };
+  return result.rows[0];
 }
 
 // Get all users (for super-admin interface)
 export async function getAllUsers(includeInactive = false) {
   const whereClause = includeInactive ? '' : 'WHERE is_active = TRUE';
   const query = `
-    SELECT id, email, name, role, accounts, timezone, currency, currency_symbol, 
-           is_active, created_at, updated_at, last_login
-    FROM users 
+    SELECT u.id, u.email, u.name, u.role,
+           u.is_active, u.created_at, u.updated_at, u.last_login,
+           u.company_id, c.name AS company_name
+    FROM users u
+    LEFT JOIN companies c ON c.id = u.company_id
     ${whereClause}
-    ORDER BY created_at DESC
+    ORDER BY u.created_at DESC
   `;
   
   const result = await pool.query(query);
-  
-  return result.rows.map(user => ({
-    ...user,
-    accounts: user.accounts || []
-  }));
+  return result.rows;
 }
 
 // Update user role (for super-admin)
@@ -339,21 +328,31 @@ export async function updateUserStatus(userId, isActive) {
   return result.rows[0];
 }
 
+// Update user company assignment
+export async function updateUserCompany(userId, companyId) {
+  const query = `
+    UPDATE users
+    SET company_id = $2, updated_at = CURRENT_TIMESTAMP
+    WHERE id = $1
+    RETURNING id, email, name, role, company_id, updated_at
+  `;
+
+  const result = await pool.query(query, [userId, companyId]);
+  return result.rows[0];
+}
+
 // Update user profile (name, timezone, currency)
 export async function updateUserProfile(userId, profileData) {
   const query = `
     UPDATE users 
-    SET name = $2, timezone = $3, currency = $4, currency_symbol = $5, updated_at = CURRENT_TIMESTAMP 
+    SET name = $2, updated_at = CURRENT_TIMESTAMP 
     WHERE id = $1
-    RETURNING id, email, name, timezone, currency, currency_symbol, updated_at
+    RETURNING id, email, name, updated_at
   `;
   
   const values = [
     userId,
-    profileData.name,
-    profileData.timezone || 'America/Lima',
-    profileData.currency || 'PEN',
-    profileData.currencySymbol || 'S/'
+    profileData.name
   ];
   
   const result = await pool.query(query, values);
@@ -363,8 +362,8 @@ export async function updateUserProfile(userId, profileData) {
 // Get user by email
 export async function getUserByEmail(email) {
   const query = `
-    SELECT id, email, name, role, hashed_password, accounts, timezone, currency, currency_symbol, 
-           is_active, created_at, updated_at, last_login
+    SELECT id, email, name, role, hashed_password, 
+           is_active, created_at, updated_at, last_login, company_id
     FROM users 
     WHERE email = $1 AND is_active = TRUE
   `;
@@ -375,18 +374,14 @@ export async function getUserByEmail(email) {
     return null;
   }
   
-  const user = result.rows[0];
-  return {
-    ...user,
-    accounts: user.accounts || []
-  };
+  return result.rows[0];
 }
 
 // Get user by ID
 export async function getUserById(userId) {
   const query = `
-    SELECT id, email, name, role, accounts, timezone, currency, currency_symbol, 
-           is_active, created_at, updated_at, last_login
+    SELECT id, email, name, role,
+           is_active, created_at, updated_at, last_login, company_id
     FROM users 
     WHERE id = $1 AND is_active = TRUE
   `;
@@ -397,11 +392,7 @@ export async function getUserById(userId) {
     return null;
   }
   
-  const user = result.rows[0];
-  return {
-    ...user,
-    accounts: user.accounts || []
-  };
+  return result.rows[0];
 }
 
 // Update user last login
@@ -418,36 +409,20 @@ export async function updateUserLastLogin(userId) {
 // Get all active users
 export async function getAllActiveUsers() {
   const query = `
-    SELECT id, email, name, role, accounts, timezone, currency, currency_symbol, 
-           is_active, created_at, updated_at, last_login
+    SELECT id, email, name, role, 
+           is_active, created_at, updated_at, last_login, company_id
     FROM users 
     WHERE is_active = TRUE
     ORDER BY created_at DESC
   `;
   
   const result = await pool.query(query);
-  
-  return result.rows.map(user => ({
-    ...user,
-    accounts: user.accounts || []
-  }));
+  return result.rows;
 }
 
 // Update user accounts
-export async function updateUserAccounts(userId, accounts) {
-  const query = `
-    UPDATE users 
-    SET accounts = $2, updated_at = CURRENT_TIMESTAMP 
-    WHERE id = $1
-    RETURNING id, email, name, accounts, updated_at
-  `;
-  
-  const result = await pool.query(query, [userId, JSON.stringify(accounts)]);
-  const user = result.rows[0];
-  return {
-    ...user,
-    accounts: user.accounts || []
-  };
+export async function updateUserAccounts() {
+  throw new Error('updateUserAccounts deprecated: accounts are managed under companies')
 }
 
 // ====== SESSION MANAGEMENT ======
@@ -479,10 +454,7 @@ export async function getSessionWithUser(sessionToken) {
       u.email,
       u.name,
       u.role,
-      u.accounts,
-      u.timezone,
-      u.currency,
-      u.currency_symbol,
+      u.company_id,
       u.is_active as user_active
     FROM user_sessions s
     JOIN users u ON s.user_id = u.id
@@ -509,12 +481,55 @@ export async function getSessionWithUser(sessionToken) {
       email: row.email,
       name: row.name,
       role: row.role,
-      accounts: row.accounts || [],
-      timezone: row.timezone,
-      currency: row.currency,
-      currencySymbol: row.currency_symbol
+      company_id: row.company_id
     }
   };
+}
+
+// ====== COMPANIES AND ACCOUNTS (TENANCY) ======
+
+export async function listCompanies() {
+  const q = await pool.query(`SELECT id, name, created_at, updated_at FROM companies ORDER BY name`);
+  return q.rows;
+}
+
+export async function createCompany(name) {
+  const q = await pool.query(
+    `INSERT INTO companies(name) VALUES($1) RETURNING id, name, created_at, updated_at`,
+    [name]
+  );
+  return q.rows[0];
+}
+
+export async function getCompanyAccounts(companyId) {
+  const q = await pool.query(
+    `SELECT company_id, company_token, COALESCE(account_name, company_token) AS account_name
+     FROM company_accounts WHERE company_id = $1 ORDER BY account_name`,
+    [companyId]
+  );
+  return q.rows;
+}
+
+export async function addCompanyAccount(companyId, companyToken, accountName = null) {
+  const q = await pool.query(
+    `INSERT INTO company_accounts(company_id, company_token, account_name)
+     VALUES ($1, $2, $3)
+     ON CONFLICT (company_id, company_token)
+     DO UPDATE SET account_name = EXCLUDED.account_name
+     RETURNING company_id, company_token, COALESCE(account_name, company_token) AS account_name`,
+    [companyId, companyToken, accountName]
+  );
+  return q.rows[0];
+}
+
+export async function removeCompanyAccount(companyId, companyToken) {
+  await pool.query(`DELETE FROM company_accounts WHERE company_id = $1 AND company_token = $2`, [companyId, companyToken]);
+  return true;
+}
+
+export async function findCompanyIdByToken(companyToken) {
+  const q = await pool.query(`SELECT company_id FROM company_accounts WHERE company_token = $1`, [companyToken]);
+  return q.rows[0]?.company_id || null;
 }
 
 // Update session last accessed and extend expiry

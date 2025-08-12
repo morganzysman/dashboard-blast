@@ -92,7 +92,6 @@ export function requireAuth(req, res, next) {
         userName: sessionData.user.name,
         role: sessionData.user.role,
         userRole: sessionData.user.role,
-        userAccounts: sessionData.user.accounts || [],
         userTimezone: sessionData.user.timezone || config.olaClick.defaultTimezone,
         userCurrency: sessionData.user.currency || config.olaClick.defaultCurrency,
         userCurrencySymbol: sessionData.user.currencySymbol || config.olaClick.defaultCurrencySymbol,

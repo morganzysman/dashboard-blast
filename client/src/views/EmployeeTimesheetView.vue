@@ -20,6 +20,7 @@
                 <th class="py-2">Clock In</th>
                 <th class="py-2">Clock Out</th>
                 <th class="py-2">Duration</th>
+                <th class="py-2">Amount</th>
               </tr>
             </thead>
             <tbody>
@@ -27,11 +28,13 @@
                 <td class="py-2">{{ formatDateTime(e.clock_in_at) }}</td>
                 <td class="py-2">{{ e.clock_out_at ? formatDateTime(e.clock_out_at) : '—' }}</td>
                 <td class="py-2">{{ formatDuration(secondsBetween(e.clock_in_at, e.clock_out_at)) }}</td>
+                <td class="py-2 flex items-center justify-end gap-2"><span>{{ formatCurrency(e.amount) }}</span><span v-if="e.paid" class="text-green-600">$</span></td>
               </tr>
             </tbody>
           </table>
-          <div class="mt-4 text-right text-gray-800 font-medium">
-            Total: {{ formatDuration(totalSeconds) }}
+          <div class="mt-4 text-right text-gray-800 font-medium space-y-1">
+            <div>Total time: {{ formatDuration(totalSeconds) }}</div>
+            <div>Total earned: {{ formatCurrency(totalAmount) }}</div>
           </div>
         </div>
       </div>
@@ -41,9 +44,11 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { useAuthStore } from '../stores/auth'
 import api from '../utils/api'
 
 const entries = ref([])
+const auth = useAuthStore()
 const period = ref({ start: '', end: '' })
 
 const periodLabel = computed(() => `${period.value.start} → ${period.value.end}`)
@@ -54,6 +59,7 @@ const secondsBetween = (a,b) => {
 }
 
 const totalSeconds = computed(() => entries.value.reduce((s, e) => s + secondsBetween(e.clock_in_at, e.clock_out_at), 0))
+const totalAmount = computed(() => entries.value.reduce((s, e) => s + Number(e.amount || 0), 0))
 
 const formatDuration = (secs) => {
   const h = Math.floor(secs / 3600)
@@ -63,6 +69,10 @@ const formatDuration = (secs) => {
 }
 
 const formatDateTime = (iso) => new Date(iso).toLocaleString('en-CL', { timeZone: 'America/Santiago' })
+const formatCurrency = (n) => {
+  const symbol = auth.user?.currencySymbol || 'S/'
+  return `${symbol} ${(Number(n)||0).toFixed(2)}`
+}
 
 const loadEntries = async () => {
   const res = await api.getMyEntries()

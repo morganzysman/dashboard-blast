@@ -111,27 +111,7 @@
             </div>
           </div>
 
-          <!-- Additional Profitability Chips -->
-          <div class="mb-4">
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-              <div class="bg-emerald-50 rounded-lg p-3 text-center">
-                <p class="text-sm sm:text-lg font-bold text-emerald-600 truncate">{{ formatCurrency(getAccountNetSalesAfterFees(account)) }}</p>
-                <p class="text-xs text-emerald-500">Net Sales after Fees</p>
-              </div>
-              <div class="bg-rose-50 rounded-lg p-3 text-center">
-                <p class="text-sm sm:text-lg font-bold text-rose-600 truncate">{{ formatCurrency(getAccountPaymentFees(account)) }}</p>
-                <p class="text-xs text-rose-500">Payment Fees</p>
-              </div>
-              <div class="bg-cyan-50 rounded-lg p-3 text-center">
-                <p class="text-sm sm:text-lg font-bold text-cyan-600 truncate">{{ (getAccountOperatingMargin(account) * 100).toFixed(1) }}%</p>
-                <p class="text-xs text-cyan-500">Operating Margin</p>
-              </div>
-              <div class="bg-indigo-50 rounded-lg p-3 text-center">
-                <p class="text-sm sm:text-lg font-bold text-indigo-600 truncate">{{ formatCurrency(getAccountProfitPerOrder(account)) }}</p>
-                <p class="text-xs text-indigo-500">Profit / Order</p>
-              </div>
-            </div>
-          </div>
+          <!-- Additional Profitability Chips (none currently) -->
           <div v-if="account.success && account.data" class="space-y-3">
           
             <!-- Account Payment Methods -->

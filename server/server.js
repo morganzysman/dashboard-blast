@@ -252,6 +252,7 @@ app.listen(config.port, '0.0.0.0', () => {
   console.log(`   PUT /api/admin/users/:userId/accounts - Update user accounts (super-admin only)`);
   console.log(`   PUT /api/admin/users/:userId/role - Update user role (super-admin only)`);
   console.log(`   PUT /api/admin/users/:userId/status - Update user status (super-admin only)`);
+  console.log(`   DELETE /api/admin/users/:userId - Delete a user (super-admin only)`);
   console.log(`   GET /api/notifications/vapid-public-key - Get VAPID public key`);
   console.log(`   POST /api/notifications/subscribe - Subscribe to push notifications`);
   console.log(`   POST /api/notifications/unsubscribe - Unsubscribe from push notifications`);

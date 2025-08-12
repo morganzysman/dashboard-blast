@@ -476,24 +476,12 @@ const costFields = [
 // Computed properties
 const currencySymbol = computed(() => authStore.user?.currencySymbol || 'S/')
 
-const userAccounts = computed(() => {
-  console.log('🔍 userAccounts computed - FULL DEBUG:')
-  console.log('   authStore:', authStore)
-  console.log('   authStore.user:', authStore.user)
-  console.log('   authStore.user?.accounts:', authStore.user?.accounts)
-  console.log('   authStore.user?.accountsCount:', authStore.user?.accountsCount)
-  console.log('   authStore.isAuthenticated:', authStore.isAuthenticated)
-  
-  const accounts = authStore.user?.accounts || []
-  console.log('   final accounts:', accounts)
-  return accounts
-})
+const userAccounts = computed(() => authStore.user?.userAccounts || [])
 
 const accountsWithoutCosts = computed(() => {
   const costsTokens = utilityCosts.value.map(cost => cost.company_token)
-  return userAccounts.value.filter(account => 
-    account.is_active && !costsTokens.includes(account.company_token)
-  )
+  // New model does not store is_active per account; include all
+  return userAccounts.value.filter(account => !costsTokens.includes(account.company_token))
 })
 
 const availableAccounts = computed(() => {
@@ -510,7 +498,7 @@ const availableAccounts = computed(() => {
   // Fallback: if no accounts without costs, show all active accounts
   const available = accountsWithoutCosts.value.length > 0 
     ? accountsWithoutCosts.value 
-    : userAccounts.value.filter(account => account.is_active)
+    : userAccounts.value
   
   console.log('   final available:', available)
   return available

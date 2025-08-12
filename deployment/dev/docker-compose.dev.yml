@@ -58,8 +58,7 @@ services:
       - ../../config:/app/config
       - ../../package.json:/app/package.json
       - ../../package-lock.json:/app/package-lock.json
-      # Exclude node_modules to avoid conflicts
-      - /app/node_modules
+      # Do not override node_modules; keep those baked into the image
     networks:
       - olaclick-network
     restart: unless-stopped

@@ -31,7 +31,7 @@
             </select>
           </div>
         </div>
-
+       
         <!-- Custom Date Inputs and Actions -->
         <div class="flex flex-col space-y-3 sm:space-y-0 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
           <!-- Custom Date Inputs -->
@@ -61,8 +61,8 @@
                 :max="todayString"
               />
             </div>
-          </div>
-
+     </div>
+       
           <!-- Current Range Display -->
           <div class="flex items-center text-xs sm:text-sm text-gray-600">
             <span v-if="currentDateRange.start === currentDateRange.end">
@@ -90,9 +90,9 @@
           >
             Apply Range
           </button>
+          </div>
+          </div>
         </div>
-      </div>
-    </div>
 
     <!-- Overall Performance Cards -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6" v-if="analyticsData">
@@ -224,94 +224,50 @@
           <div v-if="analyticsData && analyticsData.aggregated.paymentMethods.length > 0" class="mt-3">
             <div class="flex items-center justify-center">
               <div class="relative w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0">
-                <!-- Pie Chart using conic-gradient -->
-                <div 
-                  class="w-full h-full rounded-full"
-                  :style="{ background: getPaymentMethodsPieChart() }"
-                ></div>
-                <!-- Center hole for donut effect -->
+                <div class="w-full h-full rounded-full" :style="{ background: getPaymentMethodsPieChart() }"></div>
                 <div class="absolute inset-2 bg-purple-600 rounded-full flex items-center justify-center">
                   <span class="text-white text-xs font-bold">{{ analyticsData.aggregated.paymentMethods.length }}</span>
-      </div>
-    </div>
-
-    <!-- Company-level Profitability KPIs -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6" v-if="analyticsData">
-      <!-- Net Sales After Fees -->
-      <div class="card bg-gradient-to-r from-emerald-500 to-emerald-600 text-white">
-        <div class="card-body">
-          <div class="flex items-center justify-between mb-3">
-            <div class="min-w-0 flex-1">
-              <p class="text-emerald-100 text-xs sm:text-sm font-medium">NET SALES AFTER FEES</p>
-              <p class="text-lg sm:text-xl font-bold truncate">{{ formatCurrency(getAggregatedNetSalesAfterFees()) }}</p>
-            </div>
-            <div class="w-10 h-10 sm:w-12 sm:h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center flex-shrink-0">
-              <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 11V7a4 4 0 118 0v4m-1 10H6a2 2 0 01-2-2V10a2 2 0 012-2h12a2 2 0 012 2v9a2 2 0 01-2 2z" />
-              </svg>
+                </div>
+              </div>
+              <div class="ml-3 space-y-1 text-xs min-w-0 flex-1">
+                <div v-for="method in analyticsData.aggregated.paymentMethods.slice(0, 3)" :key="method.name" class="flex items-center justify-between min-w-0">
+                  <div class="flex items-center space-x-1 min-w-0">
+                    <div class="w-2 h-2 rounded-full flex-shrink-0" :style="{ backgroundColor: getPaymentMethodColor(method.name) }"></div>
+                    <span class="text-purple-100 capitalize">{{ method.name }}</span>
+                    <span class="text-purple-200">{{ method.percent.toFixed(0) }}%</span>
+                  </div>
+                  <span class="text-purple-100 font-medium ml-2">{{ formatCurrency(method.sum) }}</span>
+                </div>
+                <div v-if="analyticsData.aggregated.paymentMethods.length > 3" class="text-purple-200">+{{ analyticsData.aggregated.paymentMethods.length - 3 }} more</div>
+              </div>
             </div>
           </div>
-          <p class="text-xs text-emerald-100">Gross {{ formatCurrency(getAggregatedGrossSales()) }} − Fees {{ formatCurrency(getAggregatedPaymentFees()) }}</p>
         </div>
       </div>
-
-      <!-- Payment Fees -->
-      <div class="card bg-gradient-to-r from-rose-500 to-rose-600 text-white">
+      
+      <!-- Aggregated Daily Gain (moved into top KPI row) -->
+      <div class="card bg-gradient-to-r from-purple-600 to-pink-600 text-white">
         <div class="card-body">
           <div class="flex items-center justify-between mb-3">
             <div class="min-w-0 flex-1">
-              <p class="text-rose-100 text-xs sm:text-sm font-medium">PAYMENT FEES</p>
-              <p class="text-lg sm:text-xl font-bold truncate">{{ formatCurrency(getAggregatedPaymentFees()) }}</p>
+              <p class="text-purple-100 text-xs sm:text-sm font-medium">{{ formatGainPeriodLabel() }} GAIN</p>
+              <p class="text-lg sm:text-xl font-bold truncate" :class="getAggregatedGainClass()">{{ formatCurrency(getAggregatedDailyGain()) }}</p>
             </div>
             <div class="w-10 h-10 sm:w-12 sm:h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center flex-shrink-0">
               <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-3.866 0-7 1.79-7 4s3.134 4 7 4 7-1.79 7-4-3.134-4-7-4zm0 0V4m0 8v8" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
               </svg>
             </div>
           </div>
-          <p class="text-xs text-rose-100">Blended fee rate {{ (getAggregatedFeeRate()*100).toFixed(1) }}%</p>
-        </div>
-      </div>
-
-      <!-- Operating Margin -->
-      <div class="card bg-gradient-to-r from-cyan-500 to-cyan-600 text-white">
-        <div class="card-body">
-          <div class="flex items-center justify-between mb-3">
-            <div class="min-w-0 flex-1">
-              <p class="text-cyan-100 text-xs sm:text-sm font-medium">OPERATING MARGIN</p>
-              <p class="text-lg sm:text-xl font-bold truncate">{{ (getAggregatedOperatingMargin()*100).toFixed(1) }}%</p>
-            </div>
-            <div class="w-10 h-10 sm:w-12 sm:h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center flex-shrink-0">
-              <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3v18h18M7 13l3 3 7-7" />
-              </svg>
-            </div>
-          </div>
-          <p class="text-xs text-cyan-100">Includes 30% food and utilities</p>
-        </div>
-      </div>
-
-      <!-- Tips and Tip Rate -->
-      <div class="card bg-gradient-to-r from-amber-500 to-amber-600 text-white">
-        <div class="card-body">
-          <div class="flex items-center justify-between mb-3">
-            <div class="min-w-0 flex-1">
-              <p class="text-amber-100 text-xs sm:text-sm font-medium">TIPS</p>
-              <p class="text-lg sm:text-xl font-bold truncate">{{ formatCurrency(getAggregatedTips()) }}</p>
-            </div>
-            <div class="w-10 h-10 sm:w-12 sm:h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center flex-shrink-0">
-              <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2" />
-              </svg>
-            </div>
-          </div>
-          <p class="text-xs text-amber-100">Tip rate {{ (getAggregatedTipRate()*100).toFixed(1) }}%</p>
+          <p class="text-xs text-purple-100">Includes fees, 30% food costs, and utility costs</p>
         </div>
       </div>
     </div>
+
+    <!-- Company-level Profitability KPIs (disabled) -->
 
     <!-- Fees and Net Revenue by Payment Method -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6" v-if="analyticsData">
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6" v-if="false && analyticsData">
       <!-- Fees by Method -->
       <div class="card bg-white">
         <div class="card-body">
@@ -367,45 +323,7 @@
               </div>
             </div>
           </div>
-        </div>
-      </div>
     </div>
-              <!-- Legend -->
-              <div class="ml-3 space-y-1 text-xs min-w-0 flex-1">
-                <div v-for="method in analyticsData.aggregated.paymentMethods.slice(0, 3)" :key="method.name" 
-                     class="flex items-center justify-between min-w-0">
-                  <div class="flex items-center space-x-1 min-w-0">
-                    <div class="w-2 h-2 rounded-full flex-shrink-0" :style="{ backgroundColor: getPaymentMethodColor(method.name) }"></div>
-                    <span class="text-purple-100 capitalize">{{ method.name }}</span>
-                    <span class="text-purple-200">{{ method.percent.toFixed(0) }}%</span>
-      </div>
-                  <span class="text-purple-100 font-medium ml-2">{{ formatCurrency(method.sum) }}</span>
-          </div>
-                <div v-if="analyticsData.aggregated.paymentMethods.length > 3" class="text-purple-200">
-                  +{{ analyticsData.aggregated.paymentMethods.length - 3 }} more
-            </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Aggregated Daily Gain -->
-      <div class="card bg-gradient-to-r from-purple-600 to-pink-600 text-white">
-        <div class="card-body">
-          <div class="flex items-center justify-between mb-3">
-            <div class="min-w-0 flex-1">
-              <p class="text-purple-100 text-xs sm:text-sm font-medium">{{ formatGainPeriodLabel() }} GAIN</p>
-              <p class="text-lg sm:text-xl font-bold truncate" :class="getAggregatedGainClass()">{{ formatCurrency(getAggregatedDailyGain()) }}</p>
-            </div>
-            <div class="w-10 h-10 sm:w-12 sm:h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center flex-shrink-0">
-              <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
-              </svg>
-            </div>
-          </div>
-          <p class="text-xs text-purple-100">Includes fees, 30% food costs, and utility costs</p>
-        </div>
       </div>
     </div>
 

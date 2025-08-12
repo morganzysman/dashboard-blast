@@ -48,11 +48,11 @@ router.get('/', requireAuth, async (req, res) => {
         created_at,
         updated_at
       FROM payment_method_costs 
-      WHERE user_id = $1
+      WHERE company_id = $1
       ORDER BY company_token, payment_method_code
     `;
     
-    const result = await pool.query(query, [req.user.userId]);
+    const result = await pool.query(query, [req.user.companyId]);
     
     console.log(`📊 Found ${result.rows.length} payment method cost records`);
     
@@ -86,11 +86,11 @@ router.get('/:companyToken', requireAuth, async (req, res) => {
         created_at,
         updated_at
       FROM payment_method_costs 
-      WHERE user_id = $1 AND company_token = $2
+      WHERE company_id = $1 AND company_token = $2
       ORDER BY payment_method_code
     `;
     
-    const result = await pool.query(query, [req.user.userId, companyToken]);
+    const result = await pool.query(query, [req.user.companyId, companyToken]);
     
     console.log(`✅ Found ${result.rows.length} payment method costs for account: ${companyToken}`);
     
@@ -126,8 +126,10 @@ router.post('/', requireAuth, async (req, res) => {
     }
     
     // Check if user has access to this account
-    const userAccounts = req.user.userAccounts || [];
-    const hasAccess = userAccounts.some(acc => acc.company_token === company_token);
+    // Company-based access
+    const q = await pool.query('SELECT company_id FROM company_accounts WHERE company_token = $1', [company_token])
+    const companyId = q.rows[0]?.company_id || null
+    const hasAccess = !!(req.user.companyId && companyId && req.user.companyId === companyId)
     
     if (!hasAccess) {
       return res.status(403).json({
@@ -138,11 +140,11 @@ router.post('/', requireAuth, async (req, res) => {
     
     const query = `
       INSERT INTO payment_method_costs (
-        user_id, company_token, payment_method_code, cost_percentage, fixed_cost
+        company_id, company_token, payment_method_code, cost_percentage, fixed_cost
       ) VALUES (
         $1, $2, $3, $4, $5
       )
-      ON CONFLICT (user_id, company_token, payment_method_code) 
+      ON CONFLICT (company_id, company_token, payment_method_code) 
       DO UPDATE SET 
         cost_percentage = $4,
         fixed_cost = $5,
@@ -158,7 +160,7 @@ router.post('/', requireAuth, async (req, res) => {
     `;
     
     const queryParams = [
-      req.user.userId, 
+      req.user.companyId, 
       company_token, 
       payment_method_code, 
       cost_percentage || 0, 
@@ -200,8 +202,9 @@ router.post('/bulk/:companyToken', requireAuth, async (req, res) => {
     }
     
     // Check if user has access to this account
-    const userAccounts = req.user.userAccounts || [];
-    const hasAccess = userAccounts.some(acc => acc.company_token === companyToken);
+    const q = await pool.query('SELECT company_id FROM company_accounts WHERE company_token = $1', [companyToken])
+    const companyId = q.rows[0]?.company_id || null
+    const hasAccess = !!(req.user.companyId && companyId && req.user.companyId === companyId)
     
     if (!hasAccess) {
       return res.status(403).json({
@@ -235,11 +238,11 @@ router.post('/bulk/:companyToken', requireAuth, async (req, res) => {
       for (const cost of costs) {
         const query = `
           INSERT INTO payment_method_costs (
-            user_id, company_token, payment_method_code, cost_percentage, fixed_cost
+            company_id, company_token, payment_method_code, cost_percentage, fixed_cost
           ) VALUES (
             $1, $2, $3, $4, $5
           )
-          ON CONFLICT (user_id, company_token, payment_method_code) 
+          ON CONFLICT (company_id, company_token, payment_method_code) 
           DO UPDATE SET 
             cost_percentage = $4,
             fixed_cost = $5,
@@ -255,7 +258,7 @@ router.post('/bulk/:companyToken', requireAuth, async (req, res) => {
         `;
         
         const queryParams = [
-          req.user.userId, 
+          req.user.companyId, 
           companyToken, 
           cost.payment_method_code, 
           cost.cost_percentage || 0, 
@@ -300,11 +303,11 @@ router.delete('/:companyToken/:paymentMethodCode', requireAuth, async (req, res)
     
     const query = `
       DELETE FROM payment_method_costs 
-      WHERE user_id = $1 AND company_token = $2 AND payment_method_code = $3
+      WHERE company_id = $1 AND company_token = $2 AND payment_method_code = $3
       RETURNING company_token, payment_method_code
     `;
     
-    const result = await pool.query(query, [req.user.userId, companyToken, paymentMethodCode]);
+    const result = await pool.query(query, [req.user.companyId, companyToken, paymentMethodCode]);
     
     if (result.rows.length === 0) {
       return res.status(404).json({

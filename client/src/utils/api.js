@@ -163,6 +163,7 @@ export const api = {
   clock: (companyToken, qrSecret) => apiRequest('/api/payroll/clock', { method: 'POST', body: JSON.stringify({ company_token: companyToken, qr_secret: qrSecret }) }),
   markPaid: (companyToken) => apiRequest(`/api/payroll/admin/${companyToken}/pay`, { method: 'POST' }),
   updateEntry: (id, payload) => apiRequest(`/api/payroll/admin/entries/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
+  createEntry: (payload) => apiRequest(`/api/payroll/admin/entries`, { method: 'POST', body: JSON.stringify(payload) }),
   
   // Payment method costs methods
   getPaymentMethodCosts: (companyToken = null) => {
@@ -199,6 +200,13 @@ export const api = {
     })
     return apiRequest(`/api/analytics/profitability?${params.toString()}`, { method: 'GET' })
   }
+  ,
+  // Companies (admin)
+  listCompanies: () => apiRequest('/api/admin/companies', { method: 'GET' }),
+  createCompany: (name, timezone, currency, currency_symbol) => apiRequest('/api/admin/companies', { method: 'POST', body: JSON.stringify({ name, timezone, currency, currency_symbol }) }),
+  listCompanyAccounts: (companyId) => apiRequest(`/api/admin/companies/${companyId}/accounts`, { method: 'GET' }),
+  upsertCompanyAccount: (companyId, payload) => apiRequest(`/api/admin/companies/${companyId}/accounts`, { method: 'POST', body: JSON.stringify(payload) }),
+  deleteCompanyAccount: (companyId, companyToken) => apiRequest(`/api/admin/companies/${companyId}/accounts/${companyToken}`, { method: 'DELETE' })
 }
 
 export default api 

@@ -69,37 +69,13 @@
         Rentability
       </router-link>
 
-      <!-- Employee: Clock -->
-      <router-link
-        v-if="!authStore.isSuperAdmin && authStore.user?.role !== 'viewer'"
-        to="/clock"
-        class="sidebar-nav-item"
-        :class="{ active: $route.name === 'EmployeeClock' }"
-        @click="$emit('close')"
-      >
-        <svg class="sidebar-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3M12 22a10 10 0 110-20 10 10 0 010 20z" />
-        </svg>
-        Clock In/Out
-      </router-link>
+      <!-- Employee: Clock (removed from sidebar) -->
 
-      <!-- Employee: Timesheet -->
-      <router-link
-        v-if="!authStore.isSuperAdmin && authStore.user?.role !== 'viewer'"
-        to="/timesheet"
-        class="sidebar-nav-item"
-        :class="{ active: $route.name === 'EmployeeTimesheet' }"
-        @click="$emit('close')"
-      >
-        <svg class="sidebar-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h8M8 11h8M8 15h5M4 6a2 2 0 012-2h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V6z" />
-        </svg>
-        My Timesheet
-      </router-link>
+      <!-- Employee: Timesheet (hidden for admins via route guard) -->
 
-      <!-- Admin: Payroll -->
+      <!-- Admin: Payroll (hidden for super-admin) -->
       <router-link
-        v-if="authStore.user?.role === 'admin' || authStore.isSuperAdmin"
+        v-if="authStore.user?.role === 'admin'"
         to="/admin/payroll"
         class="sidebar-nav-item"
         :class="{ active: $route.name === 'AdminPayroll' }"
@@ -125,13 +101,27 @@
         User Management
       </router-link>
 
-      <!-- Accounts info -->
-      <div class="px-6 py-3" v-if="authStore.user?.accountsCount > 0">
+      <!-- Super Admin - Companies -->
+      <router-link
+        v-if="authStore.isSuperAdmin"
+        to="/companies"
+        class="sidebar-nav-item"
+        :class="{ active: $route.name === 'Companies' }"
+        @click="$emit('close')"
+      >
+        <svg class="sidebar-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h10M7 20h10M7 5h10" />
+        </svg>
+        Companies
+      </router-link>
+
+      <!-- Company info -->
+      <div class="px-6 py-3" v-if="authStore.user?.company_id">
         <div class="text-xs font-medium text-gray-500 uppercase tracking-wide">
-          Accounts Access
+          Company
         </div>
         <div class="mt-1 text-sm text-gray-900">
-          {{ authStore.user.accountsCount }} restaurant{{ authStore.user.accountsCount > 1 ? 's' : '' }}
+          Company ID: {{ authStore.user.company_id.substring(0, 8) }}...
         </div>
       </div>
     </nav>

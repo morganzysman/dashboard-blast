@@ -106,8 +106,7 @@
               <option value="">All Roles</option>
               <option value="super-admin">Super Admin</option>
               <option value="admin">Admin</option>
-              <option value="user">User</option>
-              <option value="viewer">Viewer</option>
+              <option value="employee">Employee</option>
             </select>
             <select v-model="statusFilter" class="form-input w-full sm:w-auto text-sm">
               <option value="">All Status</option>
@@ -148,7 +147,7 @@
               <span class="badge text-xs" :class="getRoleBadgeClass(user.role)">
                 {{ user.role?.replace('-', ' ') }}
               </span>
-              <span class="text-xs text-gray-500">{{ user.accountsCount }} accounts</span>
+              <span class="text-xs text-gray-500">Company: {{ user.company?.name || '—' }}</span>
             </div>
             
             <div class="flex flex-col sm:flex-row gap-2">
@@ -164,6 +163,13 @@
               >
                 {{ user.is_active ? 'Deactivate' : 'Activate' }}
               </button>
+              <button
+                v-if="isSuperAdmin"
+                @click="confirmDeleteUser(user)"
+                class="btn-sm btn-danger flex-1 text-xs"
+              >
+                Delete
+              </button>
             </div>
           </div>
         </div>
@@ -176,7 +182,8 @@
                 <th>User</th>
                 <th>Role</th>
                 <th>Status</th>
-                <th>Accounts</th>
+                 <th>Company</th>
+                <th>Hourly Rate</th>
                 <th>Last Login</th>
                 <th>Actions</th>
               </tr>
@@ -209,7 +216,12 @@
                   </span>
                 </td>
                 <td>
-                  <div class="text-sm text-gray-900">{{ user.accountsCount }} accounts</div>
+                  <div class="text-sm text-gray-900">{{ user.company?.name || '—' }}</div>
+                </td>
+                <td>
+                  <div class="flex items-center gap-1">
+                    <input type="number" min="0" step="0.01" class="form-input w-24 text-sm" :value="formatRate(user.hourly_rate)" @change="e => onRateInput(user, e)" />
+                  </div>
                 </td>
                 <td>
                   <div class="text-sm text-gray-900">
@@ -230,6 +242,14 @@
                     >
                       {{ user.is_active ? 'Deactivate' : 'Activate' }}
                     </button>
+                    <button
+                      v-if="isSuperAdmin"
+                      @click="confirmDeleteUser(user)"
+                      class="btn-sm btn-danger"
+                    >
+                      Delete
+                    </button>
+                    
                   </div>
                 </td>
               </tr>
@@ -287,7 +307,7 @@ const filteredUsers = computed(() => {
 
 const activeUsers = computed(() => users.value.filter(user => user.is_active).length)
 const adminUsers = computed(() => users.value.filter(user => user.role === 'admin').length)
-const totalAccounts = computed(() => users.value.reduce((sum, user) => sum + user.accountsCount, 0))
+const totalAccounts = computed(() => 0)
 
 // Methods
 const fetchUsers = async () => {
@@ -376,23 +396,6 @@ const createUser = async (userData) => {
 }
 
 const updateUser = async (userId, userData) => {
-  // Update user accounts
-  if (userData.accounts) {
-    const response = await fetch(`/api/admin/users/${userId}/accounts`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Session-ID': authStore.sessionId,
-      },
-      body: JSON.stringify({ accounts: userData.accounts }),
-    })
-
-    if (!response.ok) {
-      const error = await response.json()
-      throw new Error(error.error || 'Failed to update user accounts')
-    }
-  }
-
   // Update user role if changed
   if (userData.role) {
     const response = await fetch(`/api/admin/users/${userId}/role`, {
@@ -407,6 +410,39 @@ const updateUser = async (userId, userData) => {
     if (!response.ok) {
       const error = await response.json()
       throw new Error(error.error || 'Failed to update user role')
+    }
+  }
+
+  // Update user company if provided
+  if (userData.company_id) {
+    const response = await fetch(`/api/admin/users/${userId}/company`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Session-ID': authStore.sessionId,
+      },
+      body: JSON.stringify({ company_id: userData.company_id }),
+    })
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.error || 'Failed to update user company')
+    }
+  }
+
+  // Update hourly rate if provided and role is employee
+  if (userData.hourly_rate != null && (userData.role === 'employee' || selectedUser.value?.role === 'employee')) {
+    const response = await fetch(`/api/admin/users/${userId}/hourly-rate`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Session-ID': authStore.sessionId,
+      },
+      body: JSON.stringify({ hourly_rate: Number(userData.hourly_rate) })
+    })
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}))
+      throw new Error(error.error || 'Failed to update hourly rate')
     }
   }
 }
@@ -443,16 +479,63 @@ const toggleUserStatus = async (user) => {
   }
 }
 
+const updateHourlyRate = async (user) => {
+  try {
+    const rate = Number(user.hourly_rate || 0)
+    const res = await fetch(`/api/admin/users/${user.id}/hourly-rate`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'X-Session-ID': authStore.sessionId },
+      body: JSON.stringify({ hourly_rate: rate })
+    })
+    if (!res.ok) {
+      const e = await res.json().catch(() => ({}))
+      throw new Error(e.error || 'Failed to update hourly rate')
+    }
+    window.showNotification?.({ type: 'success', title: 'Hourly Rate', message: 'Updated' })
+  } catch (e) {
+    window.showNotification?.({ type: 'error', title: 'Hourly Rate', message: e.message || 'Failed' })
+  }
+}
+
+const formatRate = (r) => {
+  const n = Number(r || 0)
+  return Number.isFinite(n) ? n.toFixed(2) : '0.00'
+}
+
+const onRateInput = (user, e) => {
+  const v = Number(e.target.value)
+  user.hourly_rate = Number.isFinite(v) ? Number(v.toFixed(2)) : 0
+  updateHourlyRate(user)
+}
+const confirmDeleteUser = async (user) => {
+  try {
+    const ok = window.confirm(`Delete user ${user.email}? This cannot be undone.`)
+    if (!ok) return
+    await api.delete(`/api/admin/users/${user.id}`)
+    users.value = users.value.filter(u => u.id !== user.id)
+    window.showNotification?.({
+      type: 'success',
+      title: 'User deleted',
+      message: `${user.email} removed`
+    })
+  } catch (error) {
+    console.error('Error deleting user:', error)
+    window.showNotification?.({
+      type: 'error',
+      title: 'Error',
+      message: error?.message || 'Failed to delete user'
+    })
+  }
+}
+
 const getRoleBadgeClass = (role) => {
   switch (role) {
     case 'super-admin':
       return 'badge-primary'
     case 'admin':
       return 'badge-success'
-    case 'user':
+    case 'employee':
       return 'badge-warning'
-    case 'viewer':
-      return 'badge-gray'
     default:
       return 'badge-gray'
   }

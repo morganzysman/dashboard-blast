@@ -8,6 +8,7 @@ import {
   getTimezoneAwareDate
 } from '../services/olaClickService.js';
 import { config } from '../config/index.js';
+import { pool } from '../database.js';
 
 const router = Router();
 
@@ -55,9 +56,54 @@ router.get('/', requireAuth, async (req, res) => {
     console.log(`📊 Payments request received`);
     console.log(`   Query params: ${JSON.stringify(req.query)}`);
     
-    // Get user's accounts
-    const userAccounts = req.user.userAccounts || [];
-    
+    // Resolve accessible accounts based on company tenancy
+    const requestedCompanyId = req.query.company_id || null;
+    let accountsRows = [];
+    if (req.user.role === 'super-admin') {
+      // Super-admin can optionally scope by company_id; otherwise include all
+      if (requestedCompanyId) {
+        const q = await pool.query(
+          `SELECT company_id, company_token, account_name, api_token
+           FROM company_accounts WHERE company_id = $1 ORDER BY account_name`,
+          [requestedCompanyId]
+        );
+        accountsRows = q.rows;
+      } else {
+        const q = await pool.query(
+          `SELECT company_id, company_token, account_name, api_token
+           FROM company_accounts ORDER BY account_name`
+        );
+        accountsRows = q.rows;
+      }
+    } else {
+      // Admin/employee: only their own company
+      const companyId = req.user.companyId;
+      if (requestedCompanyId && requestedCompanyId !== companyId) {
+        return res.status(403).json({ success: false, error: 'Forbidden' });
+      }
+      if (companyId) {
+        const q = await pool.query(
+          `SELECT company_id, company_token, account_name, api_token
+           FROM company_accounts WHERE company_id = $1 ORDER BY account_name`,
+          [companyId]
+        );
+        accountsRows = q.rows;
+      }
+    }
+
+    // Optionally filter by a specific account token
+    const onlyToken = req.query.company_token || null;
+    if (onlyToken) {
+      accountsRows = accountsRows.filter(a => a.company_token === onlyToken);
+    }
+
+    const userAccounts = accountsRows.map(r => ({
+      company_id: r.company_id,
+      company_token: r.company_token,
+      account_name: r.account_name,
+      api_token: r.api_token
+    }));
+
     if (!userAccounts || userAccounts.length === 0) {
       return res.status(404).json({
         success: false,

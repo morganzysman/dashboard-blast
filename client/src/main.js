@@ -17,6 +17,7 @@ import RentabilityView from './views/RentabilityView.vue'
 import EmployeeClockView from './views/EmployeeClockView.vue'
 import EmployeeTimesheetView from './views/EmployeeTimesheetView.vue'
 import AdminPayrollView from './views/AdminPayrollView.vue'
+import CompaniesView from './views/CompaniesView.vue'
 
 // Import stores
 import { useAuthStore } from './stores/auth'
@@ -30,13 +31,13 @@ const routes = [
     path: '/clock',
     name: 'EmployeeClock',
     component: EmployeeClockView,
-    meta: { requiresAuth: true }
+    meta: { }
   },
   {
     path: '/timesheet',
     name: 'EmployeeTimesheet',
     component: EmployeeTimesheetView,
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, requiresRole: ['employee'] }
   },
   {
     path: '/admin/payroll',
@@ -61,6 +62,12 @@ const routes = [
     name: 'Admin',
     component: AdminView,
     meta: { requiresAuth: true, requiresRole: ['admin', 'super-admin'] }
+  },
+  {
+    path: '/companies',
+    name: 'Companies',
+    component: CompaniesView,
+    meta: { requiresAuth: true, requiresRole: ['super-admin'] }
   },
   {
     path: '/notifications',

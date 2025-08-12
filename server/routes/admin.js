@@ -7,6 +7,7 @@ import {
   updateUserAccounts,
   updateUserRole,
   updateUserStatus,
+  updateUserCompany,
   logNotificationEvent
 } from '../database.js';
 
@@ -19,10 +20,22 @@ router.get('/users', requireAuth, requireRole(['admin', 'super-admin']), async (
     // Super-admin sees all, admin sees only users in their company
     let users
     if (req.user.role === 'super-admin') {
-      users = await getAllUsers(includeInactive)
+      // Super-admin: only list admin or super-admin users (no employees)
+      const q = await pool.query(
+        `SELECT u.*, c.name AS company_name
+         FROM users u
+         LEFT JOIN companies c ON c.id = u.company_id
+         WHERE ($1::boolean OR u.is_active = TRUE)
+           AND u.role IN ('admin','super-admin')
+         ORDER BY u.created_at DESC`,
+        [includeInactive]
+      )
+      users = q.rows
     } else {
       const q = await pool.query(
-        `SELECT u.* FROM users u
+        `SELECT u.*, c.name AS company_name
+         FROM users u
+         LEFT JOIN companies c ON c.id = u.company_id
          WHERE ($1::boolean OR u.is_active = TRUE)
            AND u.company_id = $2`,
         [includeInactive, req.user.companyId || null]
@@ -30,21 +43,18 @@ router.get('/users', requireAuth, requireRole(['admin', 'super-admin']), async (
       users = q.rows
     }
     
-    // Remove sensitive data
+    // Shape response (exclude deprecated fields, include company relation)
     const safeUsers = users.map(user => ({
       id: user.id,
       email: user.email,
       name: user.name,
       role: user.role,
-      accounts: user.accounts,
-      timezone: user.timezone,
-      currency: user.currency,
-      currency_symbol: user.currency_symbol,
+      hourly_rate: user.hourly_rate != null ? Number(Number(user.hourly_rate).toFixed(2)) : null,
       is_active: user.is_active,
       created_at: user.created_at,
       updated_at: user.updated_at,
       last_login: user.last_login,
-      accountsCount: user.accounts?.length || 0
+      company: user.company_id ? { id: user.company_id, name: user.company_name || null } : null
     }));
     
     res.json({
@@ -64,7 +74,7 @@ router.get('/users', requireAuth, requireRole(['admin', 'super-admin']), async (
 // Create new user with accounts (super-admin only)
 router.post('/users', requireAuth, requireRole(['admin', 'super-admin']), async (req, res) => {
   try {
-    const { email, name, role, password, accounts, timezone, currency, company_id } = req.body;
+    const { email, name, role, password, company_id } = req.body;
     
     // Validate required fields
     if (!email || !name || !password) {
@@ -76,7 +86,7 @@ router.post('/users', requireAuth, requireRole(['admin', 'super-admin']), async 
     
     // Validate role
     // Admins cannot create super-admin users
-    const validRoles = ['admin', 'user', 'viewer'];
+    const validRoles = ['super-admin', 'admin', 'employee'];
     if (role && !validRoles.includes(role)) {
       return res.status(400).json({
         success: false,
@@ -91,14 +101,8 @@ router.post('/users', requireAuth, requireRole(['admin', 'super-admin']), async 
     const userData = {
       email: email.toLowerCase(),
       name,
-      role: role || 'user',
-      hashedPassword,
-      timezone: timezone || 'America/Lima',
-      currency: currency || 'PEN',
-      currencySymbol: currency === 'USD' ? '$' : 
-                     currency === 'EUR' ? '€' : 
-                     currency === 'MXN' ? '$' :
-                     currency === 'GBP' ? '£' : 'S/'
+      role: role || 'employee',
+      hashedPassword
     };
     
     // If requester is admin, forbid creating super-admin explicitly
@@ -109,18 +113,14 @@ router.post('/users', requireAuth, requireRole(['admin', 'super-admin']), async 
     // Enforce company scoping: admin can only create within own company
     const assignedCompanyId = req.user.role === 'admin' ? (req.user.companyId || null) : (company_id || null)
     userData.companyId = assignedCompanyId
-    const user = await createUserWithAccounts(userData, accounts || []);
+    const user = await createUserWithAccounts(userData, []);
     
     // Log user creation
     await logNotificationEvent(
       req.user.userId,
       'user_created',
       `User ${user.email} created by super-admin`,
-      { 
-        createdUserId: user.id,
-        createdUserRole: user.role,
-        accountsAssigned: accounts?.length || 0
-      },
+      { createdUserId: user.id, createdUserRole: user.role },
       true,
       null,
       req.headers['user-agent']
@@ -135,12 +135,8 @@ router.post('/users', requireAuth, requireRole(['admin', 'super-admin']), async 
         email: user.email,
         name: user.name,
         role: user.role,
-        accounts: user.accounts,
-        timezone: user.timezone,
-        currency: user.currency,
-        currency_symbol: user.currency_symbol,
-        created_at: user.created_at,
-        accountsCount: user.accounts?.length || 0
+        company_id: user.company_id,
+        created_at: user.created_at
       }
     });
     
@@ -160,64 +156,9 @@ router.post('/users', requireAuth, requireRole(['admin', 'super-admin']), async 
   }
 });
 
-// Update user accounts (super-admin only)
+// Deprecated: user accounts are managed at company level now
 router.put('/users/:userId/accounts', requireAuth, requireRole(['super-admin']), async (req, res) => {
-  try {
-    const { userId } = req.params;
-    const { accounts } = req.body;
-    
-    if (!Array.isArray(accounts)) {
-      return res.status(400).json({
-        success: false,
-        error: 'Accounts must be an array'
-      });
-    }
-    
-    const updatedUser = await updateUserAccounts(userId, accounts);
-    
-    if (!updatedUser) {
-      return res.status(404).json({
-        success: false,
-        error: 'User not found'
-      });
-    }
-    
-    // Log account update
-    await logNotificationEvent(
-      req.user.userId,
-      'user_accounts_updated',
-      `User accounts updated for ${updatedUser.email}`,
-      { 
-        targetUserId: userId,
-        accountsCount: accounts.length,
-        accounts: accounts.map(acc => acc.company_token)
-      },
-      true,
-      null,
-      req.headers['user-agent']
-    );
-    
-    console.log(`✅ Accounts updated for user ${updatedUser.email} by ${req.user.userEmail}`);
-    
-    res.json({
-      success: true,
-      user: {
-        id: updatedUser.id,
-        email: updatedUser.email,
-        name: updatedUser.name,
-        accounts: updatedUser.accounts,
-        updated_at: updatedUser.updated_at,
-        accountsCount: updatedUser.accounts?.length || 0
-      }
-    });
-    
-  } catch (error) {
-    console.error('❌ Error updating user accounts:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to update user accounts'
-    });
-  }
+  return res.status(410).json({ success: false, error: 'User accounts are deprecated. Manage accounts under company.' })
 });
 
 // Update user role (super-admin only)
@@ -226,7 +167,7 @@ router.put('/users/:userId/role', requireAuth, requireRole(['admin', 'super-admi
     const { userId } = req.params;
     const { role } = req.body;
     
-    const validRoles = ['admin', 'user', 'viewer'];
+    const validRoles = ['super-admin', 'admin', 'employee'];
     if (!validRoles.includes(role)) {
       return res.status(400).json({
         success: false,
@@ -277,6 +218,69 @@ router.put('/users/:userId/role', requireAuth, requireRole(['admin', 'super-admi
     });
   }
 });
+
+// Update user company (super-admin only; admins can only assign within their own company)
+router.put('/users/:userId/company', requireAuth, requireRole(['admin', 'super-admin']), async (req, res) => {
+  try {
+    const { userId } = req.params
+    const { company_id } = req.body
+
+    if (!company_id) {
+      return res.status(400).json({ success: false, error: 'company_id is required' })
+    }
+
+    // Admins can only assign users to their own company
+    if (req.user.role === 'admin' && req.user.companyId !== company_id) {
+      return res.status(403).json({ success: false, error: 'Admins can only assign users to their own company' })
+    }
+
+    const updatedUser = await updateUserCompany(userId, company_id)
+    if (!updatedUser) {
+      return res.status(404).json({ success: false, error: 'User not found' })
+    }
+
+    await logNotificationEvent(
+      req.user.userId,
+      'user_company_updated',
+      `User company updated to ${company_id}`,
+      { targetUserId: userId, companyId: company_id },
+      true,
+      null,
+      req.headers['user-agent']
+    )
+
+    res.json({ success: true, user: updatedUser })
+  } catch (error) {
+    console.error('❌ Error updating user company:', error)
+    res.status(500).json({ success: false, error: 'Failed to update user company' })
+  }
+})
+
+// Update user hourly rate
+router.put('/users/:userId/hourly-rate', requireAuth, requireRole(['admin', 'super-admin']), async (req, res) => {
+  try {
+    const { userId } = req.params
+    const { hourly_rate } = req.body
+    const rate = Number(hourly_rate)
+    if (Number.isNaN(rate) || rate < 0) {
+      return res.status(400).json({ success: false, error: 'hourly_rate must be a non-negative number' })
+    }
+    // Admins can only update within their company
+    if (req.user.role === 'admin') {
+      const q = await pool.query('SELECT company_id FROM users WHERE id = $1', [userId])
+      if (q.rowCount === 0) return res.status(404).json({ success: false, error: 'User not found' })
+      const cid = q.rows[0].company_id || null
+      if (!cid || cid !== req.user.companyId) {
+        return res.status(403).json({ success: false, error: 'Forbidden' })
+      }
+    }
+    const upd = await pool.query('UPDATE users SET hourly_rate = $2, updated_at = NOW() WHERE id = $1 RETURNING id, email, name, role, hourly_rate, company_id', [userId, rate])
+    if (upd.rowCount === 0) return res.status(404).json({ success: false, error: 'User not found' })
+    res.json({ success: true, user: upd.rows[0] })
+  } catch (e) {
+    res.status(500).json({ success: false, error: 'Failed to update hourly rate' })
+  }
+})
 
 // Update user status (activate/deactivate) (super-admin only)
 router.put('/users/:userId/status', requireAuth, requireRole(['super-admin']), async (req, res) => {
@@ -330,4 +334,149 @@ router.put('/users/:userId/status', requireAuth, requireRole(['super-admin']), a
   }
 });
 
+// Delete user (super-admin only)
+router.delete('/users/:userId', requireAuth, requireRole(['super-admin']), async (req, res) => {
+  try {
+    const { userId } = req.params
+
+    // Prevent deleting yourself
+    if (req.user.userId === userId) {
+      return res.status(400).json({ success: false, error: 'You cannot delete your own user' })
+    }
+
+    const q = await pool.query(
+      'DELETE FROM users WHERE id = $1 RETURNING id, email, name, role',
+      [userId]
+    )
+
+    if (q.rowCount === 0) {
+      return res.status(404).json({ success: false, error: 'User not found' })
+    }
+
+    // Log deletion
+    await logNotificationEvent(
+      req.user.userId,
+      'user_deleted',
+      `User ${q.rows[0].email} deleted`,
+      { targetUserId: userId },
+      true,
+      null,
+      req.headers['user-agent']
+    )
+
+    res.json({ success: true })
+  } catch (error) {
+    console.error('❌ Error deleting user:', error)
+    res.status(500).json({ success: false, error: 'Failed to delete user' })
+  }
+})
+
 export default router; 
+
+// Companies endpoints appended at end to avoid breaking existing imports
+router.get('/companies', requireAuth, requireRole(['super-admin']), async (req, res) => {
+  try {
+    const companies = await pool.query(`SELECT id, name, created_at, updated_at FROM companies ORDER BY name`)
+    res.json({ success: true, data: companies.rows })
+  } catch (e) {
+    res.status(500).json({ success: false, error: 'Failed to fetch companies' })
+  }
+})
+
+router.post('/companies', requireAuth, requireRole(['super-admin']), async (req, res) => {
+  try {
+    const { name, timezone, currency, currency_symbol } = req.body
+    if (!name) return res.status(400).json({ success: false, error: 'name is required' })
+    // Defaults: Lima timezone and PEN
+    const tz = timezone || 'America/Lima'
+    const curr = currency || 'PEN'
+    const currSym = currency_symbol || (curr === 'USD' ? '$' : curr === 'EUR' ? '€' : curr === 'GBP' ? '£' : curr === 'MXN' ? '$' : 'S/')
+    const q = await pool.query(
+      `INSERT INTO companies(name, timezone, currency, currency_symbol) 
+       VALUES($1,$2,$3,$4) RETURNING id, name, timezone, currency, currency_symbol, created_at, updated_at`, 
+       [name, tz, curr, currSym]
+    )
+    res.json({ success: true, data: q.rows[0] })
+  } catch (e) {
+    res.status(500).json({ success: false, error: 'Failed to create company' })
+  }
+})
+
+router.get('/companies/:companyId/accounts', requireAuth, requireRole(['super-admin', 'admin']), async (req, res) => {
+  try {
+    const { companyId } = req.params
+    if (req.user.role === 'admin' && req.user.companyId !== companyId) {
+      return res.status(403).json({ success: false, error: 'Forbidden' })
+    }
+    const q = await pool.query(`SELECT company_id, company_token, account_name FROM company_accounts WHERE company_id = $1 ORDER BY account_name`, [companyId])
+    res.json({ success: true, data: q.rows })
+  } catch (e) {
+    res.status(500).json({ success: false, error: 'Failed to fetch accounts' })
+  }
+})
+
+router.post('/companies/:companyId/accounts', requireAuth, requireRole(['super-admin', 'admin']), async (req, res) => {
+  try {
+    const { companyId } = req.params
+    const { company_token, account_name, api_token } = req.body
+    if (!company_token) return res.status(400).json({ success: false, error: 'company_token is required' })
+    if (req.user.role === 'admin' && req.user.companyId !== companyId) {
+      return res.status(403).json({ success: false, error: 'Forbidden' })
+    }
+    const q = await pool.query(
+      `INSERT INTO company_accounts(company_id, company_token, account_name, api_token) VALUES ($1, $2, $3, $4)
+       ON CONFLICT (company_id, company_token) DO UPDATE SET account_name = EXCLUDED.account_name, api_token = EXCLUDED.api_token
+       RETURNING company_id, company_token, account_name, api_token`,
+      [companyId, company_token, account_name || null, api_token || null]
+    )
+    res.json({ success: true, data: q.rows[0] })
+  } catch (e) {
+    res.status(500).json({ success: false, error: 'Failed to upsert account' })
+  }
+})
+
+router.delete('/companies/:companyId/accounts/:companyToken', requireAuth, requireRole(['super-admin', 'admin']), async (req, res) => {
+  try {
+    const { companyId, companyToken } = req.params
+    if (req.user.role === 'admin' && req.user.companyId !== companyId) {
+      return res.status(403).json({ success: false, error: 'Forbidden' })
+    }
+    await pool.query(`DELETE FROM company_accounts WHERE company_id = $1 AND company_token = $2`, [companyId, companyToken])
+    res.json({ success: true })
+  } catch (e) {
+    res.status(500).json({ success: false, error: 'Failed to delete account' })
+  }
+})
+
+// Get single company details
+router.get('/companies/:companyId', requireAuth, requireRole(['super-admin', 'admin', 'employee']), async (req, res) => {
+  try {
+    const { companyId } = req.params
+    // Non super-admins can only access their own company
+    if (req.user.role !== 'super-admin') {
+      if (!req.user.companyId || req.user.companyId !== companyId) {
+        return res.status(403).json({ success: false, error: 'Forbidden' })
+      }
+    }
+    const q = await pool.query(
+      `SELECT id, name, timezone, currency, currency_symbol, created_at, updated_at
+       FROM companies WHERE id = $1`,
+      [companyId]
+    )
+    if (q.rowCount === 0) return res.status(404).json({ success: false, error: 'Company not found' })
+    res.json({ success: true, data: q.rows[0] })
+  } catch (e) {
+    res.status(500).json({ success: false, error: 'Failed to fetch company' })
+  }
+})
+
+// Delete company (super-admin only)
+router.delete('/companies/:companyId', requireAuth, requireRole(['super-admin']), async (req, res) => {
+  try {
+    const { companyId } = req.params
+    await pool.query('DELETE FROM companies WHERE id = $1', [companyId])
+    res.json({ success: true })
+  } catch (e) {
+    res.status(500).json({ success: false, error: 'Failed to delete company' })
+  }
+})

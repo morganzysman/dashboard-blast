@@ -69,16 +69,29 @@ router.post('/login', async (req, res) => {
     console.log(`🔍 Debug login response - user.accounts:`, user.accounts);
     console.log(`🔍 Debug login response - typeof user.accounts:`, typeof user.accounts);
     
+    // Derive accounts from company when present
+    let userAccounts = []
+    if (user.company_id) {
+      const q = await req.app.get('dbPool')?.query?.('SELECT company_token, api_token, account_name FROM company_accounts WHERE company_id = $1', [user.company_id])
+        .catch(() => null)
+      if (!q) {
+        try {
+          const { pool } = await import('../database.js')
+          const q2 = await pool.query('SELECT company_token, api_token, account_name FROM company_accounts WHERE company_id = $1', [user.company_id])
+          userAccounts = q2.rows.map(r => ({ company_token: r.company_token, api_token: r.api_token, account_name: r.account_name }))
+        } catch {}
+      } else {
+        userAccounts = q.rows.map(r => ({ company_token: r.company_token, api_token: r.api_token, account_name: r.account_name }))
+      }
+    }
+
     const userData = {
       id: user.id,
       name: user.name,
       email: user.email,
       role: user.role,
-      timezone: user.timezone || 'America/Lima',
-      currency: user.currency || 'PEN',
-      currencySymbol: user.currency_symbol || 'S/',
-      accounts: user.accounts || [],
-      accountsCount: user.accounts?.length || 0
+      company_id: user.company_id || null,
+      userAccounts
     };
     
     console.log(`🔍 Debug final userData being sent:`, JSON.stringify(userData, null, 2));
@@ -137,16 +150,23 @@ router.get('/verify', async (req, res) => {
     console.log(`🔍 Debug session verify - sessionData.user.accounts:`, sessionData.user.accounts);
     console.log(`🔍 Debug session verify - typeof sessionData.user.accounts:`, typeof sessionData.user.accounts);
     
+    // Derive accounts from company when present
+    let userAccounts = []
+    if (sessionData.user.company_id) {
+      try {
+        const { pool } = await import('../database.js')
+        const q = await pool.query('SELECT company_token, api_token, account_name FROM company_accounts WHERE company_id = $1', [sessionData.user.company_id])
+        userAccounts = q.rows.map(r => ({ company_token: r.company_token, api_token: r.api_token, account_name: r.account_name }))
+      } catch {}
+    }
+
     const userData = {
       id: sessionData.user.id,
       name: sessionData.user.name,
       email: sessionData.user.email,
       role: sessionData.user.role,
-      timezone: sessionData.user.timezone || 'America/Lima',
-      currency: sessionData.user.currency || 'PEN',
-      currencySymbol: sessionData.user.currencySymbol || 'S/',
-      accounts: sessionData.user.accounts || [],
-      accountsCount: sessionData.user.accounts?.length || 0
+      company_id: sessionData.user.company_id || null,
+      userAccounts
     };
     
     console.log(`🔍 Debug final userData being sent:`, JSON.stringify(userData, null, 2));

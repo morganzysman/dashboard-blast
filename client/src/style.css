@@ -98,9 +98,8 @@
     @apply w-full;
   }
   
-  /* Only apply sidebar margin when sidebar is present (authenticated state) */
+  /* Apply sidebar margin on pages with sidebar */
   .flex .main-content {
-    /* Tablet and up: Account for sidebar */
     @apply md:ml-64;
   }
   
