@@ -178,8 +178,8 @@
               required
             >
               <option value="">Select an account</option>
-              <option v-for="account in userAccounts.filter(acc => acc.is_active)" :key="account.company_token" :value="account.company_token">
-                {{ account.account_name }}
+              <option v-for="account in accounts" :key="account.company_token" :value="account.company_token">
+                {{ account.account_name || account.company_token }}
               </option>
             </select>
           </div>
@@ -424,6 +424,7 @@ const authStore = useAuthStore()
 // Reactive data
 const utilityCosts = ref([])
 const allPaymentMethodCosts = ref(new Map()) // Map of company_token -> payment method costs array
+const accounts = ref([]) // company accounts (token + name)
 const loading = ref(false)
 const saving = ref(false)
 const error = ref('')
@@ -476,12 +477,10 @@ const costFields = [
 // Computed properties
 const currencySymbol = computed(() => authStore.user?.currencySymbol || 'S/')
 
-const userAccounts = computed(() => authStore.user?.userAccounts || [])
-
 const accountsWithoutCosts = computed(() => {
   const costsTokens = utilityCosts.value.map(cost => cost.company_token)
   // New model does not store is_active per account; include all
-  return userAccounts.value.filter(account => !costsTokens.includes(account.company_token))
+  return accounts.value.filter(account => !costsTokens.includes(account.company_token))
 })
 
 const availableAccounts = computed(() => {
@@ -493,12 +492,12 @@ const availableAccounts = computed(() => {
   }
   console.log('🔍 availableAccounts computed:')
   console.log('   accountsWithoutCosts:', accountsWithoutCosts.value)
-  console.log('   userAccounts:', userAccounts.value)
+  console.log('   accounts (company):', accounts.value)
   
   // Fallback: if no accounts without costs, show all active accounts
   const available = accountsWithoutCosts.value.length > 0 
     ? accountsWithoutCosts.value 
-    : userAccounts.value
+    : accounts.value
   
   console.log('   final available:', available)
   return available
@@ -757,6 +756,18 @@ const deleteCost = async (cost) => {
   }
 }
 
+// Load company accounts for selection using admin API
+const fetchCompanyAccounts = async () => {
+  try {
+    const companyId = authStore.user?.company_id || authStore.user?.companyId
+    if (!companyId) return
+    const res = await api.listCompanyAccounts(companyId)
+    accounts.value = res?.data || []
+  } catch (e) {
+    accounts.value = []
+  }
+}
+
 // Modal management methods
 const onModalAccountChange = () => {
   // Load payment method costs when account changes
@@ -972,7 +983,9 @@ onMounted(() => {
   console.log('🔍 RentabilityView mounted - debugging user accounts:')
   console.log('   authStore.user:', authStore.user)
   console.log('   authStore.user?.accounts:', authStore.user?.accounts)
-  console.log('   userAccounts.value:', userAccounts.value)
+  // Load company accounts for this user
+  fetchCompanyAccounts()
+  console.log('   accounts.value:', accounts.value)
   console.log('   availableAccounts.value:', availableAccounts.value)
   fetchUtilityCosts()
 })
