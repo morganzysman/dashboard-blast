@@ -451,6 +451,71 @@ router.put('/users/:userId/password', requireAuth, requireRole(['admin', 'super-
 })
 
 export default router; 
+// Shifts management (admin/super-admin)
+router.get('/users/:userId/shifts', requireAuth, requireRole(['admin', 'super-admin']), async (req, res) => {
+  try {
+    const { userId } = req.params
+    // Admins restricted to own company: ensure the user belongs to same company
+    if (req.user.role === 'admin') {
+      const q = await pool.query('SELECT company_id FROM users WHERE id = $1', [userId])
+      const cid = q.rows[0]?.company_id || null
+      if (!cid || cid !== req.user.companyId) return res.status(403).json({ success: false, error: 'Forbidden' })
+    }
+    const q2 = await pool.query(
+      `SELECT id, user_id, company_token, weekday, start_time, end_time
+       FROM employee_shifts WHERE user_id = $1 ORDER BY weekday, company_token`,
+      [userId]
+    )
+    res.json({ success: true, data: q2.rows })
+  } catch (e) {
+    res.status(500).json({ success: false, error: 'Failed to fetch shifts' })
+  }
+})
+
+router.post('/users/:userId/shifts', requireAuth, requireRole(['admin', 'super-admin']), async (req, res) => {
+  try {
+    const { userId } = req.params
+    const { company_token, weekday, start_time, end_time } = req.body || {}
+    if (!company_token || typeof weekday !== 'number' || !start_time || !end_time) {
+      return res.status(400).json({ success: false, error: 'company_token, weekday, start_time, end_time required' })
+    }
+    if (weekday < 0 || weekday > 6) return res.status(400).json({ success: false, error: 'weekday must be 0..6' })
+    // Admins restricted to own company
+    if (req.user.role === 'admin') {
+      const uq = await pool.query('SELECT company_id FROM users WHERE id = $1', [userId])
+      const cid = uq.rows[0]?.company_id || null
+      if (!cid || cid !== req.user.companyId) return res.status(403).json({ success: false, error: 'Forbidden' })
+      const aq = await pool.query('SELECT company_id FROM company_accounts WHERE company_token = $1', [company_token])
+      if ((aq.rows[0]?.company_id || null) !== req.user.companyId) return res.status(403).json({ success: false, error: 'Forbidden' })
+    }
+    const ins = await pool.query(
+      `INSERT INTO employee_shifts(user_id, company_token, weekday, start_time, end_time)
+       VALUES ($1,$2,$3,$4,$5)
+       ON CONFLICT (user_id, company_token, weekday)
+       DO UPDATE SET start_time = EXCLUDED.start_time, end_time = EXCLUDED.end_time, updated_at = NOW()
+       RETURNING *`,
+      [userId, company_token, weekday, start_time, end_time]
+    )
+    res.json({ success: true, data: ins.rows[0] })
+  } catch (e) {
+    res.status(500).json({ success: false, error: 'Failed to upsert shift' })
+  }
+})
+
+router.delete('/users/:userId/shifts/:shiftId', requireAuth, requireRole(['admin', 'super-admin']), async (req, res) => {
+  try {
+    const { userId, shiftId } = req.params
+    if (req.user.role === 'admin') {
+      const uq = await pool.query('SELECT company_id FROM users WHERE id = $1', [userId])
+      const cid = uq.rows[0]?.company_id || null
+      if (!cid || cid !== req.user.companyId) return res.status(403).json({ success: false, error: 'Forbidden' })
+    }
+    await pool.query('DELETE FROM employee_shifts WHERE id = $1 AND user_id = $2', [shiftId, userId])
+    res.json({ success: true })
+  } catch (e) {
+    res.status(500).json({ success: false, error: 'Failed to delete shift' })
+  }
+})
 
 // Companies endpoints appended at end to avoid breaking existing imports
 router.get('/companies', requireAuth, requireRole(['super-admin']), async (req, res) => {

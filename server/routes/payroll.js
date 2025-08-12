@@ -148,11 +148,47 @@ router.post('/clock', requireAuth, async (req, res) => {
       return res.json({ success: true, data: { action: 'clock_out', entry: upd.rows[0] } })
     } else {
       // clock-in (store timestamptz server time; display handled by client)
-      const ins = await pool.query(
-        'INSERT INTO time_entries(user_id, company_token, clock_in_at) VALUES ($1, $2, NOW()) RETURNING *',
-        [userId, company_token]
+      // Resolve scheduled shift for today for this user/account
+      // weekday in app timezone
+      const nowTz = new Date(new Date().toLocaleString('en-US', { timeZone: TIMEZONE }))
+      const weekday = nowTz.getDay() // 0..6 (Sun..Sat)
+      const qShift = await pool.query(
+        `SELECT start_time, end_time FROM employee_shifts
+         WHERE user_id = $1 AND company_token = $2 AND weekday = $3`,
+        [userId, company_token, weekday]
       )
-      return res.json({ success: true, data: { action: 'clock_in', entry: ins.rows[0] } })
+      let shiftStart = null
+      let shiftEnd = null
+      if (qShift.rowCount > 0) {
+        // Construct shift_start and shift_end as timestamptz on today using TIMEZONE
+        const yyyy = nowTz.getFullYear()
+        const mm = String(nowTz.getMonth() + 1).padStart(2, '0')
+        const dd = String(nowTz.getDate()).padStart(2, '0')
+        const [sh, sm, ss] = qShift.rows[0].start_time.split ? qShift.rows[0].start_time.split(':') : qShift.rows[0].start_time.toString().split(':')
+        const [eh, em, es] = qShift.rows[0].end_time.split ? qShift.rows[0].end_time.split(':') : qShift.rows[0].end_time.toString().split(':')
+        const startIsoLocal = `${yyyy}-${mm}-${dd}T${String(sh).padStart(2,'0')}:${String(sm).padStart(2,'0')}:${String((ss||'00')).padStart(2,'0')}`
+        const endIsoLocal = `${yyyy}-${mm}-${dd}T${String(eh).padStart(2,'0')}:${String(em).padStart(2,'0')}:${String((es||'00')).padStart(2,'0')}`
+        // Convert these local times to UTC by constructing Date in TIMEZONE offset context
+        const shiftStartTz = new Date(new Date(startIsoLocal).toLocaleString('en-US', { timeZone: TIMEZONE }))
+        const shiftEndTz = new Date(new Date(endIsoLocal).toLocaleString('en-US', { timeZone: TIMEZONE }))
+        shiftStart = shiftStartTz.toISOString()
+        shiftEnd = shiftEndTz.toISOString()
+      }
+      const ins = await pool.query(
+        'INSERT INTO time_entries(user_id, company_token, clock_in_at, shift_start, shift_end) VALUES ($1, $2, NOW(), $3, $4) RETURNING *',
+        [userId, company_token, shiftStart, shiftEnd]
+      )
+      // If we have a shiftStart and the difference exceeds 10 minutes, include message
+      let lateNotice = null
+      if (shiftStart) {
+        const clockInAt = new Date(ins.rows[0].clock_in_at)
+        const scheduled = new Date(ins.rows[0].shift_start)
+        const diffMinutes = Math.abs(clockInAt.getTime() - scheduled.getTime()) / 60000
+        if (clockInAt > scheduled && diffMinutes > 10) {
+          lateNotice = 'You are late'
+        }
+      }
+      return res.json({ success: true, data: { action: 'clock_in', entry: ins.rows[0], lateNotice } })
     }
   } catch (e) {
     res.status(500).json({ success: false, error: e.message })

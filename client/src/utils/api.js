@@ -212,7 +212,12 @@ export const api = {
   resetUserPassword: (userId, newPassword) => apiRequest(`/api/admin/users/${userId}/password`, {
     method: 'PUT',
     body: JSON.stringify({ password: newPassword })
-  })
+  }),
+
+  // Shifts (admin)
+  getUserShifts: (userId) => apiRequest(`/api/admin/users/${userId}/shifts`, { method: 'GET' }),
+  upsertUserShift: (userId, payload) => apiRequest(`/api/admin/users/${userId}/shifts`, { method: 'POST', body: JSON.stringify(payload) }),
+  deleteUserShift: (userId, shiftId) => apiRequest(`/api/admin/users/${userId}/shifts/${shiftId}`, { method: 'DELETE' })
 }
 
 export default api 

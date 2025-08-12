@@ -237,6 +237,12 @@
                       Edit
                     </button>
                     <button
+                      @click="manageShifts(user)"
+                      class="btn-sm btn-secondary"
+                    >
+                      Shifts
+                    </button>
+                    <button
                       @click="resetPassword(user)"
                       class="btn-sm btn-warning"
                     >
@@ -516,6 +522,23 @@ const resetPassword = async (user) => {
     window.showNotification?.({ type: 'success', title: 'Password Reset', message: `Password reset for ${user.email}` })
   } catch (e) {
     window.showNotification?.({ type: 'error', title: 'Password Reset', message: e?.message || 'Failed to reset password' })
+  }
+}
+
+// Minimal shifts manager: prompt-based (future: dedicated modal/calendar)
+const manageShifts = async (user) => {
+  try {
+    const current = await api.getUserShifts(user.id)
+    const summary = (current?.data || []).map(s => `${s.weekday}@${s.company_token} ${s.start_time}-${s.end_time}`).join('\n') || 'No shifts'
+    const input = window.prompt(`Current shifts for ${user.email}:\n${summary}\n\nEnter new shift as: weekday(0-6),company_token,start(HH:MM),end(HH:MM)`, '')
+    if (!input) return
+    const [wdStr, token, start, end] = input.split(',').map(x => x.trim())
+    const weekday = Number(wdStr)
+    if (!token || Number.isNaN(weekday) || !start || !end) throw new Error('Invalid input')
+    await api.upsertUserShift(user.id, { company_token: token, weekday, start_time: start, end_time: end })
+    window.showNotification?.({ type: 'success', title: 'Shifts', message: 'Shift saved' })
+  } catch (e) {
+    window.showNotification?.({ type: 'error', title: 'Shifts', message: e?.message || 'Failed to manage shifts' })
   }
 }
 

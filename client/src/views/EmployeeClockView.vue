@@ -121,7 +121,8 @@ const submitClock = async (dir) => {
     if (res.success) {
       success.value = true
       const action = res.data?.action
-      message.value = action === 'clock_out' ? 'Clocked out successfully' : 'Clocked in successfully'
+      const late = res.data?.lateNotice
+      message.value = action === 'clock_out' ? 'Clocked out successfully' : (late ? `${late}` : 'Clocked in successfully')
       qrSecret.value = ''
       await refreshOpenState()
     } else {
