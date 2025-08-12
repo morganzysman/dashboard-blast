@@ -101,7 +101,7 @@
             </div>
             <div>
               <label class="text-xs text-gray-700">Amount</label>
-              <input v-model.number="e.amount" type="number" min="0" step="0.01" class="form-input w-full" :disabled="e.paid" />
+              <input v-model="e.amount" type="number" inputmode="decimal" min="0" step="any" class="form-input w-full" :disabled="e.paid" />
             </div>
             <div class="sm:col-span-3 flex justify-end" v-if="!e.id">
               <button class="btn-danger btn-xs" @click="removeNewEntry(idx)">Remove</button>
