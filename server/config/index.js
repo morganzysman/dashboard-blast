@@ -34,7 +34,9 @@ export const config = {
       { code: 'EUR', symbol: '€', name: 'Euro', flag: '🇪🇺' },
       { code: 'GBP', symbol: '£', name: 'British Pound', flag: '🇬🇧' }
     ]
-  }
+  },
+  // App base URL (used for absolute QR links, etc.)
+  appBaseUrl: process.env.APP_BASE_URL || ''
 };
 
 // Check for production warnings
@@ -44,6 +46,11 @@ export function checkConfiguration() {
   console.log(`   Private Key: ${config.vapid.privateKey.substring(0, 8)}...${config.vapid.privateKey.substring(config.vapid.privateKey.length - 8)}`);
   console.log(`   Contact Email: ${config.vapid.contact}`);
   console.log(`   Environment: ${config.nodeEnv}`);
+  if (config.appBaseUrl) {
+    console.log(`   App Base URL: ${config.appBaseUrl}`)
+  } else {
+    console.log('   App Base URL: (not set, using relative /clock path)')
+  }
 
   // Warn if using default keys
   if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {

@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { requireAuth } from '../middleware/auth.js'
 import { pool } from '../database.js'
 import QRCode from 'qrcode'
+import { config } from '../config/index.js'
 
 const router = Router()
 const TIMEZONE = 'America/Santiago'
@@ -92,7 +93,10 @@ router.get('/qr/:companyToken/image', requireAuth, async (req, res) => {
     }
 
     const path = `/clock?company_token=${encodeURIComponent(acct.company_token)}&qr_secret=${encodeURIComponent(secret)}`
-    const png = await QRCode.toBuffer(path, { type: 'png', width: 512, margin: 2 })
+    const fullUrl = config.appBaseUrl
+      ? `${config.appBaseUrl.replace(/\/$/, '')}${path}`
+      : path
+    const png = await QRCode.toBuffer(fullUrl, { type: 'png', width: 512, margin: 2 })
     res.setHeader('Content-Type', 'image/png')
     res.setHeader('Content-Disposition', `attachment; filename="qr-${acct.company_token}.png"`)
     return res.send(png)
