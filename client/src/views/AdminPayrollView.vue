@@ -24,7 +24,7 @@
             </template>
 
             <label class="text-xs text-gray-700">Account</label>
-            <select v-model="companyToken" class="form-input">
+            <select v-model="companyToken" class="form-input" @change="loadEntries">
               <option v-for="acc in accounts" :key="acc.company_token" :value="acc.company_token">{{ acc.account_name || acc.company_token }}</option>
             </select>
             <button class="btn-secondary btn-sm" @click="loadEntries">Load</button>
@@ -295,6 +295,9 @@ const loadCompanyAccounts = async () => {
     const res = await api.listCompanyAccounts(selectedCompanyId.value)
     accounts.value = res?.data || []
     companyToken.value = accounts.value[0]?.company_token || ''
+    if (companyToken.value) {
+      await loadEntries()
+    }
   } catch (e) {
     accounts.value = []
     companyToken.value = ''
