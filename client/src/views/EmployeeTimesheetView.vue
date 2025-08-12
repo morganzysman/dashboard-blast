@@ -39,6 +39,27 @@
         </div>
       </div>
     </div>
+
+    <!-- Recap Section -->
+    <div class="card">
+      <div class="card-body">
+        <h3 class="text-md font-semibold text-gray-900 mb-3">Recap</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+          <div class="bg-gray-50 rounded p-3">
+            <div class="text-gray-500">Entries</div>
+            <div class="text-gray-900 font-bold text-lg">{{ entries.length }}</div>
+          </div>
+          <div class="bg-gray-50 rounded p-3">
+            <div class="text-gray-500">Total Time</div>
+            <div class="text-gray-900 font-bold text-lg">{{ formatDuration(totalSeconds) }}</div>
+          </div>
+          <div class="bg-gray-50 rounded p-3">
+            <div class="text-gray-500">Total Earned</div>
+            <div class="text-gray-900 font-bold text-lg">{{ formatCurrency(totalAmount) }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 

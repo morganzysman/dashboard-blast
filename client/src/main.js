@@ -49,7 +49,7 @@ const routes = [
     path: '/',
     name: 'Dashboard',
     component: DashboardView,
-    meta: { requiresAuth: true, excludeRoles: ['super-admin'] }
+    meta: { requiresAuth: true, excludeRoles: ['super-admin', 'employee'] }
   },
   {
     path: '/login',
@@ -73,13 +73,13 @@ const routes = [
     path: '/notifications',
     name: 'Notifications',
     component: NotificationsView,
-    meta: { requiresAuth: true, excludeRoles: ['super-admin'] }
+    meta: { requiresAuth: true, excludeRoles: ['super-admin', 'employee'] }
   },
   {
     path: '/rentability',
     name: 'Rentability',
     component: RentabilityView,
-    meta: { requiresAuth: true, excludeRoles: ['super-admin'] }
+    meta: { requiresAuth: true, excludeRoles: ['super-admin', 'employee'] }
   }
 ]
 
@@ -93,6 +93,8 @@ const router = createRouter({
 const getDefaultRouteForRole = (userRole) => {
   if (userRole === 'super-admin') {
     return { name: 'Admin' }
+  } else if (userRole === 'employee') {
+    return { name: 'EmployeeTimesheet' }
   } else {
     return { name: 'Dashboard' }
   }

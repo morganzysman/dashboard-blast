@@ -26,9 +26,9 @@
 
     <!-- Navigation items -->
     <nav class="sidebar-nav">
-      <!-- Dashboard - Hidden from super-admin -->
+      <!-- Dashboard - Hidden from super-admin and employees -->
       <router-link
-        v-if="!authStore.isSuperAdmin"
+        v-if="!authStore.isSuperAdmin && authStore.user?.role !== 'employee'"
         to="/"
         class="sidebar-nav-item"
         :class="{ active: $route.name === 'Dashboard' }"
@@ -41,9 +41,9 @@
         Dashboard
       </router-link>
 
-      <!-- Notifications - Hidden from super-admin -->
+      <!-- Notifications - Hidden from super-admin and employees -->
       <router-link
-        v-if="!authStore.isSuperAdmin"
+        v-if="!authStore.isSuperAdmin && authStore.user?.role !== 'employee'"
         to="/notifications"
         class="sidebar-nav-item"
         :class="{ active: $route.name === 'Notifications' }"
@@ -55,9 +55,9 @@
         Notifications
       </router-link>
 
-      <!-- Rentability - Hidden from super-admin -->
+      <!-- Rentability - Hidden from super-admin and employees -->
       <router-link
-        v-if="!authStore.isSuperAdmin"
+        v-if="!authStore.isSuperAdmin && authStore.user?.role !== 'employee'"
         to="/rentability"
         class="sidebar-nav-item"
         :class="{ active: $route.name === 'Rentability' }"
@@ -71,7 +71,19 @@
 
       <!-- Employee: Clock (removed from sidebar) -->
 
-      <!-- Employee: Timesheet (hidden for admins via route guard) -->
+      <!-- Employee: Timesheet -->
+      <router-link
+        v-if="authStore.user?.role === 'employee'"
+        to="/timesheet"
+        class="sidebar-nav-item"
+        :class="{ active: $route.name === 'EmployeeTimesheet' }"
+        @click="$emit('close')"
+      >
+        <svg class="sidebar-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3M5 11h14M5 19h14M5 7h14M7 15h10" />
+        </svg>
+        My Timesheet
+      </router-link>
 
       <!-- Admin: Payroll (hidden for super-admin) -->
       <router-link
