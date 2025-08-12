@@ -236,12 +236,13 @@ const markPaid = async () => {
 }
 
 const openEdit = (row) => {
-  // pick first entry of this user for simplicity (in real UI, list and pick a row)
   // list all entries for this user in current period
   const list = entries.value.filter(x => x.user_id === row.user_id)
-  if (!list.length) return
-  // Use the first for initial edit; modal below will render a list
-  editEntry.value = { user_id: row.user_id, list: list.map(e => ({ id: e.id, clock_in_at: e.clock_in_at?.slice(0,16), clock_out_at: e.clock_out_at?.slice(0,16), amount: e.amount, paid: !!e.paid })) }
+  // Even if there are no entries, open the modal so admin can add manual ones
+  editEntry.value = {
+    user_id: row.user_id,
+    list: list.map(e => ({ id: e.id, clock_in_at: e.clock_in_at?.slice(0,16), clock_out_at: e.clock_out_at?.slice(0,16), amount: e.amount, paid: !!e.paid }))
+  }
 }
 
 const saveEdit = async () => {
