@@ -79,9 +79,20 @@ router.get('/profitability', requireAuth, async (req, res) => {
       WHERE company_id = $1 AND company_token IN (${accPlaceholders})
     `
 
-    const [utilityRes, paymentCostsRes] = await Promise.all([
+    // Payroll costs (sum of closed entry amounts) per account within period
+    const payrollQuery = `
+      SELECT company_token, COALESCE(SUM(amount), 0) AS payroll_sum, COUNT(*) AS entries_count
+      FROM time_entries
+      WHERE company_token IN (${accPlaceholders})
+        AND clock_in_at >= $1::date AND clock_in_at < ($2::date + INTERVAL '1 day')
+        AND clock_out_at IS NOT NULL
+      GROUP BY company_token
+    `
+
+    const [utilityRes, paymentCostsRes, payrollRes] = await Promise.all([
       pool.query(utilityQuery, [req.user.companyId, ...accountTokens]),
-      pool.query(paymentCostsQuery, [req.user.companyId, ...accountTokens])
+      pool.query(paymentCostsQuery, [req.user.companyId, ...accountTokens]),
+      pool.query(payrollQuery, [startDate, endDate, ...accountTokens])
     ])
 
     const accountKeyToUtility = new Map()
@@ -94,6 +105,14 @@ router.get('/profitability', requireAuth, async (req, res) => {
       const key = row.company_token
       if (!accountKeyToPaymentCosts.has(key)) accountKeyToPaymentCosts.set(key, new Map())
       accountKeyToPaymentCosts.get(key).set((row.payment_method_code || '').toLowerCase(), row)
+    })
+
+    const accountKeyToPayroll = new Map()
+    payrollRes.rows.forEach(row => {
+      accountKeyToPayroll.set(row.company_token, {
+        payroll_sum: Number(row.payroll_sum) || 0,
+        entries_count: Number(row.entries_count) || 0
+      })
     })
 
     // Helper calculators
@@ -118,6 +137,7 @@ router.get('/profitability', requireAuth, async (req, res) => {
     let companyFood = 0
     let companyUtilities = 0
     let companyProfit = 0
+    let companyPayroll = 0
     let companyTips = 0
     const foodRate = 0.3
     const feesByMethod = {}
@@ -152,7 +172,9 @@ router.get('/profitability', requireAuth, async (req, res) => {
       const food = gross * foodRate
       const utilDaily = accountKeyToUtility.get(accRes.accountKey)?.total_daily || 0
       const util = utilDaily * daysDiff
-      const profit = netAfterFees - food - util
+      const payrollSum = accountKeyToPayroll.get(accRes.accountKey)?.payroll_sum || 0
+      const payrollEntries = accountKeyToPayroll.get(accRes.accountKey)?.entries_count || 0
+      const profit = netAfterFees - food - util - payrollSum
       const margin = gross > 0 ? profit / gross : 0
       const tipsAmount = (tipsRes && tipsRes.success && tipsRes.data?.data)
         ? tipsRes.data.data.reduce((s, t) => s + (t.sum || 0), 0)
@@ -187,6 +209,7 @@ router.get('/profitability', requireAuth, async (req, res) => {
       companyFood += food
       companyUtilities += util
       companyProfit += profit
+      companyPayroll += payrollSum
       companyTips += tipsAmount
 
       return {
@@ -199,6 +222,8 @@ router.get('/profitability', requireAuth, async (req, res) => {
         netAfterFees,
         foodCosts: food,
         utilityCosts: util,
+        payrollCosts: payrollSum,
+        payrollEntries,
         operatingProfit: profit,
         operatingMargin: margin,
         tips: tipsAmount,
@@ -222,6 +247,7 @@ router.get('/profitability', requireAuth, async (req, res) => {
           netAfterFees: companyNet,
           foodCosts: companyFood,
           utilityCosts: companyUtilities,
+          payrollCosts: companyPayroll,
           operatingProfit: companyProfit,
           operatingMargin: companyMargin,
           feeRate,

@@ -34,7 +34,10 @@
 
               <!-- Daily Gain KPI -->
               <div class="bg-purple-50 rounded-lg p-3 text-center relative group cursor-help">
-                <p class="text-sm sm:text-lg font-bold truncate" :class="getDailyGainClass(account)">{{ formatCurrency(getAccountDailyGain(account)) }}</p>
+                <p class="text-sm sm:text-lg font-bold truncate" :class="getDailyGainClass(account)">
+                  <span v-if="isAccountGainDisabled()" class="opacity-60">Unavailable</span>
+                  <span v-else>{{ formatCurrency(getAccountDailyGain(account)) }}</span>
+                </p>
                 <p class="text-xs text-purple-500">{{ formatGainPeriodLabel() }} Gain</p>
                 
                 <!-- Detailed Tooltip -->
@@ -43,7 +46,7 @@
                   
                   <h4 class="font-bold text-purple-300 mb-4 text-sm">💰 Gain Breakdown ({{ formatGainPeriodLabel() }})</h4>
                   
-                  <div v-if="account.success && account.data?.data" class="space-y-4">
+                  <div v-if="!isAccountGainDisabled() && account.success && account.data?.data" class="space-y-4">
                     <!-- Revenue by Payment Method -->
                     <div>
                       <h5 class="font-semibold text-blue-300 mb-3 text-sm">📊 Revenue by Payment Method:</h5>
@@ -82,6 +85,10 @@
                           <span class="text-sm">Utility Costs ({{ getAccountGainBreakdown(account).daysInPeriod }} days):</span>
                           <span class="text-red-300 font-bold">-{{ formatCurrency(getAccountGainBreakdown(account).utilityCosts) }}</span>
                         </div>
+                        <div class="flex justify-between items-center">
+                          <span class="text-sm">Payroll ({{ getAccountGainBreakdown(account).payrollEntries }} entries):</span>
+                          <span class="text-red-300 font-bold">-{{ formatCurrency(getAccountGainBreakdown(account).payrollCosts) }}</span>
+                        </div>
                       </div>
                       <!-- Total Costs -->
                       <div class="border-t border-red-700 pt-2 mt-3">
@@ -104,7 +111,7 @@
                   </div>
                   
                   <div v-else class="text-gray-400 text-center">
-                    No payment data available
+                    {{ isAccountGainDisabled() ? 'Unavailable for today' : 'No payment data available' }}
                   </div>
                 </div>
               </div>
@@ -283,10 +290,12 @@ const getAccountGainBreakdown = (account) => {
   if (serverAcc && serverAcc.paymentMethodBreakdown) {
     return {
       totalRevenue: serverAcc.grossSales || 0,
-      totalCosts: (serverAcc.paymentFees || 0) + (serverAcc.foodCosts || 0) + (serverAcc.utilityCosts || 0),
+      totalCosts: (serverAcc.paymentFees || 0) + (serverAcc.foodCosts || 0) + (serverAcc.utilityCosts || 0) + (serverAcc.payrollCosts || 0),
       paymentFees: serverAcc.paymentFees || 0,
       foodCosts: serverAcc.foodCosts || 0,
       utilityCosts: serverAcc.utilityCosts || 0,
+      payrollCosts: serverAcc.payrollCosts || 0,
+      payrollEntries: serverAcc.payrollEntries || 0,
       finalGain: serverAcc.operatingProfit || 0,
       daysInPeriod: serverAcc.daysInPeriod || 1,
       paymentMethodBreakdown: serverAcc.paymentMethodBreakdown
@@ -325,6 +334,8 @@ const getAccountGainBreakdown = (account) => {
     paymentFees,
     foodCosts,
     utilityCosts,
+    payrollCosts: 0,
+    payrollEntries: 0,
     finalGain,
     daysInPeriod,
     paymentMethodBreakdown
@@ -333,10 +344,21 @@ const getAccountGainBreakdown = (account) => {
 
 // Get CSS class for daily gain (green for positive, red for negative)
 const getDailyGainClass = (account) => {
+  if (isAccountGainDisabled()) return 'text-gray-400'
   const gain = getAccountDailyGain(account)
   if (gain > 0) return 'text-green-600'
   if (gain < 0) return 'text-red-600'
   return 'text-gray-600'
+}
+
+const isAccountGainDisabled = () => {
+  const timezone = authStore.user?.timezone || 'America/Lima'
+  const nowTz = new Date(new Date().toLocaleString('en-US', { timeZone: timezone }))
+  const yyyy = nowTz.getFullYear()
+  const mm = String(nowTz.getMonth() + 1).padStart(2, '0')
+  const dd = String(nowTz.getDate()).padStart(2, '0')
+  const today = `${yyyy}-${mm}-${dd}`
+  return props.currentDateRange?.end === today
 }
 
 const formatCurrency = (amount) => {

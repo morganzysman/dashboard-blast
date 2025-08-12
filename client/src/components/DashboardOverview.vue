@@ -251,7 +251,10 @@
           <div class="flex items-center justify-between mb-3">
             <div class="min-w-0 flex-1">
               <p class="text-purple-100 text-xs sm:text-sm font-medium">{{ formatGainPeriodLabel() }} GAIN</p>
-              <p class="text-lg sm:text-xl font-bold truncate" :class="getAggregatedGainClass()">{{ formatCurrency(getAggregatedDailyGain()) }}</p>
+              <p class="text-lg sm:text-xl font-bold truncate" :class="getAggregatedGainClass()">
+                <span v-if="isGainDisabled()" class="opacity-60">Unavailable for today</span>
+                <span v-else>{{ formatCurrency(getAggregatedDailyGain()) }}</span>
+              </p>
             </div>
             <div class="w-10 h-10 sm:w-12 sm:h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center flex-shrink-0">
               <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -259,7 +262,7 @@
               </svg>
             </div>
           </div>
-          <p class="text-xs text-purple-100">Includes fees, 30% food costs, and utility costs</p>
+          <p class="text-xs text-purple-100">Includes fees, 30% food costs, utility costs, and payroll (closed entries)</p>
         </div>
       </div>
     </div>
@@ -403,6 +406,12 @@ const getAggregatedGainClass = () => {
   if (gain > 0) return 'text-green-100'
   if (gain < 0) return 'text-red-100'
   return 'text-white'
+}
+
+// Disable gain if the selected range includes today
+const isGainDisabled = () => {
+  const today = todayString.value
+  return props.currentDateRange?.end === today
 }
 
 // No client-side cost fetching
