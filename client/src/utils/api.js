@@ -206,7 +206,13 @@ export const api = {
   createCompany: (name, timezone, currency, currency_symbol) => apiRequest('/api/admin/companies', { method: 'POST', body: JSON.stringify({ name, timezone, currency, currency_symbol }) }),
   listCompanyAccounts: (companyId) => apiRequest(`/api/admin/companies/${companyId}/accounts`, { method: 'GET' }),
   upsertCompanyAccount: (companyId, payload) => apiRequest(`/api/admin/companies/${companyId}/accounts`, { method: 'POST', body: JSON.stringify(payload) }),
-  deleteCompanyAccount: (companyId, companyToken) => apiRequest(`/api/admin/companies/${companyId}/accounts/${companyToken}`, { method: 'DELETE' })
+  deleteCompanyAccount: (companyId, companyToken) => apiRequest(`/api/admin/companies/${companyId}/accounts/${companyToken}`, { method: 'DELETE' }),
+
+  // Users (admin)
+  resetUserPassword: (userId, newPassword) => apiRequest(`/api/admin/users/${userId}/password`, {
+    method: 'PUT',
+    body: JSON.stringify({ password: newPassword })
+  })
 }
 
 export default api 

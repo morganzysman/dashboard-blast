@@ -400,6 +400,56 @@ router.delete('/users/:userId', requireAuth, requireRole(['super-admin']), async
   }
 })
 
+// Reset user password (admin/super-admin)
+router.put('/users/:userId/password', requireAuth, requireRole(['admin', 'super-admin']), async (req, res) => {
+  try {
+    const { userId } = req.params
+    const { password } = req.body || {}
+
+    if (typeof password !== 'string' || password.trim().length < 6) {
+      return res.status(400).json({ success: false, error: 'Password must be at least 6 characters' })
+    }
+
+    // Fetch target user to validate scope
+    const q = await pool.query('SELECT id, email, role, company_id FROM users WHERE id = $1', [userId])
+    if (q.rowCount === 0) return res.status(404).json({ success: false, error: 'User not found' })
+    const target = q.rows[0]
+
+    // Admins cannot reset super-admin passwords and can only reset within their company
+    if (req.user.role === 'admin') {
+      if (target.role === 'super-admin') {
+        return res.status(403).json({ success: false, error: 'Admins cannot reset super-admin passwords' })
+      }
+      const adminCompanyId = req.user.companyId || null
+      if (!adminCompanyId || target.company_id !== adminCompanyId) {
+        return res.status(403).json({ success: false, error: 'Forbidden' })
+      }
+    }
+
+    const hashed = await hashPassword(password.trim())
+    const upd = await pool.query(
+      'UPDATE users SET hashed_password = $2, updated_at = NOW() WHERE id = $1 RETURNING id, email, role, company_id',
+      [userId, hashed]
+    )
+
+    // Log password reset action (without password)
+    await logNotificationEvent(
+      req.user.userId,
+      'user_password_reset',
+      `Password reset for ${target.email}`,
+      { targetUserId: userId },
+      true,
+      null,
+      req.headers['user-agent']
+    )
+
+    res.json({ success: true, user: upd.rows[0] })
+  } catch (error) {
+    console.error('❌ Error resetting password:', error)
+    res.status(500).json({ success: false, error: 'Failed to reset password' })
+  }
+})
+
 export default router; 
 
 // Companies endpoints appended at end to avoid breaking existing imports

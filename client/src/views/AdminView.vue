@@ -237,6 +237,12 @@
                       Edit
                     </button>
                     <button
+                      @click="resetPassword(user)"
+                      class="btn-sm btn-warning"
+                    >
+                      Reset Password
+                    </button>
+                    <button
                       @click="toggleUserStatus(user)"
                       :class="user.is_active ? 'btn-sm btn-warning' : 'btn-sm btn-success'"
                     >
@@ -494,6 +500,22 @@ const updateHourlyRate = async (user) => {
     window.showNotification?.({ type: 'success', title: 'Hourly Rate', message: 'Updated' })
   } catch (e) {
     window.showNotification?.({ type: 'error', title: 'Hourly Rate', message: e.message || 'Failed' })
+  }
+}
+
+const resetPassword = async (user) => {
+  try {
+    const newPassword = window.prompt(`Enter a new password for ${user.email} (min 6 chars):`)
+    if (newPassword == null) return
+    const trimmed = newPassword.trim()
+    if (trimmed.length < 6) {
+      window.showNotification?.({ type: 'warning', title: 'Password', message: 'Password must be at least 6 characters' })
+      return
+    }
+    await api.resetUserPassword(user.id, trimmed)
+    window.showNotification?.({ type: 'success', title: 'Password Reset', message: `Password reset for ${user.email}` })
+  } catch (e) {
+    window.showNotification?.({ type: 'error', title: 'Password Reset', message: e?.message || 'Failed to reset password' })
   }
 }
 
