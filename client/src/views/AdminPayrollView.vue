@@ -145,8 +145,14 @@ const loadEntries = async () => {
   }
 }
 
+// Group entries per user, but include all company users even with zero entries
+const allCompanyUsers = ref([]) // [{id,name}]
 const groupByUser = computed(() => {
   const map = new Map()
+  // seed with all users
+  for (const u of allCompanyUsers.value) {
+    map.set(u.id, { user_id: u.id, totalSeconds: 0, count: 0, employeeName: u.name || u.id, totalAmount: 0 })
+  }
   for (const e of entries.value) {
     const key = e.user_id
     const curr = map.get(key) || { user_id: key, totalSeconds: 0, count: 0, employeeName: userName(key), totalAmount: 0 }
@@ -156,7 +162,7 @@ const groupByUser = computed(() => {
     curr.totalAmount += Number(e.amount || 0)
     map.set(key, curr)
   }
-  return Array.from(map.values())
+  return Array.from(map.values()).sort((a,b)=> (a.employeeName||'').localeCompare(b.employeeName||''))
 })
 
 const rows = computed(() => groupByUser.value.map(u => ({ ...u, amount: u.totalAmount })))
@@ -189,10 +195,13 @@ const userName = (id) => userIdToName.value.get(id) || id
 
 ;(async () => {
   try {
-    const res = await api.get('/api/admin/users')
+    // Fetch only employees for current company to list in payroll even if no entries
+    const res = await api.get('/api/admin/users?roles=employee')
     const m = new Map()
-    for (const u of res.users || []) m.set(u.id, u.name)
+    const list = []
+    for (const u of res.users || []) { m.set(u.id, u.name); list.push({ id: u.id, name: u.name }) }
     userIdToName.value = m
+    allCompanyUsers.value = list
   } catch {}
 })()
 

@@ -17,28 +17,57 @@ const router = Router();
 router.get('/users', requireAuth, requireRole(['admin', 'super-admin']), async (req, res) => {
   try {
     const includeInactive = req.query.include_inactive === 'true';
-    // Super-admin sees all, admin sees only users in their company
+    const companyIdFilter = req.query.company_id || null
+    // support roles param as comma-separated list (e.g., roles=employee or roles=admin,super-admin)
+    const rolesParam = (req.query.roles || req.query.role || '').toString().trim()
+    const rolesList = rolesParam ? rolesParam.split(',').map(r => r.trim()).filter(Boolean) : null
+
+    // Super-admin flexible filtering; admins restricted to own company
     let users
     if (req.user.role === 'super-admin') {
-      // Super-admin: only list admin or super-admin users (no employees)
-      const q = await pool.query(
-        `SELECT u.*, c.name AS company_name
-         FROM users u
-         LEFT JOIN companies c ON c.id = u.company_id
-         WHERE ($1::boolean OR u.is_active = TRUE)
-           AND u.role IN ('admin','super-admin')
-         ORDER BY u.created_at DESC`,
-        [includeInactive]
-      )
-      users = q.rows
+      if (companyIdFilter || rolesList) {
+        let idx = 2
+        const params = [includeInactive]
+        let where = `WHERE ($1::boolean OR u.is_active = TRUE)`
+        if (companyIdFilter) { params.push(companyIdFilter); where += ` AND u.company_id = $${idx++}` }
+        if (rolesList && rolesList.length) {
+          // Build roles IN list safely
+          const rolePlaceholders = rolesList.map((_, i) => `$${idx + i}`).join(', ')
+          params.push(...rolesList)
+          where += ` AND u.role IN (${rolePlaceholders})`
+          idx += rolesList.length
+        }
+        const q = await pool.query(
+          `SELECT u.*, c.name AS company_name
+           FROM users u
+           LEFT JOIN companies c ON c.id = u.company_id
+           ${where}
+           ORDER BY u.created_at DESC`,
+          params
+        )
+        users = q.rows
+      } else {
+        // default: previous behavior (no employees)
+        const q = await pool.query(
+          `SELECT u.*, c.name AS company_name
+           FROM users u
+           LEFT JOIN companies c ON c.id = u.company_id
+           WHERE ($1::boolean OR u.is_active = TRUE)
+             AND u.role IN ('admin','super-admin')
+           ORDER BY u.created_at DESC`,
+          [includeInactive]
+        )
+        users = q.rows
+      }
     } else {
       const q = await pool.query(
         `SELECT u.*, c.name AS company_name
          FROM users u
          LEFT JOIN companies c ON c.id = u.company_id
          WHERE ($1::boolean OR u.is_active = TRUE)
-           AND u.company_id = $2`,
-        [includeInactive, req.user.companyId || null]
+           AND u.company_id = $2
+           ${rolesList && rolesList.length ? `AND u.role IN (${rolesList.map((_,i)=>`$${i+3}`).join(', ')})` : ''}`,
+        [includeInactive, req.user.companyId || null, ...(rolesList || [])]
       )
       users = q.rows
     }
