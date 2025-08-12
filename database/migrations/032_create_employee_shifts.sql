@@ -3,7 +3,7 @@
 CREATE TABLE IF NOT EXISTS employee_shifts (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  company_token TEXT NOT NULL REFERENCES company_accounts(company_token) ON DELETE CASCADE,
+  company_token TEXT NOT NULL,
   weekday SMALLINT NOT NULL CHECK (weekday BETWEEN 0 AND 6), -- 0=Sunday ... 6=Saturday
   start_time TIME NOT NULL,
   end_time TIME NOT NULL,
@@ -11,6 +11,10 @@ CREATE TABLE IF NOT EXISTS employee_shifts (
   updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT NOW(),
   UNIQUE(user_id, company_token, weekday)
 );
+
+-- Helpful indexes
+CREATE INDEX IF NOT EXISTS idx_employee_shifts_user_weekday ON employee_shifts(user_id, weekday);
+CREATE INDEX IF NOT EXISTS idx_employee_shifts_company_token ON employee_shifts(company_token);
 
 -- Trigger to auto-update updated_at
 CREATE OR REPLACE FUNCTION update_employee_shifts_updated_at()
