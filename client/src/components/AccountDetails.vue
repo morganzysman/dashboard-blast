@@ -260,8 +260,9 @@ const getServerAccount = (account) => {
 
 // Daily/period gain from server
 const getAccountDailyGain = (account) => {
-  const acc = getServerAccount(account)
-  return acc?.operatingProfit || 0
+  // Use the same logic as the hover breakdown to avoid discrepancies
+  const breakdown = getAccountGainBreakdown(account)
+  return breakdown?.finalGain || 0
 }
 
 // Calculate number of days in the current date range
