@@ -237,6 +237,7 @@
                       Edit
                     </button>
                     <button
+                      v-if="!isSuperAdmin"
                       @click="manageShifts(user)"
                       class="btn-sm btn-secondary"
                     >
@@ -279,6 +280,13 @@
       @close="closeUserModal"
       @save="handleUserSave"
     />
+
+    <ShiftManagerModal
+      v-if="showShiftModal"
+      :user="selectedUser"
+      :companyId="selectedUser?.company?.id || selectedUser?.company_id || ''"
+      @close="() => { showShiftModal = false; selectedUser = null }"
+    />
   </div>
 </template>
 
@@ -286,6 +294,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import UserModal from '../components/UserModal.vue'
+import ShiftManagerModal from '../components/ShiftManagerModal.vue'
 import api from '../utils/api'
 
 const authStore = useAuthStore()
@@ -300,6 +309,7 @@ const statusFilter = ref('')
 const showUserModal = ref(false)
 const selectedUser = ref(null)
 const isEditMode = ref(false)
+const showShiftModal = ref(false)
 
 // Computed
 const filteredUsers = computed(() => {
@@ -527,19 +537,8 @@ const resetPassword = async (user) => {
 
 // Minimal shifts manager: prompt-based (future: dedicated modal/calendar)
 const manageShifts = async (user) => {
-  try {
-    const current = await api.getUserShifts(user.id)
-    const summary = (current?.data || []).map(s => `${s.weekday}@${s.company_token} ${s.start_time}-${s.end_time}`).join('\n') || 'No shifts'
-    const input = window.prompt(`Current shifts for ${user.email}:\n${summary}\n\nEnter new shift as: weekday(0-6),company_token,start(HH:MM),end(HH:MM)`, '')
-    if (!input) return
-    const [wdStr, token, start, end] = input.split(',').map(x => x.trim())
-    const weekday = Number(wdStr)
-    if (!token || Number.isNaN(weekday) || !start || !end) throw new Error('Invalid input')
-    await api.upsertUserShift(user.id, { company_token: token, weekday, start_time: start, end_time: end })
-    window.showNotification?.({ type: 'success', title: 'Shifts', message: 'Shift saved' })
-  } catch (e) {
-    window.showNotification?.({ type: 'error', title: 'Shifts', message: e?.message || 'Failed to manage shifts' })
-  }
+  selectedUser.value = user
+  showShiftModal.value = true
 }
 
 const formatRate = (r) => {

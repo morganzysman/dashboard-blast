@@ -35,7 +35,9 @@
               <tr class="text-left text-gray-600">
                 <th class="py-2">Employee</th>
                 <th class="py-2">Entries</th>
-                <th class="py-2">Total Time</th>
+                <th class="py-2">Shift Time</th>
+                <th class="py-2">Clocked Time</th>
+                <th class="py-2">Variation</th>
                 <th class="py-2">Amount</th>
                 <th class="py-2">Actions</th>
               </tr>
@@ -49,7 +51,9 @@
                   </span>
                 </td>
                 <td class="py-2">{{ row.count }}</td>
+                <td class="py-2">{{ formatDuration(row.shiftSeconds || 0) }}</td>
                 <td class="py-2">{{ formatDuration(row.totalSeconds) }}</td>
+                <td class="py-2" :class="variationClass(row)">{{ variationLabel(row) }}</td>
                 <td class="py-2">{{ formatCurrency(row.amount) }}</td>
                 <td class="py-2">
                   <button class="btn-secondary btn-xs" @click="openEdit(row)">Edit</button>
@@ -142,11 +146,14 @@ const loadEntries = async () => {
   if (res.success) {
     entries.value = res.data
     period.value = res.period
+    // map shift seconds per user id
+    shiftSecondsByUser.value = res.shiftSeconds || {}
   }
 }
 
 // Group entries per user, but include all company users even with zero entries
 const allCompanyUsers = ref([]) // [{id,name}]
+const shiftSecondsByUser = ref({}) // { user_id: seconds }
 const groupByUser = computed(() => {
   const map = new Map()
   // seed with all users
@@ -162,7 +169,10 @@ const groupByUser = computed(() => {
     curr.totalAmount += Number(e.amount || 0)
     map.set(key, curr)
   }
-  return Array.from(map.values()).sort((a,b)=> (a.employeeName||'').localeCompare(b.employeeName||''))
+  return Array.from(map.values()).map(u => ({
+    ...u,
+    shiftSeconds: Number(shiftSecondsByUser.value[u.user_id] || 0)
+  })).sort((a,b)=> (a.employeeName||'').localeCompare(b.employeeName||''))
 })
 
 const rows = computed(() => groupByUser.value.map(u => ({ ...u, amount: u.totalAmount })))
@@ -216,6 +226,23 @@ const formatDuration = (secs) => {
 const formatCurrency = (n) => {
   const symbol = auth.user?.currencySymbol || 'S/'
   return `${symbol} ${(Number(n)||0).toFixed(2)}`
+}
+
+const variationLabel = (row) => {
+  const s = row.shiftSeconds || 0
+  const c = row.totalSeconds || 0
+  if (s === 0 && c === 0) return '—'
+  const diff = c - s
+  const pct = s > 0 ? (diff / s) * 100 : 0
+  const sign = diff >= 0 ? '+' : ''
+  return `${sign}${formatDuration(Math.abs(diff))} (${sign}${pct.toFixed(0)}%)`
+}
+const variationClass = (row) => {
+  const s = row.shiftSeconds || 0
+  const c = row.totalSeconds || 0
+  if (s === 0 && c === 0) return 'text-gray-600'
+  if (c >= s) return 'text-green-600'
+  return 'text-red-600'
 }
 
 const prevPeriod = () => loadEntries()

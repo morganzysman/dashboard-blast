@@ -127,16 +127,27 @@ const buildWeek = async () => {
   for (let i = 0; i < 7; i++) {
     const d = new Date(startOfWeek)
     d.setDate(startOfWeek.getDate() + i)
-    list.push({ date: d, label: d.getDate(), shift: null })
+    const yyyy = d.getFullYear()
+    const mm = String(d.getMonth() + 1).padStart(2, '0')
+    const dd = String(d.getDate()).padStart(2, '0')
+    const dateStr = `${yyyy}-${mm}-${dd}`
+    list.push({ date: d, dateStr, label: d.getDate(), shift: null })
   }
   // Fetch shifts assigned to this user
   try {
-    const res = await api.get(`/api/admin/users/${auth.user.id}/shifts`)
+    const res = await api.getMyShifts()
     const shifts = res?.data || []
     for (let i = 0; i < list.length; i++) {
-      const wd = list[i].date.getDay()
-      const s = shifts.find(x => x.weekday === wd)
-      if (s) list[i].shift = s
+      const day = list[i]
+      const s = shifts.find(x => x.date === day.dateStr)
+      if (s && s.shift) {
+        day.shift = {
+          company_token: s.shift.company_token,
+          account_name: s.shift.account_name,
+          start_time: s.shift.start_time,
+          end_time: s.shift.end_time
+        }
+      }
     }
   } catch {}
   weekDays.value = list
@@ -145,21 +156,104 @@ const buildWeek = async () => {
 onMounted(buildWeek)
 
 const loadEntries = async () => {
-  const res = await api.getMyEntries()
+  // Frontend picks the correct range; default to server biweekly if not set
+  let { start, end } = period.value
+  if (!start || !end) {
+    // compute current biweekly on client to be explicit
+    const now = new Date()
+    const year = now.getFullYear()
+    const month = now.getMonth()
+    const day = now.getDate()
+    const pad = (n) => String(n).padStart(2, '0')
+    if (day <= 15) {
+      start = `${year}-${pad(month+1)}-01`
+      end = `${year}-${pad(month+1)}-15`
+    } else {
+      start = `${year}-${pad(month+1)}-16`
+      const endDate = new Date(year, month + 1, 0).getDate()
+      end = `${year}-${pad(month+1)}-${pad(endDate)}`
+    }
+  }
+  const res = await api.getMyEntries(start, end)
   if (res.success) {
     entries.value = res.data
     period.value = res.period
   }
 }
 
-const shiftPeriod = (direction) => {
-  // Allow preview by shifting client labels; actual API is current period only as spec
-  // Keep UI navigation but still loads current period from API for safety
+const computeHalfMonthPeriodForDate = (dateObj) => {
+  const year = dateObj.getFullYear()
+  const month = dateObj.getMonth() // 0-based
+  const day = dateObj.getDate()
+  const pad = (n) => String(n).padStart(2, '0')
+  if (day <= 15) {
+    return {
+      start: `${year}-${pad(month + 1)}-01`,
+      end: `${year}-${pad(month + 1)}-15`
+    }
+  } else {
+    const endDay = new Date(year, month + 1, 0).getDate()
+    return {
+      start: `${year}-${pad(month + 1)}-16`,
+      end: `${year}-${pad(month + 1)}-${pad(endDay)}`
+    }
+  }
+}
+
+const prevPeriod = () => {
+  // Determine current period and move to previous half-month
+  let { start } = period.value
+  if (!start) {
+    // initialize to current period if empty
+    period.value = computeHalfMonthPeriodForDate(new Date())
+    start = period.value.start
+  }
+  const [y, m, d] = start.split('-').map(Number)
+  const isFirstHalf = d === 1
+  if (isFirstHalf) {
+    // move to previous month second half
+    const prevMonth = new Date(y, m - 2, 1) // m is 1-based in string, Date wants 0-based
+    const endDay = new Date(prevMonth.getFullYear(), prevMonth.getMonth() + 1, 0).getDate()
+    period.value = {
+      start: `${prevMonth.getFullYear()}-${String(prevMonth.getMonth() + 1).padStart(2, '0')}-16`,
+      end: `${prevMonth.getFullYear()}-${String(prevMonth.getMonth() + 1).padStart(2, '0')}-${String(endDay).padStart(2, '0')}`
+    }
+  } else {
+    // move to same month first half
+    period.value = {
+      start: `${y}-${String(m).padStart(2, '0')}-01`,
+      end: `${y}-${String(m).padStart(2, '0')}-15`
+    }
+  }
   loadEntries()
 }
 
-const prevPeriod = () => shiftPeriod(-1)
-const nextPeriod = () => shiftPeriod(1)
+const nextPeriod = () => {
+  // Determine current period and move to next half-month
+  let { start } = period.value
+  if (!start) {
+    period.value = computeHalfMonthPeriodForDate(new Date())
+    start = period.value.start
+  }
+  const [y, m, d] = start.split('-').map(Number)
+  const isFirstHalf = d === 1
+  if (isFirstHalf) {
+    // move to same month second half
+    const endDay = new Date(y, m, 0).getDate() // m here is 1-based; end of this month
+    period.value = {
+      start: `${y}-${String(m).padStart(2, '0')}-16`,
+      end: `${y}-${String(m).padStart(2, '0')}-${String(endDay).padStart(2, '0')}`
+    }
+  } else {
+    // move to next month first half
+    const nextMonth = new Date(y, m, 1) // next month
+    period.value = {
+      start: `${nextMonth.getFullYear()}-${String(nextMonth.getMonth() + 1).padStart(2, '0')}-01`,
+      end: `${nextMonth.getFullYear()}-${String(nextMonth.getMonth() + 1).padStart(2, '0')}-15`
+    }
+  }
+  loadEntries()
+}
 
 loadEntries()
 </script>

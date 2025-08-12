@@ -198,7 +198,26 @@ router.post('/clock', requireAuth, async (req, res) => {
 // List self time entries for current period (employee self-view)
 router.get('/me/entries', requireAuth, async (req, res) => {
   try {
-    const { start, end } = getBiweeklyPeriod()
+    // Optional date range override (?start=YYYY-MM-DD&end=YYYY-MM-DD)
+    const qsStart = (req.query.start || '').toString().slice(0, 10)
+    const qsEnd = (req.query.end || '').toString().slice(0, 10)
+    const isoRe = /^\d{4}-\d{2}-\d{2}$/
+    let start
+    let end
+    if (isoRe.test(qsStart) && isoRe.test(qsEnd)) {
+      // Use provided range
+      start = qsStart
+      end = qsEnd
+      // Normalize if out of order
+      if (new Date(start) > new Date(end)) {
+        const tmp = start; start = end; end = tmp
+      }
+    } else {
+      // Default to current biweekly period
+      const p = getBiweeklyPeriod()
+      start = p.start
+      end = p.end
+    }
     const q = await pool.query(
       `SELECT * FROM time_entries
        WHERE user_id = $1 AND clock_in_at >= $2::date AND clock_in_at < ($3::date + INTERVAL '1 day')
@@ -234,6 +253,58 @@ router.get('/me/open-entry', requireAuth, async (req, res) => {
   }
 })
 
+// Employee: get own shifts for current week (or provided week_start date)
+router.get('/me/shifts', requireAuth, async (req, res) => {
+  try {
+    const userId = req.user.userId
+    // Determine start of week (Sunday) in app timezone unless provided
+    let startParam = (req.query.week_start || '').toString().slice(0, 10)
+    let startTz
+    if (startParam) {
+      startTz = new Date(new Date(startParam).toLocaleString('en-US', { timeZone: TIMEZONE }))
+    } else {
+      const nowTz = new Date(new Date().toLocaleString('en-US', { timeZone: TIMEZONE }))
+      startTz = new Date(nowTz)
+      startTz.setDate(nowTz.getDate() - nowTz.getDay()) // Sunday
+    }
+    // Build days array for the week in timezone
+    const days = []
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(startTz)
+      d.setDate(startTz.getDate() + i)
+      const yyyy = d.getFullYear()
+      const mm = String(d.getMonth() + 1).padStart(2, '0')
+      const dd = String(d.getDate()).padStart(2, '0')
+      days.push({ date: `${yyyy}-${mm}-${dd}`, weekday: d.getDay() })
+    }
+    // Fetch shifts for user for any weekday
+    const q = await pool.query(
+      `SELECT es.weekday, es.company_token, es.start_time, es.end_time, ca.account_name
+       FROM employee_shifts es
+       LEFT JOIN company_accounts ca ON ca.company_token = es.company_token
+       WHERE es.user_id = $1`,
+      [userId]
+    )
+    const byWeekday = new Map()
+    for (const r of q.rows) byWeekday.set(Number(r.weekday), r)
+    const result = days.map(d => ({
+      date: d.date,
+      weekday: d.weekday,
+      shift: byWeekday.has(d.weekday)
+        ? {
+            company_token: byWeekday.get(d.weekday).company_token,
+            account_name: byWeekday.get(d.weekday).account_name || null,
+            start_time: byWeekday.get(d.weekday).start_time,
+            end_time: byWeekday.get(d.weekday).end_time
+          }
+        : null
+    }))
+    res.json({ success: true, data: result })
+  } catch (e) {
+    res.status(500).json({ success: false, error: 'Failed to fetch shifts' })
+  }
+})
+
 // Admin: list account entries by period and user
 router.get('/admin/:companyToken/entries', requireAuth, async (req, res) => {
   try {
@@ -258,7 +329,23 @@ router.get('/admin/:companyToken/entries', requireAuth, async (req, res) => {
          AND te.clock_in_at >= $2::date AND te.clock_in_at < ($3::date + INTERVAL '1 day')
          ${whereUser}
        ORDER BY te.user_id, te.clock_in_at`, params)
-    res.json({ success: true, data: q.rows, period: { start, end } })
+    // Compute scheduled shift seconds per user for this account and period
+    const shiftQ = await pool.query(
+      `WITH days AS (
+         SELECT generate_series($2::date, $3::date, interval '1 day')::date AS day
+       )
+       SELECT es.user_id, SUM(EXTRACT(EPOCH FROM (es.end_time - es.start_time))) AS seconds
+       FROM employee_shifts es
+       JOIN days d ON EXTRACT(DOW FROM d.day)::int = es.weekday
+       WHERE es.company_token = $1
+       GROUP BY es.user_id`,
+      [tokenForQuery, start, end]
+    )
+    const shiftSeconds = {}
+    for (const r of shiftQ.rows) {
+      shiftSeconds[r.user_id] = Number(r.seconds) || 0
+    }
+    res.json({ success: true, data: q.rows, period: { start, end }, shiftSeconds })
   } catch (e) {
     res.status(500).json({ success: false, error: e.message })
   }

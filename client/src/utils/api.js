@@ -158,7 +158,13 @@ export const api = {
     return apiRequest(url, { method: 'GET' })
   },
   // Payroll endpoints
-  getMyEntries: () => apiRequest('/api/payroll/me/entries', { method: 'GET' }),
+  getMyEntries: (start = null, end = null) => {
+    const params = new URLSearchParams()
+    if (start) params.set('start', start)
+    if (end) params.set('end', end)
+    const qs = params.toString()
+    return apiRequest(`/api/payroll/me/entries${qs ? `?${qs}` : ''}`, { method: 'GET' })
+  },
   getAdminEntries: (companyToken) => apiRequest(`/api/payroll/admin/${companyToken}/entries`, { method: 'GET' }),
   clock: (companyToken, qrSecret) => apiRequest('/api/payroll/clock', { method: 'POST', body: JSON.stringify({ company_token: companyToken, qr_secret: qrSecret }) }),
   markPaid: (companyToken) => apiRequest(`/api/payroll/admin/${companyToken}/pay`, { method: 'POST' }),
@@ -217,7 +223,15 @@ export const api = {
   // Shifts (admin)
   getUserShifts: (userId) => apiRequest(`/api/admin/users/${userId}/shifts`, { method: 'GET' }),
   upsertUserShift: (userId, payload) => apiRequest(`/api/admin/users/${userId}/shifts`, { method: 'POST', body: JSON.stringify(payload) }),
-  deleteUserShift: (userId, shiftId) => apiRequest(`/api/admin/users/${userId}/shifts/${shiftId}`, { method: 'DELETE' })
+  deleteUserShift: (userId, shiftId) => apiRequest(`/api/admin/users/${userId}/shifts/${shiftId}`, { method: 'DELETE' }),
+
+  // Employee shifts (self)
+  getMyShifts: (weekStart = null) => {
+    const params = new URLSearchParams()
+    if (weekStart) params.set('week_start', weekStart)
+    const qs = params.toString()
+    return apiRequest(`/api/payroll/me/shifts${qs ? `?${qs}` : ''}`, { method: 'GET' })
+  }
 }
 
 export default api 

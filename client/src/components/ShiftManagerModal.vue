@@ -1,0 +1,146 @@
+<template>
+  <div class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg p-4 w-full max-w-3xl">
+      <div class="flex items-center justify-between mb-2">
+        <h3 class="text-md font-semibold">Manage Shifts - {{ user?.email }}</h3>
+        <div class="space-x-2">
+          <button class="btn-secondary btn-xs" @click="$emit('close')">Close</button>
+          <button class="btn-primary btn-xs" :disabled="saving" @click="saveAll">{{ saving ? 'Saving...' : 'Save' }}</button>
+        </div>
+      </div>
+      <p class="text-xs text-gray-500 mb-3">Define weekly shifts per account. Times are local (HH:MM, 24h).</p>
+
+      <div class="overflow-auto">
+        <table class="min-w-full text-sm">
+          <thead>
+            <tr class="text-left text-gray-600">
+              <th class="py-2 pr-2">Weekday</th>
+              <th class="py-2 pr-2">Account</th>
+              <th class="py-2 pr-2">Start</th>
+              <th class="py-2 pr-2">End</th>
+              <th class="py-2 pr-2">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="wd in displayOrder" :key="wd" class="border-t">
+              <td class="py-2 pr-2 w-28">{{ weekdayLabel(wd) }}</td>
+              <td class="py-2 pr-2">
+                <select v-model="form[wd].company_token" class="form-input w-full">
+                  <option value="">—</option>
+                  <option v-for="acc in accounts" :key="acc.company_token" :value="acc.company_token">
+                    {{ acc.account_name || acc.company_token }}
+                  </option>
+                </select>
+              </td>
+              <td class="py-2 pr-2 w-28">
+                <input v-model="form[wd].start_time" type="time" class="form-input w-full" />
+              </td>
+              <td class="py-2 pr-2 w-28">
+                <input v-model="form[wd].end_time" type="time" class="form-input w-full" />
+              </td>
+              <td class="py-2 pr-2 w-24">
+                <button class="btn-danger btn-xs" @click="clearDay(wd)" :disabled="!form[wd].company_token && !form[wd].start_time && !form[wd].end_time">Clear</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, onMounted } from 'vue'
+import api from '../utils/api'
+
+const props = defineProps({
+  user: { type: Object, required: true },
+  companyId: { type: String, required: false }
+})
+
+const accounts = ref([])
+const saving = ref(false)
+
+// internal form state keyed by weekday number (0..6)
+const form = ref({
+  0: { id: null, company_token: '', start_time: '', end_time: '' },
+  1: { id: null, company_token: '', start_time: '', end_time: '' },
+  2: { id: null, company_token: '', start_time: '', end_time: '' },
+  3: { id: null, company_token: '', start_time: '', end_time: '' },
+  4: { id: null, company_token: '', start_time: '', end_time: '' },
+  5: { id: null, company_token: '', start_time: '', end_time: '' },
+  6: { id: null, company_token: '', start_time: '', end_time: '' },
+})
+
+// Show Monday first: 1..6 then 0
+const displayOrder = [1,2,3,4,5,6,0]
+const weekdayLabel = (wd) => ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][wd]
+
+const loadAccounts = async () => {
+  // Prefer explicit companyId; otherwise infer from user
+  const cid = props.companyId || props.user?.company?.id || props.user?.company_id || ''
+  if (!cid) return
+  try {
+    const res = await api.listCompanyAccounts(cid)
+    accounts.value = res?.data || []
+  } catch {
+    accounts.value = []
+  }
+}
+
+const loadShifts = async () => {
+  try {
+    const res = await api.getUserShifts(props.user.id)
+    const shifts = res?.data || []
+    for (const s of shifts) {
+      form.value[s.weekday] = {
+        id: s.id,
+        company_token: s.company_token || '',
+        start_time: (s.start_time || '').toString().slice(0,5),
+        end_time: (s.end_time || '').toString().slice(0,5)
+      }
+    }
+  } catch {}
+}
+
+const clearDay = (wd) => {
+  form.value[wd] = { id: form.value[wd].id, company_token: '', start_time: '', end_time: '' }
+}
+
+const saveAll = async () => {
+  try {
+    saving.value = true
+    // Upsert or delete per weekday
+    for (const wd of displayOrder) {
+      const row = form.value[wd]
+      const hasValues = !!row.company_token && !!row.start_time && !!row.end_time
+      if (hasValues) {
+        await api.upsertUserShift(props.user.id, {
+          company_token: row.company_token,
+          weekday: wd,
+          start_time: row.start_time,
+          end_time: row.end_time
+        })
+      } else if (row.id) {
+        await api.deleteUserShift(props.user.id, row.id)
+      }
+    }
+    window.showNotification?.({ type: 'success', title: 'Shifts', message: 'Shifts saved' })
+    saving.value = false
+    // Reload to refresh ids
+    await loadShifts()
+  } catch (e) {
+    saving.value = false
+    window.showNotification?.({ type: 'error', title: 'Shifts', message: e?.message || 'Failed to save shifts' })
+  }
+}
+
+onMounted(async () => {
+  await Promise.all([loadAccounts(), loadShifts()])
+})
+</script>
+
+<style scoped>
+</style>
+
+
