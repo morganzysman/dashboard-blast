@@ -104,14 +104,14 @@ const toggleUserMenu = () => {
 
 const pageTitle = computed(() => {
   const isAdminSuite = authStore.isSuperAdmin || authStore.isAdmin
-  const base = isAdminSuite ? 'OlaClick Management Suite' : 'OlaClick Workforce'
+  const base = isAdminSuite ? 'Management Suite' : 'Workforce'
   const routeNames = {
-    Admin: 'OlaClick Management Suite',
+    Admin: 'Management Suite',
     Dashboard: base,
     Notifications: base,
     EmployeeClock: base,
     EmployeeTimesheet: base,
-    Companies: 'OlaClick Management Suite'
+    Companies: 'Management Suite'
   }
   return routeNames[route.name] || base
 })

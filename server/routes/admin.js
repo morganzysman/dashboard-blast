@@ -624,3 +624,74 @@ router.delete('/companies/:companyId', requireAuth, requireRole(['super-admin'])
     res.status(500).json({ success: false, error: 'Failed to delete company' })
   }
 })
+
+// Shifts calendar per account for a week (admin/super-admin)
+router.get('/shifts', requireAuth, requireRole(['admin', 'super-admin']), async (req, res) => {
+  try {
+    const companyToken = (req.query.company_token || '').toString().trim()
+    if (!companyToken) return res.status(400).json({ success: false, error: 'company_token is required' })
+
+    // Resolve account and enforce scope for admin
+    const acct = await pool.query('SELECT company_id, account_name, company_token FROM company_accounts WHERE company_token = $1', [companyToken])
+    if (acct.rowCount === 0) return res.status(404).json({ success: false, error: 'Account not found' })
+    const companyId = acct.rows[0].company_id
+    if (req.user.role === 'admin') {
+      if (!req.user.companyId || req.user.companyId !== companyId) {
+        return res.status(403).json({ success: false, error: 'Forbidden' })
+      }
+    }
+
+    // Determine start of week (Sunday) using optional week_start
+    const TIMEZONE = 'America/Santiago'
+    let startParam = (req.query.week_start || '').toString().slice(0, 10)
+    let startTz
+    if (/^\d{4}-\d{2}-\d{2}$/.test(startParam)) {
+      startTz = new Date(new Date(startParam).toLocaleString('en-US', { timeZone: TIMEZONE }))
+    } else {
+      const nowTz = new Date(new Date().toLocaleString('en-US', { timeZone: TIMEZONE }))
+      startTz = new Date(nowTz)
+      startTz.setDate(nowTz.getDate() - nowTz.getDay())
+    }
+    const days = []
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(startTz)
+      d.setDate(startTz.getDate() + i)
+      const yyyy = d.getFullYear()
+      const mm = String(d.getMonth() + 1).padStart(2, '0')
+      const dd = String(d.getDate()).padStart(2, '0')
+      days.push({ date: `${yyyy}-${mm}-${dd}`, weekday: d.getDay() })
+    }
+
+    // Fetch shifts for this account and users
+    const q = await pool.query(
+      `SELECT es.user_id, u.name, u.email, es.weekday, es.start_time, es.end_time
+       FROM employee_shifts es
+       JOIN users u ON u.id = es.user_id
+       WHERE es.company_token = $1
+       ORDER BY es.weekday, u.name`,
+      [companyToken]
+    )
+
+    const byWeekday = new Map()
+    for (const r of q.rows) {
+      const wd = Number(r.weekday)
+      if (!byWeekday.has(wd)) byWeekday.set(wd, [])
+      byWeekday.get(wd).push({
+        user_id: r.user_id,
+        name: r.name,
+        email: r.email,
+        start_time: r.start_time,
+        end_time: r.end_time
+      })
+    }
+
+    const data = days.map(d => ({
+      date: d.date,
+      weekday: d.weekday,
+      entries: byWeekday.get(d.weekday) || []
+    }))
+    res.json({ success: true, account: { company_token: acct.rows[0].company_token, account_name: acct.rows[0].account_name }, data })
+  } catch (e) {
+    res.status(500).json({ success: false, error: 'Failed to fetch shifts calendar' })
+  }
+})

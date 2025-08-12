@@ -45,6 +45,27 @@
           </tbody>
         </table>
       </div>
+
+      <!-- Weekly calendar preview -->
+      <div class="mt-4">
+        <div class="flex items-center justify-between mb-2">
+          <h4 class="text-sm font-semibold text-gray-900">Preview (This Week)</h4>
+          <span class="text-xs text-gray-500">Shows current selections per weekday</span>
+        </div>
+        <div class="grid grid-cols-7 gap-2 text-xs">
+          <div class="text-gray-500" v-for="d in ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']" :key="d">{{ d }}</div>
+          <template v-for="day in weekDays" :key="day.dateStr">
+            <div class="border rounded p-2 min-h-[80px]">
+              <div class="text-[10px] text-gray-500">{{ day.label }}</div>
+              <div class="mt-1 space-y-1" v-if="form[day.weekday].company_token && form[day.weekday].start_time && form[day.weekday].end_time">
+                <div class="text-gray-900 font-medium">{{ accountNameFor(form[day.weekday].company_token) }}</div>
+                <div class="text-gray-600">{{ form[day.weekday].start_time }} - {{ form[day.weekday].end_time }}</div>
+              </div>
+              <div v-else class="text-gray-400">—</div>
+            </div>
+          </template>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -75,6 +96,29 @@ const form = ref({
 // Show Monday first: 1..6 then 0
 const displayOrder = [1,2,3,4,5,6,0]
 const weekdayLabel = (wd) => ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][wd]
+
+// Build current week days for preview (Sunday..Saturday)
+const weekDays = ref([])
+const buildWeek = () => {
+  const today = new Date()
+  const start = new Date(today)
+  start.setDate(today.getDate() - today.getDay())
+  const arr = []
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(start)
+    d.setDate(start.getDate() + i)
+    const yyyy = d.getFullYear()
+    const mm = String(d.getMonth() + 1).padStart(2, '0')
+    const dd = String(d.getDate()).padStart(2, '0')
+    arr.push({ dateStr: `${yyyy}-${mm}-${dd}`, label: d.getDate(), weekday: d.getDay() })
+  }
+  weekDays.value = arr
+}
+
+const accountNameFor = (token) => {
+  const acc = accounts.value.find(a => a.company_token === token)
+  return acc?.account_name || token || '—'
+}
 
 const loadAccounts = async () => {
   // Prefer explicit companyId; otherwise infer from user
@@ -136,6 +180,7 @@ const saveAll = async () => {
 }
 
 onMounted(async () => {
+  buildWeek()
   await Promise.all([loadAccounts(), loadShifts()])
 })
 </script>

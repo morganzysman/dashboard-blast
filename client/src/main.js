@@ -17,6 +17,7 @@ import RentabilityView from './views/RentabilityView.vue'
 import EmployeeClockView from './views/EmployeeClockView.vue'
 import EmployeeTimesheetView from './views/EmployeeTimesheetView.vue'
 import AdminPayrollView from './views/AdminPayrollView.vue'
+import AdminShiftsCalendarView from './views/AdminShiftsCalendarView.vue'
 import CompaniesView from './views/CompaniesView.vue'
 
 // Import stores
@@ -43,6 +44,12 @@ const routes = [
     path: '/admin/payroll',
     name: 'AdminPayroll',
     component: AdminPayrollView,
+    meta: { requiresAuth: true, requiresRole: ['admin', 'super-admin'] }
+  },
+  {
+    path: '/admin/shifts',
+    name: 'AdminShiftsCalendar',
+    component: AdminShiftsCalendarView,
     meta: { requiresAuth: true, requiresRole: ['admin', 'super-admin'] }
   },
   {

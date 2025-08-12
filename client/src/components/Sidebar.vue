@@ -99,6 +99,20 @@
         Payroll
       </router-link>
 
+      <!-- Admin & Super Admin: Shifts Calendar -->
+      <router-link
+        v-if="authStore.user?.role === 'admin' || authStore.isSuperAdmin"
+        to="/admin/shifts"
+        class="sidebar-nav-item"
+        :class="{ active: $route.name === 'AdminShiftsCalendar' }"
+        @click="$emit('close')"
+      >
+        <svg class="sidebar-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3M5 11h14M5 19h14M5 7h14M7 15h10" />
+        </svg>
+        Shifts Calendar
+      </router-link>
+
       <!-- Admin and Super Admin - User Management -->
       <router-link
         v-if="authStore.isSuperAdmin || authStore.user?.role === 'admin'"
@@ -126,16 +140,6 @@
         </svg>
         Companies
       </router-link>
-
-      <!-- Company info -->
-      <div class="px-6 py-3" v-if="authStore.user?.company_id">
-        <div class="text-xs font-medium text-gray-500 uppercase tracking-wide">
-          Company
-        </div>
-        <div class="mt-1 text-sm text-gray-900">
-          Company ID: {{ authStore.user.company_id.substring(0, 8) }}...
-        </div>
-      </div>
     </nav>
 
     <!-- Footer -->
