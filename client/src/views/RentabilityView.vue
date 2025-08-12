@@ -578,8 +578,8 @@ const fetchAllPaymentMethodCosts = async () => {
     // Add tokens from utility costs
     utilityCosts.value.forEach(cost => accountTokens.add(cost.company_token))
     
-    // Add tokens from user accounts
-    userAccounts.value.forEach(account => accountTokens.add(account.company_token))
+    // Add tokens from company accounts
+    accounts.value.forEach(account => accountTokens.add(account.company_token))
     
     // Fetch payment method costs for each account
     for (const companyToken of accountTokens) {
@@ -685,7 +685,7 @@ const saveCosts = async () => {
     
     // Get account name if not set
     if (!formData.value.account_name) {
-      const account = userAccounts.value.find(acc => acc.company_token === formData.value.company_token)
+      const account = accounts.value.find(acc => acc.company_token === formData.value.company_token)
       formData.value.account_name = account?.account_name
     }
 
@@ -776,7 +776,7 @@ const onModalAccountChange = () => {
     // If editing, update form data
     if (editingCost.value) {
       formData.value.company_token = selectedModalAccount.value
-      const account = userAccounts.value.find(acc => acc.company_token === selectedModalAccount.value)
+      const account = accounts.value.find(acc => acc.company_token === selectedModalAccount.value)
       if (account) {
         formData.value.account_name = account.account_name
       }
@@ -786,8 +786,8 @@ const onModalAccountChange = () => {
 
 // Payment method costs methods
 const getSelectedAccountName = () => {
-  const account = userAccounts.value.find(acc => acc.company_token === selectedModalAccount.value)
-  return account ? account.account_name : ''
+  const account = accounts.value.find(acc => acc.company_token === selectedModalAccount.value)
+  return account ? (account.account_name || account.company_token) : ''
 }
 
 const loadPaymentMethodCosts = async () => {
