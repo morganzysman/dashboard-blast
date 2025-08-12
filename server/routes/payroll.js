@@ -329,16 +329,15 @@ router.get('/admin/:companyToken/entries', requireAuth, async (req, res) => {
          AND te.clock_in_at >= $2::date AND te.clock_in_at < ($3::date + INTERVAL '1 day')
          ${whereUser}
        ORDER BY te.user_id, te.clock_in_at`, params)
-    // Compute scheduled shift seconds per user for this account and period
+    // Compute shift seconds per user based on entries' shift_start/shift_end within the period
     const shiftQ = await pool.query(
-      `WITH days AS (
-         SELECT generate_series($2::date, $3::date, interval '1 day')::date AS day
-       )
-       SELECT es.user_id, SUM(EXTRACT(EPOCH FROM (es.end_time - es.start_time))) AS seconds
-       FROM employee_shifts es
-       JOIN days d ON EXTRACT(DOW FROM d.day)::int = es.weekday
-       WHERE es.company_token = $1
-       GROUP BY es.user_id`,
+      `SELECT user_id,
+              COALESCE(SUM(GREATEST(0, EXTRACT(EPOCH FROM (shift_end - shift_start)))), 0) AS seconds
+         FROM time_entries
+        WHERE company_token = $1
+          AND clock_in_at >= $2::date AND clock_in_at < ($3::date + INTERVAL '1 day')
+          AND shift_start IS NOT NULL AND shift_end IS NOT NULL
+        GROUP BY user_id`,
       [tokenForQuery, start, end]
     )
     const shiftSeconds = {}
