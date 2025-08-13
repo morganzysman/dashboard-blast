@@ -3,7 +3,7 @@ import { requireAuth } from '../middleware/auth.js'
 import { pool } from '../database.js'
 import QRCode from 'qrcode'
 import { config } from '../config/index.js'
-import { notifyUserPaid } from '../services/notificationService.js'
+import { notifyUserPaid, notifyAdminsClockEvent } from '../services/notificationService.js'
 
 const router = Router()
 const TIMEZONE = 'America/Santiago'
@@ -155,6 +155,17 @@ router.post('/clock', requireAuth, async (req, res) => {
          RETURNING *`,
         [id]
       )
+      // Notify admins
+      try {
+        await notifyAdminsClockEvent({
+          companyId: companyId2,
+          companyToken: company_token,
+          userId,
+          userName: req.user.userName,
+          action: 'clock_out',
+          timestamp: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+        })
+      } catch {}
       return res.json({ success: true, data: { action: 'clock_out', entry: upd.rows[0] } })
     } else {
       // clock-in (store timestamptz server time; display handled by client)
@@ -198,6 +209,17 @@ router.post('/clock', requireAuth, async (req, res) => {
           lateNotice = 'You are late'
         }
       }
+      // Notify admins
+      try {
+        await notifyAdminsClockEvent({
+          companyId: companyId2,
+          companyToken: company_token,
+          userId,
+          userName: req.user.userName,
+          action: 'clock_in',
+          timestamp: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+        })
+      } catch {}
       return res.json({ success: true, data: { action: 'clock_in', entry: ins.rows[0], lateNotice } })
     }
   } catch (e) {

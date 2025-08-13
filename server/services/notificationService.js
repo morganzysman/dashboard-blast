@@ -333,6 +333,56 @@ export function scheduleLateEmployeeAlerts() {
   console.log('⏰ Late employee alerts scheduled to run every 10 minutes');
 }
 
+// Notify company admins that an employee clocked in/out
+export async function notifyAdminsClockEvent({ companyId, companyToken, userId, userName, action, timestamp }) {
+  try {
+    // Resolve account name
+    const acct = await pool.query(`SELECT account_name FROM company_accounts WHERE company_id = $1 AND company_token = $2 LIMIT 1`, [companyId, companyToken])
+    const accountName = acct.rows[0]?.account_name || companyToken
+
+    // Find admin recipients in this company and all super-admins
+    const admins = await pool.query(
+      `SELECT ps.* , u.email, u.name
+         FROM push_subscriptions ps
+         JOIN users u ON u.id = ps.user_id
+        WHERE ps.is_active = TRUE AND u.is_active = TRUE
+          AND (u.role = 'super-admin' OR (u.role = 'admin' AND u.company_id = $1))`,
+      [companyId]
+    )
+    if (admins.rowCount === 0) {
+      await logNotificationEvent('00000000-0000-0000-0000-000000000000', 'clock_event_admin_notify', 'No admin subscribers for company', { companyId, companyToken, userId, action }, true)
+      return { sent: 0, devices: 0 }
+    }
+
+    const titleAction = action === 'clock_in' ? '🔓 Clock In' : '🔒 Clock Out'
+    const body = `${userName || 'Employee'} ${action === 'clock_in' ? 'clocked in' : 'clocked out'} at ${timestamp} • ${accountName}`
+    const payload = {
+      title: titleAction,
+      body,
+      icon: '/icons/icon-192x192.png',
+      badge: '/icons/icon-72x72.png',
+      tag: `clock-${userId}-${action}-${companyToken}`,
+      data: { type: 'clock-event', userId, userName, action, companyToken, accountName, timestamp, url: '/admin/payroll' }
+    }
+
+    let sent = 0
+    for (const admin of admins.rows) {
+      try {
+        await webpush.sendNotification({ endpoint: admin.endpoint, keys: { p256dh: admin.p256dh_key, auth: admin.auth_key } }, JSON.stringify(payload))
+        sent++
+      } catch (err) {
+        await trackNotificationError(admin.user_id, err.message)
+        if (err.statusCode === 410) await removeSpecificPushSubscription(admin.endpoint)
+      }
+    }
+    await logNotificationEvent('00000000-0000-0000-0000-000000000000', 'clock_event_admin_notify', `Clock ${action} sent to admins`, { companyId, companyToken, userId, userName, sent }, true)
+    return { sent, devices: admins.rowCount }
+  } catch (err) {
+    await logNotificationEvent('00000000-0000-0000-0000-000000000000', 'clock_event_admin_notify_error', 'Failed to notify admins of clock event', { error: err.message, companyId, companyToken, userId, action }, false, err.message)
+    return { sent: 0, devices: 0, error: err.message }
+  }
+}
+
 // Generate daily report for a specific user
 async function generateUserDailyReport(user, subscriptionData) {
   try {
