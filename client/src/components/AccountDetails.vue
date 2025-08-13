@@ -16,7 +16,7 @@
 
           <!-- Account Indicators -->
           <div class="mb-4">
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               <div class="bg-indigo-50 rounded-lg p-3 text-center">
                 <p class="text-sm sm:text-lg font-bold text-indigo-600 truncate">{{ formatCurrency(getAccountAvgTicket(account)) }}</p>
                 <p class="text-xs text-indigo-500">Avg Ticket</p>

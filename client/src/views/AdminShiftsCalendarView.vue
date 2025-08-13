@@ -23,12 +23,12 @@
 
     <div class="card">
       <div class="card-body">
-        <div class="flex items-center justify-between mb-2">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
           <h3 class="text-md font-semibold">Shifts Calendar</h3>
           <div class="text-xs text-gray-500">Week of {{ weekStart }}</div>
         </div>
-        <div class="grid grid-cols-7 gap-2 text-xs">
-          <div class="text-gray-500" v-for="d in ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']" :key="d">{{ d }}</div>
+        <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 text-xs">
+          <div class="text-gray-500 hidden lg:block" v-for="d in ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']" :key="d">{{ d }}</div>
           <template v-for="day in weekDays" :key="day.date">
             <div class="border rounded p-2 min-h-[140px]">
               <div class="text-[10px] text-gray-500">{{ day.label }}</div>

@@ -30,7 +30,8 @@
             <button class="btn-secondary btn-sm" @click="loadEntries">Load</button>
             <button v-if="companyToken" class="btn-secondary btn-sm" @click="downloadQr">Download QR</button>
           </div>
-          <table class="min-w-full text-sm">
+          <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
             <thead>
               <tr class="text-left text-gray-600">
                 <th class="py-2">Employee</th>
@@ -60,7 +61,8 @@
                 </td>
               </tr>
             </tbody>
-          </table>
+            </table>
+          </div>
           <!-- Simple calendar-like visualization -->
           <div class="mt-6">
             <h3 class="text-md font-semibold mb-2">Entries Calendar</h3>
