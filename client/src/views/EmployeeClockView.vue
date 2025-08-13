@@ -79,6 +79,8 @@ const videoEl = ref(null)
 let mediaStream = null
 let frameHandle = null
 let barcodeDetector = null
+let zxingReader = null
+let zxingControls = null
 
 // Derived: account label for display
 const accountLabel = computed(() => {
@@ -145,16 +147,15 @@ const startScanner = async () => {
     if ('BarcodeDetector' in window) {
       try { barcodeDetector = new window.BarcodeDetector({ formats: ['qr_code'] }) } catch {}
     }
-    mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false })
-    if (videoEl.value) {
-      videoEl.value.srcObject = mediaStream
-      await videoEl.value.play()
-    }
     if (barcodeDetector) {
+      mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false })
+      if (videoEl.value) {
+        videoEl.value.srcObject = mediaStream
+        await videoEl.value.play()
+      }
       scanWithDetector()
     } else {
-      // Fallback: lightweight canvas decode via offscreen draw + simple QR libs could be plugged; for now rely on native where possible
-      // Keep video running; show instruction to use QR link as fallback
+      await startZxing()
     }
   } catch (e) {
     message.value = 'Camera access denied. Please allow camera or use the QR link.'
@@ -193,9 +194,41 @@ const stopScanner = () => {
     for (const t of mediaStream.getTracks()) t.stop()
   }
   mediaStream = null
+  if (zxingControls && typeof zxingControls.stop === 'function') {
+    try { zxingControls.stop() } catch {}
+  }
+  zxingControls = null
 }
 
 onBeforeUnmount(() => stopScanner())
+
+// ZXing fallback
+const startZxing = async () => {
+  try {
+    const mod = await import('@zxing/browser')
+    const { BrowserMultiFormatReader } = mod
+    zxingReader = new BrowserMultiFormatReader()
+    const video = videoEl.value
+    if (!video) return
+    zxingControls = await zxingReader.decodeFromVideoDevice(undefined, video, (result, err) => {
+      if (!result) return
+      const raw = result.getText()
+      try {
+        const url = new URL(raw)
+        const token = url.searchParams.get('company_token')
+        const secret = url.searchParams.get('qr_secret')
+        if (token && secret) {
+          companyToken.value = token
+          qrSecret.value = secret
+          stopScanner()
+        }
+      } catch {}
+    })
+    scannerOpen.value = true
+  } catch (e) {
+    message.value = 'Scanner not supported on this device/browser.'
+  }
+}
 
 const submitClock = async (dir) => {
   try {

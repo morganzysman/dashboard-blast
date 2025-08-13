@@ -38,6 +38,7 @@
   "license": "MIT",
   "dependencies": {
     "@vitejs/plugin-vue": "^4.5.0",
+    "@zxing/browser": "^0.1.5",
     "autoprefixer": "^10.4.16",
     "axios": "^1.6.2",
     "bcrypt": "^5.1.1",
@@ -48,13 +49,13 @@
     "pg": "^8.11.3",
     "pinia": "^2.1.0",
     "postcss": "^8.4.32",
+    "qrcode": "^1.5.3",
     "tailwindcss": "^3.3.0",
     "uuid": "^9.0.1",
     "vite": "^5.0.0",
     "vue": "^3.3.0",
     "vue-router": "^4.2.0",
-    "web-push": "^3.6.6",
-    "qrcode": "^1.5.3"
+    "web-push": "^3.6.6"
   },
   "devDependencies": {
     "@vue/cli-service": "^5.0.0",
