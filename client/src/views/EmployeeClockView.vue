@@ -38,16 +38,12 @@
               </div>
             </template>
             <template v-else>
-              <div class="mt-1">
-                <button class="btn-secondary btn-sm" @click="toggleScanner" v-if="!scannerOpen">Open scanner</button>
-                <button class="btn-secondary btn-sm" @click="stopScanner" v-else>Close scanner</button>
-              </div>
-              <div v-show="scannerOpen" class="mt-2 rounded overflow-hidden border border-gray-200 relative">
+              <div class="mt-2 rounded overflow-hidden border border-gray-200 relative max-w-xl mx-auto">
                 <video ref="videoEl" class="w-full h-64 object-cover" playsinline></video>
                 <div class="absolute inset-0 pointer-events-none border-2 border-green-500 m-8 rounded"></div>
                 <div class="absolute bottom-1 right-2 bg-black bg-opacity-50 text-white text-[10px] px-1 rounded">Scanner</div>
               </div>
-              <p class="text-xs text-gray-500">Scan the QR provided by your manager to begin.</p>
+              <p class="text-xs text-gray-500 text-center">Scan the QR provided by your manager to begin.</p>
             </template>
             <p v-if="message" class="text-sm" :class="messageClass">{{ message }}</p>
           </div>
@@ -60,10 +56,12 @@
 
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import api from '../utils/api'
 
 const auth = useAuthStore()
+const router = useRouter()
 const accounts = computed(() => auth.user?.userAccounts || [])
 const companyToken = ref(accounts.value[0]?.company_token || '')
 const qrSecret = ref('')
@@ -211,6 +209,9 @@ const submitClock = async (dir) => {
       message.value = action === 'clock_out' ? 'Clocked out successfully' : (late ? `${late}` : 'Clocked in successfully')
       qrSecret.value = ''
       await refreshOpenState()
+      if (action === 'clock_in') {
+        setTimeout(() => { router.push('/timesheet') }, 15000)
+      }
     } else {
       message.value = res.error || 'Failed'
     }

@@ -23,7 +23,7 @@
                @close="closeMobileSidebar" />
       
       <!-- Main content area -->
-      <main class="main-content" :class="{ 'flex items-start justify-start': $route.name === 'EmployeeClock' }">
+      <main class="main-content" :class="{ 'flex items-start justify-center': $route.name === 'EmployeeClock' }">
         <!-- Top navigation (show when authenticated) -->
         <TopNavigation v-if="authStore.isAuthenticated" 
                        @toggle-mobile-menu="toggleMobileSidebar" />
