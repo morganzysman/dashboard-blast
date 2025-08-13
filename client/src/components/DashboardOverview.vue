@@ -157,7 +157,7 @@
           <div class="flex items-center justify-between mb-3">
             <div class="min-w-0 flex-1">
               <p class="text-green-100 text-xs sm:text-sm font-medium">TOTAL AMOUNT</p>
-              <p class="text-lg sm:text-xl font-bold truncate">{{ formatCurrency(analyticsData.aggregated.totalAmount) }}</p>
+              <p class="text-lg sm:text-xl font-bold truncate">{{ formatCurrency(getAggregatedGrossSales()) }}</p>
             </div>
             <div class="w-10 h-10 sm:w-12 sm:h-12 bg-green-400 bg-opacity-30 rounded-lg flex items-center justify-center flex-shrink-0">
               <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
