@@ -12,6 +12,7 @@ import {
   logNotificationEvent
 } from '../database.js';
 import { fetchOlaClickData, getTimezoneAwareDate } from './olaClickService.js';
+import { pool } from '../database.js';
 
 // Configure Web Push
 export function configureWebPush() {
@@ -52,6 +53,10 @@ export function scheduleDailyReports() {
       console.log(`📊 Found ${userSubscriptionsMap.size} unique users with ${subscriptions.length} total devices`);
           
       for (const [userId, {user, devices}] of userSubscriptionsMap) {
+        // Only admins and super-admins receive sales reports
+        if (!user || (user.role !== 'admin' && user.role !== 'super-admin')) {
+          continue;
+        }
         if (!user.accounts || user.accounts.length === 0) {
           console.log(`📊 Skipping user ${user.email} - no accounts assigned`);
           continue;
@@ -136,6 +141,159 @@ export function scheduleDailyReports() {
   });
   
   console.log('⏰ Frequency-based notifications scheduled to run every 30 minutes');
+}
+
+// Manual employee notification: shift updated
+export async function notifyUserShiftUpdate(userId) {
+  try {
+    const subs = await getPushSubscriptions(userId);
+    if (!subs || subs.length === 0) return false;
+    const payload = {
+      title: '🗓️ New shift ready',
+      body: 'New shift ready, check it',
+      icon: '/icons/icon-192x192.png',
+      badge: '/icons/icon-72x72.png',
+      tag: 'shift-update',
+      data: { url: '/timesheet', type: 'shift-update', timestamp: Date.now() }
+    };
+    let sent = 0;
+    for (const s of subs) {
+      try {
+        await webpush.sendNotification(s.subscription, JSON.stringify(payload));
+        sent++;
+      } catch (err) {
+        await trackNotificationError(userId, err.message);
+        if (err.statusCode === 410) {
+          await removeSpecificPushSubscription(s.endpoint);
+        }
+      }
+    }
+    if (sent > 0) await trackNotificationSent(userId);
+    await logNotificationEvent(userId, 'shift_update_notify', 'Shift update notification sent', { devices: subs.length, sent }, true);
+    return sent > 0;
+  } catch (e) {
+    await logNotificationEvent(userId, 'shift_update_notify_error', 'Failed to send shift update notification', { error: e.message }, false, e.message);
+    return false;
+  }
+}
+
+// Manual employee notification: paid for period
+export async function notifyUserPaid(userId, amount, currency, periodStart, periodEnd) {
+  try {
+    const subs = await getPushSubscriptions(userId);
+    if (!subs || subs.length === 0) return false;
+    const payload = {
+      title: '💵 Payroll Paid',
+      body: `You have been paid ${amount} ${currency}`,
+      icon: '/icons/icon-192x192.png',
+      badge: '/icons/icon-72x72.png',
+      tag: `payroll-paid-${periodStart}-${periodEnd}`,
+      data: { url: '/timesheet', type: 'payroll-paid', periodStart, periodEnd, amount, currency, timestamp: Date.now() }
+    };
+    let sent = 0;
+    for (const s of subs) {
+      try {
+        await webpush.sendNotification(s.subscription, JSON.stringify(payload));
+        sent++;
+      } catch (err) {
+        await trackNotificationError(userId, err.message);
+        if (err.statusCode === 410) {
+          await removeSpecificPushSubscription(s.endpoint);
+        }
+      }
+    }
+    if (sent > 0) await trackNotificationSent(userId);
+    await logNotificationEvent(userId, 'payroll_paid_notify', 'Payroll paid notification sent', { amount, currency, periodStart, periodEnd, devices: subs.length, sent }, true);
+    return sent > 0;
+  } catch (e) {
+    await logNotificationEvent(userId, 'payroll_paid_notify_error', 'Failed to send payroll paid notification', { error: e.message }, false, e.message);
+    return false;
+  }
+}
+
+// Admin alert: late employees, checked every 10 minutes, do-not-spam per entry
+export function scheduleLateEmployeeAlerts() {
+  cron.schedule('*/10 * * * *', async () => {
+    try {
+      // Find open entries with shift_start older than 10 minutes and no clock_in yet? We need employees whose shift started but no open entry.
+      // Approach: For each employee shift today, if now > shift_start + 10m and there is no time_entries for today for that user/account, they are late.
+      const now = new Date();
+      const today = now.toISOString().slice(0,10);
+      // Build candidate rows from employee_shifts joined to users and company_accounts
+      const q = await pool.query(`
+        WITH today_shifts AS (
+          SELECT es.user_id, es.company_token, es.weekday, es.start_time
+          FROM employee_shifts es
+          WHERE es.weekday = EXTRACT(DOW FROM CURRENT_DATE)::int
+        )
+        SELECT ts.user_id, ts.company_token, u.name AS user_name, u.company_id, ts.start_time
+        FROM today_shifts ts
+        JOIN users u ON u.id = ts.user_id AND u.is_active = TRUE
+      `);
+      if (q.rowCount === 0) return;
+      for (const row of q.rows) {
+        // Check if this user's shift start is >10m ago local? Use server time as baseline
+        const startIsoLocal = `${today}T${String(row.start_time).split('.')[0]}`;
+        const start = new Date(startIsoLocal);
+        if (isNaN(start.getTime())) continue;
+        if (now.getTime() - start.getTime() < 10 * 60 * 1000) continue;
+        // Check if any entry exists today for this user/account
+        const e = await pool.query(
+          `SELECT 1 FROM time_entries 
+           WHERE user_id = $1 AND company_token = $2 
+             AND clock_in_at >= $3::date AND clock_in_at < ($3::date + INTERVAL '1 day')
+           LIMIT 1`,
+          [row.user_id, row.company_token, today]
+        );
+        if (e.rowCount > 0) continue; // already clocked something
+        // De-dup: has admin already been notified about this lateness today? Use notification_logs tag
+        const exists = await pool.query(
+          `SELECT 1 FROM notification_logs 
+           WHERE event_type = 'late_employee_alert' 
+             AND payload->>'userId' = $1 
+             AND payload->>'companyToken' = $2
+             AND created_at >= CURRENT_DATE`,
+          [row.user_id, row.company_token]
+        );
+        if (exists.rowCount > 0) continue;
+
+        // Notify company admins: find push subscriptions for admins of the same company
+        const admins = await pool.query(
+          `SELECT ps.* , u.email, u.name
+           FROM push_subscriptions ps
+           JOIN users u ON u.id = ps.user_id
+           WHERE ps.is_active = TRUE AND u.role IN ('admin','super-admin')
+             AND (u.company_id = $1 OR u.role = 'super-admin')`,
+          [row.company_id]
+        );
+        if (admins.rowCount === 0) continue;
+        const payload = {
+          title: '⏰ Employee late',
+          body: `${row.user_name} is late`,
+          icon: '/icons/icon-192x192.png',
+          badge: '/icons/icon-72x72.png',
+          tag: `late-${row.user_id}-${today}`,
+          data: { type: 'late-employee', userId: row.user_id, companyToken: row.company_token, date: today, timestamp: Date.now(), url: '/admin/payroll' }
+        };
+        let notified = 0;
+        for (const admin of admins.rows) {
+          try {
+            await webpush.sendNotification({ endpoint: admin.endpoint, keys: { p256dh: admin.p256dh_key, auth: admin.auth_key } }, JSON.stringify(payload));
+            notified++;
+          } catch (err) {
+            await trackNotificationError(admin.user_id, err.message);
+            if (err.statusCode === 410) await removeSpecificPushSubscription(admin.endpoint);
+          }
+        }
+        if (notified > 0) {
+          await logNotificationEvent('00000000-0000-0000-0000-000000000000', 'late_employee_alert', `${row.user_name} is late`, { userId: row.user_id, companyToken: row.company_token, date: today, notified }, true);
+        }
+      }
+    } catch (err) {
+      await logNotificationEvent('00000000-0000-0000-0000-000000000000', 'late_employee_alert_error', 'Failed late employee check', { error: err.message }, false, err.message);
+    }
+  });
+  console.log('⏰ Late employee alerts scheduled to run every 10 minutes');
 }
 
 // Generate daily report for a specific user

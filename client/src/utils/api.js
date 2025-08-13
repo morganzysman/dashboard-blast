@@ -168,6 +168,7 @@ export const api = {
   getAdminEntries: (companyToken) => apiRequest(`/api/payroll/admin/${companyToken}/entries`, { method: 'GET' }),
   clock: (companyToken, qrSecret) => apiRequest('/api/payroll/clock', { method: 'POST', body: JSON.stringify({ company_token: companyToken, qr_secret: qrSecret }) }),
   markPaid: (companyToken) => apiRequest(`/api/payroll/admin/${companyToken}/pay`, { method: 'POST' }),
+  notifyPaid: (companyToken) => apiRequest(`/api/payroll/admin/${companyToken}/notify-paid`, { method: 'POST' }),
   updateEntry: (id, payload) => apiRequest(`/api/payroll/admin/entries/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
   createEntry: (payload) => apiRequest(`/api/payroll/admin/entries`, { method: 'POST', body: JSON.stringify(payload) }),
   
@@ -219,6 +220,7 @@ export const api = {
     method: 'PUT',
     body: JSON.stringify({ password: newPassword })
   }),
+  notifyUserShift: (userId) => apiRequest(`/api/admin/users/${userId}/notify-shift`, { method: 'POST' }),
 
   // Shifts (admin)
   getUserShifts: (userId) => apiRequest(`/api/admin/users/${userId}/shifts`, { method: 'GET' }),

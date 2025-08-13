@@ -3,6 +3,7 @@ import { requireAuth } from '../middleware/auth.js'
 import { pool } from '../database.js'
 import QRCode from 'qrcode'
 import { config } from '../config/index.js'
+import { notifyUserPaid } from '../services/notificationService.js'
 
 const router = Router()
 const TIMEZONE = 'America/Santiago'
@@ -445,6 +446,17 @@ router.post('/admin/:companyToken/pay', requireAuth, async (req, res) => {
     const companyId4 = bq.rows[0]?.company_id || null
     if (!(req.user.companyId && companyId4 && req.user.companyId === companyId4)) return res.status(403).json({ success: false, error: 'Access denied' })
     const { start, end } = getBiweeklyPeriod()
+    // Fetch company currency settings
+    const comp = await pool.query(
+      `SELECT c.id, c.currency, c.currency_symbol
+         FROM company_accounts ca
+         JOIN companies c ON c.id = ca.company_id
+        WHERE ca.company_token = $1
+        LIMIT 1`,
+      [companyToken]
+    )
+    const currency = comp.rows[0]?.currency || 'USD'
+    const currencySymbol = comp.rows[0]?.currency_symbol || '$'
     await client.query('BEGIN')
     // compute totals per user
     const entries = await client.query(
@@ -458,6 +470,7 @@ router.post('/admin/:companyToken/pay', requireAuth, async (req, res) => {
       const secs = Math.max(0, (new Date(r.clock_out_at).getTime() - new Date(r.clock_in_at).getTime()) / 1000)
       byUser.set(r.user_id, (byUser.get(r.user_id) || 0) + secs)
     }
+    const payouts = []
     for (const [userId, totalSeconds] of byUser.entries()) {
       // pick rate effective from first day of next period boundary logic handled at rate insertion time
       const rate = await client.query(
@@ -467,6 +480,7 @@ router.post('/admin/:companyToken/pay', requireAuth, async (req, res) => {
       )
       const hourly = rate.rows[0]?.hourly_rate || 0
       const amount = (totalSeconds / 3600) * Number(hourly)
+      payouts.push({ userId, amount })
       await client.query(
         `INSERT INTO payroll_snapshots(company_token, user_id, period_start, period_end, period_label, total_seconds, applied_hourly_rate, total_amount, paid, paid_at, snapshot)
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,TRUE,NOW(),$9)
@@ -487,12 +501,69 @@ router.post('/admin/:companyToken/pay', requireAuth, async (req, res) => {
       [companyToken, start, end]
     )
     await client.query('COMMIT')
+    // After commit, send notifications to employees with positive payouts
+    for (const p of payouts) {
+      if (p.amount > 0) {
+        try {
+          await notifyUserPaid(p.userId, Number(p.amount).toFixed(2), currencySymbol || currency, start, end)
+        } catch {}
+      }
+    }
     res.json({ success: true })
   } catch (e) {
     await client.query('ROLLBACK')
     res.status(500).json({ success: false, error: e.message })
   } finally {
     client.release()
+  }
+})
+
+// Admin: notify employees paid for current period (without marking paid)
+router.post('/admin/:companyToken/notify-paid', requireAuth, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin' && req.user.role !== 'super-admin') return res.status(403).json({ success: false, error: 'Access denied' })
+    const { companyToken } = req.params
+    const bq = await pool.query('SELECT company_id FROM company_accounts WHERE company_token = $1', [companyToken])
+    const companyId4 = bq.rows[0]?.company_id || null
+    if (!(req.user.companyId && companyId4 && req.user.companyId === companyId4)) return res.status(403).json({ success: false, error: 'Access denied' })
+    const { start, end } = getBiweeklyPeriod()
+    const comp = await pool.query(
+      `SELECT c.id, c.currency, c.currency_symbol
+         FROM company_accounts ca
+         JOIN companies c ON c.id = ca.company_id
+        WHERE ca.company_token = $1
+        LIMIT 1`,
+      [companyToken]
+    )
+    const currency = comp.rows[0]?.currency || 'USD'
+    const currencySymbol = comp.rows[0]?.currency_symbol || '$'
+    // compute totals per user for current period
+    const entries = await pool.query(
+      `SELECT user_id, clock_in_at, clock_out_at
+         FROM time_entries
+        WHERE company_token = $1 AND clock_in_at >= $2::date AND clock_in_at < ($3::date + INTERVAL '1 day')
+          AND clock_out_at IS NOT NULL AND locked = FALSE`, [companyToken, start, end]
+    )
+    const byUser = new Map()
+    for (const r of entries.rows) {
+      const secs = Math.max(0, (new Date(r.clock_out_at).getTime() - new Date(r.clock_in_at).getTime()) / 1000)
+      byUser.set(r.user_id, (byUser.get(r.user_id) || 0) + secs)
+    }
+    for (const [userId, totalSeconds] of byUser.entries()) {
+      const rate = await pool.query(
+        `SELECT hourly_rate FROM employee_rates
+         WHERE user_id = $1 AND company_token = $2 AND effective_from <= $3
+         ORDER BY effective_from DESC LIMIT 1`, [userId, companyToken, end]
+      )
+      const hourly = rate.rows[0]?.hourly_rate || 0
+      const amount = (totalSeconds / 3600) * Number(hourly)
+      if (amount > 0) {
+        try { await notifyUserPaid(userId, Number(amount).toFixed(2), currencySymbol || currency, start, end) } catch {}
+      }
+    }
+    res.json({ success: true })
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message })
   }
 })
 

@@ -18,7 +18,10 @@
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
               </button>
             </div>
-            <button class="btn-primary btn-sm" :disabled="paying || !companyToken" @click="markPaid">{{ paying ? 'Marking...' : 'Mark as Paid' }}</button>
+            <div class="inline-flex gap-2">
+              <button class="btn-primary btn-sm" :disabled="paying || !companyToken" @click="markPaid">{{ paying ? 'Marking...' : 'Mark as Paid' }}</button>
+              <button class="btn-secondary btn-sm" :disabled="notifyingPaid || !companyToken" @click="notifyPaid">{{ notifyingPaid ? 'Notifying…' : 'Notify Paid' }}</button>
+            </div>
           </div>
         </div>
         <div class="mt-4">
@@ -147,6 +150,7 @@ const companyToken = ref('')
 const entries = ref([])
 const period = ref({ start: '', end: '' })
 const paying = ref(false)
+const notifyingPaid = ref(false)
 const editEntry = ref(null)
 
 const periodLabel = computed(() => `${period.value.start} → ${period.value.end}`)
@@ -270,6 +274,19 @@ const markPaid = async () => {
     }
   } finally {
     paying.value = false
+  }
+}
+
+const notifyPaid = async () => {
+  if (!companyToken.value) return
+  try {
+    notifyingPaid.value = true
+    const res = await api.notifyPaid(companyToken.value)
+    if (res.success) {
+      window.showNotification?.({ type: 'success', title: 'Payroll', message: 'Employees notified for current period.' })
+    }
+  } finally {
+    notifyingPaid.value = false
   }
 }
 

@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { notifyUserShiftUpdate, notifyUserPaid } from '../services/notificationService.js';
 import { requireAuth, requireRole, hashPassword } from '../middleware/auth.js';
 import { pool } from '../database.js';
 import {
@@ -496,9 +497,30 @@ router.post('/users/:userId/shifts', requireAuth, requireRole(['admin', 'super-a
        RETURNING *`,
       [userId, company_token, weekday, start_time, end_time]
     )
+    // Optional: if client passes notify=true, send shift update notification
+    if (req.query.notify === 'true') {
+      await notifyUserShiftUpdate(userId)
+    }
     res.json({ success: true, data: ins.rows[0] })
   } catch (e) {
     res.status(500).json({ success: false, error: 'Failed to upsert shift' })
+  }
+})
+
+// Manually notify a user that their shifts were updated
+router.post('/users/:userId/notify-shift', requireAuth, requireRole(['admin', 'super-admin']), async (req, res) => {
+  try {
+    const { userId } = req.params
+    // Admins: scope to own company
+    if (req.user.role === 'admin') {
+      const uq = await pool.query('SELECT company_id FROM users WHERE id = $1', [userId])
+      const cid = uq.rows[0]?.company_id || null
+      if (!cid || cid !== req.user.companyId) return res.status(403).json({ success: false, error: 'Forbidden' })
+    }
+    const ok = await notifyUserShiftUpdate(userId)
+    res.json({ success: true, notified: ok })
+  } catch (e) {
+    res.status(500).json({ success: false, error: 'Failed to send shift notification' })
   }
 })
 
