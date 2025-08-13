@@ -17,19 +17,19 @@
            class="sidebar-overlay"
            @click="closeMobileSidebar"></div>
       
-      <!-- Sidebar (only show when authenticated and not on clock page) -->
-      <Sidebar v-if="authStore.isAuthenticated && !$route.name?.startsWith('EmployeeClock')" 
+      <!-- Sidebar (show when authenticated) -->
+      <Sidebar v-if="authStore.isAuthenticated" 
                :is-mobile-open="isMobileSidebarOpen"
                @close="closeMobileSidebar" />
       
       <!-- Main content area -->
-      <main class="main-content" :class="{ 'flex items-center justify-center md:ml-0': $route.name === 'EmployeeClock' }">
-        <!-- Top navigation (only show when authenticated and not on clock page) -->
-        <TopNavigation v-if="authStore.isAuthenticated && !$route.name?.startsWith('EmployeeClock')" 
+      <main class="main-content" :class="{ 'flex items-start justify-start': $route.name === 'EmployeeClock' }">
+        <!-- Top navigation (show when authenticated) -->
+        <TopNavigation v-if="authStore.isAuthenticated" 
                        @toggle-mobile-menu="toggleMobileSidebar" />
         
         <!-- Page content -->
-        <div class="page-content" :class="{ 'w-full max-w-xl': $route.name === 'EmployeeClock' }">
+        <div class="page-content" :class="{ 'w-full max-w-2xl': $route.name === 'EmployeeClock' }">
           <router-view />
         </div>
       </main>
