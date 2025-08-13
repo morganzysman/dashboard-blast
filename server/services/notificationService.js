@@ -350,7 +350,7 @@ export async function notifyAdminsClockEvent({ companyId, companyToken, userId, 
       [companyId]
     )
     if (admins.rowCount === 0) {
-      await logNotificationEvent('00000000-0000-0000-0000-000000000000', 'clock_event_admin_notify', 'No admin subscribers for company', { companyId, companyToken, userId, action }, true)
+      await logNotificationEvent(userId, 'clock_event_admin_notify', 'No admin subscribers for company', { companyId, companyToken, userId, action }, true)
       return { sent: 0, devices: 0 }
     }
 
@@ -375,10 +375,10 @@ export async function notifyAdminsClockEvent({ companyId, companyToken, userId, 
         if (err.statusCode === 410) await removeSpecificPushSubscription(admin.endpoint)
       }
     }
-    await logNotificationEvent('00000000-0000-0000-0000-000000000000', 'clock_event_admin_notify', `Clock ${action} sent to admins`, { companyId, companyToken, userId, userName, sent }, true)
+    await logNotificationEvent(userId, 'clock_event_admin_notify', `Clock ${action} sent to admins`, { companyId, companyToken, userId, userName, sent }, true)
     return { sent, devices: admins.rowCount }
   } catch (err) {
-    await logNotificationEvent('00000000-0000-0000-0000-000000000000', 'clock_event_admin_notify_error', 'Failed to notify admins of clock event', { error: err.message, companyId, companyToken, userId, action }, false, err.message)
+    await logNotificationEvent(userId, 'clock_event_admin_notify_error', 'Failed to notify admins of clock event', { error: err.message, companyId, companyToken, userId, action }, false, err.message)
     return { sent: 0, devices: 0, error: err.message }
   }
 }

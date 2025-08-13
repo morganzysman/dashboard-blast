@@ -691,7 +691,7 @@ export async function getAllActivePushSubscriptions() {
   const query = `
     SELECT ps.user_id, ps.endpoint, ps.p256dh_key, ps.auth_key, ps.timezone, ps.currency, 
            ps.currency_symbol, ps.subscribed_at, ps.user_agent, ps.notification_frequency,
-           ps.last_notification_time, u.email, u.name, u.accounts, u.role, u.company_id
+           ps.last_notification_time, u.email, u.name, u.role, u.company_id
     FROM push_subscriptions ps
     JOIN users u ON ps.user_id = u.id
     WHERE ps.is_active = TRUE AND u.is_active = TRUE
@@ -704,7 +704,7 @@ export async function getAllActivePushSubscriptions() {
     user: {
       email: row.email,
       name: row.name,
-      accounts: row.accounts || [],
+      accounts: [],
       role: row.role,
       companyId: row.company_id
     },
