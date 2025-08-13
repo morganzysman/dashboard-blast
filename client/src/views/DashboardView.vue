@@ -246,6 +246,7 @@ const onDateRangeChange = () => {
   fetchAnalyticsData()
   fetchOrdersData(currentDateRange.value)
   fetchServiceMetricsData()
+  fetchProfitabilityData()
 }
 
 const onCustomDateChange = () => {
@@ -258,6 +259,7 @@ const onCustomDateChange = () => {
     fetchAnalyticsData()
     fetchOrdersData(currentDateRange.value)
     fetchServiceMetricsData()
+    fetchProfitabilityData()
   }
 }
 
@@ -270,6 +272,7 @@ const applyCustomDateRange = () => {
     fetchAnalyticsData()
     fetchOrdersData(currentDateRange.value)
     fetchServiceMetricsData()
+    fetchProfitabilityData()
   }
 }
 
