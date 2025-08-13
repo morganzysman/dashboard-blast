@@ -20,7 +20,6 @@
             </div>
             <div class="inline-flex gap-2">
               <button class="btn-primary btn-sm" :disabled="paying || !companyToken" @click="markPaid">{{ paying ? 'Marking...' : 'Mark as Paid' }}</button>
-              <button class="btn-secondary btn-sm" :disabled="notifyingPaid || !companyToken" @click="notifyPaid">{{ notifyingPaid ? 'Notifying…' : 'Notify Paid' }}</button>
             </div>
           </div>
         </div>
@@ -150,7 +149,6 @@ const companyToken = ref('')
 const entries = ref([])
 const period = ref({ start: '', end: '' })
 const paying = ref(false)
-const notifyingPaid = ref(false)
 const editEntry = ref(null)
 
 const periodLabel = computed(() => `${period.value.start} → ${period.value.end}`)
@@ -277,18 +275,6 @@ const markPaid = async () => {
   }
 }
 
-const notifyPaid = async () => {
-  if (!companyToken.value) return
-  try {
-    notifyingPaid.value = true
-    const res = await api.notifyPaid(companyToken.value)
-    if (res.success) {
-      window.showNotification?.({ type: 'success', title: 'Payroll', message: 'Employees notified for current period.' })
-    }
-  } finally {
-    notifyingPaid.value = false
-  }
-}
 
 const openEdit = (row) => {
   // list all entries for this user in current period

@@ -50,12 +50,7 @@
       <div class="mt-4">
         <div class="flex items-center justify-between mb-2">
           <h4 class="text-sm font-semibold text-gray-900">Preview (This Week)</h4>
-          <div class="flex items-center gap-2">
-            <button class="btn-secondary btn-xs" @click="notifyShift" :disabled="notifying">
-              {{ notifying ? 'Notifying…' : 'Notify Shift' }}
-            </button>
-            <span class="text-xs text-gray-500 hidden sm:inline">Shows current selections per weekday</span>
-          </div>
+          <span class="text-xs text-gray-500 hidden sm:inline">Shows current selections per weekday</span>
         </div>
         <div class="grid grid-cols-7 gap-2 text-xs">
           <div class="text-gray-500" v-for="d in ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']" :key="d">{{ d }}</div>
@@ -86,7 +81,6 @@ const props = defineProps({
 
 const accounts = ref([])
 const saving = ref(false)
-const notifying = ref(false)
 
 // internal form state keyed by weekday number (0..6)
 const form = ref({
@@ -185,17 +179,6 @@ const saveAll = async () => {
   }
 }
 
-const notifyShift = async () => {
-  try {
-    notifying.value = true
-    await api.notifyUserShift(props.user.id)
-    window.showNotification?.({ type: 'success', title: 'Notification', message: 'Employee notified about shifts' })
-  } catch (e) {
-    window.showNotification?.({ type: 'error', title: 'Notification', message: e?.message || 'Failed to notify employee' })
-  } finally {
-    notifying.value = false
-  }
-}
 
 onMounted(async () => {
   buildWeek()
