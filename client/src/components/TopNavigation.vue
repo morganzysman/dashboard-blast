@@ -24,11 +24,15 @@
 
       <!-- User menu -->
       <div class="flex items-center space-x-4">
-        <!-- Notification status -->
-        <div class="flex items-center space-x-2" v-if="!authStore.isSuperAdmin">
+        <!-- Notification status (click to open settings) -->
+        <button
+          class="flex items-center space-x-2 hover:opacity-80"
+          v-if="!authStore.isSuperAdmin"
+          @click="router.push({ name: 'Notifications' })"
+        >
           <div class="h-2 w-2 rounded-full flex-shrink-0" :class="notificationStatusColor"></div>
           <span class="text-sm text-gray-600">{{ notificationStatusText }}</span>
-        </div>
+        </button>
 
         <!-- User dropdown -->
         <div class="dropdown">

@@ -109,14 +109,14 @@
       </div>
     </div>
 
-    <!-- Notification Settings Card -->
+    <!-- Notification Settings Card (admins only: frequency) -->
     <div v-if="notificationStatus.isSubscribed" class="card">
       <div class="card-header">
         <h3 class="text-lg font-medium text-gray-900">Notification Settings</h3>
       </div>
       <div class="card-body">
         <div class="space-y-4">
-          <div>
+          <div v-if="isAdmin">
             <label class="form-label">Notification Frequency</label>
             <p class="text-sm text-gray-600 mb-2">Choose how often you want to receive sales reports</p>
             <select 
@@ -132,7 +132,7 @@
             </select>
           </div>
           
-          <div v-if="notificationSettings.lastNotificationTime" class="bg-gray-50 rounded-lg p-3">
+          <div v-if="isAdmin && notificationSettings.lastNotificationTime" class="bg-gray-50 rounded-lg p-3">
             <div class="flex items-center justify-between text-sm">
               <span class="font-medium text-gray-700">Last Notification:</span>
               <span class="text-gray-600">{{ formatDate(notificationSettings.lastNotificationTime) }}</span>
@@ -152,8 +152,7 @@
                 <p class="text-sm font-medium text-blue-800">Multi-Device Support</p>
                 <p class="text-sm text-blue-700 mt-1">
                   You can enable notifications on multiple devices (phone, tablet, computer).
-                  Reports will be sent to all your connected devices based on the selected frequency.
-                  Only active accounts will trigger notifications.
+                  Admins receive sales reports based on frequency settings. Employees receive shift updates and pay notifications.
                 </p>
               </div>
             </div>
@@ -170,6 +169,7 @@ import { useAuthStore } from '../stores/auth'
 import api from '../utils/api'
 
 const authStore = useAuthStore()
+const isAdmin = computed(() => authStore.user?.role === 'admin' || authStore.user?.role === 'super-admin')
 
 const loading = ref(false)
 const notificationStatus = ref({
