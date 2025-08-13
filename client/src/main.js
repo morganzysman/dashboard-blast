@@ -80,7 +80,7 @@ const routes = [
     path: '/notifications',
     name: 'Notifications',
     component: NotificationsView,
-    meta: { requiresAuth: true, excludeRoles: ['super-admin', 'employee'] }
+    meta: { requiresAuth: true, excludeRoles: ['super-admin'] }
   },
   {
     path: '/rentability',
