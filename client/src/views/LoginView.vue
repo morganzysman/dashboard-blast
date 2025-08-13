@@ -68,13 +68,41 @@
           </div>
           <span class="text-sm text-gray-600 text-center">v1.0.3</span>
         </form>
+        
+        <!-- PWA Install Section -->
+        <div class="mt-6 border-t pt-6">
+          <div class="text-center">
+            <h3 class="text-sm font-semibold text-gray-900 mb-2">Install this app</h3>
+            <div v-if="canInstallPwa">
+              <button class="btn-secondary" @click="installPwa" :disabled="installing">
+                {{ installing ? 'Preparing…' : 'Install App' }}
+              </button>
+              <p class="text-xs text-gray-500 mt-2">Install for a faster, fullscreen experience.</p>
+            </div>
+            <div v-else>
+              <details class="text-left inline-block max-w-sm">
+                <summary class="cursor-pointer text-xs text-gray-600">How to install</summary>
+                <div class="mt-2 text-xs text-gray-600 space-y-1" v-if="isIos">
+                  <p><strong>iOS (Safari):</strong></p>
+                  <p>1. Tap the Share icon (square with arrow) in Safari.</p>
+                  <p>2. Scroll down and tap <strong>Add to Home Screen</strong>.</p>
+                  <p>3. Tap <strong>Add</strong> to confirm.</p>
+                </div>
+                <div class="mt-2 text-xs text-gray-600 space-y-1" v-else>
+                  <p><strong>Desktop/Other browsers:</strong></p>
+                  <p>If you see an install icon in the address bar or menu, click it to add the app.</p>
+                </div>
+              </details>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 
@@ -136,12 +164,45 @@ const handleLogin = async () => {
   }
 }
 
+// PWA install flow
+const deferredPrompt = ref(null)
+const canInstallPwa = ref(false)
+const installing = ref(false)
+const isIos = computed(() => /iphone|ipad|ipod/i.test(window.navigator.userAgent))
+
+const onBeforeInstallPrompt = (e) => {
+  // Prevent the mini-infobar
+  e.preventDefault()
+  deferredPrompt.value = e
+  canInstallPwa.value = true
+}
+
+const installPwa = async () => {
+  if (!deferredPrompt.value) return
+  installing.value = true
+  try {
+    deferredPrompt.value.prompt()
+    await deferredPrompt.value.userChoice
+  } finally {
+    installing.value = false
+    canInstallPwa.value = false
+    deferredPrompt.value = null
+  }
+}
+
 onMounted(() => {
   // Clear any existing errors
   authStore.clearError()
   
   // Focus on email field
   document.getElementById('email')?.focus()
+
+  // Hook PWA prompt
+  window.addEventListener('beforeinstallprompt', onBeforeInstallPrompt)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('beforeinstallprompt', onBeforeInstallPrompt)
 })
 </script>
 
