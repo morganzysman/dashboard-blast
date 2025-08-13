@@ -517,8 +517,8 @@ router.post('/users/:userId/notify-shift', requireAuth, requireRole(['admin', 's
       const cid = uq.rows[0]?.company_id || null
       if (!cid || cid !== req.user.companyId) return res.status(403).json({ success: false, error: 'Forbidden' })
     }
-    const ok = await notifyUserShiftUpdate(userId)
-    res.json({ success: true, notified: ok })
+    const details = await notifyUserShiftUpdate(userId)
+    res.json({ success: true, ...details, notified: (details?.sentCount || 0) > 0 })
   } catch (e) {
     res.status(500).json({ success: false, error: 'Failed to send shift notification' })
   }

@@ -147,7 +147,11 @@ export function scheduleDailyReports() {
 export async function notifyUserShiftUpdate(userId) {
   try {
     const subs = await getPushSubscriptions(userId);
-    if (!subs || subs.length === 0) return false;
+    const result = { hasSubscriptions: !!(subs && subs.length), deviceCount: subs?.length || 0, sentCount: 0, errors: [] };
+    if (!result.hasSubscriptions) {
+      await logNotificationEvent(userId, 'shift_update_notify', 'No active push subscriptions for user', { reason: 'no_active_subscriptions' }, true);
+      return result;
+    }
     const payload = {
       title: '🗓️ New shift ready',
       body: 'New shift ready, check it',
@@ -156,24 +160,30 @@ export async function notifyUserShiftUpdate(userId) {
       tag: 'shift-update',
       data: { url: '/timesheet', type: 'shift-update', timestamp: Date.now() }
     };
-    let sent = 0;
     for (const s of subs) {
       try {
         await webpush.sendNotification(s.subscription, JSON.stringify(payload));
-        sent++;
+        result.sentCount++;
       } catch (err) {
+        result.errors.push({ endpoint: s.endpoint?.slice(0, 40) + '...', statusCode: err.statusCode, message: err.message });
         await trackNotificationError(userId, err.message);
         if (err.statusCode === 410) {
           await removeSpecificPushSubscription(s.endpoint);
         }
       }
     }
-    if (sent > 0) await trackNotificationSent(userId);
-    await logNotificationEvent(userId, 'shift_update_notify', 'Shift update notification sent', { devices: subs.length, sent }, true);
-    return sent > 0;
+    if (result.sentCount > 0) await trackNotificationSent(userId);
+    await logNotificationEvent(
+      userId,
+      'shift_update_notify',
+      result.sentCount > 0 ? 'Shift update notification sent' : 'Shift update notification not sent',
+      { devices: result.deviceCount, sent: result.sentCount, errors: result.errors },
+      result.sentCount > 0
+    );
+    return result;
   } catch (e) {
     await logNotificationEvent(userId, 'shift_update_notify_error', 'Failed to send shift update notification', { error: e.message }, false, e.message);
-    return false;
+    return { hasSubscriptions: false, deviceCount: 0, sentCount: 0, errors: [{ message: e.message }] };
   }
 }
 
