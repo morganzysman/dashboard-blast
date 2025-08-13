@@ -407,7 +407,7 @@ router.put('/admin/entries/:id', requireAuth, async (req, res) => {
       `UPDATE time_entries SET
          clock_in_at = COALESCE($1, clock_in_at),
          clock_out_at = COALESCE($2, clock_out_at),
-         amount = COALESCE($3, amount),
+         amount = COALESCE($3::numeric, amount),
          updated_at = NOW()
        WHERE id = $4 AND paid = FALSE
        RETURNING *`, [clock_in_at, clock_out_at, amount, id]
@@ -463,7 +463,7 @@ router.post('/admin/entries', requireAuth, async (req, res) => {
 
     const ins = await pool.query(
       `INSERT INTO time_entries(user_id, company_token, clock_in_at, clock_out_at, amount)
-       VALUES ($1, $2, $3::timestamptz, $4::timestamptz, COALESCE($5, 0))
+       VALUES ($1, $2, $3::timestamptz, $4::timestamptz, COALESCE($5::numeric, 0))
        RETURNING *`,
       [user_id, company_token, clock_in_at, clock_out_at || null, computedAmount]
     )
