@@ -95,7 +95,8 @@ export function requireAuth(req, res, next) {
         userTimezone: sessionData.user.timezone || config.olaClick.defaultTimezone,
         userCurrency: sessionData.user.currency || config.olaClick.defaultCurrency,
         userCurrencySymbol: sessionData.user.currencySymbol || config.olaClick.defaultCurrencySymbol,
-        companyId: sessionData.user.company_id || null
+        companyId: sessionData.user.company_id || null,
+        userAccounts: sessionData.user.userAccounts || []
       };
       
       next();

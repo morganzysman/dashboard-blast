@@ -114,8 +114,17 @@ router.post('/clock', requireAuth, async (req, res) => {
     const userId = req.user.userId
     const cq = await pool.query('SELECT company_id FROM company_accounts WHERE company_token = $1', [company_token])
     const companyId2 = cq.rows[0]?.company_id || null
-    // Employee can only clock against accounts belonging to their company
-    const belongs = !!(req.user.companyId && companyId2 && req.user.companyId === companyId2)
+    // Employee scope check:
+    // - If user has a companyId, require it to match the account's company
+    // - Else if user has explicit userAccounts, require the token to be in that list
+    // - Else, allow (QR secret will gate access)
+    let belongs = true
+    if (req.user.companyId) {
+      belongs = !!(companyId2 && req.user.companyId === companyId2)
+    } else if (Array.isArray(req.user.userAccounts) && req.user.userAccounts.length) {
+      const tokens = req.user.userAccounts.map(a => a.company_token)
+      belongs = tokens.includes(company_token)
+    }
     if (!belongs) {
       return res.status(403).json({ success: false, error: 'Access denied' })
     }
