@@ -69,7 +69,19 @@
         Rentability
       </router-link>
 
-      <!-- Employee: Clock (removed from sidebar) -->
+      <!-- Employee: Clock -->
+      <router-link
+        v-if="authStore.user?.role === 'employee'"
+        to="/clock"
+        class="sidebar-nav-item"
+        :class="{ active: $route.name === 'EmployeeClock' }"
+        @click="$emit('close')"
+      >
+        <svg class="sidebar-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6l4 2M12 22a10 10 0 110-20 10 10 0 010 20z" />
+        </svg>
+        Clock
+      </router-link>
 
       <!-- Employee: Timesheet -->
       <router-link

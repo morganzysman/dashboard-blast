@@ -35,7 +35,16 @@
                 {{ submitting && action==='out' ? 'Clocking out...' : 'Clock Out' }}
               </button>
             </div>
-            <p class="text-xs text-gray-500" v-if="!qrSecret">Open this page from the QR code to enable clocking.</p>
+            <div class="mt-3">
+              <button class="btn-secondary btn-sm" @click="toggleScanner" v-if="!scannerOpen">Open scanner</button>
+              <button class="btn-secondary btn-sm" @click="stopScanner" v-else>Close scanner</button>
+            </div>
+            <div v-show="scannerOpen" class="mt-2 rounded overflow-hidden border border-gray-200 relative">
+              <video ref="videoEl" class="w-full h-64 object-cover" playsinline></video>
+              <div class="absolute inset-0 pointer-events-none border-2 border-green-500 m-8 rounded"></div>
+              <div class="absolute bottom-1 right-2 bg-black bg-opacity-50 text-white text-[10px] px-1 rounded">Scanner</div>
+            </div>
+            <p class="text-xs text-gray-500" v-if="!qrSecret">Scan the QR from your manager to enable clocking.</p>
             <p v-if="message" class="text-sm" :class="messageClass">{{ message }}</p>
           </div>
         </div>
@@ -46,7 +55,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import api from '../utils/api'
 
@@ -61,6 +70,11 @@ const success = ref(false)
 const isEmployee = computed(() => auth.user?.role === 'employee')
 const loginPrefill = computed(() => ({ redirect: '/clock', company_token: companyToken.value }))
 const action = ref('')
+const scannerOpen = ref(false)
+const videoEl = ref(null)
+let mediaStream = null
+let frameHandle = null
+let barcodeDetector = null
 
 // Derived: account label for display
 const accountLabel = computed(() => {
@@ -110,6 +124,74 @@ onMounted(() => {
 })
 
 watch(companyToken, () => refreshOpenState())
+
+const toggleScanner = async () => {
+  if (scannerOpen.value) { stopScanner(); return }
+  await startScanner()
+}
+
+const startScanner = async () => {
+  try {
+    scannerOpen.value = true
+    // Prefer native BarcodeDetector if available
+    if ('BarcodeDetector' in window) {
+      try { barcodeDetector = new window.BarcodeDetector({ formats: ['qr_code'] }) } catch {}
+    }
+    mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false })
+    if (videoEl.value) {
+      videoEl.value.srcObject = mediaStream
+      await videoEl.value.play()
+    }
+    if (barcodeDetector) {
+      scanWithDetector()
+    } else {
+      // Fallback: lightweight canvas decode via offscreen draw + simple QR libs could be plugged; for now rely on native where possible
+      // Keep video running; show instruction to use QR link as fallback
+    }
+  } catch (e) {
+    message.value = 'Camera access denied. Please allow camera or use the QR link.'
+    scannerOpen.value = false
+  }
+}
+
+const scanWithDetector = async () => {
+  if (!barcodeDetector || !scannerOpen.value) return
+  try {
+    const barcodes = await barcodeDetector.detect(videoEl.value)
+    if (barcodes && barcodes.length) {
+      const raw = barcodes[0].rawValue || ''
+      try {
+        const url = new URL(raw)
+        const token = url.searchParams.get('company_token')
+        const secret = url.searchParams.get('qr_secret')
+        if (token && secret) {
+          companyToken.value = token
+          qrSecret.value = secret
+          stopScanner()
+          // Auto clock-in if not already clocked
+          if (!hasOpenToday.value) {
+            await submitClock('in')
+          }
+          return
+        }
+      } catch {}
+    }
+  } catch {}
+  frameHandle = requestAnimationFrame(scanWithDetector)
+}
+
+const stopScanner = () => {
+  scannerOpen.value = false
+  if (frameHandle) cancelAnimationFrame(frameHandle)
+  frameHandle = null
+  try { if (videoEl.value) videoEl.value.pause() } catch {}
+  if (mediaStream) {
+    for (const t of mediaStream.getTracks()) t.stop()
+  }
+  mediaStream = null
+}
+
+onBeforeUnmount(() => stopScanner())
 
 const submitClock = async (dir) => {
   try {
