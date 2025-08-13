@@ -20,7 +20,7 @@
               </div>
               <div class="ml-4">
                 <h4 class="text-lg font-medium text-gray-900">Push Notifications</h4>
-                <p class="text-sm text-gray-600">Get notified about daily sales reports and updates</p>
+                <p class="text-sm text-gray-600">{{ isAdmin ? 'Get notified about sales reports and updates' : 'Receive important notifications from your company (shifts, payroll, updates)' }}</p>
               </div>
             </div>
             
@@ -299,7 +299,7 @@ const subscribeToNotifications = async () => {
       window.showNotification?.({
         type: 'success',
         title: 'Notifications Enabled',
-        message: `You will now receive notifications every ${getFrequencyLabel(selectedFrequency.value)}`
+        message: isAdmin.value ? `You will now receive sales reports every ${getFrequencyLabel(selectedFrequency.value)}` : 'You will now receive important notifications from your company.'
       });
     }
   } catch (error) {
