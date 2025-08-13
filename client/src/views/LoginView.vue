@@ -82,11 +82,21 @@
             <div v-else>
               <details class="text-left inline-block max-w-sm">
                 <summary class="cursor-pointer text-xs text-gray-600">How to install</summary>
-                <div class="mt-2 text-xs text-gray-600 space-y-1" v-if="isIos">
-                  <p><strong>iOS (Safari):</strong></p>
-                  <p>1. Tap the Share icon (square with arrow) in Safari.</p>
-                  <p>2. Scroll down and tap <strong>Add to Home Screen</strong>.</p>
-                  <p>3. Tap <strong>Add</strong> to confirm.</p>
+                <div class="mt-3 text-xs text-gray-700 space-y-2" v-if="isIos">
+                  <p class="font-semibold">iPhone / iPad (Safari)</p>
+                  <div class="flex items-start gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 flex-shrink-0 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/><path d="M7 7h10v10H7z"/></svg>
+                    <p>1. Tap the <strong>Share</strong> button in Safari (square with an up arrow).</p>
+                  </div>
+                  <div class="flex items-start gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 flex-shrink-0 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+                    <p>2. Scroll and choose <strong>Add to Home Screen</strong>.</p>
+                  </div>
+                  <div class="flex items-start gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 flex-shrink-0 text-purple-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+                    <p>3. Tap <strong>Add</strong> in the top‑right corner.</p>
+                  </div>
+                  <p class="text-[11px] text-gray-500">Tip: If you don't see the option, scroll the sheet up to reveal more actions.</p>
                 </div>
                 <div class="mt-2 text-xs text-gray-600 space-y-1" v-else>
                   <p><strong>Desktop/Other browsers:</strong></p>
