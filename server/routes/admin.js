@@ -497,8 +497,6 @@ router.post('/users/:userId/shifts', requireAuth, requireRole(['admin', 'super-a
        RETURNING *`,
       [userId, company_token, weekday, start_time, end_time]
     )
-    // Always notify the user that their shift has been updated (dedupe handled by service/logs)
-    try { await notifyUserShiftUpdate(userId) } catch {}
     res.json({ success: true, data: ins.rows[0] })
   } catch (e) {
     res.status(500).json({ success: false, error: 'Failed to upsert shift' })

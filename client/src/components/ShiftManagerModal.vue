@@ -169,6 +169,8 @@ const saveAll = async () => {
         await api.deleteUserShift(props.user.id, row.id)
       }
     }
+    // Send a single notify call after all saves/deletes are done
+    try { await api.notifyUserShift(props.user.id) } catch {}
     window.showNotification?.({ type: 'success', title: 'Shifts', message: 'Shifts saved' })
     saving.value = false
     // Reload to refresh ids
