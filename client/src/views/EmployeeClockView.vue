@@ -14,15 +14,16 @@
         </div>
         <div v-else>
           <div class="mt-4 space-y-3">
-            <div class="text-gray-800">
-              <span class="font-semibold text-xl">Hi {{ auth.user?.name?.split(' ')[0] || 'there' }}!</span>
-            </div>
-            <div class="text-xs text-gray-500">{{ todayLabel }}</div>
-            <div class="text-sm text-gray-700">
-              <span class="font-medium">Account:</span>
-              <span>{{ accountLabel }}</span>
-            </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <template v-if="hasQrContext">
+              <div class="text-gray-800">
+                <span class="font-semibold text-xl">Hi {{ auth.user?.name?.split(' ')[0] || 'there' }}!</span>
+              </div>
+              <div class="text-xs text-gray-500">{{ todayLabel }}</div>
+              <div class="text-sm text-gray-700">
+                <span class="font-medium">Account:</span>
+                <span>{{ accountLabel }}</span>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div v-if="openEntry">
                 <div class="px-3 py-2 rounded bg-green-50 border border-green-200 text-green-700 text-sm text-center">
                   Clocked in at {{ formatTime(openEntry.clock_in_at) }}
@@ -34,17 +35,20 @@
               <button class="btn-danger w-full" :disabled="submitting || !canClockOut" @click="submitClock('out')">
                 {{ submitting && action==='out' ? 'Clocking out...' : 'Clock Out' }}
               </button>
-            </div>
-            <div class="mt-3">
-              <button class="btn-secondary btn-sm" @click="toggleScanner" v-if="!scannerOpen">Open scanner</button>
-              <button class="btn-secondary btn-sm" @click="stopScanner" v-else>Close scanner</button>
-            </div>
-            <div v-show="scannerOpen" class="mt-2 rounded overflow-hidden border border-gray-200 relative">
-              <video ref="videoEl" class="w-full h-64 object-cover" playsinline></video>
-              <div class="absolute inset-0 pointer-events-none border-2 border-green-500 m-8 rounded"></div>
-              <div class="absolute bottom-1 right-2 bg-black bg-opacity-50 text-white text-[10px] px-1 rounded">Scanner</div>
-            </div>
-            <p class="text-xs text-gray-500" v-if="!qrSecret">Scan the QR from your manager to enable clocking.</p>
+              </div>
+            </template>
+            <template v-else>
+              <div class="mt-1">
+                <button class="btn-secondary btn-sm" @click="toggleScanner" v-if="!scannerOpen">Open scanner</button>
+                <button class="btn-secondary btn-sm" @click="stopScanner" v-else>Close scanner</button>
+              </div>
+              <div v-show="scannerOpen" class="mt-2 rounded overflow-hidden border border-gray-200 relative">
+                <video ref="videoEl" class="w-full h-64 object-cover" playsinline></video>
+                <div class="absolute inset-0 pointer-events-none border-2 border-green-500 m-8 rounded"></div>
+                <div class="absolute bottom-1 right-2 bg-black bg-opacity-50 text-white text-[10px] px-1 rounded">Scanner</div>
+              </div>
+              <p class="text-xs text-gray-500">Scan the QR provided by your manager to begin.</p>
+            </template>
             <p v-if="message" class="text-sm" :class="messageClass">{{ message }}</p>
           </div>
         </div>
@@ -112,14 +116,18 @@ const refreshOpenState = async () => {
 
 const canClockIn = computed(() => !!qrSecret.value && !!companyToken.value && !hasOpenToday.value)
 const canClockOut = computed(() => !!qrSecret.value && !!companyToken.value && hasOpenToday.value)
+const hasQrContext = computed(() => !!qrSecret.value && !!companyToken.value)
 
 // Prefill from query params when entering via QR path
-onMounted(() => {
+onMounted(async () => {
   const params = new URLSearchParams(window.location.search)
   const token = params.get('company_token')
   const secret = params.get('qr_secret')
   if (token) companyToken.value = token
   if (secret) qrSecret.value = secret
+  if (!token || !secret) {
+    await startScanner().catch(() => {})
+  }
   refreshOpenState()
 })
 
@@ -168,10 +176,6 @@ const scanWithDetector = async () => {
           companyToken.value = token
           qrSecret.value = secret
           stopScanner()
-          // Auto clock-in if not already clocked
-          if (!hasOpenToday.value) {
-            await submitClock('in')
-          }
           return
         }
       } catch {}
