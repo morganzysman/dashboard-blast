@@ -38,10 +38,12 @@
               </div>
             </template>
             <template v-else>
-              <div class="mt-2 rounded overflow-hidden border border-gray-200 relative max-w-xl mx-auto">
-                <video ref="videoEl" class="w-full h-64 object-cover" playsinline></video>
-                <div class="absolute inset-0 pointer-events-none border-2 border-green-500 m-8 rounded"></div>
-                <div class="absolute bottom-1 right-2 bg-black bg-opacity-50 text-white text-[10px] px-1 rounded">Scanner</div>
+              <div class="flex items-center justify-center">
+                <div class="mt-2 rounded overflow-hidden border border-gray-200 relative w-full max-w-xl">
+                  <video ref="videoEl" class="w-full h-64 object-cover" playsinline></video>
+                  <div class="absolute inset-0 pointer-events-none border-2 border-green-500 m-8 rounded"></div>
+                  <div class="absolute bottom-1 right-2 bg-black bg-opacity-50 text-white text-[10px] px-1 rounded">Scanner</div>
+                </div>
               </div>
               <p class="text-xs text-gray-500 text-center">Scan the QR provided by your manager to begin.</p>
             </template>

@@ -23,13 +23,13 @@
                @close="closeMobileSidebar" />
       
       <!-- Main content area -->
-      <main class="main-content" :class="{ 'flex items-start justify-center': $route.name === 'EmployeeClock' }">
+      <main class="main-content">
         <!-- Top navigation (show when authenticated) -->
         <TopNavigation v-if="authStore.isAuthenticated" 
                        @toggle-mobile-menu="toggleMobileSidebar" />
         
         <!-- Page content -->
-        <div class="page-content" :class="{ 'w-full max-w-2xl': $route.name === 'EmployeeClock' }">
+        <div class="page-content" :class="{ 'w-full max-w-2xl mx-auto': $route.name === 'EmployeeClock' }">
           <router-view />
         </div>
       </main>

@@ -5,7 +5,6 @@
       <div class="card-body">
         <div class="flex items-center justify-between mb-3">
           <h3 class="text-md font-semibold">My Shifts (This Week)</h3>
-          <div class="text-xs text-gray-500">Account shown per day</div>
         </div>
         <div class="grid grid-cols-7 gap-2 text-xs">
           <div class="text-gray-500" v-for="d in ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']" :key="d">{{ d }}</div>
@@ -39,6 +38,7 @@
           <table class="min-w-full text-sm">
             <thead>
               <tr class="text-left text-gray-600">
+                <th class="py-2">Account</th>
                 <th class="py-2">Clock In</th>
                 <th class="py-2">Clock Out</th>
                 <th class="py-2">Duration</th>
@@ -47,6 +47,7 @@
             </thead>
             <tbody>
               <tr v-for="e in entries" :key="e.id" class="border-t">
+                <td class="py-2">{{ accountLabel(e.company_token) }}</td>
                 <td class="py-2">{{ formatDateTime(e.clock_in_at) }}</td>
                 <td class="py-2">{{ e.clock_out_at ? formatDateTime(e.clock_out_at) : '—' }}</td>
                 <td class="py-2">{{ formatDuration(secondsBetween(e.clock_in_at, e.clock_out_at)) }}</td>
@@ -62,26 +63,6 @@
       </div>
     </div>
 
-    <!-- Recap Section -->
-    <div class="card">
-      <div class="card-body">
-        <h3 class="text-md font-semibold text-gray-900 mb-3">Recap</h3>
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
-          <div class="bg-gray-50 rounded p-3">
-            <div class="text-gray-500">Entries</div>
-            <div class="text-gray-900 font-bold text-lg">{{ entries.length }}</div>
-          </div>
-          <div class="bg-gray-50 rounded p-3">
-            <div class="text-gray-500">Total Time</div>
-            <div class="text-gray-900 font-bold text-lg">{{ formatDuration(totalSeconds) }}</div>
-          </div>
-          <div class="bg-gray-50 rounded p-3">
-            <div class="text-gray-500">Total Earned</div>
-            <div class="text-gray-900 font-bold text-lg">{{ formatCurrency(totalAmount) }}</div>
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -115,6 +96,13 @@ const formatDateTime = (iso) => new Date(iso).toLocaleString('en-CL', { timeZone
 const formatCurrency = (n) => {
   const symbol = auth.user?.currencySymbol || 'S/'
   return `${symbol} ${(Number(n)||0).toFixed(2)}`
+}
+
+// Map company_token to a readable account name if available from session
+const accountLabel = (token) => {
+  const accounts = auth.user?.userAccounts || []
+  const acc = accounts.find(a => a.company_token === token)
+  return acc?.account_name || token || '—'
 }
 
 // Build current week days and fetch shifts for the user
