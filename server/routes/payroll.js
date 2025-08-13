@@ -350,11 +350,26 @@ router.get('/admin/:companyToken/entries', requireAuth, async (req, res) => {
         GROUP BY user_id`,
       [tokenForQuery, start, end]
     )
+    // Compute accumulated delay (late seconds) per user: sum of (clock_in - shift_start) if positive
+    const lateQ = await pool.query(
+      `SELECT user_id,
+              COALESCE(SUM(GREATEST(0, EXTRACT(EPOCH FROM (clock_in_at - shift_start)))), 0) AS seconds
+         FROM time_entries
+        WHERE company_token = $1
+          AND clock_in_at >= $2::date AND clock_in_at < ($3::date + INTERVAL '1 day')
+          AND shift_start IS NOT NULL
+        GROUP BY user_id`,
+      [tokenForQuery, start, end]
+    )
     const shiftSeconds = {}
     for (const r of shiftQ.rows) {
       shiftSeconds[r.user_id] = Number(r.seconds) || 0
     }
-    res.json({ success: true, data: q.rows, period: { start, end }, shiftSeconds })
+    const lateSeconds = {}
+    for (const r of lateQ.rows) {
+      lateSeconds[r.user_id] = Number(r.seconds) || 0
+    }
+    res.json({ success: true, data: q.rows, period: { start, end }, shiftSeconds, lateSeconds })
   } catch (e) {
     res.status(500).json({ success: false, error: e.message })
   }

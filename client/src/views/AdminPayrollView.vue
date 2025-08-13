@@ -49,6 +49,7 @@
                 <th class="py-2">Shift Time</th>
                 <th class="py-2">Clocked Time</th>
                 <th class="py-2">Variation</th>
+                <th class="py-2" v-if="!isSuperAdmin">Accumulated Delay</th>
                 <th class="py-2">Amount</th>
                 <th class="py-2">Actions</th>
               </tr>
@@ -65,6 +66,7 @@
                 <td class="py-2">{{ formatDuration(row.shiftSeconds || 0) }}</td>
                 <td class="py-2">{{ formatDuration(row.totalSeconds) }}</td>
                 <td class="py-2" :class="variationClass(row)">{{ variationLabel(row) }}</td>
+                <td class="py-2" v-if="!isSuperAdmin">{{ formatDuration(row.lateSeconds || 0) }}</td>
                 <td class="py-2">{{ formatCurrency(row.amount) }}</td>
                 <td class="py-2">
                   <button class="btn-secondary btn-xs" @click="openEdit(row)">Edit</button>
@@ -161,12 +163,14 @@ const loadEntries = async () => {
     period.value = res.period
     // map shift seconds per user id
     shiftSecondsByUser.value = res.shiftSeconds || {}
+    lateSecondsByUser.value = res.lateSeconds || {}
   }
 }
 
 // Group entries per user, but include all company users even with zero entries
 const allCompanyUsers = ref([]) // [{id,name}]
 const shiftSecondsByUser = ref({}) // { user_id: seconds }
+const lateSecondsByUser = ref({}) // { user_id: seconds }
 const groupByUser = computed(() => {
   const map = new Map()
   // seed with all users
@@ -184,7 +188,8 @@ const groupByUser = computed(() => {
   }
   return Array.from(map.values()).map(u => ({
     ...u,
-    shiftSeconds: Number(shiftSecondsByUser.value[u.user_id] || 0)
+    shiftSeconds: Number(shiftSecondsByUser.value[u.user_id] || 0),
+    lateSeconds: Number(lateSecondsByUser.value[u.user_id] || 0)
   })).sort((a,b)=> (a.employeeName||'').localeCompare(b.employeeName||''))
 })
 
