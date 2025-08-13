@@ -129,13 +129,15 @@
               <!-- Legend -->
               <div class="ml-3 space-y-1 text-xs min-w-0 flex-1">
                 <div v-for="account in getOrdersDistributionForChart().slice(0, 3)" :key="account.accountKey" 
-                     class="flex items-center justify-between min-w-0">
+                     class="min-w-0">
                   <div class="flex items-center space-x-1 min-w-0">
                     <div class="w-2 h-2 rounded-full flex-shrink-0" :style="{ backgroundColor: getAccountColor(account.accountKey) }"></div>
-                    <span class="text-blue-100">{{ account.account }}</span>
-                    <span class="text-blue-200">{{ account.percent.toFixed(0) }}%</span>
+                    <span class="text-blue-100 truncate whitespace-nowrap">{{ account.account }}</span>
                   </div>
-                  <span class="text-blue-100 font-medium ml-2">{{ account.totalOrders }}</span>
+                  <div class="text-blue-200 mt-0.5">
+                    <span>{{ account.percent.toFixed(0) }}%</span>
+                    <span class="text-blue-100 font-medium ml-2">{{ account.totalOrders }}</span>
+                  </div>
                 </div>
                 <div v-if="getOrdersDistributionForChart().length > 3" class="text-blue-200">
                   +{{ getOrdersDistributionForChart().length - 3 }} more
@@ -184,13 +186,15 @@
               <!-- Legend -->
               <div class="ml-3 space-y-1 text-xs min-w-0 flex-1">
                 <div v-for="account in getAccountTotalsForChart().slice(0, 3)" :key="account.accountKey" 
-                     class="flex items-center justify-between min-w-0">
+                     class="min-w-0">
                   <div class="flex items-center space-x-1 min-w-0">
                     <div class="w-2 h-2 rounded-full flex-shrink-0" :style="{ backgroundColor: getAccountColor(account.accountKey) }"></div>
-                    <span class="text-green-100">{{ account.account }}</span>
-                    <span class="text-green-200">{{ account.percent.toFixed(0) }}%</span>
+                    <span class="text-green-100 truncate whitespace-nowrap">{{ account.account }}</span>
                   </div>
-                  <span class="text-green-100 font-medium ml-2">{{ formatCurrency(account.totalAmount) }}</span>
+                  <div class="text-green-200 mt-0.5">
+                    <span>{{ account.percent.toFixed(0) }}%</span>
+                    <span class="text-green-100 font-medium ml-2">{{ formatCurrency(account.totalAmount) }}</span>
+                  </div>
                 </div>
                 <div v-if="getAccountTotalsForChart().length > 3" class="text-green-200">
                   +{{ getAccountTotalsForChart().length - 3 }} more
@@ -230,13 +234,15 @@
                 </div>
               </div>
               <div class="ml-3 space-y-1 text-xs min-w-0 flex-1">
-                <div v-for="method in analyticsData.aggregated.paymentMethods.slice(0, 3)" :key="method.name" class="flex items-center justify-between min-w-0">
+                <div v-for="method in analyticsData.aggregated.paymentMethods.slice(0, 3)" :key="method.name" class="min-w-0">
                   <div class="flex items-center space-x-1 min-w-0">
                     <div class="w-2 h-2 rounded-full flex-shrink-0" :style="{ backgroundColor: getPaymentMethodColor(method.name) }"></div>
-                    <span class="text-purple-100 capitalize">{{ method.name }}</span>
-                    <span class="text-purple-200">{{ method.percent.toFixed(0) }}%</span>
+                    <span class="text-purple-100 capitalize truncate whitespace-nowrap">{{ method.name }}</span>
                   </div>
-                  <span class="text-purple-100 font-medium ml-2">{{ formatCurrency(method.sum) }}</span>
+                  <div class="text-purple-200 mt-0.5">
+                    <span>{{ method.percent.toFixed(0) }}%</span>
+                    <span class="text-purple-100 font-medium ml-2">{{ formatCurrency(method.sum) }}</span>
+                  </div>
                 </div>
                 <div v-if="analyticsData.aggregated.paymentMethods.length > 3" class="text-purple-200">+{{ analyticsData.aggregated.paymentMethods.length - 3 }} more</div>
               </div>
