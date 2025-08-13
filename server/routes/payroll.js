@@ -485,7 +485,7 @@ router.post('/admin/:companyToken/pay', requireAuth, async (req, res) => {
       const secs = Math.max(0, (new Date(r.clock_out_at).getTime() - new Date(r.clock_in_at).getTime()) / 1000)
       byUser.set(r.user_id, (byUser.get(r.user_id) || 0) + secs)
     }
-    const payouts = []
+    const payouts = new Map()
     for (const [userId, totalSeconds] of byUser.entries()) {
       // pick rate effective from first day of next period boundary logic handled at rate insertion time
       const rate = await client.query(
@@ -495,7 +495,7 @@ router.post('/admin/:companyToken/pay', requireAuth, async (req, res) => {
       )
       const hourly = rate.rows[0]?.hourly_rate || 0
       const amount = (totalSeconds / 3600) * Number(hourly)
-      payouts.push({ userId, amount })
+      payouts.set(userId, (payouts.get(userId) || 0) + amount)
       await client.query(
         `INSERT INTO payroll_snapshots(company_token, user_id, period_start, period_end, period_label, total_seconds, applied_hourly_rate, total_amount, paid, paid_at, snapshot)
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,TRUE,NOW(),$9)
@@ -517,10 +517,10 @@ router.post('/admin/:companyToken/pay', requireAuth, async (req, res) => {
     )
     await client.query('COMMIT')
     // After commit, send notifications to employees with positive payouts
-    for (const p of payouts) {
-      if (p.amount > 0) {
+    for (const [userId, totalAmount] of payouts.entries()) {
+      if (totalAmount > 0) {
         try {
-          await notifyUserPaid(p.userId, Number(p.amount).toFixed(2), currencySymbol || currency, start, end)
+          await notifyUserPaid(userId, Number(totalAmount).toFixed(2), currencySymbol || currency, start, end)
         } catch {}
       }
     }

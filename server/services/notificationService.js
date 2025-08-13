@@ -146,6 +146,19 @@ export function scheduleDailyReports() {
 // Manual employee notification: shift updated
 export async function notifyUserShiftUpdate(userId) {
   try {
+    // De-dup within short window to prevent multiple sends during bulk save
+    const recent = await pool.query(
+      `SELECT 1 FROM notification_logs 
+        WHERE user_id = $1 
+          AND event_type = 'shift_update_notify' 
+          AND created_at > NOW() - INTERVAL '45 seconds' 
+        LIMIT 1`,
+      [userId]
+    )
+    if (recent.rowCount > 0) {
+      await logNotificationEvent(userId, 'shift_update_notify', 'Skipped due to dedup (recent notification)', { reason: 'dedup_window' }, true)
+      return { hasSubscriptions: false, deviceCount: 0, sentCount: 0, errors: [], skippedDueToDedup: true }
+    }
     const subs = await getPushSubscriptions(userId);
     const result = { hasSubscriptions: !!(subs && subs.length), deviceCount: subs?.length || 0, sentCount: 0, errors: [] };
     if (!result.hasSubscriptions) {
@@ -190,6 +203,20 @@ export async function notifyUserShiftUpdate(userId) {
 // Manual employee notification: paid for period
 export async function notifyUserPaid(userId, amount, currency, periodStart, periodEnd) {
   try {
+    // De-dup per period: if already notified, skip
+    const exists = await pool.query(
+      `SELECT 1 FROM notification_logs 
+        WHERE user_id = $1 
+          AND event_type = 'payroll_paid_notify'
+          AND payload->>'periodStart' = $2
+          AND payload->>'periodEnd' = $3
+        LIMIT 1`,
+      [userId, String(periodStart), String(periodEnd)]
+    )
+    if (exists.rowCount > 0) {
+      await logNotificationEvent(userId, 'payroll_paid_notify', 'Skipped due to existing period notification', { periodStart, periodEnd, reason: 'already_notified' }, true)
+      return { hasSubscriptions: false, deviceCount: 0, sentCount: 0, errors: [], skippedDueToDedup: true }
+    }
     const subs = await getPushSubscriptions(userId);
     if (!subs || subs.length === 0) return false;
     const payload = {
