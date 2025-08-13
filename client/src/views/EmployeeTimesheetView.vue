@@ -3,17 +3,17 @@
     <!-- Shifts calendar view -->
     <div class="card">
       <div class="card-body">
-        <div class="flex items-center justify-between mb-3">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
           <h3 class="text-md font-semibold">My Shifts (This Week)</h3>
         </div>
-        <div class="grid grid-cols-7 gap-2 text-xs">
-          <div class="text-gray-500" v-for="d in ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']" :key="d">{{ d }}</div>
+        <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 text-xs">
+          <div class="text-gray-500 hidden lg:block" v-for="d in ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']" :key="d">{{ d }}</div>
           <template v-for="(day, idx) in weekDays" :key="idx">
             <div class="border rounded p-2 min-h-[80px]">
-              <div class="text-[10px] text-gray-500">{{ day.label }}</div>
+              <div class="text-[10px] text-gray-500 text-center">{{ day.label }}</div>
               <div class="mt-1 space-y-1" v-if="day.shift">
-                <div class="text-gray-900 font-medium">{{ day.shift.account_name || day.shift.company_token }}</div>
-                <div class="text-gray-600">{{ day.shift.start_time }} - {{ day.shift.end_time }}</div>
+                <div class="text-gray-900 font-medium truncate lg:whitespace-normal text-center">{{ day.shift.account_name || day.shift.company_token }}</div>
+                <div class="text-gray-600 text-[10px] text-center">{{ formatTimeShort(day.shift.start_time) }} – {{ formatTimeShort(day.shift.end_time) }}</div>
               </div>
               <div v-else class="text-gray-400">—</div>
             </div>
@@ -35,26 +35,28 @@
           </div>
         </div>
         <div class="mt-4">
-          <table class="min-w-full text-sm">
+          <div class="overflow-x-auto">
+          <table class="min-w-[900px] w-full text-sm">
             <thead>
               <tr class="text-left text-gray-600">
-                <th class="py-2">Account</th>
-                <th class="py-2">Clock In</th>
-                <th class="py-2">Clock Out</th>
-                <th class="py-2">Duration</th>
-                <th class="py-2">Amount</th>
+                <th class="py-2 whitespace-normal">Account</th>
+                <th class="py-2 whitespace-normal">Clock In</th>
+                <th class="py-2 whitespace-normal">Clock Out</th>
+                <th class="py-2 whitespace-normal">Duration</th>
+                <th class="py-2 whitespace-normal">Amount</th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="e in entries" :key="e.id" class="border-t">
-                <td class="py-2">{{ accountLabel(e.company_token) }}</td>
-                <td class="py-2">{{ formatDateTime(e.clock_in_at) }}</td>
-                <td class="py-2">{{ e.clock_out_at ? formatDateTime(e.clock_out_at) : '—' }}</td>
-                <td class="py-2">{{ formatDuration(secondsBetween(e.clock_in_at, e.clock_out_at)) }}</td>
-                <td class="py-2 flex items-center justify-end gap-2"><span>{{ formatCurrency(e.amount) }}</span><span v-if="e.paid" class="text-green-600">$</span></td>
+                <td class="py-2 whitespace-normal break-words max-w-[180px]">{{ accountLabel(e.company_token) }}</td>
+                <td class="py-2 whitespace-normal break-words">{{ formatDateTime(e.clock_in_at) }}</td>
+                <td class="py-2 whitespace-normal break-words">{{ e.clock_out_at ? formatDateTime(e.clock_out_at) : '—' }}</td>
+                <td class="py-2 whitespace-normal break-words">{{ formatDuration(secondsBetween(e.clock_in_at, e.clock_out_at)) }}</td>
+                <td class="py-2 whitespace-normal break-words flex items-center justify-end gap-2"><span>{{ formatCurrency(e.amount) }}</span><span v-if="e.paid" class="text-green-600">$</span></td>
               </tr>
             </tbody>
           </table>
+          </div>
           <div class="mt-4 text-right text-gray-800 font-medium space-y-1">
             <div>Total time: {{ formatDuration(totalSeconds) }}</div>
             <div>Total earned: {{ formatCurrency(totalAmount) }}</div>
@@ -93,6 +95,15 @@ const formatDuration = (secs) => {
 }
 
 const formatDateTime = (iso) => new Date(iso).toLocaleString('en-CL', { timeZone: 'America/Santiago' })
+  const formatTimeShort = (t) => {
+    try {
+      const [h, m] = t.toString().split(':')
+      const hNum = Number(h)
+      const ampm = hNum >= 12 ? 'PM' : 'AM'
+      const h12 = ((hNum + 11) % 12) + 1
+      return `${h12}:${m} ${ampm}`
+    } catch { return t }
+  }
 const formatCurrency = (n) => {
   const symbol = auth.user?.currencySymbol || 'S/'
   return `${symbol} ${(Number(n)||0).toFixed(2)}`
