@@ -150,26 +150,12 @@
               <span class="text-xs text-gray-500">Company: {{ user.company?.name || '—' }}</span>
             </div>
             
-            <div class="flex flex-col sm:flex-row gap-2">
-              <button
-                @click="editUser(user)"
-                class="btn-sm btn-secondary flex-1 text-xs"
-              >
-                Edit
-              </button>
-              <button
-                @click="toggleUserStatus(user)"
-                :class="user.is_active ? 'btn-sm btn-warning flex-1 text-xs' : 'btn-sm btn-success flex-1 text-xs'"
-              >
-                {{ user.is_active ? 'Deactivate' : 'Activate' }}
-              </button>
-              <button
-                v-if="isSuperAdmin"
-                @click="confirmDeleteUser(user)"
-                class="btn-sm btn-danger flex-1 text-xs"
-              >
-                Delete
-              </button>
+            <div class="grid grid-cols-2 gap-2 mt-2">
+              <button @click="editUser(user)" class="btn-sm btn-secondary text-xs">Edit</button>
+              <button @click="toggleUserStatus(user)" :class="user.is_active ? 'btn-sm btn-warning text-xs' : 'btn-sm btn-success text-xs'">{{ user.is_active ? 'Deactivate' : 'Activate' }}</button>
+              <button v-if="!isSuperAdmin" @click="manageShifts(user)" class="btn-sm btn-secondary text-xs col-span-2">Shifts</button>
+              <button @click="resetPassword(user)" class="btn-sm btn-warning text-xs col-span-2">Reset Password</button>
+              <button v-if="isSuperAdmin" @click="confirmDeleteUser(user)" class="btn-sm btn-danger text-xs col-span-2">Delete</button>
             </div>
           </div>
         </div>

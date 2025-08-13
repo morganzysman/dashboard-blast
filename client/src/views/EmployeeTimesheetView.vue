@@ -1,6 +1,19 @@
 <template>
   <div class="space-y-4 lg:space-y-6 max-w-3xl mx-auto">
     <!-- Shifts calendar view -->
+    <div class="card" v-if="$route.query.greeted === '1'">
+      <div class="card-body">
+        <div class="bg-green-50 border border-green-200 rounded p-3 text-green-800 text-sm">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="font-semibold">Thanks! Your {{ $route.query.type === 'in' ? 'clock-in' : 'clock-out' }} was registered.</p>
+              <p v-if="$route.query.late" class="text-green-900">You are {{ $route.query.late }} minutes late.</p>
+            </div>
+            <button class="btn-secondary btn-sm" @click="dismissGreeting">Dismiss</button>
+          </div>
+        </div>
+      </div>
+    </div>
     <div class="card">
       <div class="card-body">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
@@ -10,6 +23,8 @@
           <div class="text-gray-500 hidden lg:block" v-for="d in ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']" :key="d">{{ d }}</div>
           <template v-for="(day, idx) in weekDays" :key="idx">
             <div class="border rounded p-2 min-h-[80px]">
+              <!-- Mobile: show weekday label inside each cell -->
+              <div class="text-[10px] text-gray-400 text-center lg:hidden">{{ day.wdLabel }}</div>
               <div class="text-[10px] text-gray-500 text-center">{{ day.label }}</div>
               <div class="mt-1 space-y-1" v-if="day.shift">
                 <div class="text-gray-900 font-medium truncate lg:whitespace-normal text-center">{{ day.shift.account_name || day.shift.company_token }}</div>
@@ -23,15 +38,26 @@
     </div>
     <div class="card">
       <div class="card-body">
-        <div class="flex items-center justify-between">
+        <div class="flex items-start justify-between gap-2 flex-wrap">
           <div>
             <h2 class="text-lg font-bold text-gray-900">My Timesheet</h2>
             <p class="text-sm text-gray-600">Period: {{ periodLabel }}</p>
           </div>
-          <div class="space-x-2">
-            <button class="btn-secondary btn-sm" @click="prevPeriod">Prev</button>
-            <button class="btn-secondary btn-sm" @click="nextPeriod">Next</button>
-            <button class="btn-primary btn-sm" @click="loadEntries">Refresh</button>
+          <div class="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+            <div class="inline-flex overflow-hidden rounded-md border border-gray-200">
+              <button class="btn-secondary btn-sm flex items-center gap-1 rounded-none" @click="prevPeriod">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+                <span class="hidden xs:inline">Prev</span>
+              </button>
+              <button class="btn-secondary btn-sm flex items-center gap-1 border-l border-gray-200 rounded-none" @click="nextPeriod">
+                <span class="hidden xs:inline">Next</span>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+              </button>
+            </div>
+            <button class="btn-primary btn-sm flex items-center gap-1" @click="loadEntries">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/><path d="M22 2v6h-6"/></svg>
+              <span class="hidden sm:inline">Refresh</span>
+            </button>
           </div>
         </div>
         <div class="mt-4">
@@ -130,7 +156,8 @@ const buildWeek = async () => {
     const mm = String(d.getMonth() + 1).padStart(2, '0')
     const dd = String(d.getDate()).padStart(2, '0')
     const dateStr = `${yyyy}-${mm}-${dd}`
-    list.push({ date: d, dateStr, label: d.getDate(), shift: null })
+    const wdLabel = d.toLocaleDateString(undefined, { weekday: 'short' })
+    list.push({ date: d, dateStr, label: d.getDate(), wdLabel, shift: null })
   }
   // Fetch shifts assigned to this user
   try {
@@ -255,6 +282,17 @@ const nextPeriod = () => {
 }
 
 loadEntries()
+
+const dismissGreeting = () => {
+  try {
+    const url = new URL(window.location.href)
+    url.searchParams.delete('greeted')
+    url.searchParams.delete('type')
+    url.searchParams.delete('late')
+    url.searchParams.delete('clockAt')
+    window.history.replaceState({}, '', url.toString())
+  } catch {}
+}
 </script>
 
 <style scoped>

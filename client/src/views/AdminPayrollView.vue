@@ -2,14 +2,22 @@
   <div class="space-y-4 lg:space-y-6">
     <div class="card">
       <div class="card-body">
-        <div class="flex items-center justify-between">
+        <div class="flex items-start justify-between gap-2 flex-wrap">
           <div>
             <h2 class="text-lg font-bold text-gray-900">Payroll (Biweekly)</h2>
             <p class="text-sm text-gray-600">Period: {{ periodLabel }}</p>
           </div>
-          <div class="space-x-2">
-            <button class="btn-secondary btn-sm" @click="prevPeriod">Prev</button>
-            <button class="btn-secondary btn-sm" @click="nextPeriod">Next</button>
+          <div class="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+            <div class="inline-flex overflow-hidden rounded-md border border-gray-200">
+              <button class="btn-secondary btn-sm flex items-center gap-1 rounded-none" @click="prevPeriod">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+                <span class="hidden xs:inline">Prev</span>
+              </button>
+              <button class="btn-secondary btn-sm flex items-center gap-1 border-l border-gray-200 rounded-none" @click="nextPeriod">
+                <span class="hidden xs:inline">Next</span>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+              </button>
+            </div>
             <button class="btn-primary btn-sm" :disabled="paying || !companyToken" @click="markPaid">{{ paying ? 'Marking...' : 'Mark as Paid' }}</button>
           </div>
         </div>
@@ -66,15 +74,16 @@
           <!-- Simple calendar-like visualization -->
           <div class="mt-6">
             <h3 class="text-md font-semibold mb-2">Entries Calendar</h3>
-            <div class="grid grid-cols-7 gap-3 text-xs">
-              <div class="text-gray-500" v-for="d in ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']" :key="d">{{ d }}</div>
+            <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 lg:gap-3 text-xs">
+              <div class="text-gray-500 hidden lg:block" v-for="d in ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']" :key="d">{{ d }}</div>
               <template v-for="day in daysInPeriod" :key="day.date">
-                <div class="border rounded p-2 min-h-[120px]">
-                  <div class="text-[10px] text-gray-500">{{ day.label }}</div>
+                <div class="border rounded p-2 min-h-[100px]">
+                  <div class="text-[10px] text-gray-400 text-center lg:hidden">{{ new Date(day.date).toLocaleDateString(undefined, { weekday: 'short' }) }}</div>
+                  <div class="text-[10px] text-gray-500 text-center">{{ new Date(day.date).getDate() }}</div>
                   <div class="space-y-1 mt-1">
                     <div v-for="e in day.entries" :key="e.id" class="rounded px-1 py-0.5 text-[10px] text-white flex flex-wrap justify-between items-center gap-x-1" :style="{ backgroundColor: colorForUser(e.user_id) }" :title="userName(e.user_id)">
                       <span class="truncate">{{ userName(e.user_id) }}</span>
-                      <span class="">{{ formatTime(e.clock_in_at) }} - {{ e.clock_out_at ? formatTime(e.clock_out_at) : '...' }}</span>
+                      <span>{{ formatTime(e.clock_in_at) }} - {{ e.clock_out_at ? formatTime(e.clock_out_at) : '...' }}</span>
                       <span class="ml-1">{{ e.amount ? formatCurrency(e.amount) : '' }}</span>
                       <span v-if="e.paid" class="ml-1 bg-green-600 text-white rounded px-1">$</span>
                     </div>

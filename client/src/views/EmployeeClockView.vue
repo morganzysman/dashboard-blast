@@ -45,7 +45,6 @@
                   <div class="absolute bottom-1 right-2 bg-black bg-opacity-50 text-white text-[10px] px-1 rounded">Scanner</div>
                 </div>
               </div>
-              <p class="text-xs text-gray-500 text-center">Scan the QR provided by your manager to begin.</p>
             </template>
             <p v-if="message" class="text-sm" :class="messageClass">{{ message }}</p>
           </div>
@@ -244,9 +243,22 @@ const submitClock = async (dir) => {
       message.value = action === 'clock_out' ? 'Clocked out successfully' : (late ? `${late}` : 'Clocked in successfully')
       qrSecret.value = ''
       await refreshOpenState()
-      if (action === 'clock_in') {
-        setTimeout(() => { router.push('/timesheet') }, 15000)
-      }
+      // Immediate redirect to /timesheet with greeting modal data
+      try {
+        const entry = res.data?.entry || null
+        const clockAtIso = entry?.clock_in_at || entry?.clock_out_at || new Date().toISOString()
+        let lateMinutes = 0
+        if (action === 'clock_in' && entry?.shift_start) {
+          const diffMs = new Date(clockAtIso).getTime() - new Date(entry.shift_start).getTime()
+          if (diffMs > 0) lateMinutes = Math.floor(diffMs / 60000)
+        }
+        router.push({ path: '/timesheet', query: {
+          greeted: '1',
+          type: action === 'clock_in' ? 'in' : 'out',
+          late: lateMinutes >= 10 ? String(lateMinutes) : undefined,
+          clockAt: clockAtIso
+        } })
+      } catch {}
     } else {
       message.value = res.error || 'Failed'
     }
