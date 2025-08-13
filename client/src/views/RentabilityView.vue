@@ -168,8 +168,8 @@
         </div>
 
         <div class="p-6">
-          <!-- Account Selection (Common for both tabs) -->
-          <div class="mb-6">
+          <!-- Account Selection (hide selector when opened from a specific account) -->
+          <div class="mb-6" v-if="!selectedModalAccount">
             <label class="block text-sm font-medium text-gray-700 mb-2">Account</label>
             <select 
               v-model="selectedModalAccount" 
@@ -182,6 +182,12 @@
                 {{ account.account_name || account.company_token }}
               </option>
             </select>
+          </div>
+          <div class="mb-6" v-else>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Account</label>
+            <div class="px-3 py-2 bg-gray-50 border border-gray-200 rounded-md text-sm text-gray-700">
+              {{ getSelectedAccountName() }}
+            </div>
           </div>
 
           <!-- Utility Costs Tab -->
