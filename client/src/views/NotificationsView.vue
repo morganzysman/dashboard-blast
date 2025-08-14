@@ -68,8 +68,12 @@
           
           <div class="border-l pl-6">
             <div class="space-y-4">
+              <div v-if="loading" class="space-y-2 animate-pulse">
+                <div class="h-9 bg-gray-200 rounded"></div>
+                <div class="h-9 bg-gray-200 rounded"></div>
+              </div>
               <Button
-                v-if="!notificationStatus.isSubscribed"
+                v-else-if="!notificationStatus.isSubscribed"
                 @click="subscribeToNotifications"
                 :disabled="loading"
                 variant="primary" class="w-full"

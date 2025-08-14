@@ -10,13 +10,13 @@
           <div class="flex-shrink-0">
           </div>
           <div class="ml-3">
-            <h1 class="text-xl font-bold text-gray-900">OlaClick</h1>
-            <p class="text-sm text-gray-500">Analytics</p>
+            <h1 class="text-xl font-bold text-gray-900 dark:text-gray-100">OlaClick</h1>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Analytics</p>
           </div>
         </div>
         <!-- Mobile close button -->
         <button @click="$emit('close')" 
-                class="md:hidden p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100">
+                class="md:hidden p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800">
           <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
           </svg>

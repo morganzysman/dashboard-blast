@@ -54,17 +54,17 @@
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
               </button>
             </div>
-            <button class="btn-primary btn-sm flex items-center gap-1" @click="loadEntries">
+            <button class="btn-primary btn-sm flex items-center gap-1" @click="loadEntries" :disabled="loading">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/><path d="M22 2v6h-6"/></svg>
-              <span class="hidden sm:inline">Refresh</span>
+              <span class="hidden sm:inline">{{ loading ? 'Loading…' : 'Refresh' }}</span>
             </button>
           </div>
         </div>
         <div class="mt-4">
           <div class="overflow-x-auto">
           <table class="min-w-[900px] w-full text-sm">
-            <thead>
-              <tr class="text-left text-gray-600">
+            <thead class="sticky top-0 bg-white z-10 dark:bg-gray-800">
+              <tr class="text-left text-gray-600 dark:text-gray-300">
                 <th class="py-2 whitespace-normal">Account</th>
                 <th class="py-2 whitespace-normal">Clock In</th>
                 <th class="py-2 whitespace-normal">Clock Out</th>
@@ -73,7 +73,16 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="e in entries" :key="e.id" class="border-t">
+              <template v-if="loading">
+                <tr v-for="n in 6" :key="`sk-${n}`" class="border-t animate-pulse">
+                  <td class="py-2"><div class="h-3 w-40 bg-gray-200 rounded"></div></td>
+                  <td class="py-2"><div class="h-3 w-32 bg-gray-200 rounded"></div></td>
+                  <td class="py-2"><div class="h-3 w-24 bg-gray-200 rounded"></div></td>
+                  <td class="py-2"><div class="h-3 w-20 bg-gray-200 rounded"></div></td>
+                  <td class="py-2"><div class="h-3 w-16 bg-gray-200 rounded ml-auto"></div></td>
+                </tr>
+              </template>
+              <tr v-else v-for="e in entries" :key="e.id" class="border-t hover:bg-gray-50 odd:bg-white even:bg-gray-50 dark:odd:bg-gray-900 dark:even:bg-gray-800 dark:hover:bg-gray-700">
                 <td class="py-2 whitespace-normal break-words max-w-[180px]">{{ accountLabel(e.company_token) }}</td>
                 <td class="py-2 whitespace-normal break-words">{{ formatDateTime(e.clock_in_at) }}</td>
                 <td class="py-2 whitespace-normal break-words">{{ e.clock_out_at ? formatDateTime(e.clock_out_at) : '—' }}</td>
@@ -100,6 +109,7 @@ import { useAuthStore } from '../stores/auth'
 import api from '../utils/api'
 
 const entries = ref([])
+const loading = ref(false)
 const auth = useAuthStore()
 const period = ref({ start: '', end: '' })
 
@@ -182,6 +192,7 @@ const buildWeek = async () => {
 onMounted(buildWeek)
 
 const loadEntries = async () => {
+  loading.value = true
   // Frontend picks the correct range; default to server biweekly if not set
   let { start, end } = period.value
   if (!start || !end) {
@@ -200,10 +211,14 @@ const loadEntries = async () => {
       end = `${year}-${pad(month+1)}-${pad(endDate)}`
     }
   }
-  const res = await api.getMyEntries(start, end)
-  if (res.success) {
-    entries.value = res.data
-    period.value = res.period
+  try {
+    const res = await api.getMyEntries(start, end)
+    if (res.success) {
+      entries.value = res.data
+      period.value = res.period
+    }
+  } finally {
+    loading.value = false
   }
 }
 
