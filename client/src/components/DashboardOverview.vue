@@ -30,6 +30,8 @@
               <option value="custom">Custom Range</option>
             </select>
           </div>
+          <!-- Close header flex and title container -->
+        </div>
        
         <!-- Custom Date Inputs and Actions -->
         <div class="flex flex-col space-y-3 sm:space-y-0 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
@@ -90,8 +92,9 @@
             Apply Range
           </button>
           </div>
-          </div>
+          <!-- Close card-body and card for header block -->
         </div>
+      </div>
 
     <!-- Overall Performance Cards -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6" v-if="analyticsData">
