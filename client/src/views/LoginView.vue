@@ -25,46 +25,24 @@
         <form @submit.prevent="handleLogin" class="mt-8 space-y-6">
           <div>
             <label for="email" class="form-label">Email address</label>
-            <input
-              id="email"
-              v-model="form.email"
-              type="email"
-              required
-              autocomplete="email"
-              class="form-input"
-              :class="{ 'border-error-300': emailError }"
-              placeholder="Enter your email"
-            />
+            <Input id="email" v-model="form.email" type="email" required autocomplete="email" placeholder="Enter your email" :class="{ 'border-error-300': emailError }" />
             <p v-if="emailError" class="form-error">{{ emailError }}</p>
           </div>
 
           <div>
             <label for="password" class="form-label">Password</label>
-            <input
-              id="password"
-              v-model="form.password"
-              type="password"
-              required
-              autocomplete="current-password"
-              class="form-input"
-              :class="{ 'border-error-300': passwordError }"
-              placeholder="Enter your password"
-            />
+            <Input id="password" v-model="form.password" type="password" required autocomplete="current-password" placeholder="Enter your password" :class="{ 'border-error-300': passwordError }" />
             <p v-if="passwordError" class="form-error">{{ passwordError }}</p>
           </div>
 
           <div>
-            <button
-              type="submit"
-              :disabled="authStore.isLoading"
-              class="w-full btn-primary btn-lg"
-            >
+            <Button type="submit" :disabled="authStore.isLoading" variant="primary" size="lg" class="w-full">
               <div v-if="authStore.isLoading" class="flex items-center justify-center">
                 <div class="loading-spinner mr-2"></div>
                 Signing in...
               </div>
               <span v-else>Sign in</span>
-            </button>
+            </Button>
           </div>
           <span class="text-sm text-gray-600 text-center">v1.0.3</span>
         </form>
@@ -74,9 +52,7 @@
           <div class="text-center">
             <h3 class="text-sm font-semibold text-gray-900 mb-2">Install this app</h3>
             <div v-if="canInstallPwa">
-              <button class="btn-secondary" @click="installPwa" :disabled="installing">
-                {{ installing ? 'Preparing…' : 'Install App' }}
-              </button>
+              <Button variant="secondary" @click="installPwa" :disabled="installing">{{ installing ? 'Preparing…' : 'Install App' }}</Button>
               <p class="text-xs text-gray-500 mt-2">Install for a faster, fullscreen experience.</p>
             </div>
             <div v-else>
@@ -113,6 +89,8 @@
 
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import Input from '../components/ui/Input.vue'
+import Button from '../components/ui/Button.vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 

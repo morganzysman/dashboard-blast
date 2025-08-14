@@ -68,29 +68,29 @@
           
           <div class="border-l pl-6">
             <div class="space-y-4">
-              <button
+              <Button
                 v-if="!notificationStatus.isSubscribed"
                 @click="subscribeToNotifications"
                 :disabled="loading"
-                class="w-full btn-primary"
+                variant="primary" class="w-full"
               >
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5v-5zm-5-6h5l-5 5v-5zm-5-6h5l-5 5v-5z"></path>
                 </svg>
                 Enable Notifications
-              </button>
+              </Button>
               
-              <button
+              <Button
                 v-else
                 @click="unsubscribeFromNotifications"
                 :disabled="loading"
-                class="w-full btn-danger"
+                variant="danger" class="w-full"
               >
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636m12.728 12.728L18.364 5.636M5.636 18.364l12.728-12.728"></path>
                 </svg>
                 Disable Notifications
-              </button>
+              </Button>
               
               <!-- <button
                 v-if="notificationStatus.isSubscribed"
@@ -165,6 +165,7 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
+import Button from '../components/ui/Button.vue'
 import { useAuthStore } from '../stores/auth'
 import api from '../utils/api'
 
