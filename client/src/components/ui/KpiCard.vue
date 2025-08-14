@@ -8,6 +8,9 @@
         <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400">{{ label }}</p>
         <p class="text-lg sm:text-xl font-semibold truncate" :class="valueClass">{{ value }}</p>
         <p v-if="subtext" class="text-xs text-gray-400 mt-0.5 dark:text-gray-500">{{ subtext }}</p>
+        <div v-if="$slots.extra" class="mt-2">
+          <slot name="extra" />
+        </div>
       </div>
       <div class="ml-auto">
         <slot name="action" />
