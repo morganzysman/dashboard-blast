@@ -191,7 +191,7 @@
                     <div class="w-2 h-2 rounded-full flex-shrink-0" :style="{ backgroundColor: getAccountColor(account.accountKey) }"></div>
                     <span class="text-green-100 truncate whitespace-nowrap">{{ account.account }}</span>
                   </div>
-                  <div class="text-green-200 mt-0.5">
+                  <div class="text-green-200 mt-0.5 ml-3">
                     <span>{{ account.percent.toFixed(0) }}%</span>
                     <span class="text-green-100 font-medium ml-2">{{ formatCurrency(account.totalAmount) }}</span>
                   </div>

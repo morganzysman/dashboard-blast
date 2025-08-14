@@ -39,6 +39,8 @@ router.get('/profitability', requireAuth, async (req, res) => {
     const startObj = new Date(startDate)
     const endObj = new Date(endDate)
     const daysDiff = Math.max(1, Math.ceil((endObj.getTime() - startObj.getTime()) / (1000 * 3600 * 24)) + 1)
+    const todayStr = getTimezoneAwareDate(null, timezone)
+    const isEndToday = endDate === todayStr
 
     // Fetch accounts by user's company
     let userAccounts = []
@@ -97,6 +99,24 @@ router.get('/profitability', requireAuth, async (req, res) => {
       pool.query(payrollQuery, [startDate, endDate, ...accountTokens])
     ])
 
+    // Projected payroll for open entries on current day (if the selected end date is today)
+    let projectedPayrollRes = { rows: [] }
+    if (isEndToday && accountTokens.length > 0) {
+      const projectedAccPlaceholders = accountTokens.map((_, i) => `$${i + 2}`).join(', ')
+      const projectedPayrollQuery = `
+        SELECT te.company_token,
+               COALESCE(SUM(EXTRACT(EPOCH FROM (NOW() - te.clock_in_at)) / 3600.0 * COALESCE(u.hourly_rate, 0)), 0) AS projected_payroll_sum,
+               COUNT(*) AS open_entries_count
+        FROM time_entries te
+        JOIN users u ON u.id = te.user_id
+        WHERE te.clock_out_at IS NULL
+          AND te.company_token IN (${projectedAccPlaceholders})
+          AND te.clock_in_at::date = $1::date
+        GROUP BY te.company_token
+      `
+      projectedPayrollRes = await pool.query(projectedPayrollQuery, [endDate, ...accountTokens])
+    }
+
     const accountKeyToUtility = new Map()
     utilityRes.rows.forEach(row => {
       accountKeyToUtility.set(row.company_token, row)
@@ -114,6 +134,14 @@ router.get('/profitability', requireAuth, async (req, res) => {
       accountKeyToPayroll.set(row.company_token, {
         payroll_sum: Number(row.payroll_sum) || 0,
         entries_count: Number(row.entries_count) || 0
+      })
+    })
+
+    const accountKeyToProjectedPayroll = new Map()
+    projectedPayrollRes.rows.forEach(row => {
+      accountKeyToProjectedPayroll.set(row.company_token, {
+        projected_payroll_sum: Number(row.projected_payroll_sum) || 0,
+        open_entries_count: Number(row.open_entries_count) || 0
       })
     })
 
@@ -174,8 +202,12 @@ router.get('/profitability', requireAuth, async (req, res) => {
       const food = gross * foodRate
       const utilDaily = accountKeyToUtility.get(accRes.accountKey)?.total_daily || 0
       const util = utilDaily * daysDiff
-      const payrollSum = accountKeyToPayroll.get(accRes.accountKey)?.payroll_sum || 0
-      const payrollEntries = accountKeyToPayroll.get(accRes.accountKey)?.entries_count || 0
+      const payrollClosed = accountKeyToPayroll.get(accRes.accountKey)?.payroll_sum || 0
+      const payrollClosedEntries = accountKeyToPayroll.get(accRes.accountKey)?.entries_count || 0
+      const projected = accountKeyToProjectedPayroll.get(accRes.accountKey)?.projected_payroll_sum || 0
+      const projectedEntries = accountKeyToProjectedPayroll.get(accRes.accountKey)?.open_entries_count || 0
+      const payrollSum = payrollClosed + projected
+      const payrollEntries = payrollClosedEntries + projectedEntries
       const profit = netAfterFees - food - util - payrollSum
       const margin = gross > 0 ? profit / gross : 0
       const tipsAmount = (tipsRes && tipsRes.success && tipsRes.data?.data)

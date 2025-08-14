@@ -297,22 +297,20 @@ const accountGainBreakdowns = computed(() => {
     
     const serverAcc = profitabilityData?.accounts?.find(a => a.accountKey === account.accountKey)
     if (serverAcc && serverAcc.paymentMethodBreakdown) {
-      // If server has non-zero revenue, use it
-      if ((serverAcc.grossSales || 0) > 0) {
-        map.set(account.accountKey, {
-          totalRevenue: serverAcc.grossSales || 0,
-          totalCosts: (serverAcc.paymentFees || 0) + (serverAcc.foodCosts || 0) + (serverAcc.utilityCosts || 0) + (serverAcc.payrollCosts || 0),
-          paymentFees: serverAcc.paymentFees || 0,
-          foodCosts: serverAcc.foodCosts || 0,
-          utilityCosts: serverAcc.utilityCosts || 0,
-          payrollCosts: serverAcc.payrollCosts || 0,
-          payrollEntries: serverAcc.payrollEntries || 0,
-          finalGain: serverAcc.operatingProfit || 0,
-          daysInPeriod: serverAcc.daysInPeriod || 1,
-          paymentMethodBreakdown: serverAcc.paymentMethodBreakdown
-        })
-        return
-      }
+      // Always use server data when available, even if gross is zero (to include payroll projections)
+      map.set(account.accountKey, {
+        totalRevenue: serverAcc.grossSales || 0,
+        totalCosts: (serverAcc.paymentFees || 0) + (serverAcc.foodCosts || 0) + (serverAcc.utilityCosts || 0) + (serverAcc.payrollCosts || 0),
+        paymentFees: serverAcc.paymentFees || 0,
+        foodCosts: serverAcc.foodCosts || 0,
+        utilityCosts: serverAcc.utilityCosts || 0,
+        payrollCosts: serverAcc.payrollCosts || 0,
+        payrollEntries: serverAcc.payrollEntries || 0,
+        finalGain: serverAcc.operatingProfit || 0,
+        daysInPeriod: serverAcc.daysInPeriod || calcDays(currentDateRange) || 1,
+        paymentMethodBreakdown: serverAcc.paymentMethodBreakdown
+      })
+      return
     }
     
     if (!account.success || !account.data?.data) {
@@ -388,13 +386,8 @@ const getDailyGainClass = (account) => {
 }
 
 const isAccountGainDisabled = () => {
-  const timezone = authStore.user?.timezone || 'America/Lima'
-  const nowTz = new Date(new Date().toLocaleString('en-US', { timeZone: timezone }))
-  const yyyy = nowTz.getFullYear()
-  const mm = String(nowTz.getMonth() + 1).padStart(2, '0')
-  const dd = String(nowTz.getDate()).padStart(2, '0')
-  const today = `${yyyy}-${mm}-${dd}`
-  return props.currentDateRange?.end === today
+  // Always enabled; server now includes projected payroll for open entries
+  return false
 }
 
 const formatCurrency = (amount) => {
