@@ -258,8 +258,7 @@
             <div class="min-w-0 flex-1">
               <p class="text-purple-100 text-xs sm:text-sm font-medium">{{ formatGainPeriodLabel() }} GAIN</p>
               <p class="text-lg sm:text-xl font-bold truncate" :class="getAggregatedGainClass()">
-                <span v-if="isGainDisabled()" class="opacity-60">Unavailable for today</span>
-                <span v-else>{{ formatCurrency(getAggregatedDailyGain()) }}</span>
+                {{ formatCurrency(getAggregatedDailyGain()) }}
               </p>
             </div>
             <div class="w-10 h-10 sm:w-12 sm:h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -268,7 +267,7 @@
               </svg>
             </div>
           </div>
-          <p class="text-xs text-purple-100">Includes fees, 30% food costs, utility costs, and payroll (closed entries)</p>
+          <p class="text-xs text-purple-100">Includes fees, 30% food costs, utility costs, and payroll (closed + projected open entries when end date is today)</p>
         </div>
       </div>
     </div>
@@ -419,11 +418,8 @@ const getAggregatedGainClass = () => {
   return 'text-white'
 }
 
-// Disable gain if the selected range includes today
-const isGainDisabled = () => {
-  const today = todayString.value
-  return props.currentDateRange?.end === today
-}
+// Gain is always enabled; server includes projected payroll when end date is today
+const isGainDisabled = () => false
 
 // No client-side cost fetching
 // Computed properties
