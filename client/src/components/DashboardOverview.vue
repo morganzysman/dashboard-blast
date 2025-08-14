@@ -501,10 +501,21 @@ const getTotalOrders = () => {
 
 // Aggregated gross sales
 const getAggregatedGrossSales = () => {
+  const profitabilityAmount = props.profitabilityData?.company?.grossSales || 0
+  const analyticsAmount = props.analyticsData?.aggregated?.totalAmount || 0
+  
+  console.log('💰 getAggregatedGrossSales:', {
+    profitabilityPeriod: props.profitabilityData?.period,
+    profitabilityAmount,
+    analyticsAmount,
+    selectedDateRange: props.selectedDateRange,
+    currentDateRange: props.currentDateRange
+  })
+  
   if (props.profitabilityData?.company) {
-    return props.profitabilityData.company.grossSales || 0
+    return profitabilityAmount
   }
-  return props.analyticsData?.aggregated?.totalAmount || 0
+  return analyticsAmount
 }
 
 // Client-side fee computation removed
