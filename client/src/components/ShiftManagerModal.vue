@@ -1,69 +1,80 @@
 <template>
-  <div class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-    <div class="bg-white rounded-lg p-4 w-full max-w-3xl">
-      <div class="flex items-center justify-between mb-2">
-        <h3 class="text-md font-semibold">Manage Shifts - {{ user?.email }}</h3>
-        <div class="space-x-2">
-          <button class="btn-secondary btn-xs" @click="$emit('close')">Close</button>
-          <button class="btn-primary btn-xs" :disabled="saving" @click="saveAll">{{ saving ? 'Saving...' : 'Save' }}</button>
-        </div>
-      </div>
-      <p class="text-xs text-gray-500 mb-3">Define weekly shifts per account. Times are local (HH:MM, 24h).</p>
-
-      <div class="overflow-auto">
-        <table class="min-w-full text-sm">
-          <thead>
-            <tr class="text-left text-gray-600">
-              <th class="py-2 pr-2">Weekday</th>
-              <th class="py-2 pr-2">Account</th>
-              <th class="py-2 pr-2">Start</th>
-              <th class="py-2 pr-2">End</th>
-              <th class="py-2 pr-2">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="wd in displayOrder" :key="wd" class="border-t">
-              <td class="py-2 pr-2 w-28">{{ weekdayLabel(wd) }}</td>
-              <td class="py-2 pr-2">
-                <select v-model="form[wd].company_token" class="form-input w-full">
-                  <option value="">—</option>
-                  <option v-for="acc in accounts" :key="acc.company_token" :value="acc.company_token">
-                    {{ acc.account_name || acc.company_token }}
-                  </option>
-                </select>
-              </td>
-              <td class="py-2 pr-2 w-28">
-                <input v-model="form[wd].start_time" type="time" class="form-input w-full" />
-              </td>
-              <td class="py-2 pr-2 w-28">
-                <input v-model="form[wd].end_time" type="time" class="form-input w-full" />
-              </td>
-              <td class="py-2 pr-2 w-24">
-                <button class="btn-danger btn-xs" @click="clearDay(wd)" :disabled="!form[wd].company_token && !form[wd].start_time && !form[wd].end_time">Clear</button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Weekly calendar preview -->
-      <div class="mt-4">
-        <div class="flex items-center justify-between mb-2">
-          <h4 class="text-sm font-semibold text-gray-900">Preview (This Week)</h4>
-          <span class="text-xs text-gray-500 hidden sm:inline">Shows current selections per weekday</span>
-        </div>
-        <div class="grid grid-cols-7 gap-2 text-xs">
-          <div class="text-gray-500" v-for="d in ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']" :key="d">{{ d }}</div>
-          <template v-for="day in weekDays" :key="day.dateStr">
-            <div class="border rounded p-2 min-h-[80px]">
-              <div class="text-[10px] text-gray-500">{{ day.label }}</div>
-              <div class="mt-1 space-y-1" v-if="form[day.weekday].company_token && form[day.weekday].start_time && form[day.weekday].end_time">
-                <div class="text-gray-900 font-medium">{{ accountNameFor(form[day.weekday].company_token) }}</div>
-                <div class="text-gray-600">{{ form[day.weekday].start_time }} - {{ form[day.weekday].end_time }}</div>
-              </div>
-              <div v-else class="text-gray-400">—</div>
+  <div class="modal-overlay" @click.self="$emit('close')">
+    <div class="modal-container">
+      <div class="modal-content">
+        <div class="modal-panel w-full max-w-3xl">
+          <div class="modal-header flex items-center justify-between">
+            <h3 class="text-md font-semibold">Manage Shifts - {{ user?.email }}</h3>
+            <div class="space-x-2">
+              <button class="btn-secondary btn-xs" @click="$emit('close')">Close</button>
+              <button class="btn-primary btn-xs" :disabled="saving" @click="saveAll">{{ saving ? 'Saving...' : 'Save' }}</button>
             </div>
-          </template>
+          </div>
+          <div class="modal-body">
+            <p class="text-xs text-gray-500 mb-3">Define weekly shifts per account. Times are local (HH:MM, 24h).</p>
+
+            <div class="overflow-auto">
+              <table class="min-w-full text-sm">
+                <thead class="sticky top-0 bg-white z-10 dark:bg-gray-800">
+                  <tr class="text-left text-gray-600 dark:text-gray-300">
+                    <th class="py-2 pr-2">Weekday</th>
+                    <th class="py-2 pr-2">Account</th>
+                    <th class="py-2 pr-2">Start</th>
+                    <th class="py-2 pr-2">End</th>
+                    <th class="py-2 pr-2">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="wd in displayOrder" :key="wd" class="border-t hover:bg-gray-50 odd:bg-white even:bg-gray-50 dark:odd:bg-gray-900 dark:even:bg-gray-800 dark:hover:bg-gray-700">
+                    <td class="py-2 pr-2 w-28">{{ weekdayLabel(wd) }}</td>
+                    <td class="py-2 pr-2">
+                      <select v-model="form[wd].company_token" class="form-input w-full">
+                        <option value="">—</option>
+                        <option v-for="acc in accounts" :key="acc.company_token" :value="acc.company_token">
+                          {{ acc.account_name || acc.company_token }}
+                        </option>
+                      </select>
+                    </td>
+                    <td class="py-2 pr-2 w-28">
+                      <input v-model="form[wd].start_time" type="time" class="form-input w-full" />
+                    </td>
+                    <td class="py-2 pr-2 w-28">
+                      <input v-model="form[wd].end_time" type="time" class="form-input w-full" />
+                    </td>
+                    <td class="py-2 pr-2 w-24">
+                      <button class="btn-danger btn-xs" @click="clearDay(wd)" :disabled="!form[wd].company_token && !form[wd].start_time && !form[wd].end_time">Clear</button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="mt-4">
+              <div class="flex items-center justify-between mb-2">
+                <h4 class="text-sm font-semibold text-gray-900">Preview (This Week)</h4>
+                <span class="text-xs text-gray-500 hidden sm:inline">Shows current selections per weekday</span>
+              </div>
+              <div class="grid grid-cols-7 gap-2 text-xs">
+                <div class="text-gray-500" v-for="d in ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']" :key="d">{{ d }}</div>
+                <template v-for="day in weekDays" :key="day.dateStr">
+                  <div class="border rounded p-2 min-h-[80px]">
+                    <div class="text-[10px] text-gray-500">{{ day.label }}</div>
+                    <div class="mt-1 space-y-1" v-if="form[day.weekday].company_token && form[day.weekday].start_time && form[day.weekday].end_time">
+                      <div class="text-gray-900 font-medium">{{ accountNameFor(form[day.weekday].company_token) }}</div>
+                      <div class="text-gray-600">{{ form[day.weekday].start_time }} - {{ form[day.weekday].end_time }}</div>
+                    </div>
+                    <div v-else class="text-gray-400">—</div>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <div class="flex justify-end gap-2">
+              <button class="btn-secondary btn-sm" @click="$emit('close')">Close</button>
+              <button class="btn-primary btn-sm" :disabled="saving" @click="saveAll">{{ saving ? 'Saving...' : 'Save' }}</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

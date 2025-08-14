@@ -1,6 +1,8 @@
 <template>
-  <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" @click="closeModal">
-    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white" @click.stop>
+  <div class="modal-overlay" @click.self="closeModal">
+    <div class="modal-container">
+      <div class="modal-content">
+        <div class="modal-panel w-full max-w-md" @click.stop>
       <!-- Modal Header -->
       <div class="flex justify-between items-center mb-4">
         <h3 class="text-lg font-medium text-gray-900">
@@ -98,18 +100,14 @@
         </div>
 
         <!-- Form Actions -->
-        <div class="flex justify-end space-x-3 pt-4 border-t">
-          <button type="button" @click="closeModal" class="btn-secondary">
-            Cancel
-          </button>
-          <button type="submit" class="btn-primary">
-            {{ isEdit ? 'Update User' : 'Create User' }}
-          </button>
+        <div class="modal-footer flex justify-end gap-2">
+          <button type="button" @click="closeModal" class="btn-secondary">Cancel</button>
+          <button type="submit" class="btn-primary">{{ isEdit ? 'Update User' : 'Create User' }}</button>
         </div>
       </form>
+        </div>
+      </div>
     </div>
-
-    <!-- Accounts modal removed -->
   </div>
 </template>
 

@@ -27,10 +27,38 @@
     />
 
     <!-- Loading State -->
-    <div v-if="loading" class="card">
-      <div class="card-body text-center py-12">
-        <div class="loading-spinner mx-auto mb-4"></div>
-        <p class="text-gray-600">Fetching analytics data...</p>
+    <div v-if="loading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+      <div class="card">
+        <div class="card-body">
+          <div class="animate-pulse space-y-2">
+            <div class="h-3 w-24 bg-gray-200 rounded"></div>
+            <div class="h-6 w-32 bg-gray-200 rounded"></div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-body">
+          <div class="animate-pulse space-y-2">
+            <div class="h-3 w-24 bg-gray-200 rounded"></div>
+            <div class="h-6 w-32 bg-gray-200 rounded"></div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-body">
+          <div class="animate-pulse space-y-2">
+            <div class="h-3 w-24 bg-gray-200 rounded"></div>
+            <div class="h-6 w-32 bg-gray-200 rounded"></div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-body">
+          <div class="animate-pulse space-y-2">
+            <div class="h-3 w-24 bg-gray-200 rounded"></div>
+            <div class="h-6 w-32 bg-gray-200 rounded"></div>
+          </div>
+        </div>
       </div>
     </div>
 
