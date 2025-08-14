@@ -55,17 +55,14 @@
             </div>
           </div>
           <div class="mt-4">
-            <table class="table">
-              <thead class="table-header">
-                <tr>
-                  <th>Account Name</th>
-                  <th>Company Token</th>
-                  <th>API Token</th>
-                  <th class="text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody class="table-body">
-                <tr v-for="a in accounts[c.id] || []" :key="a.company_token">
+            <Table :stickyHeader="true">
+              <template #head>
+                <th class="py-2">Account Name</th>
+                <th class="py-2">Company Token</th>
+                <th class="py-2">API Token</th>
+                <th class="py-2 text-right">Actions</th>
+              </template>
+              <tr v-for="a in accounts[c.id] || []" :key="a.company_token" class="border-t hover:bg-gray-50 odd:bg-white even:bg-gray-50 dark:odd:bg-gray-900 dark:even:bg-gray-800 dark:hover:bg-gray-700">
                   <td>
                     <div v-if="isEditing(c.id, a.company_token)">
                       <input v-model.trim="editForm[c.id][a.company_token].account_name" class="form-input w-full" placeholder="Account name" />
@@ -96,8 +93,7 @@
                     </div>
                   </td>
                 </tr>
-              </tbody>
-            </table>
+            </Table>
           </div>
         </div>
       </div>
@@ -109,6 +105,7 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import api from '../utils/api'
 import { useAuthStore } from '../stores/auth'
+import Table from '../components/ui/Table.vue'
 
 const auth = useAuthStore()
 const companies = ref([])
