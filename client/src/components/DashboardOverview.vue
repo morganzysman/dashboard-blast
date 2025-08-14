@@ -323,6 +323,31 @@ const emit = defineEmits([
 
 const authStore = useAuthStore()
 
+// Force re-computation trigger for KPI values
+const forceRecompute = ref(0)
+
+// Watch for data changes that should trigger KPI updates
+watch(
+  [() => props.analyticsData, () => props.profitabilityData, () => props.currentDateRange],
+  (newValues, oldValues) => {
+    const [newAnalytics, newProfitability, newDateRange] = newValues
+    const [oldAnalytics, oldProfitability, oldDateRange] = oldValues
+    
+    console.log('👀 DashboardOverview watcher triggered:', {
+      analyticsChanged: newAnalytics !== oldAnalytics,
+      profitabilityChanged: newProfitability !== oldProfitability,
+      dateRangeChanged: newDateRange !== oldDateRange,
+      analyticsTimestamp: newAnalytics?.timestamp,
+      profitabilityTimestamp: newProfitability?.timestamp,
+      newDateRange: newDateRange
+    })
+    
+    // Force recomputation of all computed properties
+    forceRecompute.value++
+  },
+  { deep: true, immediate: false }
+)
+
 
 
 const paymentMethodColors = {
@@ -501,6 +526,9 @@ const getTotalOrders = () => {
 
 // Aggregated gross sales
 const getAggregatedGrossSales = () => {
+  // Access the force recompute trigger to ensure reactivity
+  const trigger = forceRecompute.value
+  
   const profitabilityAmount = props.profitabilityData?.company?.grossSales || 0
   const analyticsAmount = props.analyticsData?.aggregated?.totalAmount || 0
   
@@ -509,7 +537,8 @@ const getAggregatedGrossSales = () => {
     profitabilityAmount,
     analyticsAmount,
     selectedDateRange: props.selectedDateRange,
-    currentDateRange: props.currentDateRange
+    currentDateRange: props.currentDateRange,
+    forceRecomputeTrigger: trigger
   })
   
   if (props.profitabilityData?.company) {
