@@ -227,7 +227,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { calculateDaysInPeriod as calcDays } from '../composables/useProfitability'
 
@@ -285,65 +285,96 @@ const formatGainPeriodLabel = () => {
   }
 }
 
-// Get detailed gain breakdown for tooltip
-const getAccountGainBreakdown = (account) => {
-  const serverAcc = props.profitabilityData?.accounts?.find(a => a.accountKey === account.accountKey)
-  if (serverAcc && serverAcc.paymentMethodBreakdown) {
-    // If server has non-zero revenue, use it
-    if ((serverAcc.grossSales || 0) > 0) {
-      return {
-        totalRevenue: serverAcc.grossSales || 0,
-        totalCosts: (serverAcc.paymentFees || 0) + (serverAcc.foodCosts || 0) + (serverAcc.utilityCosts || 0) + (serverAcc.payrollCosts || 0),
-        paymentFees: serverAcc.paymentFees || 0,
-        foodCosts: serverAcc.foodCosts || 0,
-        utilityCosts: serverAcc.utilityCosts || 0,
-        payrollCosts: serverAcc.payrollCosts || 0,
-        payrollEntries: serverAcc.payrollEntries || 0,
-        finalGain: serverAcc.operatingProfit || 0,
-        daysInPeriod: serverAcc.daysInPeriod || 1,
-        paymentMethodBreakdown: serverAcc.paymentMethodBreakdown
+// Create a reactive computed property for account gain breakdowns
+const accountGainBreakdowns = computed(() => {
+  const map = new Map()
+  
+  if (!props.analyticsData?.accounts) return map
+  
+  props.analyticsData.accounts.forEach(account => {
+    const profitabilityData = props.profitabilityData
+    const currentDateRange = props.currentDateRange
+    
+    const serverAcc = profitabilityData?.accounts?.find(a => a.accountKey === account.accountKey)
+    if (serverAcc && serverAcc.paymentMethodBreakdown) {
+      // If server has non-zero revenue, use it
+      if ((serverAcc.grossSales || 0) > 0) {
+        map.set(account.accountKey, {
+          totalRevenue: serverAcc.grossSales || 0,
+          totalCosts: (serverAcc.paymentFees || 0) + (serverAcc.foodCosts || 0) + (serverAcc.utilityCosts || 0) + (serverAcc.payrollCosts || 0),
+          paymentFees: serverAcc.paymentFees || 0,
+          foodCosts: serverAcc.foodCosts || 0,
+          utilityCosts: serverAcc.utilityCosts || 0,
+          payrollCosts: serverAcc.payrollCosts || 0,
+          payrollEntries: serverAcc.payrollEntries || 0,
+          finalGain: serverAcc.operatingProfit || 0,
+          daysInPeriod: serverAcc.daysInPeriod || 1,
+          paymentMethodBreakdown: serverAcc.paymentMethodBreakdown
+        })
+        return
       }
     }
-    // Otherwise, fall back to client-side revenue from analytics payments data
-  }
-  if (!account.success || !account.data?.data) {
-    return {
-      totalRevenue: 0,
-      totalCosts: 0,
-      paymentFees: 0,
-      foodCosts: 0,
-      utilityCosts: 0,
-      finalGain: 0,
-      daysInPeriod: calcDays(props.currentDateRange),
-      paymentMethodBreakdown: []
+    
+    if (!account.success || !account.data?.data) {
+      map.set(account.accountKey, {
+        totalRevenue: 0,
+        totalCosts: 0,
+        paymentFees: 0,
+        foodCosts: 0,
+        utilityCosts: 0,
+        finalGain: 0,
+        daysInPeriod: calcDays(currentDateRange),
+        paymentMethodBreakdown: []
+      })
+      return
     }
-  }
-  const daysInPeriod = calcDays(props.currentDateRange)
-  const paymentMethodBreakdown = (account.data.data || []).map(pm => ({
-    method: pm.name?.toLowerCase() || 'other',
-    revenue: pm.sum || 0,
-    fees: 0,
-    netRevenue: pm.sum || 0,
-    transactionCount: pm.count || 0,
-    costConfig: { cost_percentage: 0, fixed_cost: 0 }
-  }))
-  const totalRevenue = paymentMethodBreakdown.reduce((s, m) => s + (m.revenue || 0), 0)
-  const paymentFees = 0
-  const foodCosts = totalRevenue * 0.3
-  const utilityCosts = 0
-  const totalCosts = paymentFees + foodCosts + utilityCosts
-  const finalGain = totalRevenue - totalCosts
-  return {
-    totalRevenue,
-    totalCosts,
-    paymentFees,
-    foodCosts,
-    utilityCosts,
+    
+    const daysInPeriod = calcDays(currentDateRange)
+    const paymentMethodBreakdown = (account.data.data || []).map(pm => ({
+      method: pm.name?.toLowerCase() || 'other',
+      revenue: pm.sum || 0,
+      fees: 0,
+      netRevenue: pm.sum || 0,
+      transactionCount: pm.count || 0,
+      costConfig: { cost_percentage: 0, fixed_cost: 0 }
+    }))
+    const totalRevenue = paymentMethodBreakdown.reduce((s, m) => s + (m.revenue || 0), 0)
+    const paymentFees = 0
+    const foodCosts = totalRevenue * 0.3
+    const utilityCosts = 0
+    const totalCosts = paymentFees + foodCosts + utilityCosts
+    const finalGain = totalRevenue - totalCosts
+    
+    map.set(account.accountKey, {
+      totalRevenue,
+      totalCosts,
+      paymentFees,
+      foodCosts,
+      utilityCosts,
+      payrollCosts: 0,
+      payrollEntries: 0,
+      finalGain,
+      daysInPeriod,
+      paymentMethodBreakdown
+    })
+  })
+  
+  return map
+})
+
+// Get detailed gain breakdown for tooltip
+const getAccountGainBreakdown = (account) => {
+  return accountGainBreakdowns.value.get(account.accountKey) || {
+    totalRevenue: 0,
+    totalCosts: 0,
+    paymentFees: 0,
+    foodCosts: 0,
+    utilityCosts: 0,
     payrollCosts: 0,
     payrollEntries: 0,
-    finalGain,
-    daysInPeriod,
-    paymentMethodBreakdown
+    finalGain: 0,
+    daysInPeriod: 1,
+    paymentMethodBreakdown: []
   }
 }
 
