@@ -114,17 +114,15 @@
                   <span class="text-white text-xs font-bold">{{ analyticsData.accounts.length }}</span>
                 </div>
               </div>
-              <div class="flex-1 space-y-2 text-sm min-w-0">
+              <div class="flex-1 space-y-3 text-sm min-w-0">
                 <div v-for="account in getOrdersDistributionForChart()" :key="account.accountKey" class="min-w-0">
-                  <div class="flex items-center justify-between">
-                    <div class="flex items-center space-x-2 min-w-0 flex-1">
-                      <div class="w-3 h-3 rounded-full flex-shrink-0" :style="{ backgroundColor: getAccountColor(account.accountKey) }"></div>
-                      <span class="text-gray-600 dark:text-gray-400 truncate">{{ account.account }}</span>
-                    </div>
-                    <div class="text-right">
-                      <div class="text-gray-900 dark:text-gray-100 font-semibold">{{ account.totalOrders }}</div>
-                      <div class="text-xs text-gray-500">{{ account.percent.toFixed(0) }}%</div>
-                    </div>
+                  <div class="flex items-center space-x-2 mb-1">
+                    <div class="w-3 h-3 rounded-full flex-shrink-0" :style="{ backgroundColor: getAccountColor(account.accountKey) }"></div>
+                    <span class="text-gray-600 dark:text-gray-400 truncate">{{ account.account }}</span>
+                  </div>
+                  <div class="text-right ml-5">
+                    <div class="text-gray-900 dark:text-gray-100 font-semibold">{{ account.totalOrders }} orders</div>
+                    <div class="text-xs text-gray-500">{{ account.percent.toFixed(0) }}%</div>
                   </div>
                 </div>
               </div>
@@ -151,17 +149,15 @@
                   <span class="text-white text-xs font-bold">{{ analyticsData.accounts.length }}</span>
                 </div>
               </div>
-              <div class="flex-1 space-y-2 text-sm min-w-0">
+              <div class="flex-1 space-y-3 text-sm min-w-0">
                 <div v-for="account in getAccountTotalsForChart()" :key="account.accountKey" class="min-w-0">
-                  <div class="flex items-center justify-between">
-                    <div class="flex items-center space-x-2 min-w-0 flex-1">
-                      <div class="w-3 h-3 rounded-full flex-shrink-0" :style="{ backgroundColor: getAccountColor(account.accountKey) }"></div>
-                      <span class="text-gray-600 dark:text-gray-400 truncate">{{ account.account }}</span>
-                    </div>
-                    <div class="text-right">
-                      <div class="text-gray-900 dark:text-gray-100 font-semibold">{{ formatCurrency(account.totalAmount) }}</div>
-                      <div class="text-xs text-gray-500">{{ account.percent.toFixed(0) }}%</div>
-                    </div>
+                  <div class="flex items-center space-x-2 mb-1">
+                    <div class="w-3 h-3 rounded-full flex-shrink-0" :style="{ backgroundColor: getAccountColor(account.accountKey) }"></div>
+                    <span class="text-gray-600 dark:text-gray-400 truncate">{{ account.account }}</span>
+                  </div>
+                  <div class="text-right ml-5">
+                    <div class="text-gray-900 dark:text-gray-100 font-semibold">{{ formatCurrency(account.totalAmount) }}</div>
+                    <div class="text-xs text-gray-500">{{ account.percent.toFixed(0) }}%</div>
                   </div>
                 </div>
               </div>
