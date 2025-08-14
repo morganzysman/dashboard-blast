@@ -24,6 +24,20 @@
 
       <!-- User menu -->
       <div class="flex items-center space-x-4">
+        <!-- Dark mode toggle -->
+        <button
+          class="touch-target rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 px-2 sm:px-3 py-2 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+          @click="toggleDarkMode"
+          :aria-pressed="isDark"
+          title="Toggle dark mode"
+        >
+          <svg v-if="!isDark" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M12 8a4 4 0 100 8 4 4 0 000-8z"/>
+          </svg>
+          <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
+          </svg>
+        </button>
         <!-- Notification status (click to open settings) -->
         <button
           class="flex items-center space-x-2 hover:opacity-80"
@@ -164,6 +178,25 @@ const handleLogout = async () => {
     console.error('Logout error:', error)
   }
 }
+
+// Dark mode handling
+const isDark = computed(() => document.documentElement.classList.contains('dark'))
+const toggleDarkMode = () => {
+  const root = document.documentElement
+  const next = !root.classList.contains('dark')
+  root.classList.toggle('dark', next)
+  try {
+    localStorage.setItem('theme', next ? 'dark' : 'light')
+  } catch {}
+}
+
+onMounted(() => {
+  // Initialize theme from localStorage
+  try {
+    const saved = localStorage.getItem('theme')
+    if (saved === 'dark') document.documentElement.classList.add('dark')
+  } catch {}
+})
 
 const checkNotificationStatus = async () => {
   try {

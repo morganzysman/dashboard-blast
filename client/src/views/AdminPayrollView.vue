@@ -42,8 +42,8 @@
           </div>
           <div class="overflow-x-auto">
             <table class="min-w-full text-sm">
-            <thead>
-              <tr class="text-left text-gray-600">
+            <thead class="sticky top-0 bg-white z-10 dark:bg-gray-800">
+              <tr class="text-left text-gray-600 dark:text-gray-300">
                 <th class="py-2">Employee</th>
                 <th class="py-2">Entries</th>
                 <th class="py-2">Shift Time</th>
@@ -55,7 +55,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="row in rows" :key="row.user_id" class="border-t">
+              <tr v-for="row in rows" :key="row.user_id" class="border-t hover:bg-gray-50 odd:bg-white even:bg-gray-50 dark:odd:bg-gray-900 dark:even:bg-gray-800 dark:hover:bg-gray-700">
                 <td class="py-2">
                   <span class="inline-flex items-center gap-2">
                     <span class="w-3 h-3 rounded-full" :style="{ backgroundColor: colorForUser(row.user_id) }"></span>

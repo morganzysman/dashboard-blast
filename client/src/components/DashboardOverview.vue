@@ -30,7 +30,6 @@
               <option value="custom">Custom Range</option>
             </select>
           </div>
-        </div>
        
         <!-- Custom Date Inputs and Actions -->
         <div class="flex flex-col space-y-3 sm:space-y-0 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
@@ -96,119 +95,102 @@
 
     <!-- Overall Performance Cards -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6" v-if="analyticsData">
-      <!-- Total Orders with Account Distribution -->
-      <div class="card bg-gradient-to-r from-blue-500 to-blue-600 text-white">
-        <div class="card-body">
-          <div class="flex items-center justify-between mb-3">
-            <div class="min-w-0 flex-1">
-              <p class="text-blue-100 text-xs sm:text-sm font-medium">TOTAL ORDERS</p>
-              <p class="text-lg sm:text-xl font-bold truncate">{{ getTotalOrders() }}</p>
-            </div>
-            <div class="w-10 h-10 sm:w-12 sm:h-12 bg-blue-400 bg-opacity-30 rounded-lg flex items-center justify-center flex-shrink-0">
-              <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-              </svg>
-            </div>
-          </div>
+      <!-- Total Orders with Account Distribution using KpiCard -->
+      <KpiCard :label="'TOTAL ORDERS'" :value="String(getTotalOrders())" tone="neutral">
+        <template #icon>
+          <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+          </svg>
+        </template>
+        <template #action>
+          <!-- Placeholder for future filters -->
+        </template>
+      </KpiCard>
           
           <!-- Orders Distribution Pie Chart -->
-          <div v-if="analyticsData && analyticsData.accounts.length > 1" class="mt-3">
-            <div class="flex items-center justify-center">
-              <div class="relative w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0">
-                <!-- Pie Chart using conic-gradient -->
-                <div 
-                  class="w-full h-full rounded-full"
-                  :style="{ background: getOrdersPieChart() }"
-                ></div>
-                <!-- Center hole for donut effect -->
-                <div class="absolute inset-2 bg-blue-600 rounded-full flex items-center justify-center">
-                  <span class="text-white text-xs font-bold">{{ analyticsData.accounts.length }}</span>
+          <div class="card mt-3">
+            <div class="card-body">
+              <div v-if="analyticsData && analyticsData.accounts.length > 1" class="">
+                <div class="flex items-center justify-center">
+                  <div class="relative w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0">
+                    <div 
+                      class="w-full h-full rounded-full"
+                      :style="{ background: getOrdersPieChart() }"
+                    ></div>
+                    <div class="absolute inset-2 bg-blue-600 rounded-full flex items-center justify-center">
+                      <span class="text-white text-xs font-bold">{{ analyticsData.accounts.length }}</span>
+                    </div>
+                  </div>
+                  <div class="ml-3 space-y-1 text-xs min-w-0 flex-1">
+                    <div v-for="account in getOrdersDistributionForChart().slice(0, 3)" :key="account.accountKey" 
+                         class="min-w-0">
+                      <div class="flex items-center space-x-1 min-w-0">
+                        <div class="w-2 h-2 rounded-full flex-shrink-0" :style="{ backgroundColor: getAccountColor(account.accountKey) }"></div>
+                        <span class="text-gray-700 truncate whitespace-nowrap">{{ account.account }}</span>
+                      </div>
+                      <div class="text-gray-500 mt-0.5">
+                        <span>{{ account.percent.toFixed(0) }}%</span>
+                        <span class="text-gray-700 font-medium ml-2">{{ account.totalOrders }}</span>
+                      </div>
+                    </div>
+                    <div v-if="getOrdersDistributionForChart().length > 3" class="text-gray-500">
+                      +{{ getOrdersDistributionForChart().length - 3 }} more
+                    </div>
+                  </div>
                 </div>
               </div>
-              
-              <!-- Legend -->
-              <div class="ml-3 space-y-1 text-xs min-w-0 flex-1">
-                <div v-for="account in getOrdersDistributionForChart().slice(0, 3)" :key="account.accountKey" 
-                     class="min-w-0">
-                  <div class="flex items-center space-x-1 min-w-0">
-                    <div class="w-2 h-2 rounded-full flex-shrink-0" :style="{ backgroundColor: getAccountColor(account.accountKey) }"></div>
-                    <span class="text-blue-100 truncate whitespace-nowrap">{{ account.account }}</span>
-                  </div>
-                  <div class="text-blue-200 mt-0.5">
-                    <span>{{ account.percent.toFixed(0) }}%</span>
-                    <span class="text-blue-100 font-medium ml-2">{{ account.totalOrders }}</span>
-                  </div>
-                </div>
-                <div v-if="getOrdersDistributionForChart().length > 3" class="text-blue-200">
-                  +{{ getOrdersDistributionForChart().length - 3 }} more
-                </div>
+              <div v-else-if="analyticsData && analyticsData.accounts.length === 1" class="">
+                <span class="text-gray-600 text-xs">{{ analyticsData.accounts[0].account }}</span>
               </div>
             </div>
           </div>
-          
-          <!-- Single account message -->
-          <div v-else-if="analyticsData && analyticsData.accounts.length === 1" class="mt-3">
-            <span class="text-blue-100 text-xs">{{ analyticsData.accounts[0].account }}</span>
-          </div>
-        </div>
-      </div>
 
-      <!-- Total Amount with Account Distribution --> 
-      <div class="card bg-gradient-to-r from-green-500 to-green-600 text-white">
-        <div class="card-body">
-          <div class="flex items-center justify-between mb-3">
-            <div class="min-w-0 flex-1">
-              <p class="text-green-100 text-xs sm:text-sm font-medium">TOTAL AMOUNT</p>
-              <p class="text-lg sm:text-xl font-bold truncate">{{ formatCurrency(getAggregatedGrossSales()) }}</p>
-            </div>
-            <div class="w-10 h-10 sm:w-12 sm:h-12 bg-green-400 bg-opacity-30 rounded-lg flex items-center justify-center flex-shrink-0">
-              <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
-              </svg>
-            </div>
-          </div>
+      <!-- Total Amount with Account Distribution using KpiCard --> 
+      <KpiCard :label="'TOTAL AMOUNT'" :value="formatCurrency(getAggregatedGrossSales())" tone="neutral">
+        <template #icon>
+          <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+          </svg>
+        </template>
+      </KpiCard>
           
           <!-- Account Distribution Pie Chart -->
-          <div v-if="analyticsData && analyticsData.accounts.length > 1" class="mt-3">
-            <div class="flex items-center justify-center">
-              <div class="relative w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0">
-                <!-- Pie Chart using conic-gradient -->
-                <div 
-                  class="w-full h-full rounded-full"
-                  :style="{ background: getAccountsPieChart() }"
-                ></div>
-                <!-- Center hole for donut effect -->
-                <div class="absolute inset-2 bg-green-600 rounded-full flex items-center justify-center">
-                  <span class="text-white text-xs font-bold">{{ analyticsData.accounts.length }}</span>
+          <div class="card mt-3">
+            <div class="card-body">
+              <div v-if="analyticsData && analyticsData.accounts.length > 1" class="">
+                <div class="flex items-center justify-center">
+                  <div class="relative w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0">
+                    <div 
+                      class="w-full h-full rounded-full"
+                      :style="{ background: getAccountsPieChart() }"
+                    ></div>
+                    <div class="absolute inset-2 bg-green-600 rounded-full flex items-center justify-center">
+                      <span class="text-white text-xs font-bold">{{ analyticsData.accounts.length }}</span>
+                    </div>
+                  </div>
+                  <div class="ml-3 space-y-1 text-xs min-w-0 flex-1">
+                    <div v-for="account in getAccountTotalsForChart().slice(0, 3)" :key="account.accountKey" 
+                         class="min-w-0">
+                      <div class="flex items-center space-x-1 min-w-0">
+                        <div class="w-2 h-2 rounded-full flex-shrink-0" :style="{ backgroundColor: getAccountColor(account.accountKey) }"></div>
+                        <span class="text-gray-700 truncate whitespace-nowrap">{{ account.account }}</span>
+                      </div>
+                      <div class="text-gray-500 mt-0.5 ml-3">
+                        <span>{{ account.percent.toFixed(0) }}%</span>
+                        <span class="text-gray-700 font-medium ml-2">{{ formatCurrency(account.totalAmount) }}</span>
+                      </div>
+                    </div>
+                    <div v-if="getAccountTotalsForChart().length > 3" class="text-gray-500">
+                      +{{ getAccountTotalsForChart().length - 3 }} more
+                    </div>
+                  </div>
                 </div>
               </div>
-              
-              <!-- Legend -->
-              <div class="ml-3 space-y-1 text-xs min-w-0 flex-1">
-                <div v-for="account in getAccountTotalsForChart().slice(0, 3)" :key="account.accountKey" 
-                     class="min-w-0">
-                  <div class="flex items-center space-x-1 min-w-0">
-                    <div class="w-2 h-2 rounded-full flex-shrink-0" :style="{ backgroundColor: getAccountColor(account.accountKey) }"></div>
-                    <span class="text-green-100 truncate whitespace-nowrap">{{ account.account }}</span>
-                  </div>
-                  <div class="text-green-200 mt-0.5 ml-3">
-                    <span>{{ account.percent.toFixed(0) }}%</span>
-                    <span class="text-green-100 font-medium ml-2">{{ formatCurrency(account.totalAmount) }}</span>
-                  </div>
-                </div>
-                <div v-if="getAccountTotalsForChart().length > 3" class="text-green-200">
-                  +{{ getAccountTotalsForChart().length - 3 }} more
-                </div>
+              <div v-else-if="analyticsData && analyticsData.accounts.length === 1" class="">
+                <span class="text-gray-600 text-xs">{{ analyticsData.accounts[0].account }}</span>
               </div>
             </div>
           </div>
-          
-          <!-- Single account message -->
-          <div v-else-if="analyticsData && analyticsData.accounts.length === 1" class="mt-3">
-            <span class="text-green-100 text-xs">{{ analyticsData.accounts[0].account }}</span>
-          </div>
-        </div>
-      </div>
 
       <!-- Payment Methods Distribution -->
       <div class="card bg-gradient-to-r from-purple-500 to-indigo-600 text-white">
