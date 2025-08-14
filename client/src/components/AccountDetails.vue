@@ -265,7 +265,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { calculateDaysInPeriod as calcDays } from '../composables/useProfitability'
 import Popover from './ui/Popover.vue'
@@ -281,6 +281,9 @@ const props = defineProps({
 
 const authStore = useAuthStore()
 const collapsedServiceMetrics = ref(new Set())
+
+// Force re-computation trigger
+const forceRecompute = ref(0)
 
 const paymentMethodColors = {
   'cash': '#10B981',
@@ -325,6 +328,28 @@ const formatGainPeriodLabel = () => {
   }
 }
 
+// Watch for profitability data changes and force re-computation
+watch(
+  [() => props.profitabilityData, () => props.currentDateRange],
+  (newValues, oldValues) => {
+    const [newProfitabilityData, newDateRange] = newValues
+    const [oldProfitabilityData, oldDateRange] = oldValues
+    
+    console.log('👀 Profitability data watcher triggered:', {
+      profitabilityChanged: newProfitabilityData !== oldProfitabilityData,
+      dateRangeChanged: newDateRange !== oldDateRange,
+      newPeriod: newProfitabilityData?.period,
+      oldPeriod: oldProfitabilityData?.period,
+      newTimestamp: newProfitabilityData?.timestamp,
+      oldTimestamp: oldProfitabilityData?.timestamp
+    })
+    
+    // Force recomputation
+    forceRecompute.value++
+  },
+  { deep: true, immediate: false }
+)
+
 // Create a reactive computed property for account gain breakdowns
 const accountGainBreakdowns = computed(() => {
   const map = new Map()
@@ -335,6 +360,7 @@ const accountGainBreakdowns = computed(() => {
   const profitabilityData = props.profitabilityData
   const currentDateRange = props.currentDateRange
   const analyticsData = props.analyticsData
+  const trigger = forceRecompute.value // Access the trigger to force reactivity
   
   // Debug log to track profitability data changes
   console.log('🔄 AccountDetails: Computing gain breakdowns', {
@@ -342,7 +368,8 @@ const accountGainBreakdowns = computed(() => {
     currentDateRange: currentDateRange,
     profitabilityAccounts: profitabilityData?.accounts?.length || 0,
     profitabilityTimestamp: profitabilityData?.timestamp,
-    analyticsTimestamp: analyticsData.timestamp
+    analyticsTimestamp: analyticsData.timestamp,
+    forceRecomputeTrigger: trigger
   })
   
   analyticsData.accounts.forEach(account => {
