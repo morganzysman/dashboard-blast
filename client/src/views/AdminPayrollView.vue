@@ -55,7 +55,19 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="row in rows" :key="row.user_id" class="border-t hover:bg-gray-50 odd:bg-white even:bg-gray-50 dark:odd:bg-gray-900 dark:even:bg-gray-800 dark:hover:bg-gray-700">
+              <template v-if="loading">
+                <tr v-for="n in 6" :key="`sk-${n}`" class="border-t animate-pulse">
+                  <td class="py-2"><div class="h-3 w-40 bg-gray-200 rounded"></div></td>
+                  <td class="py-2"><div class="h-3 w-10 bg-gray-200 rounded"></div></td>
+                  <td class="py-2"><div class="h-3 w-20 bg-gray-200 rounded"></div></td>
+                  <td class="py-2"><div class="h-3 w-20 bg-gray-200 rounded"></div></td>
+                  <td class="py-2"><div class="h-3 w-24 bg-gray-200 rounded"></div></td>
+                  <td v-if="!isSuperAdmin" class="py-2"><div class="h-3 w-16 bg-gray-200 rounded"></div></td>
+                  <td class="py-2"><div class="h-3 w-16 bg-gray-200 rounded"></div></td>
+                  <td class="py-2"><div class="h-7 w-16 bg-gray-200 rounded"></div></td>
+                </tr>
+              </template>
+              <tr v-else v-for="row in rows" :key="row.user_id" class="border-t hover:bg-gray-50 odd:bg-white even:bg-gray-50 dark:odd:bg-gray-900 dark:even:bg-gray-800 dark:hover:bg-gray-700">
                 <td class="py-2">
                   <span class="inline-flex items-center gap-2">
                     <span class="w-3 h-3 rounded-full" :style="{ backgroundColor: colorForUser(row.user_id) }"></span>
@@ -143,6 +155,7 @@ import { useAuthStore } from '../stores/auth'
 import api from '../utils/api'
 
 const auth = useAuthStore()
+const loading = ref(false)
 const isSuperAdmin = computed(() => auth.user?.role === 'super-admin')
 const accounts = ref([])
 const companies = ref([])
@@ -157,13 +170,18 @@ const periodLabel = computed(() => `${period.value.start} → ${period.value.end
 
 const loadEntries = async () => {
   if (!companyToken.value) return
-  const res = await api.getAdminEntries(companyToken.value)
-  if (res.success) {
-    entries.value = res.data
-    period.value = res.period
-    // map shift seconds per user id
-    shiftSecondsByUser.value = res.shiftSeconds || {}
-    lateSecondsByUser.value = res.lateSeconds || {}
+  loading.value = true
+  try {
+    const res = await api.getAdminEntries(companyToken.value)
+    if (res.success) {
+      entries.value = res.data
+      period.value = res.period
+      // map shift seconds per user id
+      shiftSecondsByUser.value = res.shiftSeconds || {}
+      lateSecondsByUser.value = res.lateSeconds || {}
+    }
+  } finally {
+    loading.value = false
   }
 }
 
