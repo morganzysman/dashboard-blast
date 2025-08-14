@@ -134,7 +134,7 @@
           
 
       <!-- TOTAL AMOUNT KPI with embedded chart --> 
-      <KpiCard :label="'TOTAL AMOUNT'" :value="formatCurrency(getAggregatedGrossSales())" tone="neutral">
+      <KpiCard :label="'TOTAL AMOUNT'" :value="formatCurrency(aggregatedGrossSales)" tone="neutral">
         <template #icon>
           <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
@@ -212,8 +212,8 @@
       <!-- Aggregated Daily Gain using KpiCard -->
       <KpiCard
         :label="`${formatGainPeriodLabel()} GAIN`"
-        :value="formatCurrency(getAggregatedDailyGain())"
-        :tone="getAggregatedDailyGain() > 0 ? 'positive' : (getAggregatedDailyGain() < 0 ? 'negative' : 'neutral')"
+        :value="formatCurrency(aggregatedDailyGain)"
+        :tone="aggregatedDailyGain > 0 ? 'positive' : (aggregatedDailyGain < 0 ? 'negative' : 'neutral')"
         subtext="Includes fees, 30% food costs, utility costs, and payroll (closed + projected open entries when end date is today)"
       >
         <template #icon>
@@ -375,8 +375,11 @@ const formatGainPeriodLabel = () => {
 
 // Per-account gain is now provided by server; for overview aggregated card we rely on company.operatingProfit
 
-// Aggregated gain across all accounts
-const getAggregatedDailyGain = () => {
+// Aggregated gain across all accounts - CONVERTED TO COMPUTED PROPERTY
+const aggregatedDailyGain = computed(() => {
+  // Access the force recompute trigger to ensure reactivity
+  const trigger = forceRecompute.value
+  
   // Prefer server-side profitability if available
   if (props.profitabilityData?.company) {
     return props.profitabilityData.company.operatingProfit || 0
@@ -387,10 +390,10 @@ const getAggregatedDailyGain = () => {
   const food = gross * 0.3
   // No fees/utilities breakdown available in fallback; assume zero
   return gross - food
-}
+})
 
 const getAggregatedGainClass = () => {
-  const gain = getAggregatedDailyGain()
+  const gain = aggregatedDailyGain.value
   if (gain > 0) return 'text-green-100'
   if (gain < 0) return 'text-red-100'
   return 'text-white'
@@ -524,15 +527,15 @@ const getTotalOrders = () => {
   return 0
 }
 
-// Aggregated gross sales
-const getAggregatedGrossSales = () => {
+// Aggregated gross sales - CONVERTED TO COMPUTED PROPERTY
+const aggregatedGrossSales = computed(() => {
   // Access the force recompute trigger to ensure reactivity
   const trigger = forceRecompute.value
   
   const profitabilityAmount = props.profitabilityData?.company?.grossSales || 0
   const analyticsAmount = props.analyticsData?.aggregated?.totalAmount || 0
   
-  console.log('💰 getAggregatedGrossSales:', {
+  console.log('💰 aggregatedGrossSales computed:', {
     profitabilityPeriod: props.profitabilityData?.period,
     profitabilityAmount,
     analyticsAmount,
@@ -545,7 +548,7 @@ const getAggregatedGrossSales = () => {
     return profitabilityAmount
   }
   return analyticsAmount
-}
+})
 
 // Client-side fee computation removed
 
@@ -562,7 +565,7 @@ const getAggregatedNetSalesAfterFees = () => {
   if (props.profitabilityData?.company) {
     return props.profitabilityData.company.netAfterFees || 0
   }
-  return getAggregatedGrossSales() - getAggregatedPaymentFees()
+  return aggregatedGrossSales.value - getAggregatedPaymentFees()
 }
 
 // Blended fee rate
@@ -570,7 +573,7 @@ const getAggregatedFeeRate = () => {
   if (props.profitabilityData?.company) {
     return props.profitabilityData.company.feeRate || 0
   }
-  const gross = getAggregatedGrossSales()
+  const gross = aggregatedGrossSales.value
   if (gross <= 0) return 0
   return getAggregatedPaymentFees() / gross
 }
@@ -587,7 +590,7 @@ const getAggregatedTipRate = () => {
   if (props.profitabilityData?.company) {
     return props.profitabilityData.company.tipRate || 0
   }
-  const gross = getAggregatedGrossSales()
+  const gross = aggregatedGrossSales.value
   if (gross <= 0) return 0
   return getAggregatedTips() / gross
 }
@@ -597,9 +600,9 @@ const getAggregatedOperatingMargin = () => {
   if (props.profitabilityData?.company) {
     return props.profitabilityData.company.operatingMargin || 0
   }
-  const gross = getAggregatedGrossSales()
+  const gross = aggregatedGrossSales.value
   if (gross <= 0) return 0
-  const operatingProfit = getAggregatedDailyGain()
+  const operatingProfit = aggregatedDailyGain.value
   return operatingProfit / gross
 }
 

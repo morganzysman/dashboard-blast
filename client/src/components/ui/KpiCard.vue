@@ -21,6 +21,8 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
+
 const props = defineProps({ label: String, value: [String, Number], subtext: String, tone: { type: String, default: 'neutral' } })
 
 const toneToClasses = {
@@ -35,8 +37,8 @@ const iconToBg = {
   neutral: 'bg-gray-100 text-gray-600 dark:bg-gray-900 dark:text-gray-300'
 }
 
-const valueClass = toneToClasses[props.tone] || toneToClasses.neutral
-const iconBg = iconToBg[props.tone] || iconToBg.neutral
+const valueClass = computed(() => toneToClasses[props.tone] || toneToClasses.neutral)
+const iconBg = computed(() => iconToBg[props.tone] || iconToBg.neutral)
 </script>
 
 <style scoped>
