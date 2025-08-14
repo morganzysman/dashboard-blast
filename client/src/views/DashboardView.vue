@@ -23,6 +23,7 @@
       :profitability-data="profitabilityData"
       :current-date-range="currentDateRange"
       :selected-date-range="selectedDateRange"
+      :loading="loading"
       :key="`${currentDateRange.start}-${currentDateRange.end}-${profitabilityData?.period?.start || ''}-${profitabilityData?.period?.end || ''}`"
     />
 

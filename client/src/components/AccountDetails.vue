@@ -1,7 +1,39 @@
 <template>
-  <div class="space-y-4" v-if="analyticsData && analyticsData.accounts.length > 0">
+  <div class="space-y-4">
     <h3 class="text-base sm:text-lg font-medium text-gray-900">🏪 Account Details</h3>
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+
+    <!-- Loading skeletons -->
+    <div v-if="loading" class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+      <div v-for="n in 4" :key="`skeleton-${n}`" class="card">
+        <div class="card-body">
+          <div class="flex items-center gap-2 mb-4 animate-pulse">
+            <div class="h-5 w-14 bg-gray-200 rounded-full"></div>
+            <div class="h-4 w-40 bg-gray-200 rounded"></div>
+          </div>
+          <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 animate-pulse">
+            <div class="bg-gray-50 rounded-lg p-3 text-center">
+              <div class="h-5 bg-gray-200 rounded mb-1"></div>
+              <div class="h-3 bg-gray-200 rounded"></div>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-3 text-center">
+              <div class="h-5 bg-gray-200 rounded mb-1"></div>
+              <div class="h-3 bg-gray-200 rounded"></div>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-3 text-center">
+              <div class="h-5 bg-gray-200 rounded mb-1"></div>
+              <div class="h-3 bg-gray-200 rounded"></div>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-3 text-center">
+              <div class="h-5 bg-gray-200 rounded mb-1"></div>
+              <div class="h-3 bg-gray-200 rounded"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Accounts content -->
+    <div v-else-if="analyticsData && analyticsData.accounts.length > 0" class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
       <div v-for="account in analyticsData.accounts" :key="account.accountKey" class="card">
         <div class="card-body">
           <!-- Account Header -->
@@ -224,6 +256,11 @@
         </div>
       </div>
     </div>
+
+    <!-- Empty state -->
+    <div v-else class="card">
+      <div class="card-body text-center text-sm text-gray-600">No account data for this period.</div>
+    </div>
   </div>
 </template>
 
@@ -238,7 +275,8 @@ const props = defineProps({
   ordersData: Object,
   profitabilityData: Object,
   currentDateRange: Object,
-  selectedDateRange: String
+  selectedDateRange: String,
+  loading: Boolean
 })
 
 const authStore = useAuthStore()
