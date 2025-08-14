@@ -40,53 +40,48 @@
             <button class="btn-secondary btn-sm" @click="loadEntries">Load</button>
             <button v-if="companyToken" class="btn-secondary btn-sm" @click="downloadQr">Download QR</button>
           </div>
-          <div class="overflow-x-auto">
-            <table class="min-w-full text-sm">
-            <thead class="sticky top-0 bg-white z-10 dark:bg-gray-800">
-              <tr class="text-left text-gray-600 dark:text-gray-300">
-                <th class="py-2">Employee</th>
-                <th class="py-2">Entries</th>
-                <th class="py-2">Shift Time</th>
-                <th class="py-2">Clocked Time</th>
-                <th class="py-2">Variation</th>
-                <th class="py-2" v-if="!isSuperAdmin">Accumulated Delay</th>
-                <th class="py-2">Amount</th>
-                <th class="py-2">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <template v-if="loading">
-                <tr v-for="n in 6" :key="`sk-${n}`" class="border-t animate-pulse">
-                  <td class="py-2"><div class="h-3 w-40 bg-gray-200 rounded"></div></td>
-                  <td class="py-2"><div class="h-3 w-10 bg-gray-200 rounded"></div></td>
-                  <td class="py-2"><div class="h-3 w-20 bg-gray-200 rounded"></div></td>
-                  <td class="py-2"><div class="h-3 w-20 bg-gray-200 rounded"></div></td>
-                  <td class="py-2"><div class="h-3 w-24 bg-gray-200 rounded"></div></td>
-                  <td v-if="!isSuperAdmin" class="py-2"><div class="h-3 w-16 bg-gray-200 rounded"></div></td>
-                  <td class="py-2"><div class="h-3 w-16 bg-gray-200 rounded"></div></td>
-                  <td class="py-2"><div class="h-7 w-16 bg-gray-200 rounded"></div></td>
-                </tr>
-              </template>
-              <tr v-else v-for="row in rows" :key="row.user_id" class="border-t hover:bg-gray-50 odd:bg-white even:bg-gray-50 dark:odd:bg-gray-900 dark:even:bg-gray-800 dark:hover:bg-gray-700">
-                <td class="py-2">
-                  <span class="inline-flex items-center gap-2">
-                    <span class="w-3 h-3 rounded-full" :style="{ backgroundColor: colorForUser(row.user_id) }"></span>
-                    {{ row.employeeName || row.user_id }}
-                  </span>
-                </td>
-                <td class="py-2">{{ row.count }}</td>
-                <td class="py-2">{{ formatDuration(row.shiftSeconds || 0) }}</td>
-                <td class="py-2">{{ formatDuration(row.totalSeconds) }}</td>
-                <td class="py-2" :class="variationClass(row)">{{ variationLabel(row) }}</td>
-                <td class="py-2" v-if="!isSuperAdmin">{{ formatDuration(row.lateSeconds || 0) }}</td>
-                <td class="py-2">{{ formatCurrency(row.amount) }}</td>
-                <td class="py-2">
-                  <button class="btn-secondary btn-xs" @click="openEdit(row)">Edit</button>
-                </td>
-              </tr>
-            </tbody>
-            </table>
-          </div>
+          <ResponsiveTable
+            :items="rows"
+            :columns="[
+              { key: 'employee', label: 'Employee', skeletonWidth: 'w-40' },
+              { key: 'count', label: 'Entries', skeletonWidth: 'w-10' },
+              { key: 'shift', label: 'Shift Time', skeletonWidth: 'w-20' },
+              { key: 'clocked', label: 'Clocked Time', skeletonWidth: 'w-20' },
+              { key: 'variation', label: 'Variation', skeletonWidth: 'w-24' },
+              ...(isSuperAdmin ? [] : [{ key: 'late', label: 'Accumulated Delay', skeletonWidth: 'w-16' }]),
+              { key: 'amount', label: 'Amount', cellClass: 'text-right', skeletonWidth: 'w-16' },
+              { key: 'actions', label: 'Actions', skeletonWidth: 'w-16' }
+            ]"
+            :stickyHeader="true"
+            :loading="loading"
+            rowKeyField="user_id"
+            mobileTitleField="employee"
+          >
+            <template #cell-employee="{ item }">
+              <span class="inline-flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full" :style="{ backgroundColor: colorForUser(item.user_id) }"></span>
+                {{ item.employeeName || item.user_id }}
+              </span>
+            </template>
+            <template #cell-count="{ item }">{{ item.count }}</template>
+            <template #cell-shift="{ item }">{{ formatDuration(item.shiftSeconds || 0) }}</template>
+            <template #cell-clocked="{ item }">{{ formatDuration(item.totalSeconds) }}</template>
+            <template #cell-variation="{ item }"><span :class="variationClass(item)">{{ variationLabel(item) }}</span></template>
+            <template v-if="!isSuperAdmin" #cell-late="{ item }">{{ formatDuration(item.lateSeconds || 0) }}</template>
+            <template #cell-amount="{ item }">{{ formatCurrency(item.amount) }}</template>
+            <template #cell-actions="{ item }"><button class="btn-secondary btn-xs" @click="openEdit(item)">Edit</button></template>
+
+            <template #mobile-card="{ item }">
+              <div class="font-medium text-gray-900 dark:text-gray-100 mb-1">{{ item.employeeName || item.user_id }}</div>
+              <div class="text-xs text-gray-600 dark:text-gray-400">Entries: {{ item.count }}</div>
+              <div class="text-xs text-gray-600 dark:text-gray-400">Shift: {{ formatDuration(item.shiftSeconds || 0) }}</div>
+              <div class="text-xs text-gray-600 dark:text-gray-400">Clocked: {{ formatDuration(item.totalSeconds) }}</div>
+              <div class="text-xs" :class="variationClass(item)">Variation: {{ variationLabel(item) }}</div>
+              <div v-if="!isSuperAdmin" class="text-xs text-gray-600 dark:text-gray-400">Delay: {{ formatDuration(item.lateSeconds || 0) }}</div>
+              <div class="text-xs text-gray-900 dark:text-gray-100 flex justify-between mt-1"><span>Amount</span><span>{{ formatCurrency(item.amount) }}</span></div>
+              <div class="mt-2 text-right"><button class="btn-secondary btn-xs" @click="openEdit(item)">Edit</button></div>
+            </template>
+          </ResponsiveTable>
           <!-- Simple calendar-like visualization -->
           <div class="mt-6">
             <h3 class="text-md font-semibold mb-2">Entries Calendar</h3>
@@ -153,6 +148,7 @@
 import { ref, computed } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import api from '../utils/api'
+import ResponsiveTable from '../components/ui/ResponsiveTable.vue'
 
 const auth = useAuthStore()
 const loading = ref(false)

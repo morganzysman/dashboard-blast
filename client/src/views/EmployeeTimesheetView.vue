@@ -61,37 +61,32 @@
           </div>
         </div>
         <div class="mt-4">
-          <div class="overflow-x-auto">
-          <table class="min-w-[900px] w-full text-sm">
-            <thead class="sticky top-0 bg-white z-10 dark:bg-gray-800">
-              <tr class="text-left text-gray-600 dark:text-gray-300">
-                <th class="py-2 whitespace-normal">Account</th>
-                <th class="py-2 whitespace-normal">Clock In</th>
-                <th class="py-2 whitespace-normal">Clock Out</th>
-                <th class="py-2 whitespace-normal">Duration</th>
-                <th class="py-2 whitespace-normal">Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              <template v-if="loading">
-                <tr v-for="n in 6" :key="`sk-${n}`" class="border-t animate-pulse">
-                  <td class="py-2"><div class="h-3 w-40 bg-gray-200 rounded"></div></td>
-                  <td class="py-2"><div class="h-3 w-32 bg-gray-200 rounded"></div></td>
-                  <td class="py-2"><div class="h-3 w-24 bg-gray-200 rounded"></div></td>
-                  <td class="py-2"><div class="h-3 w-20 bg-gray-200 rounded"></div></td>
-                  <td class="py-2"><div class="h-3 w-16 bg-gray-200 rounded ml-auto"></div></td>
-                </tr>
-              </template>
-              <tr v-else v-for="e in entries" :key="e.id" class="border-t hover:bg-gray-50 odd:bg-white even:bg-gray-50 dark:odd:bg-gray-900 dark:even:bg-gray-800 dark:hover:bg-gray-700">
-                <td class="py-2 whitespace-normal break-words max-w-[180px]">{{ accountLabel(e.company_token) }}</td>
-                <td class="py-2 whitespace-normal break-words">{{ formatDateTime(e.clock_in_at) }}</td>
-                <td class="py-2 whitespace-normal break-words">{{ e.clock_out_at ? formatDateTime(e.clock_out_at) : '—' }}</td>
-                <td class="py-2 whitespace-normal break-words">{{ formatDuration(secondsBetween(e.clock_in_at, e.clock_out_at)) }}</td>
-                <td class="py-2 whitespace-normal break-words flex items-center justify-end gap-2"><span>{{ formatCurrency(e.amount) }}</span><span v-if="e.paid" class="text-green-600">$</span></td>
-              </tr>
-            </tbody>
-          </table>
-          </div>
+          <ResponsiveTable
+            :items="entries"
+            :columns="[
+              { key: 'account', label: 'Account', headerClass: 'whitespace-normal', cellClass: 'whitespace-normal break-words max-w-[180px]', skeletonWidth: 'w-40' },
+              { key: 'clock_in', label: 'Clock In', headerClass: 'whitespace-normal', cellClass: 'whitespace-normal', skeletonWidth: 'w-32' },
+              { key: 'clock_out', label: 'Clock Out', headerClass: 'whitespace-normal', cellClass: 'whitespace-normal', skeletonWidth: 'w-24' },
+              { key: 'duration', label: 'Duration', headerClass: 'whitespace-normal', cellClass: 'whitespace-normal', skeletonWidth: 'w-20' },
+              { key: 'amount', label: 'Amount', headerClass: 'whitespace-normal', cellClass: 'whitespace-normal text-right', skeletonWidth: 'w-16' }
+            ]"
+            :stickyHeader="true"
+            :loading="loading"
+            rowKeyField="id"
+            mobileTitleField="account"
+          >
+            <template #cell-account="{ item }">{{ accountLabel(item.company_token) }}</template>
+            <template #cell-clock_in="{ item }">{{ formatDateTime(item.clock_in_at) }}</template>
+            <template #cell-clock_out="{ item }">{{ item.clock_out_at ? formatDateTime(item.clock_out_at) : '—' }}</template>
+            <template #cell-duration="{ item }">{{ formatDuration(secondsBetween(item.clock_in_at, item.clock_out_at)) }}</template>
+            <template #cell-amount="{ item }"><div class="flex items-center justify-end gap-2"><span>{{ formatCurrency(item.amount) }}</span><span v-if="item.paid" class="text-green-600">$</span></div></template>
+            <template #mobile-card="{ item }">
+              <div class="font-medium text-gray-900 dark:text-gray-100 mb-1">{{ accountLabel(item.company_token) }}</div>
+              <div class="text-xs text-gray-600 dark:text-gray-400">{{ formatDateTime(item.clock_in_at) }} → {{ item.clock_out_at ? formatDateTime(item.clock_out_at) : '—' }}</div>
+              <div class="text-xs text-gray-600 dark:text-gray-400">Duration: {{ formatDuration(secondsBetween(item.clock_in_at, item.clock_out_at)) }}</div>
+              <div class="text-xs text-gray-900 dark:text-gray-100 flex justify-between"><span>Amount</span><span>{{ formatCurrency(item.amount) }}</span></div>
+            </template>
+          </ResponsiveTable>
           <div class="mt-4 text-right text-gray-800 font-medium space-y-1">
             <div>Total time: {{ formatDuration(totalSeconds) }}</div>
             <div>Total earned: {{ formatCurrency(totalAmount) }}</div>
@@ -107,6 +102,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import api from '../utils/api'
+import ResponsiveTable from '../components/ui/ResponsiveTable.vue'
 
 const entries = ref([])
 const loading = ref(false)
