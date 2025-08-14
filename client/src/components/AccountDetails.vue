@@ -33,20 +33,21 @@
               </div>
 
               <!-- Daily Gain KPI -->
-              <div class="bg-purple-50 rounded-lg p-3 text-center relative group cursor-help">
+              <div class="bg-purple-50 rounded-lg p-3 text-center">
                 <p class="text-sm sm:text-lg font-bold truncate" :class="getDailyGainClass(account)">
-                  <span v-if="isAccountGainDisabled()" class="opacity-60">Unavailable</span>
-                  <span v-else>{{ formatCurrency(getAccountDailyGain(account)) }}</span>
+                  {{ formatCurrency(getAccountDailyGain(account)) }}
                 </p>
                 <p class="text-xs text-purple-500">{{ formatGainPeriodLabel() }} Gain</p>
-                
-                <!-- Detailed Tooltip -->
-                <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 lg:left-auto lg:right-0 lg:transform-none mb-2 w-96 max-w-[90vw] bg-gray-900 text-white rounded-lg p-5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50 shadow-xl">
-                  <div class="absolute top-full left-1/2 transform -translate-x-1/2 lg:left-auto lg:right-6 lg:transform-none border-4 border-transparent border-t-gray-900"></div>
-                  
-                  <h4 class="font-bold text-purple-300 mb-4 text-sm">💰 Gain Breakdown ({{ formatGainPeriodLabel() }})</h4>
-                  
-                  <div v-if="!isAccountGainDisabled() && account.success && account.data?.data" class="space-y-4">
+
+                <!-- Popover for details -->
+                <Popover class="mt-2 inline-block" :panel-class="'left-1/2 -translate-x-1/2 lg:left-auto lg:right-0 lg:translate-x-0'">
+                  <template #button>
+                    <span class="text-xs text-purple-600 hover:text-purple-800 underline">View breakdown</span>
+                  </template>
+                  <template #title>
+                    <h4 class="font-bold text-purple-300 text-sm">💰 Gain Breakdown ({{ formatGainPeriodLabel() }})</h4>
+                  </template>
+                  <div v-if="account.success && account.data?.data" class="space-y-4">
                     <!-- Revenue by Payment Method -->
                     <div>
                       <h5 class="font-semibold text-blue-300 mb-3 text-sm">📊 Revenue by Payment Method:</h5>
@@ -111,9 +112,9 @@
                   </div>
                   
                   <div v-else class="text-gray-400 text-center">
-                    {{ isAccountGainDisabled() ? 'Unavailable for today' : 'No payment data available' }}
+                    No payment data available
                   </div>
-                </div>
+                </Popover>
               </div>
             </div>
           </div>
@@ -230,6 +231,7 @@
 import { ref, computed } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { calculateDaysInPeriod as calcDays } from '../composables/useProfitability'
+import Popover from './ui/Popover.vue'
 
 const props = defineProps({
   analyticsData: Object,

@@ -2,6 +2,7 @@
 import { resolve } from 'path'
 
 export default {
+  darkMode: 'class',
   content: [
     resolve(__dirname, '../client/index.html'),
     resolve(__dirname, '../client/src/**/*.{vue,js,ts,jsx,tsx}'),

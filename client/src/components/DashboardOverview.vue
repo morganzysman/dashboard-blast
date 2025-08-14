@@ -251,25 +251,19 @@
         </div>
       </div>
       
-      <!-- Aggregated Daily Gain (moved into top KPI row) -->
-      <div class="card bg-gradient-to-r from-purple-600 to-pink-600 text-white">
-        <div class="card-body">
-          <div class="flex items-center justify-between mb-3">
-            <div class="min-w-0 flex-1">
-              <p class="text-purple-100 text-xs sm:text-sm font-medium">{{ formatGainPeriodLabel() }} GAIN</p>
-              <p class="text-lg sm:text-xl font-bold truncate" :class="getAggregatedGainClass()">
-                {{ formatCurrency(getAggregatedDailyGain()) }}
-              </p>
-            </div>
-            <div class="w-10 h-10 sm:w-12 sm:h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center flex-shrink-0">
-              <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
-              </svg>
-            </div>
-          </div>
-          <p class="text-xs text-purple-100">Includes fees, 30% food costs, utility costs, and payroll (closed + projected open entries when end date is today)</p>
-        </div>
-      </div>
+      <!-- Aggregated Daily Gain using KpiCard -->
+      <KpiCard
+        :label="`${formatGainPeriodLabel()} GAIN`"
+        :value="formatCurrency(getAggregatedDailyGain())"
+        :tone="getAggregatedDailyGain() > 0 ? 'positive' : (getAggregatedDailyGain() < 0 ? 'negative' : 'neutral')"
+        subtext="Includes fees, 30% food costs, utility costs, and payroll (closed + projected open entries when end date is today)"
+      >
+        <template #icon>
+          <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+          </svg>
+        </template>
+      </KpiCard>
     </div>
 
     <!-- Company-level Profitability KPIs (disabled) -->
@@ -344,6 +338,7 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
+import KpiCard from './ui/KpiCard.vue'
 import { useAuthStore } from '../stores/auth'
 import { calculateDaysInPeriod as calcDays } from '../composables/useProfitability'
 
