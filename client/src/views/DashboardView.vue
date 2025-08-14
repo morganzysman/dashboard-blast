@@ -489,7 +489,11 @@ const fetchProfitabilityData = async () => {
         accountsCount: data.data?.accounts?.length || 0,
         companyProfit: data.data?.company?.operatingProfit || 0
       })
-      profitabilityData.value = data.data
+      // Add timestamp to ensure reactivity
+      profitabilityData.value = {
+        ...data.data,
+        timestamp: Date.now()
+      }
     } else {
       console.warn('❌ Profitability data failed:', data.error)
       profitabilityData.value = null

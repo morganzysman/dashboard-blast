@@ -331,16 +331,21 @@ const accountGainBreakdowns = computed(() => {
   
   if (!props.analyticsData?.accounts) return map
   
+  // Explicitly access all reactive props to ensure reactivity
+  const profitabilityData = props.profitabilityData
+  const currentDateRange = props.currentDateRange
+  const analyticsData = props.analyticsData
+  
   // Debug log to track profitability data changes
   console.log('🔄 AccountDetails: Computing gain breakdowns', {
-    profitabilityDataPeriod: props.profitabilityData?.period,
-    currentDateRange: props.currentDateRange,
-    profitabilityAccounts: props.profitabilityData?.accounts?.length || 0
+    profitabilityDataPeriod: profitabilityData?.period,
+    currentDateRange: currentDateRange,
+    profitabilityAccounts: profitabilityData?.accounts?.length || 0,
+    profitabilityTimestamp: profitabilityData?.timestamp,
+    analyticsTimestamp: analyticsData.timestamp
   })
   
-  props.analyticsData.accounts.forEach(account => {
-    const profitabilityData = props.profitabilityData
-    const currentDateRange = props.currentDateRange
+  analyticsData.accounts.forEach(account => {
     
     const serverAcc = profitabilityData?.accounts?.find(a => a.accountKey === account.accountKey)
     if (serverAcc && serverAcc.paymentMethodBreakdown) {
