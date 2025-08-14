@@ -99,7 +99,7 @@
     <!-- Overall Performance Cards -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6" v-if="analyticsData">
       <!-- TOTAL ORDERS KPI with embedded chart -->
-      <KpiCard :label="'TOTAL ORDERS'" :value="String(getTotalOrders())" tone="neutral">
+      <KpiCard :label="`${formatGainPeriodLabel()} ORDERS`" :value="String(totalOrders)" tone="neutral" :key="`total-orders-${forceRecompute}`">
         <template #icon>
           <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
@@ -134,7 +134,7 @@
           
 
       <!-- TOTAL AMOUNT KPI with embedded chart --> 
-      <KpiCard :label="'TOTAL AMOUNT'" :value="formatCurrency(aggregatedGrossSales)" tone="neutral" :key="`total-amount-${forceRecompute}`">
+      <KpiCard :label="`${formatGainPeriodLabel()} AMOUNT`" :value="formatCurrency(aggregatedGrossSales)" tone="neutral" :key="`total-amount-${forceRecompute}`">
         <template #icon>
           <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
@@ -550,13 +550,22 @@ const getServiceColor = (serviceType) => {
   return colors[serviceType] || '#6B7280' // Default color
 }
 
-const getTotalOrders = () => {
-  // Use the new simplified orders data structure
-  if (props.ordersData && props.ordersData.aggregated) {
-    return props.ordersData.aggregated.totalOrders || 0
-  }
-  return 0
-}
+// Total Orders - CONVERTED TO COMPUTED PROPERTY
+const totalOrders = computed(() => {
+  // Access the force recompute trigger to ensure reactivity
+  const trigger = forceRecompute.value
+  
+  const ordersTotal = props.ordersData?.aggregated?.totalOrders || 0
+  
+  console.log('📊 totalOrders computed:', {
+    ordersTotal,
+    hasOrdersData: !!props.ordersData,
+    selectedDateRange: props.selectedDateRange,
+    forceRecomputeTrigger: trigger
+  })
+  
+  return ordersTotal
+})
 
 // Aggregated gross sales - CONVERTED TO COMPUTED PROPERTY
 const aggregatedGrossSales = computed(() => {
