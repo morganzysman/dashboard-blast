@@ -215,6 +215,7 @@
         :value="formatCurrency(aggregatedDailyGain)"
         :tone="aggregatedDailyGain > 0 ? 'positive' : (aggregatedDailyGain < 0 ? 'negative' : 'neutral')"
         subtext="Includes fees, 30% food costs, utility costs, and payroll (closed + projected open entries when end date is today)"
+        :key="`daily-gain-${forceRecompute}`"
       >
         <template #icon>
           <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -380,16 +381,36 @@ const aggregatedDailyGain = computed(() => {
   // Access the force recompute trigger to ensure reactivity
   const trigger = forceRecompute.value
   
+  const serverProfit = props.profitabilityData?.company?.operatingProfit || 0
+  const analyticsGross = props.analyticsData?.aggregated?.totalAmount || 0
+  
+  console.log('💰 aggregatedDailyGain computed:', {
+    profitabilityPeriod: props.profitabilityData?.period,
+    serverProfit,
+    analyticsGross,
+    hasCompanyData: !!props.profitabilityData?.company,
+    selectedDateRange: props.selectedDateRange,
+    currentDateRange: props.currentDateRange,
+    forceRecomputeTrigger: trigger
+  })
+  
   // Prefer server-side profitability if available
   if (props.profitabilityData?.company) {
-    return props.profitabilityData.company.operatingProfit || 0
+    return serverProfit
   }
+  
   // Fallback: estimate from analytics totals when server data missing
-  const gross = props.analyticsData?.aggregated?.totalAmount || 0
-  if (gross <= 0) return 0
-  const food = gross * 0.3
-  // No fees/utilities breakdown available in fallback; assume zero
-  return gross - food
+  if (analyticsGross <= 0) return 0
+  const food = analyticsGross * 0.3
+  const fallbackProfit = analyticsGross - food
+  
+  console.log('📊 Using fallback calculation:', {
+    analyticsGross,
+    foodCosts: food,
+    fallbackProfit
+  })
+  
+  return fallbackProfit
 })
 
 const getAggregatedGainClass = () => {
