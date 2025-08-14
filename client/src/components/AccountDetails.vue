@@ -34,7 +34,7 @@
 
     <!-- Accounts content -->
     <div v-else-if="analyticsData && analyticsData.accounts.length > 0" class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-      <div v-for="account in analyticsData.accounts" :key="account.accountKey" class="card">
+      <div v-for="account in analyticsData.accounts" :key="`${account.accountKey}-${forceRecompute}`" class="card">
         <div class="card-body">
           <!-- Account Header -->
           <div class="flex items-center gap-2 mb-4">
@@ -301,10 +301,18 @@ const getServerAccount = (account) => {
   return props.profitabilityData?.accounts?.find(a => a.accountKey === account.accountKey)
 }
 
-// Daily/period gain from server
+// Daily/period gain from server - CONVERTED TO COMPUTED PROPERTY
 const getAccountDailyGain = (account) => {
+  // Access the trigger to ensure reactivity
+  const trigger = forceRecompute.value
   // Use the same logic as the hover breakdown to avoid discrepancies
   const breakdown = getAccountGainBreakdown(account)
+  
+  console.log(`💰 getAccountDailyGain for ${account.accountKey}:`, {
+    finalGain: breakdown?.finalGain || 0,
+    forceRecomputeTrigger: trigger
+  })
+  
   return breakdown?.finalGain || 0
 }
 
@@ -446,9 +454,12 @@ const accountGainBreakdowns = computed(() => {
   return map
 })
 
-// Get detailed gain breakdown for tooltip
+// Get detailed gain breakdown for tooltip - ENHANCED FOR REACTIVITY
 const getAccountGainBreakdown = (account) => {
-  return accountGainBreakdowns.value.get(account.accountKey) || {
+  // Access the trigger to ensure reactivity
+  const trigger = forceRecompute.value
+  
+  const result = accountGainBreakdowns.value.get(account.accountKey) || {
     totalRevenue: 0,
     totalCosts: 0,
     paymentFees: 0,
@@ -460,6 +471,15 @@ const getAccountGainBreakdown = (account) => {
     daysInPeriod: 1,
     paymentMethodBreakdown: []
   }
+  
+  console.log(`🔄 getAccountGainBreakdown for ${account.accountKey}:`, {
+    finalGain: result.finalGain,
+    totalRevenue: result.totalRevenue,
+    totalCosts: result.totalCosts,
+    forceRecomputeTrigger: trigger
+  })
+  
+  return result
 }
 
 // Get CSS class for daily gain (green for positive, red for negative)
