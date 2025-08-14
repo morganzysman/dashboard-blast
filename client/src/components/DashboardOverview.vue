@@ -110,43 +110,7 @@
         </template>
       </KpiCard>
           
-          <!-- Orders Distribution Pie Chart -->
-          <div class="card mt-3">
-            <div class="card-body">
-              <div v-if="analyticsData && analyticsData.accounts.length > 1" class="">
-                <div class="flex items-center justify-center">
-                  <div class="relative w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0">
-                    <div 
-                      class="w-full h-full rounded-full"
-                      :style="{ background: getOrdersPieChart() }"
-                    ></div>
-                    <div class="absolute inset-2 bg-blue-600 rounded-full flex items-center justify-center">
-                      <span class="text-white text-xs font-bold">{{ analyticsData.accounts.length }}</span>
-                    </div>
-                  </div>
-                  <div class="ml-3 space-y-1 text-xs min-w-0 flex-1">
-                    <div v-for="account in getOrdersDistributionForChart().slice(0, 3)" :key="account.accountKey" 
-                         class="min-w-0">
-                      <div class="flex items-center space-x-1 min-w-0">
-                        <div class="w-2 h-2 rounded-full flex-shrink-0" :style="{ backgroundColor: getAccountColor(account.accountKey) }"></div>
-                        <span class="text-gray-700 truncate whitespace-nowrap">{{ account.account }}</span>
-                      </div>
-                      <div class="text-gray-500 mt-0.5">
-                        <span>{{ account.percent.toFixed(0) }}%</span>
-                        <span class="text-gray-700 font-medium ml-2">{{ account.totalOrders }}</span>
-                      </div>
-                    </div>
-                    <div v-if="getOrdersDistributionForChart().length > 3" class="text-gray-500">
-                      +{{ getOrdersDistributionForChart().length - 3 }} more
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div v-else-if="analyticsData && analyticsData.accounts.length === 1" class="">
-                <span class="text-gray-600 text-xs">{{ analyticsData.accounts[0].account }}</span>
-              </div>
-            </div>
-          </div>
+          
 
       <!-- Total Amount with Account Distribution using KpiCard --> 
       <KpiCard :label="'TOTAL AMOUNT'" :value="formatCurrency(getAggregatedGrossSales())" tone="neutral">
@@ -157,43 +121,7 @@
         </template>
       </KpiCard>
           
-          <!-- Account Distribution Pie Chart -->
-          <div class="card mt-3">
-            <div class="card-body">
-              <div v-if="analyticsData && analyticsData.accounts.length > 1" class="">
-                <div class="flex items-center justify-center">
-                  <div class="relative w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0">
-                    <div 
-                      class="w-full h-full rounded-full"
-                      :style="{ background: getAccountsPieChart() }"
-                    ></div>
-                    <div class="absolute inset-2 bg-green-600 rounded-full flex items-center justify-center">
-                      <span class="text-white text-xs font-bold">{{ analyticsData.accounts.length }}</span>
-                    </div>
-                  </div>
-                  <div class="ml-3 space-y-1 text-xs min-w-0 flex-1">
-                    <div v-for="account in getAccountTotalsForChart().slice(0, 3)" :key="account.accountKey" 
-                         class="min-w-0">
-                      <div class="flex items-center space-x-1 min-w-0">
-                        <div class="w-2 h-2 rounded-full flex-shrink-0" :style="{ backgroundColor: getAccountColor(account.accountKey) }"></div>
-                        <span class="text-gray-700 truncate whitespace-nowrap">{{ account.account }}</span>
-                      </div>
-                      <div class="text-gray-500 mt-0.5 ml-3">
-                        <span>{{ account.percent.toFixed(0) }}%</span>
-                        <span class="text-gray-700 font-medium ml-2">{{ formatCurrency(account.totalAmount) }}</span>
-                      </div>
-                    </div>
-                    <div v-if="getAccountTotalsForChart().length > 3" class="text-gray-500">
-                      +{{ getAccountTotalsForChart().length - 3 }} more
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div v-else-if="analyticsData && analyticsData.accounts.length === 1" class="">
-                <span class="text-gray-600 text-xs">{{ analyticsData.accounts[0].account }}</span>
-              </div>
-            </div>
-          </div>
+          
 
       <!-- Payment Methods Distribution -->
       <div class="card bg-gradient-to-r from-purple-500 to-indigo-600 text-white">
@@ -249,6 +177,77 @@
           </svg>
         </template>
       </KpiCard>
+    </div>
+
+    <!-- Distribution Cards (separate row) -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 mt-4" v-if="analyticsData">
+      <!-- Orders Distribution Pie Chart -->
+      <div class="card">
+        <div class="card-body">
+          <div v-if="analyticsData && analyticsData.accounts.length > 1">
+            <div class="flex items-center justify-center">
+              <div class="relative w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0">
+                <div class="w-full h-full rounded-full" :style="{ background: getOrdersPieChart() }"></div>
+                <div class="absolute inset-2 bg-blue-600 rounded-full flex items-center justify-center">
+                  <span class="text-white text-xs font-bold">{{ analyticsData.accounts.length }}</span>
+                </div>
+              </div>
+              <div class="ml-3 space-y-1 text-xs min-w-0 flex-1">
+                <div v-for="account in getOrdersDistributionForChart().slice(0, 3)" :key="account.accountKey" class="min-w-0">
+                  <div class="flex items-center space-x-1 min-w-0">
+                    <div class="w-2 h-2 rounded-full flex-shrink-0" :style="{ backgroundColor: getAccountColor(account.accountKey) }"></div>
+                    <span class="text-gray-700 truncate whitespace-nowrap">{{ account.account }}</span>
+                  </div>
+                  <div class="text-gray-500 mt-0.5">
+                    <span>{{ account.percent.toFixed(0) }}%</span>
+                    <span class="text-gray-700 font-medium ml-2">{{ account.totalOrders }}</span>
+                  </div>
+                </div>
+                <div v-if="getOrdersDistributionForChart().length > 3" class="text-gray-500">
+                  +{{ getOrdersDistributionForChart().length - 3 }} more
+                </div>
+              </div>
+            </div>
+          </div>
+          <div v-else-if="analyticsData && analyticsData.accounts.length === 1">
+            <span class="text-gray-600 text-xs">{{ analyticsData.accounts[0].account }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Account Distribution Pie Chart -->
+      <div class="card">
+        <div class="card-body">
+          <div v-if="analyticsData && analyticsData.accounts.length > 1">
+            <div class="flex items-center justify-center">
+              <div class="relative w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0">
+                <div class="w-full h-full rounded-full" :style="{ background: getAccountsPieChart() }"></div>
+                <div class="absolute inset-2 bg-green-600 rounded-full flex items-center justify-center">
+                  <span class="text-white text-xs font-bold">{{ analyticsData.accounts.length }}</span>
+                </div>
+              </div>
+              <div class="ml-3 space-y-1 text-xs min-w-0 flex-1">
+                <div v-for="account in getAccountTotalsForChart().slice(0, 3)" :key="account.accountKey" class="min-w-0">
+                  <div class="flex items-center space-x-1 min-w-0">
+                    <div class="w-2 h-2 rounded-full flex-shrink-0" :style="{ backgroundColor: getAccountColor(account.accountKey) }"></div>
+                    <span class="text-gray-700 truncate whitespace-nowrap">{{ account.account }}</span>
+                  </div>
+                  <div class="text-gray-500 mt-0.5 ml-3">
+                    <span>{{ account.percent.toFixed(0) }}%</span>
+                    <span class="text-gray-700 font-medium ml-2">{{ formatCurrency(account.totalAmount) }}</span>
+                  </div>
+                </div>
+                <div v-if="getAccountTotalsForChart().length > 3" class="text-gray-500">
+                  +{{ getAccountTotalsForChart().length - 3 }} more
+                </div>
+              </div>
+            </div>
+          </div>
+          <div v-else-if="analyticsData && analyticsData.accounts.length === 1">
+            <span class="text-gray-600 text-xs">{{ analyticsData.accounts[0].account }}</span>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Company-level Profitability KPIs (disabled) -->
