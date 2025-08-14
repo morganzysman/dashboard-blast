@@ -134,7 +134,7 @@
           
 
       <!-- TOTAL AMOUNT KPI with embedded chart --> 
-      <KpiCard :label="'TOTAL AMOUNT'" :value="formatCurrency(aggregatedGrossSales)" tone="neutral">
+      <KpiCard :label="'TOTAL AMOUNT'" :value="formatCurrency(aggregatedGrossSales)" tone="neutral" :key="`total-amount-${forceRecompute}`">
         <template #icon>
           <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
@@ -437,6 +437,16 @@ const getCurrentDateInTimezone = () => {
 const formatCurrency = (amount) => {
   const currencySymbol = authStore.user?.currencySymbol || 'S/'
   const num = Number(amount) || 0
+  
+  // Debug log for TOTAL AMOUNT
+  if (amount !== 0) {
+    console.log('💰 formatCurrency called with non-zero amount:', {
+      amount,
+      num,
+      result: `${currencySymbol} ${num.toFixed(2)}`
+    })
+  }
+  
   return `${currencySymbol} ${num.toFixed(2)}`
 }
 
@@ -535,18 +545,41 @@ const aggregatedGrossSales = computed(() => {
   const profitabilityAmount = props.profitabilityData?.company?.grossSales || 0
   const analyticsAmount = props.analyticsData?.aggregated?.totalAmount || 0
   
+  // Calculate from individual accounts if aggregated is 0 but accounts have data
+  let calculatedFromAccounts = 0
+  if (props.analyticsData?.accounts) {
+    calculatedFromAccounts = props.analyticsData.accounts.reduce((total, account) => {
+      if (account.success && account.data?.data) {
+        return total + account.data.data.reduce((sum, method) => sum + (method.sum || 0), 0)
+      }
+      return total
+    }, 0)
+  }
+  
   console.log('💰 aggregatedGrossSales computed:', {
     profitabilityPeriod: props.profitabilityData?.period,
     profitabilityAmount,
     analyticsAmount,
+    calculatedFromAccounts,
     selectedDateRange: props.selectedDateRange,
     currentDateRange: props.currentDateRange,
-    forceRecomputeTrigger: trigger
+    forceRecomputeTrigger: trigger,
+    accountsData: props.analyticsData?.accounts?.map(acc => ({
+      accountKey: acc.accountKey,
+      success: acc.success,
+      dataLength: acc.data?.data?.length || 0
+    }))
   })
   
-  if (props.profitabilityData?.company) {
+  // Priority: profitability > calculated from accounts > analytics aggregated
+  if (props.profitabilityData?.company && profitabilityAmount > 0) {
     return profitabilityAmount
   }
+  
+  if (calculatedFromAccounts > 0) {
+    return calculatedFromAccounts
+  }
+  
   return analyticsAmount
 })
 
