@@ -33,11 +33,17 @@
             <div class="border rounded p-2 min-h-[140px]">
               <div class="text-[10px] text-gray-500">{{ day.label }}</div>
               <div class="mt-1 space-y-1">
-                <div v-for="e in day.entries" :key="e.user_id + ':' + e.start_time" class="rounded px-1 py-0.5 bg-gray-100">
-                  <div class="font-medium text-gray-900 truncate">{{ e.name || e.email }}</div>
-                  <div class="text-gray-600">{{ formatTime(e.start_time) }} - {{ formatTime(e.end_time) }}</div>
+                <div v-if="loading" class="space-y-1 animate-pulse">
+                  <div class="h-4 bg-gray-200 rounded"></div>
+                  <div class="h-3 bg-gray-200 rounded w-24"></div>
                 </div>
-                <div v-if="!day.entries || day.entries.length === 0" class="text-gray-400">—</div>
+                <template v-else>
+                  <div v-for="e in day.entries" :key="e.user_id + ':' + e.start_time" class="rounded px-1 py-0.5 bg-gray-100">
+                    <div class="font-medium text-gray-900 truncate">{{ e.name || e.email }}</div>
+                    <div class="text-gray-600">{{ formatTime(e.start_time) }} - {{ formatTime(e.end_time) }}</div>
+                  </div>
+                  <div v-if="!day.entries || day.entries.length === 0" class="text-gray-400">—</div>
+                </template>
               </div>
             </div>
           </template>
@@ -57,6 +63,7 @@ const accounts = ref([])
 const companyToken = ref('')
 const weekStart = ref('')
 const weekDays = ref([])
+const loading = ref(false)
 
 const fetchAccounts = async () => {
   try {
@@ -100,6 +107,7 @@ const formatTime = (t) => t?.toString().slice(0,5)
 const loadCalendar = async () => {
   if (!companyToken.value) return
   try {
+    loading.value = true
     if (!weekStart.value) weekStart.value = computeWeekStart(new Date())
     buildWeekDays(weekStart.value)
     const params = new URLSearchParams({ company_token: companyToken.value, week_start: weekStart.value })
@@ -110,7 +118,9 @@ const loadCalendar = async () => {
       const found = data.find(x => x.date === day.date)
       day.entries = found?.entries || []
     }
-  } catch {}
+  } catch {} finally {
+    loading.value = false
+  }
 }
 
 const prevWeek = () => {
