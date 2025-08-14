@@ -471,14 +471,27 @@ onMounted(() => {
 const fetchProfitabilityData = async () => {
   try {
     const timezone = authStore.user?.timezone || 'America/Lima'
+    console.log('📊 Fetching profitability data for:', {
+      start: currentDateRange.value.start,
+      end: currentDateRange.value.end,
+      timezone
+    })
+    
     const data = await api.getProfitability(
       currentDateRange.value.start,
       currentDateRange.value.end,
       timezone
     )
+    
     if (data.success) {
+      console.log('✅ Profitability data received:', {
+        period: data.data?.period,
+        accountsCount: data.data?.accounts?.length || 0,
+        companyProfit: data.data?.company?.operatingProfit || 0
+      })
       profitabilityData.value = data.data
     } else {
+      console.warn('❌ Profitability data failed:', data.error)
       profitabilityData.value = null
     }
   } catch (err) {

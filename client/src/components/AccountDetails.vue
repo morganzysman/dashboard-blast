@@ -331,6 +331,13 @@ const accountGainBreakdowns = computed(() => {
   
   if (!props.analyticsData?.accounts) return map
   
+  // Debug log to track profitability data changes
+  console.log('🔄 AccountDetails: Computing gain breakdowns', {
+    profitabilityDataPeriod: props.profitabilityData?.period,
+    currentDateRange: props.currentDateRange,
+    profitabilityAccounts: props.profitabilityData?.accounts?.length || 0
+  })
+  
   props.analyticsData.accounts.forEach(account => {
     const profitabilityData = props.profitabilityData
     const currentDateRange = props.currentDateRange
@@ -338,6 +345,13 @@ const accountGainBreakdowns = computed(() => {
     const serverAcc = profitabilityData?.accounts?.find(a => a.accountKey === account.accountKey)
     if (serverAcc && serverAcc.paymentMethodBreakdown) {
       // Always use server data when available, even if gross is zero (to include payroll projections)
+      console.log(`💰 Using server profitability data for ${account.accountKey}:`, {
+        operatingProfit: serverAcc.operatingProfit,
+        grossSales: serverAcc.grossSales,
+        payrollCosts: serverAcc.payrollCosts,
+        payrollEntries: serverAcc.payrollEntries
+      })
+      
       map.set(account.accountKey, {
         totalRevenue: serverAcc.grossSales || 0,
         totalCosts: (serverAcc.paymentFees || 0) + (serverAcc.foodCosts || 0) + (serverAcc.utilityCosts || 0) + (serverAcc.payrollCosts || 0),
