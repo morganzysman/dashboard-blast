@@ -2,7 +2,7 @@
   <div class="modal-overlay" @click.self="closeModal">
     <div class="modal-container">
       <div class="modal-content">
-        <div class="modal-panel w-full max-w-md" @click.stop>
+        <div class="modal-panel w-full max-w-2xl" @click.stop>
       <!-- Modal Header -->
       <div class="flex justify-between items-center mb-4">
         <h3 class="text-lg font-medium text-gray-900">
@@ -159,7 +159,7 @@
               </div>
             </div>
             
-            <div class="mb-4">
+            <div class="mb-5">
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Specific Motive</label>
               <select v-model="warningForm.motive" 
                       class="w-full rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm focus:border-red-500 focus:ring-red-500 dark:focus:border-red-400 dark:focus:ring-red-400 disabled:bg-gray-100 dark:disabled:bg-gray-700 disabled:text-gray-500" 
@@ -171,7 +171,7 @@
               </select>
             </div>
             
-            <div class="mb-4">
+            <div class="mb-6">
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Description <span class="text-gray-500">(Optional)</span></label>
               <textarea v-model="warningForm.description" 
                        class="w-full rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm focus:border-red-500 focus:ring-red-500 dark:focus:border-red-400 dark:focus:ring-red-400" 
@@ -191,12 +191,12 @@
           
           <!-- Existing Warnings List -->
           <div>
-            <div class="flex items-center justify-between mb-4">
-              <h5 class="text-md font-medium text-gray-900 dark:text-gray-100">Warning History</h5>
-              <span class="text-sm text-gray-500 dark:text-gray-400">{{ userWarnings.length }} total</span>
+            <div class="flex items-center justify-between mb-6">
+              <h5 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Warning History</h5>
+              <span class="text-sm text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full">{{ userWarnings.length }} total</span>
             </div>
             
-            <div class="space-y-3 max-h-64 overflow-y-auto">
+            <div class="space-y-4 max-h-72 overflow-y-auto pr-2">
               <!-- Loading State -->
               <div v-if="loadingWarnings" class="flex items-center justify-center py-8">
                 <div class="animate-spin rounded-full h-6 w-6 border-2 border-gray-300 border-t-red-600"></div>
@@ -204,7 +204,7 @@
               </div>
               
               <!-- Empty State -->
-              <div v-else-if="userWarnings.length === 0" class="text-center py-8">
+              <div v-else-if="userWarnings.length === 0" class="text-center py-12">
                 <div class="mx-auto w-12 h-12 bg-green-100 dark:bg-green-950/40 rounded-full flex items-center justify-center mb-3">
                   <svg class="w-6 h-6 text-green-600 dark:text-green-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
@@ -216,10 +216,10 @@
               
               <!-- Warnings List -->
               <div v-else v-for="warning in userWarnings" :key="warning.id" 
-                   class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow duration-200">
+                   class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5 shadow-sm hover:shadow-md transition-all duration-200 hover:border-red-300 dark:hover:border-red-700">
                 
                 <!-- Warning Header -->
-                <div class="flex justify-between items-start mb-3">
+                <div class="flex justify-between items-start mb-4">
                   <div class="flex items-start gap-3 flex-1">
                     <div class="flex-shrink-0 mt-0.5">
                       <span class="severity-badge" :class="getSeverityClass(warning.severity_level)">
@@ -244,7 +244,7 @@
                 </div>
                 
                 <!-- Warning Details -->
-                <div v-if="warning.description" class="bg-gray-50 dark:bg-gray-900 rounded-lg p-3 mb-3">
+                <div v-if="warning.description" class="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 mb-4">
                   <p class="text-sm text-gray-700 dark:text-gray-300">{{ warning.description }}</p>
                 </div>
                 
@@ -540,20 +540,32 @@ onMounted(async () => {
 }
 
 /* Custom scrollbar for warnings list */
-.max-h-64::-webkit-scrollbar {
-  width: 6px;
+.max-h-72::-webkit-scrollbar {
+  width: 8px;
 }
 
-.max-h-64::-webkit-scrollbar-track {
+.max-h-72::-webkit-scrollbar-track {
   @apply bg-gray-100 dark:bg-gray-800 rounded-full;
 }
 
-.max-h-64::-webkit-scrollbar-thumb {
+.max-h-72::-webkit-scrollbar-thumb {
   @apply bg-gray-300 dark:bg-gray-600 rounded-full;
 }
 
-.max-h-64::-webkit-scrollbar-thumb:hover {
+.max-h-72::-webkit-scrollbar-thumb:hover {
   @apply bg-gray-400 dark:bg-gray-500;
+}
+
+/* Improved spacing for form elements */
+.form-input,
+select,
+textarea {
+  @apply px-4 py-3;
+}
+
+/* Better card spacing */
+.space-y-4 > * + * {
+  margin-top: 1rem;
 }
 
 /* Focus styles for form elements */
