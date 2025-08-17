@@ -2,10 +2,10 @@
 -- This table stores warnings issued to employees by administrators
 
 CREATE TABLE employee_warnings (
-    id SERIAL PRIMARY KEY,
-    employee_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    issued_by INTEGER NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
-    company_id INTEGER NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    employee_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    issued_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
     
     -- Warning details
     warning_category VARCHAR(50) NOT NULL,
@@ -16,7 +16,7 @@ CREATE TABLE employee_warnings (
     -- Tracking
     issued_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     acknowledged_at TIMESTAMP WITH TIME ZONE NULL,
-    acknowledged_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    acknowledged_by UUID REFERENCES users(id) ON DELETE SET NULL,
     
     -- Status
     status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'resolved', 'disputed', 'expired')),
