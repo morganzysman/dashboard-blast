@@ -2,9 +2,9 @@
   <div class="modal-overlay" @click.self="closeModal">
     <div class="modal-container">
       <div class="modal-content">
-        <div class="modal-panel w-full max-w-2xl" @click.stop>
+        <div class="modal-panel w-full max-w-2xl p-6" @click.stop>
       <!-- Modal Header -->
-      <div class="flex justify-between items-center mb-4">
+      <div class="flex justify-between items-center mb-6">
         <h3 class="text-lg font-medium text-gray-900">
           {{ isEdit ? 'Edit User' : 'Create New User' }}
         </h3>
@@ -16,7 +16,7 @@
       </div>
 
       <!-- Modal Body -->
-      <form @submit.prevent="handleSubmit" class="space-y-4">
+      <form @submit.prevent="handleSubmit" class="space-y-6">
         <!-- Basic Info -->
         <div>
           <label class="form-label">Full Name</label>
@@ -95,7 +95,7 @@
         <!-- Settings are managed at the company level -->
 
         <!-- Company notice -->
-        <div class="border-t pt-4 text-sm text-gray-500">
+        <div class="border-t border-gray-200 dark:border-gray-600 pt-6 mt-6 text-sm text-gray-500 dark:text-gray-400">
           Accounts are managed under companies. Use the Companies screen to add or edit accounts.
         </div>
 
