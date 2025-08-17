@@ -197,8 +197,8 @@ router.get('/profitability', requireAuth, async (req, res) => {
       const methods = accRes.data.data
       const gross = methods.reduce((s, m) => s + (m.sum || 0), 0)
       const orders = methods.reduce((s, m) => s + (m.count || 0), 0)
-      const fees = computeFees(accRes.accountKey, methods)
-      const netAfterFees = gross - fees
+      const fees = 0  // Payment fees are no longer used
+      const netAfterFees = gross  // No fees to subtract
       const food = gross * foodRate
       const utilDaily = accountKeyToUtility.get(accRes.accountKey)?.total_daily || 0
       const util = utilDaily * daysDiff
@@ -221,20 +221,17 @@ router.get('/profitability', requireAuth, async (req, res) => {
         const method = (m.name || 'other').toLowerCase()
         const revenue = m.sum || 0
         const count = m.count || 0
-        const cfg = costsMap.get(method) || { cost_percentage: 0, fixed_cost: 0 }
-        const pctFee = revenue * ((cfg.cost_percentage || 0) / 100)
-        const fixedFee = count * (cfg.fixed_cost || 0)
-        const totalFees = pctFee + fixedFee
+        const totalFees = 0  // Payment fees are no longer used
         feesByMethod[method] = (feesByMethod[method] || 0) + totalFees
-        netByMethod[method] = (netByMethod[method] || 0) + (revenue - totalFees)
+        netByMethod[method] = (netByMethod[method] || 0) + revenue
 
         paymentMethodBreakdown.push({
           method,
           revenue,
           fees: totalFees,
-          netRevenue: revenue - totalFees,
+          netRevenue: revenue,
           transactionCount: count,
-          costConfig: cfg
+          costConfig: { cost_percentage: 0, fixed_cost: 0 }
         })
       }
 

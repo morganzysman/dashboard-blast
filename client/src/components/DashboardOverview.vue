@@ -107,22 +107,32 @@
         </template>
         <template #extra>
           <div v-if="analyticsData && analyticsData.accounts.length > 1" class="w-full">
-            <div class="flex items-center gap-4">
-              <div class="relative w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0">
+            <div class="flex items-center gap-2 sm:gap-3">
+              <div class="relative w-12 h-12 sm:w-16 sm:h-16 flex-shrink-0">
                 <div class="w-full h-full rounded-full" :style="{ background: getOrdersPieChart() }"></div>
-                <div class="absolute inset-3 bg-blue-600 rounded-full flex items-center justify-center">
+                <div class="absolute inset-2 sm:inset-3 bg-blue-600 rounded-full flex items-center justify-center">
                   <span class="text-white text-xs font-bold">{{ analyticsData.accounts.length }}</span>
                 </div>
               </div>
-              <div class="flex-1 space-y-3 text-sm min-w-0">
+              <div class="flex-1 space-y-1 text-xs sm:text-sm min-w-0">
                 <div v-for="account in getOrdersDistributionForChart()" :key="account.accountKey" class="min-w-0">
-                  <div class="flex items-center space-x-2 mb-1">
-                    <div class="w-3 h-3 rounded-full flex-shrink-0" :style="{ backgroundColor: getAccountColor(account.accountKey) }"></div>
-                    <span class="text-gray-600 dark:text-gray-400 truncate">{{ account.account }}</span>
-                  </div>
-                  <div class="text-right ml-5">
-                    <div class="text-gray-900 dark:text-gray-100 font-semibold">{{ account.totalOrders }} orders</div>
-                    <div class="text-xs text-gray-500">{{ account.percent.toFixed(0) }}%</div>
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-1 min-w-0 flex-1">
+                      <div class="w-2 h-2 rounded-full flex-shrink-0" :style="{ backgroundColor: getAccountColor(account.accountKey) }"></div>
+                      <div class="relative group min-w-0 flex-1">
+                        <span class="text-gray-600 dark:text-gray-400 truncate cursor-pointer block" :title="account.account">
+                          {{ account.account }}
+                        </span>
+                        <!-- Custom tooltip -->
+                        <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50 invisible group-hover:visible">
+                          {{ account.account }}
+                        </div>
+                      </div>
+                    </div>
+                    <div class="text-right flex-shrink-0 ml-1">
+                      <span class="text-gray-900 dark:text-gray-100 font-semibold">{{ account.totalOrders }}</span>
+                      <span class="text-gray-500 ml-1">({{ account.percent.toFixed(0) }}%)</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -142,22 +152,32 @@
         </template>
         <template #extra>
           <div v-if="analyticsData && analyticsData.accounts.length > 1" class="w-full">
-            <div class="flex items-center gap-4">
-              <div class="relative w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0">
+            <div class="flex items-center gap-2 sm:gap-3">
+              <div class="relative w-12 h-12 sm:w-16 sm:h-16 flex-shrink-0">
                 <div class="w-full h-full rounded-full" :style="{ background: getAccountsPieChart() }"></div>
-                <div class="absolute inset-3 bg-green-600 rounded-full flex items-center justify-center">
+                <div class="absolute inset-2 sm:inset-3 bg-green-600 rounded-full flex items-center justify-center">
                   <span class="text-white text-xs font-bold">{{ analyticsData.accounts.length }}</span>
                 </div>
               </div>
-              <div class="flex-1 space-y-3 text-sm min-w-0">
+              <div class="flex-1 space-y-1 text-xs sm:text-sm min-w-0">
                 <div v-for="account in getAccountTotalsForChart()" :key="account.accountKey" class="min-w-0">
-                  <div class="flex items-center space-x-2 mb-1">
-                    <div class="w-3 h-3 rounded-full flex-shrink-0" :style="{ backgroundColor: getAccountColor(account.accountKey) }"></div>
-                    <span class="text-gray-600 dark:text-gray-400 truncate">{{ account.account }}</span>
-                  </div>
-                  <div class="text-right ml-5">
-                    <div class="text-gray-900 dark:text-gray-100 font-semibold">{{ formatCurrency(account.totalAmount) }}</div>
-                    <div class="text-xs text-gray-500">{{ account.percent.toFixed(0) }}%</div>
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-1 min-w-0 flex-1">
+                      <div class="w-2 h-2 rounded-full flex-shrink-0" :style="{ backgroundColor: getAccountColor(account.accountKey) }"></div>
+                      <div class="relative group min-w-0 flex-1">
+                        <span class="text-gray-600 dark:text-gray-400 truncate cursor-pointer block" :title="account.account">
+                          {{ account.account }}
+                        </span>
+                        <!-- Custom tooltip -->
+                        <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50 invisible group-hover:visible">
+                          {{ account.account }}
+                        </div>
+                      </div>
+                    </div>
+                    <div class="text-right flex-shrink-0 ml-1">
+                      <span class="text-gray-900 dark:text-gray-100 font-semibold">{{ formatCurrency(account.totalAmount) }}</span>
+                      <span class="text-gray-500 ml-1">({{ account.percent.toFixed(0) }}%)</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -170,39 +190,41 @@
 
       <!-- Payment Methods Distribution -->
       <div class="card bg-gradient-to-r from-purple-500 to-indigo-600 text-white">
-        <div class="card-body">
-          <div class="flex items-center justify-between mb-3">
+        <div class="card-body p-3 sm:p-4">
+          <div class="flex items-center justify-between mb-2">
             <div class="min-w-0 flex-1">
               <p class="text-purple-100 text-xs sm:text-sm font-medium">PAYMENT METHODS</p>
             </div>
-            <div class="w-10 h-10 sm:w-12 sm:h-12 bg-purple-400 bg-opacity-30 rounded-lg flex items-center justify-center flex-shrink-0">
-              <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="w-8 h-8 sm:w-10 sm:h-10 bg-purple-400 bg-opacity-30 rounded-lg flex items-center justify-center flex-shrink-0">
+              <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
               </svg>
-        </div>
-      </div>
+            </div>
+          </div>
 
           <!-- Payment Methods Pie Chart -->
-          <div v-if="analyticsData && analyticsData.aggregated.paymentMethods.length > 0" class="mt-3">
-            <div class="flex items-center justify-center">
-              <div class="relative w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0">
+          <div v-if="analyticsData && analyticsData.aggregated.paymentMethods.length > 0" class="mt-2">
+            <div class="flex items-center">
+              <div class="relative w-12 h-12 sm:w-16 sm:h-16 flex-shrink-0">
                 <div class="w-full h-full rounded-full" :style="{ background: getPaymentMethodsPieChart() }"></div>
-                <div class="absolute inset-2 bg-purple-600 rounded-full flex items-center justify-center">
+                <div class="absolute inset-1.5 sm:inset-2 bg-purple-600 rounded-full flex items-center justify-center">
                   <span class="text-white text-xs font-bold">{{ analyticsData.aggregated.paymentMethods.length }}</span>
                 </div>
               </div>
-              <div class="ml-3 space-y-1 text-xs min-w-0 flex-1">
+              <div class="ml-2 sm:ml-3 space-y-0.5 text-xs min-w-0 flex-1">
                 <div v-for="method in analyticsData.aggregated.paymentMethods.slice(0, 3)" :key="method.name" class="min-w-0">
-                  <div class="flex items-center space-x-1 min-w-0">
-                    <div class="w-2 h-2 rounded-full flex-shrink-0" :style="{ backgroundColor: getPaymentMethodColor(method.name) }"></div>
-                    <span class="text-purple-100 capitalize truncate whitespace-nowrap">{{ method.name }}</span>
-                  </div>
-                  <div class="text-purple-200 mt-0.5">
-                    <span>{{ method.percent.toFixed(0) }}%</span>
-                    <span class="text-purple-100 font-medium ml-2">{{ formatCurrency(method.sum) }}</span>
+                  <div class="flex items-center justify-between min-w-0">
+                    <div class="flex items-center space-x-1 min-w-0 flex-1">
+                      <div class="w-2 h-2 rounded-full flex-shrink-0" :style="{ backgroundColor: getPaymentMethodColor(method.name) }"></div>
+                      <span class="text-purple-100 capitalize truncate text-xs">{{ method.name }}</span>
+                    </div>
+                    <div class="text-purple-200 text-xs flex-shrink-0 ml-1">
+                      <span class="font-medium">{{ method.percent.toFixed(0) }}%</span>
+                      <span class="text-purple-100 ml-1">{{ formatCurrency(method.sum) }}</span>
+                    </div>
                   </div>
                 </div>
-                <div v-if="analyticsData.aggregated.paymentMethods.length > 3" class="text-purple-200">+{{ analyticsData.aggregated.paymentMethods.length - 3 }} more</div>
+                <div v-if="analyticsData.aggregated.paymentMethods.length > 3" class="text-purple-200 text-xs">+{{ analyticsData.aggregated.paymentMethods.length - 3 }} more</div>
               </div>
             </div>
           </div>

@@ -41,20 +41,6 @@
         Dashboard
       </router-link>
 
-      <!-- Notifications - Hidden from super-admin and employees -->
-      <router-link
-        v-if="!authStore.isSuperAdmin && authStore.user?.role !== 'employee'"
-        to="/notifications"
-        class="sidebar-nav-item"
-        :class="{ active: $route.name === 'Notifications' }"
-        @click="$emit('close')"
-      >
-        <svg class="sidebar-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5v-5zm-5-6h5l-5 5v-5zm-5-6h5l-5 5v-5z"></path>
-        </svg>
-        Notifications
-      </router-link>
-
       <!-- Rentability - Hidden from super-admin and employees -->
       <router-link
         v-if="!authStore.isSuperAdmin && authStore.user?.role !== 'employee'"
@@ -95,6 +81,21 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3M5 11h14M5 19h14M5 7h14M7 15h10" />
         </svg>
         My Timesheet
+      </router-link>
+
+
+      <!-- Notifications - Hidden from super-admin only -->
+      <router-link
+        v-if="!authStore.isSuperAdmin"
+        to="/notifications"
+        class="sidebar-nav-item"
+        :class="{ active: $route.name === 'Notifications' }"
+        @click="$emit('close')"
+      >
+        <svg class="sidebar-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5v-5zm-5-6h5l-5 5v-5zm-5-6h5l-5 5v-5z"></path>
+        </svg>
+        Notifications
       </router-link>
 
       <!-- Employee: Warnings - Temporarily hidden -->

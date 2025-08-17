@@ -41,9 +41,15 @@
             <span class="badge" :class="account.success ? 'badge-success' : 'badge-danger'">
               {{ account.success ? 'Active' : 'Error' }}
             </span>
-            <h4 class="font-medium text-gray-900 text-sm sm:text-base truncate">
-              {{ account.account }}
-            </h4>
+            <div class="relative group">
+              <h4 class="font-medium text-gray-900 text-sm sm:text-base truncate cursor-pointer" :title="account.account">
+                {{ account.account }}
+              </h4>
+              <!-- Custom tooltip -->
+              <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-gray-900 text-white text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50 invisible group-hover:visible">
+                {{ account.account }}
+              </div>
+            </div>
           </div>
 
           <!-- Account Indicators -->
@@ -106,10 +112,6 @@
                     <div class="border-t border-gray-700 pt-3">
                       <h5 class="font-semibold text-red-300 mb-3 text-sm">📉 Costs:</h5>
                       <div class="space-y-2">
-                        <div class="flex justify-between items-center">
-                          <span class="text-sm">Payment Fees:</span>
-                          <span class="text-red-300 font-bold">-{{ formatCurrency(getAccountGainBreakdown(account).paymentFees) }}</span>
-                        </div>
                         <div class="flex justify-between items-center">
                           <span class="text-sm">Food Costs (30%):</span>
                           <span class="text-red-300 font-bold">-{{ formatCurrency(getAccountGainBreakdown(account).foodCosts) }}</span>
@@ -410,13 +412,13 @@ const accountGainBreakdowns = computed(() => {
       
       map.set(account.accountKey, {
         totalRevenue: serverAcc.grossSales || 0,
-        totalCosts: (serverAcc.paymentFees || 0) + (serverAcc.foodCosts || 0) + (serverAcc.utilityCosts || 0) + (serverAcc.payrollCosts || 0),
-        paymentFees: serverAcc.paymentFees || 0,
+        totalCosts: (serverAcc.foodCosts || 0) + (serverAcc.utilityCosts || 0) + (serverAcc.payrollCosts || 0),
+        paymentFees: 0,
         foodCosts: serverAcc.foodCosts || 0,
         utilityCosts: serverAcc.utilityCosts || 0,
         payrollCosts: serverAcc.payrollCosts || 0,
         payrollEntries: serverAcc.payrollEntries || 0,
-        finalGain: serverAcc.operatingProfit || 0,
+        finalGain: (serverAcc.grossSales || 0) - ((serverAcc.foodCosts || 0) + (serverAcc.utilityCosts || 0) + (serverAcc.payrollCosts || 0)),
         daysInPeriod: serverAcc.daysInPeriod || calcDays(currentDateRange) || 1,
         paymentMethodBreakdown: serverAcc.paymentMethodBreakdown
       })
@@ -426,7 +428,7 @@ const accountGainBreakdowns = computed(() => {
     if (serverAcc && clientSideRevenue > 0) {
       // Use hybrid approach: client-side revenue with server-side costs
       const foodCosts = clientSideRevenue * 0.3
-      const totalCosts = (serverAcc.paymentFees || 0) + foodCosts + (serverAcc.utilityCosts || 0) + (serverAcc.payrollCosts || 0)
+      const totalCosts = foodCosts + (serverAcc.utilityCosts || 0) + (serverAcc.payrollCosts || 0)
       
       console.log(`🔄 Using hybrid data for ${account.accountKey}:`, {
         clientSideRevenue,
@@ -438,7 +440,7 @@ const accountGainBreakdowns = computed(() => {
       map.set(account.accountKey, {
         totalRevenue: clientSideRevenue,
         totalCosts,
-        paymentFees: serverAcc.paymentFees || 0,
+        paymentFees: 0,
         foodCosts,
         utilityCosts: serverAcc.utilityCosts || 0,
         payrollCosts: serverAcc.payrollCosts || 0,

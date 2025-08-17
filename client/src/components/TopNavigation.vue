@@ -38,15 +38,7 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
           </svg>
         </button>
-        <!-- Notification status (click to open settings) -->
-        <button
-          class="flex items-center space-x-2 hover:opacity-80"
-          v-if="!authStore.isSuperAdmin"
-          @click="router.push({ name: 'Notifications' })"
-        >
-          <div class="h-2 w-2 rounded-full flex-shrink-0" :class="notificationStatusColor"></div>
-          <span class="text-sm text-gray-600">{{ notificationStatusText }}</span>
-        </button>
+
 
         <!-- User dropdown -->
         <div class="dropdown">
@@ -112,7 +104,6 @@ const router = useRouter()
 const authStore = useAuthStore()
 
 const showUserMenu = ref(false)
-const notificationStatus = ref('unknown')
 
 const emit = defineEmits(['toggle-mobile-menu'])
 
@@ -143,31 +134,7 @@ const pageSubtitle = computed(() => {
   return routeSubtitles[route.name] || ''
 })
 
-const notificationStatusColor = computed(() => {
-  switch (notificationStatus.value) {
-    case 'active':
-      return 'bg-success-500'
-    case 'inactive':
-      return 'bg-gray-400'
-    case 'error':
-      return 'bg-error-500'
-    default:
-      return 'bg-warning-500'
-  }
-})
 
-const notificationStatusText = computed(() => {
-  switch (notificationStatus.value) {
-    case 'active':
-      return 'Notifications'
-    case 'inactive':
-      return 'Notifications'
-    case 'error':
-      return 'Notification'
-    default:
-      return 'Checking...'
-  }
-})
 
 const handleLogout = async () => {
   showUserMenu.value = false
@@ -198,28 +165,7 @@ onMounted(() => {
   } catch {}
 })
 
-const checkNotificationStatus = async () => {
-  try {
-    const sessionId = authStore.sessionId
-    if (!sessionId) return
 
-    const response = await fetch('/api/notifications/status', {
-      headers: {
-        'X-Session-ID': sessionId,
-      },
-    })
-
-    if (response.ok) {
-      const data = await response.json()
-      notificationStatus.value = data.isSubscribed ? 'active' : 'inactive'
-    } else {
-      notificationStatus.value = 'error'
-    }
-  } catch (error) {
-    notificationStatus.value = 'error'
-    console.error('Error checking notification status:', error)
-  }
-}
 
 // Close dropdown when clicking outside
 const handleClickOutside = (event) => {
@@ -230,7 +176,6 @@ const handleClickOutside = (event) => {
 
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
-  checkNotificationStatus()
 })
 
 onUnmounted(() => {

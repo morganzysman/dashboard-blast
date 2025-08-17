@@ -49,8 +49,8 @@ export function computeAccountGain(account, paymentMethodCostsMap, utilityCostsM
   if (!account?.success || !account?.data?.data) return 0
   const daysInPeriod = calculateDaysInPeriod(currentDateRange)
   const totalRevenue = computeAccountGrossSales(account)
-  const paymentFees = computeAccountPaymentFees(account, paymentMethodCostsMap)
-  const revenueAfterFees = totalRevenue - paymentFees
+  const paymentFees = 0  // Payment fees are no longer used
+  const revenueAfterFees = totalRevenue  // No fees to subtract
   const foodCosts = totalRevenue * (foodCostRate ?? 0)
   const revenueAfterFoodCosts = revenueAfterFees - foodCosts
   const utilityCost = utilityCostsMap?.get(account.accountKey)
@@ -78,21 +78,18 @@ export function computeAccountGainBreakdown(account, paymentMethodCostsMap, util
   const accountPaymentCosts = paymentMethodCostsMap?.get(account.accountKey) || new Map()
 
   let totalRevenue = 0
-  let totalPaymentFees = 0
+  let totalPaymentFees = 0  // Keep for compatibility but always 0
   const paymentMethodBreakdown = []
 
   for (const paymentMethod of account.data.data) {
     const methodName = paymentMethod.name?.toLowerCase() || 'other'
     const revenue = paymentMethod.sum || 0
     const transactionCount = paymentMethod.count || 0
-    const costConfig = accountPaymentCosts.get(methodName) || { cost_percentage: 0, fixed_cost: 0 }
-    const percentageFee = revenue * (costConfig.cost_percentage / 100)
-    const fixedFee = transactionCount * (costConfig.fixed_cost || 0)
-    const totalFees = percentageFee + fixedFee
-    const netRevenue = revenue - totalFees
+    const totalFees = 0  // Payment fees are no longer used
+    const netRevenue = revenue  // No fees to subtract
 
     totalRevenue += revenue
-    totalPaymentFees += totalFees
+    totalPaymentFees += totalFees  // Always 0
 
     paymentMethodBreakdown.push({
       method: methodName,
@@ -100,7 +97,7 @@ export function computeAccountGainBreakdown(account, paymentMethodCostsMap, util
       fees: totalFees,
       netRevenue,
       transactionCount,
-      costConfig
+      costConfig: { cost_percentage: 0, fixed_cost: 0 }
     })
   }
 
@@ -108,13 +105,13 @@ export function computeAccountGainBreakdown(account, paymentMethodCostsMap, util
   const utilityCost = utilityCostsMap?.get(account.accountKey)
   const dailyUtilityCost = utilityCost ? (utilityCost.total_daily || 0) : 0
   const totalUtilityCosts = dailyUtilityCost * daysInPeriod
-  const totalCosts = totalPaymentFees + foodCosts + totalUtilityCosts
+  const totalCosts = foodCosts + totalUtilityCosts  // No payment fees
   const finalGain = totalRevenue - totalCosts
 
   return {
     totalRevenue,
     totalCosts,
-    paymentFees: totalPaymentFees,
+    paymentFees: 0,  // Always 0 now
     foodCosts,
     utilityCosts: totalUtilityCosts,
     finalGain,
