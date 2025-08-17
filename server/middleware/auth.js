@@ -133,6 +133,27 @@ export function requireRole(allowedRoles) {
   };
 }
 
+// Admin-only authentication middleware
+export function requireAdmin(req, res, next) {
+  if (!req.user) {
+    return res.status(401).json({
+      success: false,
+      error: 'Authentication required',
+      requiresLogin: true
+    });
+  }
+  
+  const userRole = req.user.userRole || req.user.role;
+  if (userRole !== 'admin' && userRole !== 'super-admin') {
+    return res.status(403).json({
+      success: false,
+      error: 'Access denied. Admin privileges required.'
+    });
+  }
+  
+  next();
+}
+
 // Logout user session
 export async function logoutUser(sessionToken, userAgent = null) {
   if (sessionToken) {

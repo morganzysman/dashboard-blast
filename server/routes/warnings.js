@@ -74,9 +74,9 @@ router.get('/categories', requireAuth, (req, res) => {
 router.get('/', requireAuth, async (req, res) => {
   try {
     const { db } = req.app.locals;
-    const userId = req.user.id;
-    const userRole = req.user.role;
-    const companyId = req.user.company_id;
+    const userId = req.user.userId;
+    const userRole = req.user.userRole;
+    const companyId = req.user.companyId;
     
     let query;
     let params;
@@ -150,8 +150,8 @@ router.get('/', requireAuth, async (req, res) => {
 router.post('/', requireAuth, requireAdmin, async (req, res) => {
   try {
     const { db } = req.app.locals;
-    const issuedBy = req.user.id;
-    const companyId = req.user.company_id;
+    const issuedBy = req.user.userId;
+    const companyId = req.user.companyId;
     
     const {
       employee_id,
@@ -259,8 +259,8 @@ router.put('/:id/acknowledge', requireAuth, async (req, res) => {
   try {
     const { db } = req.app.locals;
     const warningId = req.params.id;
-    const userId = req.user.id;
-    const companyId = req.user.company_id;
+    const userId = req.user.userId;
+    const companyId = req.user.companyId;
     
     // Verify the warning belongs to the current user
     const warningCheck = await db.query(
@@ -314,7 +314,7 @@ router.put('/:id', requireAuth, requireAdmin, async (req, res) => {
   try {
     const { db } = req.app.locals;
     const warningId = req.params.id;
-    const companyId = req.user.company_id;
+    const companyId = req.user.companyId;
     
     const {
       warning_category,
@@ -425,7 +425,7 @@ router.delete('/:id', requireAuth, requireAdmin, async (req, res) => {
   try {
     const { db } = req.app.locals;
     const warningId = req.params.id;
-    const companyId = req.user.company_id;
+    const companyId = req.user.companyId;
     
     // Verify warning exists and belongs to company
     const warningCheck = await db.query(
@@ -461,7 +461,7 @@ router.delete('/:id', requireAuth, requireAdmin, async (req, res) => {
 router.get('/stats', requireAuth, requireAdmin, async (req, res) => {
   try {
     const { db } = req.app.locals;
-    const companyId = req.user.company_id;
+    const companyId = req.user.companyId;
     
     // Get warning stats by category
     const categoryStatsQuery = `
