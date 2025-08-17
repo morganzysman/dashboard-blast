@@ -1,5 +1,6 @@
 import express from 'express';
 import { requireAuth, requireAdmin } from '../middleware/auth.js';
+import { pool } from '../database.js';
 
 const router = express.Router();
 
@@ -73,7 +74,7 @@ router.get('/categories', requireAuth, (req, res) => {
 // GET /api/warnings - Get warnings (employees see their own, admins see all for company)
 router.get('/', requireAuth, async (req, res) => {
   try {
-    const { db } = req.app.locals;
+
     const userId = req.user.userId;
     const userRole = req.user.userRole;
     const companyId = req.user.companyId;
@@ -130,7 +131,7 @@ router.get('/', requireAuth, async (req, res) => {
       params = [userId, companyId];
     }
     
-    const result = await db.query(query, params);
+    const result = await pool.query(query, params);
     
     res.json({
       success: true,
@@ -149,7 +150,7 @@ router.get('/', requireAuth, async (req, res) => {
 // POST /api/warnings - Create new warning (admin only)
 router.post('/', requireAuth, requireAdmin, async (req, res) => {
   try {
-    const { db } = req.app.locals;
+
     const issuedBy = req.user.userId;
     const companyId = req.user.companyId;
     
@@ -195,7 +196,7 @@ router.post('/', requireAuth, requireAdmin, async (req, res) => {
     }
     
     // Verify employee exists and belongs to the same company
-    const employeeCheck = await db.query(
+    const employeeCheck = await pool.query(
       'SELECT id, name FROM users WHERE id = $1 AND company_id = $2',
       [employee_id, companyId]
     );
@@ -217,7 +218,7 @@ router.post('/', requireAuth, requireAdmin, async (req, res) => {
       RETURNING *
     `;
     
-    const result = await db.query(insertQuery, [
+    const result = await pool.query(insertQuery, [
       employee_id, issuedBy, companyId, warning_category,
       warning_motive, description, severity_level
     ]);
@@ -237,7 +238,7 @@ router.post('/', requireAuth, requireAdmin, async (req, res) => {
       WHERE ew.id = $1
     `;
     
-    const fullWarningResult = await db.query(fullWarningQuery, [warning.id]);
+    const fullWarningResult = await pool.query(fullWarningQuery, [warning.id]);
     
     res.status(201).json({
       success: true,
@@ -257,13 +258,13 @@ router.post('/', requireAuth, requireAdmin, async (req, res) => {
 // PUT /api/warnings/:id/acknowledge - Employee acknowledges a warning
 router.put('/:id/acknowledge', requireAuth, async (req, res) => {
   try {
-    const { db } = req.app.locals;
+
     const warningId = req.params.id;
     const userId = req.user.userId;
     const companyId = req.user.companyId;
     
     // Verify the warning belongs to the current user
-    const warningCheck = await db.query(
+    const warningCheck = await pool.query(
       'SELECT id, employee_id, acknowledged_at FROM employee_warnings WHERE id = $1 AND employee_id = $2 AND company_id = $3',
       [warningId, userId, companyId]
     );
@@ -292,7 +293,7 @@ router.put('/:id/acknowledge', requireAuth, async (req, res) => {
       RETURNING *
     `;
     
-    const result = await db.query(updateQuery, [userId, warningId]);
+    const result = await pool.query(updateQuery, [userId, warningId]);
     
     res.json({
       success: true,
@@ -312,7 +313,7 @@ router.put('/:id/acknowledge', requireAuth, async (req, res) => {
 // PUT /api/warnings/:id - Update warning (admin only)
 router.put('/:id', requireAuth, requireAdmin, async (req, res) => {
   try {
-    const { db } = req.app.locals;
+
     const warningId = req.params.id;
     const companyId = req.user.companyId;
     
@@ -325,7 +326,7 @@ router.put('/:id', requireAuth, requireAdmin, async (req, res) => {
     } = req.body;
     
     // Verify warning exists and belongs to company
-    const warningCheck = await db.query(
+    const warningCheck = await pool.query(
       'SELECT id FROM employee_warnings WHERE id = $1 AND company_id = $2',
       [warningId, companyId]
     );
@@ -403,7 +404,7 @@ router.put('/:id', requireAuth, requireAdmin, async (req, res) => {
       RETURNING *
     `;
     
-    const result = await db.query(updateQuery, values);
+    const result = await pool.query(updateQuery, values);
     
     res.json({
       success: true,
@@ -423,12 +424,12 @@ router.put('/:id', requireAuth, requireAdmin, async (req, res) => {
 // DELETE /api/warnings/:id - Delete warning (admin only)
 router.delete('/:id', requireAuth, requireAdmin, async (req, res) => {
   try {
-    const { db } = req.app.locals;
+
     const warningId = req.params.id;
     const companyId = req.user.companyId;
     
     // Verify warning exists and belongs to company
-    const warningCheck = await db.query(
+    const warningCheck = await pool.query(
       'SELECT id FROM employee_warnings WHERE id = $1 AND company_id = $2',
       [warningId, companyId]
     );
@@ -441,7 +442,7 @@ router.delete('/:id', requireAuth, requireAdmin, async (req, res) => {
     }
     
     // Delete the warning
-    await db.query('DELETE FROM employee_warnings WHERE id = $1', [warningId]);
+    await pool.query('DELETE FROM employee_warnings WHERE id = $1', [warningId]);
     
     res.json({
       success: true,
@@ -460,7 +461,7 @@ router.delete('/:id', requireAuth, requireAdmin, async (req, res) => {
 // GET /api/warnings/stats - Get warning statistics (admin only)
 router.get('/stats', requireAuth, requireAdmin, async (req, res) => {
   try {
-    const { db } = req.app.locals;
+
     const companyId = req.user.companyId;
     
     // Get warning stats by category
@@ -475,7 +476,7 @@ router.get('/stats', requireAuth, requireAdmin, async (req, res) => {
       ORDER BY count DESC
     `;
     
-    const categoryStats = await db.query(categoryStatsQuery, [companyId]);
+    const categoryStats = await pool.query(categoryStatsQuery, [companyId]);
     
     // Get warning stats by severity
     const severityStatsQuery = `
@@ -494,7 +495,7 @@ router.get('/stats', requireAuth, requireAdmin, async (req, res) => {
         END
     `;
     
-    const severityStats = await db.query(severityStatsQuery, [companyId]);
+    const severityStats = await pool.query(severityStatsQuery, [companyId]);
     
     // Get recent warnings
     const recentWarningsQuery = `
@@ -510,7 +511,7 @@ router.get('/stats', requireAuth, requireAdmin, async (req, res) => {
       LIMIT 10
     `;
     
-    const recentWarnings = await db.query(recentWarningsQuery, [companyId]);
+    const recentWarnings = await pool.query(recentWarningsQuery, [companyId]);
     
     res.json({
       success: true,

@@ -100,8 +100,8 @@
         </div>
 
         <!-- Employee Warnings Section (for editing employees only) -->
-        <div v-if="isEdit && form.role === 'employee' && auth.user?.role === 'admin'" class="border-t border-gray-200 dark:border-gray-600 pt-6 mt-6">
-          <div class="flex justify-between items-center mb-4">
+        <div v-if="isEdit && form.role === 'employee' && auth.user?.role === 'admin'" class="border-t border-gray-200 dark:border-gray-600 pt-8 mt-8">
+          <div class="flex justify-between items-center mb-6">
             <div class="flex items-center gap-3">
               <div class="p-2 bg-yellow-100 dark:bg-yellow-950/40 rounded-lg">
                 <svg class="w-5 h-5 text-yellow-600 dark:text-yellow-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -126,15 +126,15 @@
           </div>
           
           <!-- Add Warning Form -->
-          <div v-if="showAddWarningForm" class="bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-950/20 dark:to-orange-950/20 border border-red-200 dark:border-red-800 rounded-xl p-5 mb-6 shadow-sm">
-            <div class="flex items-center gap-2 mb-4">
+          <div v-if="showAddWarningForm" class="bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-950/20 dark:to-orange-950/20 border border-red-200 dark:border-red-800 rounded-xl p-6 mb-8 shadow-sm">
+            <div class="flex items-center gap-2 mb-6">
               <svg class="w-5 h-5 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
               </svg>
               <h5 class="text-lg font-medium text-red-900 dark:text-red-100">Issue New Warning</h5>
             </div>
             
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-5">
               <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Warning Category</label>
                 <select v-model="warningForm.category" 
