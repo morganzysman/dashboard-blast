@@ -100,101 +100,180 @@
         </div>
 
         <!-- Employee Warnings Section (for editing employees only) -->
-        <div v-if="isEdit && form.role === 'employee' && auth.user?.role === 'admin'" class="border-t pt-4">
-          <div class="flex justify-between items-center mb-3">
-            <h4 class="text-md font-medium text-gray-900">⚠️ Employee Warnings</h4>
+        <div v-if="isEdit && form.role === 'employee' && auth.user?.role === 'admin'" class="border-t border-gray-200 dark:border-gray-600 pt-6 mt-6">
+          <div class="flex justify-between items-center mb-4">
+            <div class="flex items-center gap-3">
+              <div class="p-2 bg-yellow-100 dark:bg-yellow-950/40 rounded-lg">
+                <svg class="w-5 h-5 text-yellow-600 dark:text-yellow-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                </svg>
+              </div>
+              <div>
+                <h4 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Employee Warnings</h4>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Manage disciplinary records and performance issues</p>
+              </div>
+            </div>
             <button type="button" @click="showAddWarningForm = !showAddWarningForm" 
-                    class="btn-primary btn-sm">
+                    class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 dark:bg-red-700 dark:hover:bg-red-800 transition-colors duration-200">
+              <svg v-if="!showAddWarningForm" class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+              </svg>
+              <svg v-else class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
               {{ showAddWarningForm ? 'Cancel' : 'Add Warning' }}
             </button>
           </div>
           
           <!-- Add Warning Form -->
-          <div v-if="showAddWarningForm" class="bg-gray-50 p-3 rounded-lg mb-4 space-y-3">
-            <div>
-              <label class="form-label text-sm">Warning Category</label>
-              <select v-model="warningForm.category" class="form-input text-sm" @change="onCategoryChange">
-                <option value="">Select category</option>
-                <option v-for="(cat, key) in warningCategories" :key="key" :value="key">
-                  {{ cat.name }}
-                </option>
-              </select>
+          <div v-if="showAddWarningForm" class="bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-950/20 dark:to-orange-950/20 border border-red-200 dark:border-red-800 rounded-xl p-5 mb-6 shadow-sm">
+            <div class="flex items-center gap-2 mb-4">
+              <svg class="w-5 h-5 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+              </svg>
+              <h5 class="text-lg font-medium text-red-900 dark:text-red-100">Issue New Warning</h5>
             </div>
             
-            <div>
-              <label class="form-label text-sm">Specific Motive</label>
-              <select v-model="warningForm.motive" class="form-input text-sm" :disabled="!warningForm.category">
-                <option value="">Select motive</option>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Warning Category</label>
+                <select v-model="warningForm.category" 
+                        class="w-full rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm focus:border-red-500 focus:ring-red-500 dark:focus:border-red-400 dark:focus:ring-red-400" 
+                        @change="onCategoryChange">
+                  <option value="">Select category</option>
+                  <option v-for="(cat, key) in warningCategories" :key="key" :value="key">
+                    {{ cat.name }}
+                  </option>
+                </select>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Severity Level</label>
+                <select v-model="warningForm.severity" 
+                        class="w-full rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm focus:border-red-500 focus:ring-red-500 dark:focus:border-red-400 dark:focus:ring-red-400">
+                  <option value="low">🟡 Low - Minor infraction</option>
+                  <option value="medium">🟠 Medium - Moderate concern</option>
+                  <option value="high">🔴 High - Serious violation</option>
+                  <option value="critical">⚫ Critical - Major infraction</option>
+                </select>
+              </div>
+            </div>
+            
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Specific Motive</label>
+              <select v-model="warningForm.motive" 
+                      class="w-full rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm focus:border-red-500 focus:ring-red-500 dark:focus:border-red-400 dark:focus:ring-red-400 disabled:bg-gray-100 dark:disabled:bg-gray-700 disabled:text-gray-500" 
+                      :disabled="!warningForm.category">
+                <option value="">{{ warningForm.category ? 'Select specific motive' : 'Select category first' }}</option>
                 <option v-for="motive in availableMotives" :key="motive" :value="motive">
                   {{ motive }}
                 </option>
               </select>
             </div>
             
-            <div>
-              <label class="form-label text-sm">Severity Level</label>
-              <select v-model="warningForm.severity" class="form-input text-sm">
-                <option value="low">🟡 Low</option>
-                <option value="medium">🟠 Medium</option>
-                <option value="high">🔴 High</option>
-                <option value="critical">⚫ Critical</option>
-              </select>
-            </div>
-            
-            <div>
-              <label class="form-label text-sm">Description (Optional)</label>
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Description <span class="text-gray-500">(Optional)</span></label>
               <textarea v-model="warningForm.description" 
-                       class="form-input text-sm" 
-                       rows="2" 
-                       placeholder="Additional details about the incident..."></textarea>
+                       class="w-full rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm focus:border-red-500 focus:ring-red-500 dark:focus:border-red-400 dark:focus:ring-red-400" 
+                       rows="3" 
+                       placeholder="Provide additional details about the incident, circumstances, or any relevant context..."></textarea>
             </div>
             
             <button type="button" @click="addWarning" 
-                    class="btn-primary btn-sm w-full"
+                    class="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 dark:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
                     :disabled="!warningForm.category || !warningForm.motive">
+              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+              </svg>
               Issue Warning
             </button>
           </div>
           
           <!-- Existing Warnings List -->
-          <div class="space-y-2 max-h-40 overflow-y-auto">
-            <div v-if="loadingWarnings" class="text-center py-2 text-gray-500 text-sm">
-              Loading warnings...
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <h5 class="text-md font-medium text-gray-900 dark:text-gray-100">Warning History</h5>
+              <span class="text-sm text-gray-500 dark:text-gray-400">{{ userWarnings.length }} total</span>
             </div>
-            <div v-else-if="userWarnings.length === 0" class="text-center py-2 text-gray-500 text-sm">
-              ✅ No warnings on record
-            </div>
-            <div v-else v-for="warning in userWarnings" :key="warning.id" 
-                 class="bg-white border rounded-lg p-3 text-sm">
-              <div class="flex justify-between items-start mb-1">
-                <div class="flex items-center gap-2">
-                  <span class="font-medium">{{ warning.warning_motive }}</span>
-                  <span class="severity-badge" :class="getSeverityClass(warning.severity_level)">
-                    {{ getSeverityIcon(warning.severity_level) }} {{ warning.severity_level }}
-                  </span>
+            
+            <div class="space-y-3 max-h-64 overflow-y-auto">
+              <!-- Loading State -->
+              <div v-if="loadingWarnings" class="flex items-center justify-center py-8">
+                <div class="animate-spin rounded-full h-6 w-6 border-2 border-gray-300 border-t-red-600"></div>
+                <span class="ml-2 text-gray-500 dark:text-gray-400 text-sm">Loading warnings...</span>
+              </div>
+              
+              <!-- Empty State -->
+              <div v-else-if="userWarnings.length === 0" class="text-center py-8">
+                <div class="mx-auto w-12 h-12 bg-green-100 dark:bg-green-950/40 rounded-full flex items-center justify-center mb-3">
+                  <svg class="w-6 h-6 text-green-600 dark:text-green-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                  </svg>
                 </div>
-                <button @click="deleteWarning(warning.id)" 
-                        class="text-red-500 hover:text-red-700 text-xs">
-                  🗑️
-                </button>
+                <p class="text-sm text-green-600 dark:text-green-400 font-medium">✅ No warnings on record</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Employee has a clean disciplinary record</p>
               </div>
               
-              <div class="text-gray-600 text-xs mb-1">
-                <strong>Category:</strong> {{ getWarningCategoryName(warning.warning_category) }}
-              </div>
-              
-              <div v-if="warning.description" class="text-gray-600 text-xs mb-1">
-                <strong>Details:</strong> {{ warning.description }}
-              </div>
-              
-              <div class="text-gray-500 text-xs">
-                <strong>Issued:</strong> {{ formatDate(warning.issued_at) }} by {{ warning.issued_by_name }}
-                <span v-if="warning.acknowledged_at" class="text-green-600 ml-2">
-                  ✓ Acknowledged {{ formatDate(warning.acknowledged_at) }}
-                </span>
-                <span v-else class="text-orange-600 ml-2">
-                  ⏳ Pending acknowledgment
-                </span>
+              <!-- Warnings List -->
+              <div v-else v-for="warning in userWarnings" :key="warning.id" 
+                   class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow duration-200">
+                
+                <!-- Warning Header -->
+                <div class="flex justify-between items-start mb-3">
+                  <div class="flex items-start gap-3 flex-1">
+                    <div class="flex-shrink-0 mt-0.5">
+                      <span class="severity-badge" :class="getSeverityClass(warning.severity_level)">
+                        {{ getSeverityIcon(warning.severity_level) }} {{ warning.severity_level }}
+                      </span>
+                    </div>
+                    <div class="flex-1">
+                      <h6 class="font-semibold text-gray-900 dark:text-gray-100 text-sm">{{ warning.warning_motive }}</h6>
+                      <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        <span class="font-medium">{{ getWarningCategoryName(warning.warning_category) }}</span>
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <button @click="deleteWarning(warning.id)" 
+                          class="flex-shrink-0 p-1 text-gray-400 hover:text-red-600 dark:hover:text-red-400 rounded transition-colors duration-200"
+                          title="Delete warning">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                    </svg>
+                  </button>
+                </div>
+                
+                <!-- Warning Details -->
+                <div v-if="warning.description" class="bg-gray-50 dark:bg-gray-900 rounded-lg p-3 mb-3">
+                  <p class="text-sm text-gray-700 dark:text-gray-300">{{ warning.description }}</p>
+                </div>
+                
+                <!-- Warning Metadata -->
+                <div class="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400">
+                  <div class="flex items-center gap-2">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3M5 11h14M5 19h14M5 7h14"></path>
+                    </svg>
+                    <span>{{ formatDate(warning.issued_at) }}</span>
+                    <span class="text-gray-300 dark:text-gray-600">•</span>
+                    <span>by {{ warning.issued_by_name }}</span>
+                  </div>
+                  
+                  <div class="flex items-center gap-1">
+                    <span v-if="warning.acknowledged_at" class="inline-flex items-center gap-1 text-green-600 dark:text-green-400">
+                      <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                      </svg>
+                      Acknowledged {{ formatDate(warning.acknowledged_at) }}
+                    </span>
+                    <span v-else class="inline-flex items-center gap-1 text-orange-600 dark:text-orange-400">
+                      <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                      </svg>
+                      Pending acknowledgment
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -453,10 +532,61 @@ onMounted(async () => {
 
 <style scoped>
 .severity-badge {
-  @apply inline-flex items-center px-2 py-1 rounded-full text-xs font-medium;
+  @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold shadow-sm border;
 }
 
 .btn-sm {
-  @apply px-3 py-1 text-sm;
+  @apply px-3 py-1.5 text-sm font-medium;
+}
+
+/* Custom scrollbar for warnings list */
+.max-h-64::-webkit-scrollbar {
+  width: 6px;
+}
+
+.max-h-64::-webkit-scrollbar-track {
+  @apply bg-gray-100 dark:bg-gray-800 rounded-full;
+}
+
+.max-h-64::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 dark:bg-gray-600 rounded-full;
+}
+
+.max-h-64::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-400 dark:bg-gray-500;
+}
+
+/* Focus styles for form elements */
+.form-input:focus,
+select:focus,
+textarea:focus {
+  @apply ring-2 ring-offset-2 ring-red-500 dark:ring-red-400 border-red-500 dark:border-red-400;
+}
+
+/* Improved button hover effects */
+button:hover {
+  @apply transform scale-105 transition-transform duration-150;
+}
+
+button:active {
+  @apply scale-95;
+}
+
+/* Gradient animation for the warning form */
+.bg-gradient-to-r {
+  background-size: 200% 200%;
+  animation: gradient 3s ease infinite;
+}
+
+@keyframes gradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
 }
 </style>
