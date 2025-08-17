@@ -97,7 +97,8 @@
         My Timesheet
       </router-link>
 
-      <!-- Employee: Warnings -->
+      <!-- Employee: Warnings - Temporarily hidden -->
+      <!-- 
       <router-link
         v-if="authStore.user?.role === 'employee'"
         to="/warnings"
@@ -110,6 +111,7 @@
         </svg>
         My Warnings
       </router-link>
+      -->
 
       <!-- Admin: Payroll (hidden for super-admin) -->
       <router-link
