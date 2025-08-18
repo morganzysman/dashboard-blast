@@ -9,7 +9,9 @@ import {
 import {
   getUserByEmail,
   updateUserLastLogin,
-  logNotificationEvent
+  logNotificationEvent,
+  updateUserPassword,
+  getUserPasswordHash
 } from '../database.js';
 
 const router = Router();
@@ -182,6 +184,101 @@ router.get('/verify', async (req, res) => {
       success: false,
       error: 'Session verification error',
       requiresLogin: true
+    });
+  }
+});
+
+// Change password endpoint (for authenticated users)
+router.put('/change-password', async (req, res) => {
+  try {
+    const sessionToken = req.headers['x-session-id'] || req.headers['authorization']?.replace('Bearer ', '');
+    const { currentPassword, newPassword } = req.body;
+    
+    if (!sessionToken) {
+      return res.status(401).json({
+        success: false,
+        error: 'Authentication required'
+      });
+    }
+    
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        error: 'Current password and new password are required'
+      });
+    }
+    
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        error: 'New password must be at least 6 characters long'
+      });
+    }
+    
+    // Verify session and get user
+    const sessionData = await verifyUserSession(sessionToken);
+    if (!sessionData) {
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid or expired session'
+      });
+    }
+    
+    const userId = sessionData.user.id;
+    
+    // Get current password hash
+    const currentPasswordHash = await getUserPasswordHash(userId);
+    if (!currentPasswordHash) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
+    
+    // Verify current password
+    const isCurrentPasswordValid = await verifyPassword(currentPassword, currentPasswordHash);
+    if (!isCurrentPasswordValid) {
+      return res.status(401).json({
+        success: false,
+        error: 'Current password is incorrect'
+      });
+    }
+    
+    // Hash new password
+    const newPasswordHash = await hashPassword(newPassword);
+    
+    // Update password in database
+    const updatedUser = await updateUserPassword(userId, newPasswordHash);
+    if (!updatedUser) {
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to update password'
+      });
+    }
+    
+    // Log password change event
+    await logNotificationEvent(
+      userId,
+      'password_changed',
+      'User changed their password',
+      {},
+      true,
+      null,
+      req.headers['user-agent'] || 'Unknown'
+    );
+    
+    console.log(`✅ Password changed for user: ${updatedUser.email}`);
+    
+    res.json({
+      success: true,
+      message: 'Password changed successfully'
+    });
+    
+  } catch (error) {
+    console.error('❌ Change password error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error'
     });
   }
 });

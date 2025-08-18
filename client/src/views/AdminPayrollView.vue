@@ -129,8 +129,9 @@
               <label class="text-xs text-gray-700">Amount</label>
               <input v-model="e.amount" type="number" inputmode="decimal" min="0" step="any" class="form-input w-full" :disabled="e.paid" />
             </div>
-            <div class="sm:col-span-3 flex justify-end" v-if="!e.id">
-              <button class="btn-danger btn-xs" @click="removeNewEntry(idx)">Remove</button>
+            <div class="sm:col-span-3 flex justify-end gap-2">
+              <button v-if="!e.id" class="btn-danger btn-xs" @click="removeNewEntry(idx)">Remove</button>
+              <button v-else-if="e.id && !e.paid" class="btn-danger btn-xs" @click="confirmDeleteEntry(e.id, idx)">Delete</button>
             </div>
           </div>
         </div>
@@ -138,6 +139,42 @@
         <div class="mt-4 flex justify-end gap-2">
           <button class="btn-secondary btn-sm" @click="editEntry=null">Cancel</button>
           <button class="btn-primary btn-sm" :disabled="editableCount === 0" :class="{ 'opacity-50 cursor-not-allowed': editableCount === 0 }" @click="saveEdit">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div v-if="deleteConfirmation" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+      <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+        <div class="mb-4">
+          <h3 class="text-lg font-semibold text-gray-900">Confirm Deletion</h3>
+          <p class="text-sm text-gray-600 mt-2">
+            Are you sure you want to delete this time entry? This action cannot be undone.
+          </p>
+        </div>
+        
+        <div class="flex justify-end gap-3">
+          <button 
+            class="btn-secondary btn-sm" 
+            @click="cancelDeleteEntry"
+            :disabled="deleting"
+          >
+            Cancel
+          </button>
+          <button 
+            class="btn-danger btn-sm"
+            @click="deleteEntry"
+            :disabled="deleting"
+          >
+            <div v-if="deleting" class="flex items-center">
+              <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 100 16 8 8 0 01-8-8z"></path>
+              </svg>
+              Deleting...
+            </div>
+            <span v-else>Delete Entry</span>
+          </button>
         </div>
       </div>
     </div>
@@ -161,6 +198,8 @@ const entries = ref([])
 const period = ref({ start: '', end: '' })
 const paying = ref(false)
 const editEntry = ref(null)
+const deleteConfirmation = ref(null)
+const deleting = ref(false)
 
 const periodLabel = computed(() => `${period.value.start} → ${period.value.end}`)
 
@@ -335,6 +374,50 @@ const editableSum = computed(() => (editEntry.value?.list || []).filter(e => !e.
     const item = editEntry.value.list[idx]
     if (item && !item.id) {
       editEntry.value.list.splice(idx, 1)
+    }
+  }
+
+  const confirmDeleteEntry = (entryId, entryIndex) => {
+    deleteConfirmation.value = {
+      entryId,
+      entryIndex
+    }
+  }
+
+  const cancelDeleteEntry = () => {
+    deleteConfirmation.value = null
+  }
+
+  const deleteEntry = async () => {
+    if (!deleteConfirmation.value) return
+    
+    deleting.value = true
+    try {
+      const result = await api.deleteEntry(deleteConfirmation.value.entryId)
+      
+      if (result.success) {
+        // Remove the entry from the local list
+        if (editEntry.value && editEntry.value.list) {
+          editEntry.value.list.splice(deleteConfirmation.value.entryIndex, 1)
+        }
+        
+        // Close confirmation modal
+        deleteConfirmation.value = null
+        
+        // Show success message (you can implement a toast notification here)
+        console.log('✅ Entry deleted successfully')
+        
+        // Reload entries to get updated data
+        loadEntries()
+      } else {
+        console.error('❌ Failed to delete entry:', result.error)
+        alert('Failed to delete entry: ' + (result.error || 'Unknown error'))
+      }
+    } catch (error) {
+      console.error('❌ Delete entry error:', error)
+      alert('Failed to delete entry: ' + error.message)
+    } finally {
+      deleting.value = false
     }
   }
 

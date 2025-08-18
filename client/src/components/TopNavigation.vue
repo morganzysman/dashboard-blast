@@ -79,6 +79,13 @@
 
           <!-- Dropdown menu -->
           <div v-if="showUserMenu" class="dropdown-menu">
+            <button @click="openChangePasswordModal" class="dropdown-item w-full text-left">
+              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-6 6H6a6 6 0 01-6-6 6 6 0 016-6h7m1 0V3a2 2 0 014 0v4M9 12l2 2 4-4"></path>
+              </svg>
+              Change Password
+            </button>
+            
             <div class="border-t border-gray-200 my-1"></div>
 
             <button @click="handleLogout" class="dropdown-item w-full text-left">
@@ -92,23 +99,40 @@
       </div>
     </div>
   </header>
+
+  <!-- Change Password Modal -->
+  <ChangePasswordModal 
+    :is-open="showChangePasswordModal" 
+    @close="closeChangePasswordModal" 
+  />
 </template>
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import ChangePasswordModal from './ChangePasswordModal.vue'
 
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 
 const showUserMenu = ref(false)
+const showChangePasswordModal = ref(false)
 
 const emit = defineEmits(['toggle-mobile-menu'])
 
 const toggleUserMenu = () => {
   showUserMenu.value = !showUserMenu.value
+}
+
+const openChangePasswordModal = () => {
+  showChangePasswordModal.value = true
+  showUserMenu.value = false // Close the dropdown
+}
+
+const closeChangePasswordModal = () => {
+  showChangePasswordModal.value = false
 }
 
 const pageTitle = computed(() => {

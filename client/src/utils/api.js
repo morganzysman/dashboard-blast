@@ -171,6 +171,7 @@ export const api = {
   notifyPaid: (companyToken) => apiRequest(`/api/payroll/admin/${companyToken}/notify-paid`, { method: 'POST' }),
   updateEntry: (id, payload) => apiRequest(`/api/payroll/admin/entries/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
   createEntry: (payload) => apiRequest(`/api/payroll/admin/entries`, { method: 'POST', body: JSON.stringify(payload) }),
+  deleteEntry: (id) => apiRequest(`/api/payroll/admin/entries/${id}`, { method: 'DELETE' }),
   
   // Payment method costs methods
   getPaymentMethodCosts: (companyToken = null) => {

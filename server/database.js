@@ -395,6 +395,41 @@ export async function getUserById(userId) {
   return result.rows[0];
 }
 
+// Update user password
+export async function updateUserPassword(userId, hashedPassword) {
+  const query = `
+    UPDATE users 
+    SET hashed_password = $2, updated_at = NOW()
+    WHERE id = $1 AND is_active = TRUE
+    RETURNING id, email, name, role
+  `;
+  
+  const result = await pool.query(query, [userId, hashedPassword]);
+  
+  if (result.rows.length === 0) {
+    return null;
+  }
+  
+  return result.rows[0];
+}
+
+// Get user password hash for verification
+export async function getUserPasswordHash(userId) {
+  const query = `
+    SELECT hashed_password
+    FROM users 
+    WHERE id = $1 AND is_active = TRUE
+  `;
+  
+  const result = await pool.query(query, [userId]);
+  
+  if (result.rows.length === 0) {
+    return null;
+  }
+  
+  return result.rows[0].hashed_password;
+}
+
 // Update user last login
 export async function updateUserLastLogin(userId) {
   const query = `

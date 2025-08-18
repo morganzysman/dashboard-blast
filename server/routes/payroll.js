@@ -473,6 +473,63 @@ router.post('/admin/entries', requireAuth, async (req, res) => {
   }
 })
 
+// Admin: delete a time entry (only if not paid)
+router.delete('/admin/entries/:id', requireAuth, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin' && req.user.role !== 'super-admin') {
+      return res.status(403).json({ success: false, error: 'Access denied' })
+    }
+    
+    const { id } = req.params
+    
+    // First check if the entry exists and is not paid
+    const checkQuery = await pool.query(
+      'SELECT id, user_id, company_token, paid FROM time_entries WHERE id = $1',
+      [id]
+    )
+    
+    if (checkQuery.rowCount === 0) {
+      return res.status(404).json({ success: false, error: 'Entry not found' })
+    }
+    
+    const entry = checkQuery.rows[0]
+    
+    if (entry.paid) {
+      return res.status(400).json({ success: false, error: 'Cannot delete paid entries' })
+    }
+    
+    // For admins (not super), ensure the account belongs to their company
+    if (req.user.role === 'admin') {
+      const cq = await pool.query('SELECT company_id FROM company_accounts WHERE company_token = $1', [entry.company_token])
+      const companyId = cq.rows[0]?.company_id || null
+      const belongs = !!(req.user.companyId && companyId && req.user.companyId === companyId)
+      if (!belongs) return res.status(403).json({ success: false, error: 'Access denied' })
+    }
+    
+    // Delete the entry
+    const deleteQuery = await pool.query(
+      'DELETE FROM time_entries WHERE id = $1 AND paid = FALSE RETURNING id',
+      [id]
+    )
+    
+    if (deleteQuery.rowCount === 0) {
+      return res.status(400).json({ success: false, error: 'Entry not found or cannot be deleted' })
+    }
+    
+    console.log(`✅ Admin ${req.user.email} deleted time entry ${id}`)
+    
+    res.json({ 
+      success: true, 
+      message: 'Entry deleted successfully',
+      deletedId: id
+    })
+    
+  } catch (e) {
+    console.error('❌ Delete entry error:', e)
+    res.status(500).json({ success: false, error: e.message })
+  }
+})
+
 // Admin: mark payroll paid for the period
 router.post('/admin/:companyToken/pay', requireAuth, async (req, res) => {
   const client = await pool.connect()

@@ -58,6 +58,38 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  const changePassword = async (currentPassword, newPassword) => {
+    isLoading.value = true
+    error.value = null
+
+    try {
+      const response = await fetch('/api/auth/change-password', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Session-ID': sessionId.value
+        },
+        body: JSON.stringify({ currentPassword, newPassword })
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        console.log('✅ Password changed successfully')
+        return { success: true, message: data.message }
+      } else {
+        error.value = data.error || 'Password change failed'
+        return { success: false, error: error.value }
+      }
+    } catch (err) {
+      error.value = 'Network error. Please try again.'
+      console.error('Change password error:', err)
+      return { success: false, error: error.value }
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   const logout = async () => {
     isLoading.value = true
 
@@ -200,6 +232,7 @@ export const useAuthStore = defineStore('auth', () => {
     // Actions
     login,
     logout,
+    changePassword,
     verifySession,
     restoreSession,
     clearError,

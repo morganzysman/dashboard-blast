@@ -38,12 +38,72 @@
               </div>
             </template>
             <template v-else>
-              <div class="flex items-center justify-center">
+              <!-- Camera Scanner -->
+              <div v-if="!showManualInput && cameraPermission !== 'denied'" class="flex items-center justify-center">
                 <div class="mt-2 rounded overflow-hidden border border-gray-200 relative w-full max-w-xl">
                   <video ref="videoEl" class="w-full h-64 object-cover" playsinline></video>
                   <div class="absolute inset-0 pointer-events-none border-2 border-green-500 m-8 rounded"></div>
                   <div class="absolute bottom-1 right-2 bg-black bg-opacity-50 text-white text-[10px] px-1 rounded">Scanner</div>
                 </div>
+              </div>
+              
+              <!-- Manual QR Input -->
+              <div v-if="showManualInput || cameraPermission === 'denied'" class="space-y-3">
+                <div class="text-center text-sm text-gray-600">
+                  Enter QR information manually or enable camera access
+                </div>
+                <div class="space-y-2">
+                  <div>
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Company Token</label>
+                    <input 
+                      v-model="companyToken" 
+                      type="text" 
+                      class="form-input w-full text-sm"
+                      placeholder="Enter company token"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-xs font-medium text-gray-700 mb-1">QR Secret</label>
+                    <input 
+                      v-model="qrSecret" 
+                      type="text" 
+                      class="form-input w-full text-sm"
+                      placeholder="Enter QR secret"
+                    />
+                  </div>
+                </div>
+                <div class="flex gap-2">
+                  <button 
+                    v-if="cameraPermission !== 'denied'" 
+                    @click="showManualInput = false; startScanner()" 
+                    class="btn-secondary btn-sm flex-1"
+                  >
+                    Try Camera Again
+                  </button>
+                  <button 
+                    v-else
+                    @click="resetCameraPermission" 
+                    class="btn-secondary btn-sm flex-1"
+                  >
+                    Reset Camera Permission
+                  </button>
+                  <button 
+                    @click="showManualInput = false" 
+                    class="btn-secondary btn-sm flex-1"
+                  >
+                    Back to Scanner
+                  </button>
+                </div>
+              </div>
+              
+              <!-- Toggle Manual Input Button -->
+              <div v-if="!showManualInput && cameraPermission !== 'denied'" class="text-center">
+                <button 
+                  @click="showManualInput = true; stopScanner()" 
+                  class="text-sm text-blue-600 hover:text-blue-800 underline"
+                >
+                  Enter QR info manually
+                </button>
               </div>
             </template>
             <p v-if="message" class="text-sm" :class="messageClass">{{ message }}</p>
@@ -75,6 +135,8 @@ const loginPrefill = computed(() => ({ redirect: '/clock', company_token: compan
 const action = ref('')
 const scannerOpen = ref(false)
 const videoEl = ref(null)
+const cameraPermission = ref('unknown') // 'granted', 'denied', 'prompt', 'unknown'
+const showManualInput = ref(false)
 let mediaStream = null
 let frameHandle = null
 let barcodeDetector = null
@@ -119,6 +181,40 @@ const canClockIn = computed(() => !!qrSecret.value && !!companyToken.value && !h
 const canClockOut = computed(() => !!qrSecret.value && !!companyToken.value && hasOpenToday.value)
 const hasQrContext = computed(() => !!qrSecret.value && !!companyToken.value)
 
+// Check camera permissions
+const checkCameraPermission = async () => {
+  try {
+    // Check if Permissions API is available
+    if ('permissions' in navigator) {
+      const permission = await navigator.permissions.query({ name: 'camera' })
+      cameraPermission.value = permission.state
+      
+      // Listen for permission changes
+      permission.addEventListener('change', () => {
+        cameraPermission.value = permission.state
+        localStorage.setItem('cameraPermission', permission.state)
+      })
+      
+      // Store permission state
+      localStorage.setItem('cameraPermission', permission.state)
+      return permission.state
+    } else {
+      // Fallback: check localStorage for previous user choice
+      const stored = localStorage.getItem('cameraPermission')
+      if (stored) {
+        cameraPermission.value = stored
+        return stored
+      }
+      cameraPermission.value = 'prompt'
+      return 'prompt'
+    }
+  } catch (error) {
+    console.log('Permission check not supported:', error)
+    cameraPermission.value = 'prompt'
+    return 'prompt'
+  }
+}
+
 // Prefill from query params when entering via QR path
 onMounted(async () => {
   const params = new URLSearchParams(window.location.search)
@@ -126,13 +222,31 @@ onMounted(async () => {
   const secret = params.get('qr_secret')
   if (token) companyToken.value = token
   if (secret) qrSecret.value = secret
+  
+  // Check camera permission first
+  const permission = await checkCameraPermission()
+  
   if (!token || !secret) {
-    await startScanner().catch(() => {})
+    // Only auto-start scanner if we have permission or haven't asked yet
+    if (permission === 'granted' || permission === 'prompt') {
+      await startScanner().catch(() => {})
+    } else {
+      // Show manual input option if camera is denied
+      showManualInput.value = true
+    }
   }
   refreshOpenState()
 })
 
 watch(companyToken, () => refreshOpenState())
+
+const resetCameraPermission = () => {
+  // Clear stored permission and reset to unknown
+  localStorage.removeItem('cameraPermission')
+  cameraPermission.value = 'unknown'
+  showManualInput.value = false
+  message.value = 'Camera permission reset. You can now try the scanner again.'
+}
 
 const toggleScanner = async () => {
   if (scannerOpen.value) { stopScanner(); return }
@@ -141,24 +255,67 @@ const toggleScanner = async () => {
 
 const startScanner = async () => {
   try {
+    message.value = ''
+    
+    // Check permission first if we haven't already
+    if (cameraPermission.value === 'unknown') {
+      await checkCameraPermission()
+    }
+    
+    // If permission is denied, don't try to access camera
+    if (cameraPermission.value === 'denied') {
+      message.value = 'Camera access is denied. Please enable camera access in your browser settings or use manual QR entry.'
+      showManualInput.value = true
+      return
+    }
+    
     scannerOpen.value = true
+    
     // Prefer native BarcodeDetector if available
     if ('BarcodeDetector' in window) {
       try { barcodeDetector = new window.BarcodeDetector({ formats: ['qr_code'] }) } catch {}
     }
+    
     if (barcodeDetector) {
-      mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false })
-      if (videoEl.value) {
-        videoEl.value.srcObject = mediaStream
-        await videoEl.value.play()
+      try {
+        mediaStream = await navigator.mediaDevices.getUserMedia({ 
+          video: { facingMode: { ideal: 'environment' } }, 
+          audio: false 
+        })
+        
+        // Update permission state on successful access
+        cameraPermission.value = 'granted'
+        localStorage.setItem('cameraPermission', 'granted')
+        
+        if (videoEl.value) {
+          videoEl.value.srcObject = mediaStream
+          await videoEl.value.play()
+        }
+        scanWithDetector()
+      } catch (permissionError) {
+        // Handle permission denied
+        cameraPermission.value = 'denied'
+        localStorage.setItem('cameraPermission', 'denied')
+        throw permissionError
       }
-      scanWithDetector()
     } else {
       await startZxing()
     }
   } catch (e) {
-    message.value = 'Camera access denied. Please allow camera or use the QR link.'
     scannerOpen.value = false
+    
+    if (e.name === 'NotAllowedError') {
+      cameraPermission.value = 'denied'
+      localStorage.setItem('cameraPermission', 'denied')
+      message.value = 'Camera access denied. Please enable camera access in your browser settings to scan QR codes.'
+      showManualInput.value = true
+    } else if (e.name === 'NotFoundError') {
+      message.value = 'No camera found on this device.'
+      showManualInput.value = true
+    } else {
+      message.value = 'Unable to access camera. Please try again or use manual QR entry.'
+      showManualInput.value = true
+    }
   }
 }
 
