@@ -7,7 +7,7 @@ ALTER TABLE time_entries
     CASE 
       WHEN shift_start IS NULL THEN NULL
       WHEN shift_start::TEXT ~ '^\d{2}:\d{2}:\d{2}$' THEN shift_start::TEXT::TIME
-      ELSE EXTRACT(TIME FROM shift_start)::TIME
+      ELSE shift_start::TIME
     END;
 
 -- Convert shift_end column from TIMESTAMPTZ to TIME  
@@ -16,7 +16,7 @@ ALTER TABLE time_entries
     CASE 
       WHEN shift_end IS NULL THEN NULL
       WHEN shift_end::TEXT ~ '^\d{2}:\d{2}:\d{2}$' THEN shift_end::TEXT::TIME
-      ELSE EXTRACT(TIME FROM shift_end)::TIME
+      ELSE shift_end::TIME
     END;
 
 -- Update column comments to reflect the new TIME type
