@@ -47,7 +47,7 @@
               { key: 'count', label: 'Entries', skeletonWidth: 'w-10' },
               { key: 'shift', label: 'Shift Time', skeletonWidth: 'w-20' },
               { key: 'clocked', label: 'Clock In Time', skeletonWidth: 'w-20' },
-              { key: 'variation', label: 'Variation', skeletonWidth: 'w-24' },
+              { key: 'lateCount', label: 'Late Count', skeletonWidth: 'w-24' },
               ...(isSuperAdmin ? [] : [{ key: 'late', label: 'Accumulated Delay', skeletonWidth: 'w-16' }]),
               { key: 'amount', label: 'Amount', cellClass: 'text-right', skeletonWidth: 'w-16' },
               { key: 'actions', label: 'Actions', skeletonWidth: 'w-16' }
@@ -66,7 +66,11 @@
             <template #cell-count="{ item }">{{ item.count }}</template>
             <template #cell-shift="{ item }">{{ formatDuration(item.shiftSeconds || 0) }}</template>
             <template #cell-clocked="{ item }">{{ item.mostRecentClockIn ? formatTime(item.mostRecentClockIn) : '—' }}</template>
-            <template #cell-variation="{ item }"><span :class="variationClass(item)">{{ variationLabel(item) }}</span></template>
+            <template #cell-lateCount="{ item }">
+              <span :class="item.lateCount > 0 ? 'text-red-600 font-bold' : 'text-gray-600'">
+                {{ item.lateCount }}
+              </span>
+            </template>
             <template v-if="!isSuperAdmin" #cell-late="{ item }">{{ formatDuration(item.lateSeconds || 0) }}</template>
             <template #cell-amount="{ item }">{{ formatCurrency(item.amount) }}</template>
             <template #cell-actions="{ item }"><button class="btn-secondary btn-xs" @click="openEdit(item)">Edit</button></template>
@@ -76,7 +80,7 @@
               <div class="text-xs text-gray-600 dark:text-gray-400">Entries: {{ item.count }}</div>
               <div class="text-xs text-gray-600 dark:text-gray-400">Shift: {{ formatDuration(item.shiftSeconds || 0) }}</div>
               <div class="text-xs text-gray-600 dark:text-gray-400">Clock In: {{ item.mostRecentClockIn ? formatTime(item.mostRecentClockIn) : '—' }}</div>
-              <div class="text-xs" :class="variationClass(item)">Variation: {{ variationLabel(item) }}</div>
+              <div class="text-xs" :class="item.lateCount > 0 ? 'text-red-600 font-bold' : 'text-gray-600'">Late Count: {{ item.lateCount }}</div>
               <div v-if="!isSuperAdmin" class="text-xs text-gray-600 dark:text-gray-400">Delay: {{ formatDuration(item.lateSeconds || 0) }}</div>
               <div class="text-xs text-gray-900 dark:text-gray-100 flex justify-between mt-1"><span>Amount</span><span>{{ formatCurrency(item.amount) }}</span></div>
               <div class="mt-2 text-right"><button class="btn-secondary btn-xs" @click="openEdit(item)">Edit</button></div>
@@ -265,7 +269,8 @@ const groupByUser = computed(() => {
       employeeName: userName(key), 
       totalAmount: 0,
       clockInTimes: [],
-      entries: []
+      entries: [],
+      lateEntries: 0
     }
     
     // Calculate duration properly - times are already in UTC, just calculate difference
@@ -288,6 +293,22 @@ const groupByUser = computed(() => {
       curr.clockInTimes.push(e.clock_in_at)
       curr.entries.push(e)
       
+      // Check if this entry is late (more than 5 minutes after shift start)
+      if (e.shift_start) {
+        const shiftStart = new Date(e.shift_start)
+        const lateDurationMs = clockIn.getTime() - shiftStart.getTime()
+        const lateMinutes = lateDurationMs / (1000 * 60)
+        
+        if (lateMinutes > 5) {
+          curr.lateEntries += 1
+          console.log(`⏰ Late entry for ${userName(key)}:`, {
+            clockIn: clockIn.toISOString(),
+            shiftStart: shiftStart.toISOString(),
+            lateMinutes: Math.round(lateMinutes)
+          })
+        }
+      }
+      
       // Log for debugging
       if (!e.clock_out_at) {
         console.log(`⏰ Open entry for ${userName(key)}:`, {
@@ -308,7 +329,9 @@ const groupByUser = computed(() => {
     shiftSeconds: Number(shiftSecondsByUser.value[u.user_id] || 0),
     lateSeconds: Number(lateSecondsByUser.value[u.user_id] || 0),
     // Show the most recent clock-in time for this user
-    mostRecentClockIn: u.clockInTimes.length > 0 ? u.clockInTimes.sort().reverse()[0] : null
+    mostRecentClockIn: u.clockInTimes.length > 0 ? u.clockInTimes.sort().reverse()[0] : null,
+    // Late count: number of entries where clock_in_at > shift_start + 5 minutes
+    lateCount: u.lateEntries
   })).sort((a,b)=> (a.employeeName||'').localeCompare(b.employeeName||''))
 })
 
@@ -538,22 +561,7 @@ const formatCurrency = (n) => {
   return `${symbol} ${(Number(n)||0).toFixed(2)}`
 }
 
-const variationLabel = (row) => {
-  const s = row.shiftSeconds || 0
-  const c = row.totalSeconds || 0
-  if (s === 0 && c === 0) return '—'
-  const diff = c - s
-  const pct = s > 0 ? (diff / s) * 100 : 0
-  const sign = diff >= 0 ? '+' : ''
-  return `${sign}${formatDuration(Math.abs(diff))} (${sign}${pct.toFixed(0)}%)`
-}
-const variationClass = (row) => {
-  const s = row.shiftSeconds || 0
-  const c = row.totalSeconds || 0
-  if (s === 0 && c === 0) return 'text-gray-600'
-  if (c >= s) return 'text-green-600'
-  return 'text-red-600'
-}
+// Removed variationLabel and variationClass functions - replaced with late count logic
 
 const prevPeriod = () => loadEntries()
 const nextPeriod = () => loadEntries()
