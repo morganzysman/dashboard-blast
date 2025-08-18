@@ -58,10 +58,7 @@
             mobileTitleField="employee"
           >
             <template #cell-employee="{ item }">
-              <span class="inline-flex items-center gap-2">
-                <span class="w-3 h-3 rounded-full" :style="{ backgroundColor: colorForUser(item.user_id) }"></span>
-                {{ item.employeeName || item.user_id }}
-              </span>
+              {{ item.employeeName || item.user_id }}
             </template>
             <template #cell-count="{ item }">{{ item.count }}</template>
 
@@ -348,13 +345,7 @@ const groupByUser = computed(() => {
 
 const rows = computed(() => groupByUser.value.map(u => ({ ...u, amount: u.totalAmount })))
 
-// Deterministic color per user (kept for any other usage)
-const colorForUser = (userId) => {
-  const palette = ['#ef4444','#f59e0b','#10b981','#3b82f6','#8b5cf6','#ec4899','#14b8a6','#22c55e']
-  let hash = 0
-  for (let i=0;i<userId.length;i++) hash = (hash*31 + userId.charCodeAt(i)) >>> 0
-  return palette[hash % palette.length]
-}
+
 
 // Color coding for calendar entries based on punctuality
 const getEntryColor = (entry) => {
