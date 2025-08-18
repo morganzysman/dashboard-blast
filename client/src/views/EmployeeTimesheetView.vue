@@ -128,13 +128,31 @@ const formatDuration = (secs) => {
 
 const formatDateTime = (iso) => new Date(iso).toLocaleString('en-CL', { timeZone: 'America/Santiago' })
   const formatTimeShort = (t) => {
+    if (!t) return ''
     try {
-      const [h, m] = t.toString().split(':')
-      const hNum = Number(h)
-      const ampm = hNum >= 12 ? 'PM' : 'AM'
-      const h12 = ((hNum + 11) % 12) + 1
-      return `${h12}:${m} ${ampm}`
-    } catch { return t }
+      // Check if t is a TIMESTAMPTZ (contains 'T' or 'Z') or a simple time string
+      if (t.includes('T') || t.includes('Z')) {
+        // t is a TIMESTAMPTZ, so create a Date object and format in company timezone
+        const date = new Date(t)
+        const timezone = auth.user?.timezone || 'America/Lima'
+        return date.toLocaleTimeString('en-US', {
+          timeZone: timezone,
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true
+        })
+      } else {
+        // t is a simple time string like "16:00:00", parse it manually
+        const [h, m] = t.toString().split(':')
+        const hNum = Number(h)
+        const ampm = hNum >= 12 ? 'PM' : 'AM'
+        const h12 = ((hNum + 11) % 12) + 1
+        return `${h12}:${m} ${ampm}`
+      }
+    } catch (error) {
+      console.error('Error formatting time:', error, 'Input:', t)
+      return t
+    }
   }
 const formatCurrency = (n) => {
   const symbol = auth.user?.currencySymbol || 'S/'
