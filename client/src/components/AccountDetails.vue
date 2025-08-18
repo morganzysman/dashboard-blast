@@ -428,8 +428,10 @@ const accountGainBreakdowns = computed(() => {
       console.log(`💰 Using server profitability data for ${account.accountKey}:`, {
         operatingProfit: serverAcc.operatingProfit,
         grossSales: serverAcc.grossSales,
+        paymentFees: serverAcc.paymentFees,
         payrollCosts: serverAcc.payrollCosts,
-        payrollEntries: serverAcc.payrollEntries
+        payrollEntries: serverAcc.payrollEntries,
+        paymentMethodBreakdown: serverAcc.paymentMethodBreakdown
       })
       
       map.set(account.accountKey, {
@@ -457,9 +459,11 @@ const accountGainBreakdowns = computed(() => {
       
       console.log(`🔄 Using hybrid data for ${account.accountKey}:`, {
         clientSideRevenue,
+        paymentFees,
         serverPayrollCosts: serverAcc.payrollCosts,
         serverUtilityCosts: serverAcc.utilityCosts,
-        calculatedFoodCosts: foodCosts
+        calculatedFoodCosts: foodCosts,
+        clientSidePaymentMethods
       })
       
       map.set(account.accountKey, {
@@ -503,8 +507,10 @@ const accountGainBreakdowns = computed(() => {
     
     console.log(`🎯 Using pure client-side data for ${account.accountKey}:`, {
       totalRevenue,
+      paymentFees,
       foodCosts,
-      finalGain
+      finalGain,
+      clientSidePaymentMethods
     })
     
     map.set(account.accountKey, {
@@ -546,6 +552,8 @@ const getAccountGainBreakdown = (account) => {
     finalGain: result.finalGain,
     totalRevenue: result.totalRevenue,
     totalCosts: result.totalCosts,
+    paymentFees: result.paymentFees,
+    paymentMethodBreakdown: result.paymentMethodBreakdown,
     forceRecomputeTrigger: trigger
   })
   
