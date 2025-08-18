@@ -430,6 +430,42 @@ export async function getUserPasswordHash(userId) {
   return result.rows[0].hashed_password;
 }
 
+// Update user email (admin only)
+export async function updateUserEmail(userId, newEmail, adminCompanyId) {
+  const query = `
+    UPDATE users 
+    SET email = $2, updated_at = NOW()
+    WHERE id = $1 AND is_active = TRUE AND company_id = $3
+    RETURNING id, email, name, role, company_id
+  `;
+  
+  const result = await pool.query(query, [userId, newEmail, adminCompanyId]);
+  
+  if (result.rows.length === 0) {
+    return null;
+  }
+  
+  return result.rows[0];
+}
+
+// Check if email exists for a different user in the same company
+export async function checkEmailExists(email, companyId, excludeUserId = null) {
+  let query = `
+    SELECT id, email 
+    FROM users 
+    WHERE email = $1 AND company_id = $2 AND is_active = TRUE
+  `;
+  const params = [email, companyId];
+  
+  if (excludeUserId) {
+    query += ' AND id != $3';
+    params.push(excludeUserId);
+  }
+  
+  const result = await pool.query(query, params);
+  return result.rows.length > 0 ? result.rows[0] : null;
+}
+
 // Update user last login
 export async function updateUserLastLogin(userId) {
   const query = `

@@ -438,6 +438,16 @@ const updateUser = async (userId, userData) => {
     }
   }
 
+  // Update user email if provided and different from current email
+  if (userData.email && userData.email !== selectedUser.value?.email) {
+    try {
+      await api.updateUserEmail(userId, userData.email)
+    } catch (error) {
+      console.error('Failed to update user email:', error)
+      throw new Error(error.data?.error || error.message || 'Failed to update user email')
+    }
+  }
+
   // Update hourly rate if provided and role is employee
   if (userData.hourly_rate != null && (userData.role === 'employee' || selectedUser.value?.role === 'employee')) {
     const response = await fetch(`/api/admin/users/${userId}/hourly-rate`, {

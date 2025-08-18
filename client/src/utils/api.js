@@ -221,6 +221,10 @@ export const api = {
     method: 'PUT',
     body: JSON.stringify({ password: newPassword })
   }),
+  updateUserEmail: (userId, email) => apiRequest(`/api/admin/users/${userId}/email`, {
+    method: 'PUT',
+    body: JSON.stringify({ email })
+  }),
   notifyUserShift: (userId) => apiRequest(`/api/admin/users/${userId}/notify-shift`, { method: 'POST' }),
 
   // Shifts (admin)

@@ -9,6 +9,8 @@ import {
   updateUserRole,
   updateUserStatus,
   updateUserCompany,
+  updateUserEmail,
+  checkEmailExists,
   logNotificationEvent
 } from '../database.js';
 
@@ -451,7 +453,73 @@ router.put('/users/:userId/password', requireAuth, requireRole(['admin', 'super-
   }
 })
 
-export default router; 
+// Update user email (admin/super-admin)
+router.put('/users/:userId/email', requireAuth, requireRole(['admin', 'super-admin']), async (req, res) => {
+  try {
+    const { userId } = req.params
+    const { email } = req.body || {}
+
+    // Validate email format
+    if (!email || typeof email !== 'string') {
+      return res.status(400).json({ success: false, error: 'Email is required' })
+    }
+    
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email.trim())) {
+      return res.status(400).json({ success: false, error: 'Invalid email format' })
+    }
+
+    // Fetch target user to validate scope
+    const q = await pool.query('SELECT id, email, role, company_id FROM users WHERE id = $1', [userId])
+    if (q.rowCount === 0) return res.status(404).json({ success: false, error: 'User not found' })
+    const target = q.rows[0]
+
+    // Admins cannot edit super-admin emails and can only edit within their company
+    if (req.user.role === 'admin') {
+      if (target.role === 'super-admin') {
+        return res.status(403).json({ success: false, error: 'Admins cannot edit super-admin emails' })
+      }
+      const adminCompanyId = req.user.companyId || null
+      if (!adminCompanyId || target.company_id !== adminCompanyId) {
+        return res.status(403).json({ success: false, error: 'Forbidden' })
+      }
+    }
+
+    // Check if email already exists for another user in the same company
+    const existingUser = await checkEmailExists(email.trim(), target.company_id, userId)
+    if (existingUser) {
+      return res.status(409).json({ success: false, error: 'Email already exists for another user' })
+    }
+
+    // Update email
+    const updatedUser = await updateUserEmail(userId, email.trim(), target.company_id)
+    if (!updatedUser) {
+      return res.status(500).json({ success: false, error: 'Failed to update email' })
+    }
+
+    // Log email update action
+    await logNotificationEvent(
+      req.user.userId,
+      'user_email_updated',
+      `Email updated for user from ${target.email} to ${email.trim()}`,
+      { 
+        targetUserId: userId,
+        oldEmail: target.email,
+        newEmail: email.trim()
+      },
+      true,
+      null,
+      req.headers['user-agent']
+    )
+
+    console.log(`✅ Email updated for user ${userId}: ${target.email} → ${email.trim()}`)
+    res.json({ success: true, user: updatedUser, message: 'Email updated successfully' })
+  } catch (error) {
+    console.error('❌ Error updating email:', error)
+    res.status(500).json({ success: false, error: 'Failed to update email' })
+  }
+})
+
 // Shifts management (admin/super-admin)
 router.get('/users/:userId/shifts', requireAuth, requireRole(['admin', 'super-admin']), async (req, res) => {
   try {
@@ -713,3 +781,5 @@ router.get('/shifts', requireAuth, requireRole(['admin', 'super-admin']), async 
     res.status(500).json({ success: false, error: 'Failed to fetch shifts calendar' })
   }
 })
+
+export default router;

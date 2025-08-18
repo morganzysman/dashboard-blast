@@ -37,8 +37,11 @@
             required
             class="form-input"
             placeholder="Enter email address"
-            :disabled="isEdit"
+            :disabled="isEdit && auth.user?.role !== 'admin' && auth.user?.role !== 'super-admin'"
           />
+          <p v-if="isEdit && (auth.user?.role === 'admin' || auth.user?.role === 'super-admin')" class="text-xs text-gray-500 mt-1">
+            As an admin, you can edit this user's email address.
+          </p>
         </div>
 
         <div v-if="!isEdit">
