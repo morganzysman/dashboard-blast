@@ -114,16 +114,28 @@
           <h3 class="text-md font-semibold">Edit Entries - {{ userName(editEntry.user_id) }}</h3>
           <button class="btn-secondary btn-xs" @click="addNewEntry">Add Entry</button>
         </div>
-        <p class="text-xs text-gray-500 mb-3">Period: {{ periodLabel }}</p>
+        <p class="text-xs text-gray-500 mb-3">Period: {{ periodLabel }} • Times shown in {{ auth.user?.timezone || 'America/Lima' }}</p>
         <div class="max-h-[60vh] overflow-auto space-y-3 pr-1">
           <div v-for="(e, idx) in editEntry.list" :key="e.id || `new-${idx}`" class="grid grid-cols-1 sm:grid-cols-3 gap-2 items-end rounded p-2" :class="e.paid ? 'bg-gray-50 opacity-70' : 'bg-white'">
             <div>
               <label class="text-xs text-gray-700">Clock In</label>
-              <input v-model="e.clock_in_at" type="datetime-local" class="form-input w-full" :disabled="e.paid" />
+              <input 
+                :value="toLocalDateTime(e.clock_in_at)" 
+                @input="e.clock_in_at = fromLocalDateTime($event.target.value)" 
+                type="datetime-local" 
+                class="form-input w-full" 
+                :disabled="e.paid" 
+              />
             </div>
             <div>
               <label class="text-xs text-gray-700">Clock Out</label>
-              <input v-model="e.clock_out_at" type="datetime-local" class="form-input w-full" :disabled="e.paid" />
+              <input 
+                :value="toLocalDateTime(e.clock_out_at)" 
+                @input="e.clock_out_at = fromLocalDateTime($event.target.value)" 
+                type="datetime-local" 
+                class="form-input w-full" 
+                :disabled="e.paid" 
+              />
             </div>
             <div>
               <label class="text-xs text-gray-700">Amount</label>
@@ -228,7 +240,15 @@ const groupByUser = computed(() => {
   for (const e of entries.value) {
     const key = e.user_id
     const curr = map.get(key) || { user_id: key, totalSeconds: 0, count: 0, employeeName: userName(key), totalAmount: 0 }
-    const secs = e.clock_out_at ? (new Date(e.clock_out_at).getTime() - new Date(e.clock_in_at).getTime())/1000 : 0
+    
+    // Calculate duration properly - times are already in UTC, just calculate difference
+    let secs = 0
+    if (e.clock_out_at && e.clock_in_at) {
+      const clockIn = new Date(e.clock_in_at)
+      const clockOut = new Date(e.clock_out_at)
+      secs = (clockOut.getTime() - clockIn.getTime()) / 1000
+    }
+    
     curr.totalSeconds += Math.max(0, secs)
     curr.count += 1
     curr.totalAmount += Number(e.amount || 0)
@@ -278,7 +298,78 @@ const userName = (id) => userIdToName.value.get(id) || id
   } catch {}
 })()
 
-const formatTime = (iso) => new Date(iso).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+// Convert UTC time to company timezone and format
+const formatTime = (iso) => {
+  const timezone = auth.user?.timezone || 'America/Lima'
+  return new Date(iso).toLocaleTimeString('en-US', { 
+    timeZone: timezone,
+    hour: '2-digit', 
+    minute: '2-digit',
+    hour12: false
+  })
+}
+
+// Convert UTC datetime to local datetime-local format for editing
+const toLocalDateTime = (utcIso) => {
+  if (!utcIso) return ''
+  const timezone = auth.user?.timezone || 'America/Lima'
+  
+  try {
+    const utcDate = new Date(utcIso)
+    
+    // Get the date/time components in the target timezone
+    const year = utcDate.toLocaleString('en-CA', { timeZone: timezone, year: 'numeric' })
+    const month = utcDate.toLocaleString('en-CA', { timeZone: timezone, month: '2-digit' })
+    const day = utcDate.toLocaleString('en-CA', { timeZone: timezone, day: '2-digit' })
+    const hour = utcDate.toLocaleString('en-CA', { timeZone: timezone, hour: '2-digit', hour12: false })
+    const minute = utcDate.toLocaleString('en-CA', { timeZone: timezone, minute: '2-digit' })
+    
+    return `${year}-${month}-${day}T${hour}:${minute}`
+  } catch (error) {
+    console.error('Error converting to local datetime:', error)
+    return ''
+  }
+}
+
+// Convert local datetime-local format back to UTC for saving
+const fromLocalDateTime = (localDateTime) => {
+  if (!localDateTime) return null
+  const timezone = auth.user?.timezone || 'America/Lima'
+  
+  try {
+    // Parse the local datetime
+    const [datePart, timePart] = localDateTime.split('T')
+    const [year, month, day] = datePart.split('-')
+    const [hour, minute] = timePart.split(':')
+    
+    // Create a date string that represents the time in the company timezone
+    // We'll construct an ISO string and then adjust for timezone
+    const localIsoString = `${year}-${month}-${day}T${hour}:${minute}:00.000`
+    
+    // Get the timezone offset for this specific date/time
+    const testDate = new Date()
+    testDate.setFullYear(parseInt(year), parseInt(month) - 1, parseInt(day))
+    testDate.setHours(parseInt(hour), parseInt(minute), 0, 0)
+    
+    // Get what this time would be in UTC if we interpret it as being in the local timezone
+    const offsetMs = testDate.getTimezoneOffset() * 60000
+    const utcEquivalent = new Date(testDate.getTime() + offsetMs)
+    
+    // Now get the timezone offset for the company timezone
+    const companyTimeStr = utcEquivalent.toLocaleString('en-CA', { timeZone: timezone })
+    const companyTime = new Date(companyTimeStr)
+    const companyOffsetMs = utcEquivalent.getTime() - companyTime.getTime()
+    
+    // Calculate the final UTC time
+    const finalUtc = new Date(testDate.getTime() - companyOffsetMs)
+    
+    return finalUtc.toISOString()
+  } catch (error) {
+    console.error('Error converting from local datetime:', error)
+    // Fallback: treat as if it's already UTC
+    return new Date(localDateTime).toISOString()
+  }
+}
 
 const formatDuration = (secs) => {
   const h = Math.floor(secs / 3600)
