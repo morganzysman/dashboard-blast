@@ -262,10 +262,28 @@ const groupByUser = computed(() => {
     
     // Calculate duration properly - times are already in UTC, just calculate difference
     let secs = 0
-    if (e.clock_out_at && e.clock_in_at) {
+    if (e.clock_in_at) {
       const clockIn = new Date(e.clock_in_at)
-      const clockOut = new Date(e.clock_out_at)
-      secs = (clockOut.getTime() - clockIn.getTime()) / 1000
+      let clockOut
+      
+      if (e.clock_out_at) {
+        // Entry is complete - use actual clock out time
+        clockOut = new Date(e.clock_out_at)
+      } else {
+        // Entry is still open - use current time for calculation
+        clockOut = new Date()
+      }
+      
+      secs = Math.max(0, (clockOut.getTime() - clockIn.getTime()) / 1000)
+      
+      // Log for debugging
+      if (!e.clock_out_at) {
+        console.log(`⏰ Open entry for ${userName(key)}:`, {
+          clockIn: clockIn.toISOString(),
+          currentTime: clockOut.toISOString(),
+          duration: formatDuration(secs)
+        })
+      }
     }
     
     curr.totalSeconds += Math.max(0, secs)
