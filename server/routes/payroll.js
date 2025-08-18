@@ -302,18 +302,11 @@ router.post('/clock', requireAuth, async (req, res) => {
         const dd = String(nowTz.getDate()).padStart(2, '0')
         const todayDate = `${yyyy}-${mm}-${dd}`
         
-        // Parse shift times
-        const startTime = qShift.rows[0].start_time.toString()
-        const endTime = qShift.rows[0].end_time.toString()
+        // Get shift times - they are already in TIMESTAMPTZ format
+        shiftStart = qShift.rows[0].start_time
+        shiftEnd = qShift.rows[0].end_time
         
-        // Convert company local times to UTC
-        shiftStart = convertLocalTimeToUTC(todayDate, startTime, companyTimezone)
-        shiftEnd = convertLocalTimeToUTC(todayDate, endTime, companyTimezone)
-        
-        console.log(`🕐 Shift conversion for ${companyTimezone}:`, {
-          todayDate,
-          startTime,
-          endTime,
+        console.log(`🕐 Using shift times for ${companyTimezone}:`, {
           shiftStart,
           shiftEnd
         })
