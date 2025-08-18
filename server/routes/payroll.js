@@ -296,17 +296,30 @@ router.post('/clock', requireAuth, async (req, res) => {
       let shiftStart = null
       let shiftEnd = null
       if (qShift.rowCount > 0) {
-        // Get today's date in company timezone
-        const yyyy = nowTz.getFullYear()
-        const mm = String(nowTz.getMonth() + 1).padStart(2, '0')
-        const dd = String(nowTz.getDate()).padStart(2, '0')
-        const todayDate = `${yyyy}-${mm}-${dd}`
+        // Extract TIME portion from TIMESTAMPTZ shift times and store as local time
+        const startTimestamp = new Date(qShift.rows[0].start_time)
+        const endTimestamp = new Date(qShift.rows[0].end_time)
         
-        // Get shift times - they are already in TIMESTAMPTZ format
-        shiftStart = qShift.rows[0].start_time
-        shiftEnd = qShift.rows[0].end_time
+        // Format as TIME in company timezone (HH:MM:SS format)
+        shiftStart = startTimestamp.toLocaleTimeString('en-GB', {
+          timeZone: companyTimezone,
+          hour12: false,
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit'
+        })
+        
+        shiftEnd = endTimestamp.toLocaleTimeString('en-GB', {
+          timeZone: companyTimezone,
+          hour12: false,
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit'
+        })
         
         console.log(`🕐 Using shift times for ${companyTimezone}:`, {
+          originalStart: qShift.rows[0].start_time,
+          originalEnd: qShift.rows[0].end_time,
           shiftStart,
           shiftEnd
         })
@@ -319,11 +332,32 @@ router.post('/clock', requireAuth, async (req, res) => {
       let lateNotice = null
       if (shiftStart) {
         const clockInAt = new Date(ins.rows[0].clock_in_at)
-        const scheduled = new Date(ins.rows[0].shift_start)
-        const diffMinutes = Math.abs(clockInAt.getTime() - scheduled.getTime()) / 60000
-        if (clockInAt > scheduled && diffMinutes > 10) {
+        
+        // Convert clock-in time to local time string for comparison
+        const clockInTimeLocal = clockInAt.toLocaleTimeString('en-GB', {
+          timeZone: companyTimezone,
+          hour12: false,
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit'
+        })
+        
+        // Parse both times for comparison (same date, different times)
+        const todayDate = clockInAt.toLocaleDateString('sv-SE', { timeZone: companyTimezone })
+        const scheduledDateTime = new Date(`${todayDate}T${shiftStart}`)
+        const actualDateTime = new Date(`${todayDate}T${clockInTimeLocal}`)
+        
+        const diffMinutes = (actualDateTime.getTime() - scheduledDateTime.getTime()) / 60000
+        if (diffMinutes > 10) {
           lateNotice = 'You are late'
         }
+        
+        console.log(`⏰ Late check for ${companyTimezone}:`, {
+          clockInAt: clockInAt.toISOString(),
+          clockInTimeLocal,
+          shiftStart,
+          diffMinutes: Math.round(diffMinutes)
+        })
       }
       // Notify admins
       try {
@@ -489,37 +523,7 @@ router.get('/admin/:companyToken/entries', requireAuth, async (req, res) => {
          AND te.clock_in_at >= $2::date AND te.clock_in_at < ($3::date + INTERVAL '1 day')
          ${whereUser}
        ORDER BY te.user_id, te.clock_in_at`, params)
-    // Compute shift seconds per user based on entries' shift_start/shift_end within the period
-    const shiftQ = await pool.query(
-      `SELECT user_id,
-              COALESCE(SUM(GREATEST(0, EXTRACT(EPOCH FROM (shift_end - shift_start)))), 0) AS seconds
-         FROM time_entries
-        WHERE company_token = $1
-          AND clock_in_at >= $2::date AND clock_in_at < ($3::date + INTERVAL '1 day')
-          AND shift_start IS NOT NULL AND shift_end IS NOT NULL
-        GROUP BY user_id`,
-      [tokenForQuery, start, end]
-    )
-    // Compute accumulated delay (late seconds) per user: sum of (clock_in - shift_start) if positive
-    const lateQ = await pool.query(
-      `SELECT user_id,
-              COALESCE(SUM(GREATEST(0, EXTRACT(EPOCH FROM (clock_in_at - shift_start)))), 0) AS seconds
-         FROM time_entries
-        WHERE company_token = $1
-          AND clock_in_at >= $2::date AND clock_in_at < ($3::date + INTERVAL '1 day')
-          AND shift_start IS NOT NULL
-        GROUP BY user_id`,
-      [tokenForQuery, start, end]
-    )
-    const shiftSeconds = {}
-    for (const r of shiftQ.rows) {
-      shiftSeconds[r.user_id] = Number(r.seconds) || 0
-    }
-    const lateSeconds = {}
-    for (const r of lateQ.rows) {
-      lateSeconds[r.user_id] = Number(r.seconds) || 0
-    }
-    res.json({ success: true, data: q.rows, period: { start, end }, shiftSeconds, lateSeconds })
+    res.json({ success: true, data: q.rows, period: { start, end } })
   } catch (e) {
     res.status(500).json({ success: false, error: e.message })
   }

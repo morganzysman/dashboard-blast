@@ -45,10 +45,10 @@
             :columns="[
               { key: 'employee', label: 'Employee', skeletonWidth: 'w-40' },
               { key: 'count', label: 'Entries', skeletonWidth: 'w-10' },
-              { key: 'shift', label: 'Shift Time', skeletonWidth: 'w-20' },
+
               { key: 'clocked', label: 'Clock In Time', skeletonWidth: 'w-20' },
               { key: 'lateCount', label: 'Late Count', skeletonWidth: 'w-24' },
-              ...(isSuperAdmin ? [] : [{ key: 'late', label: 'Accumulated Delay', skeletonWidth: 'w-16' }]),
+
               { key: 'amount', label: 'Amount', cellClass: 'text-right', skeletonWidth: 'w-16' },
               { key: 'actions', label: 'Actions', skeletonWidth: 'w-16' }
             ]"
@@ -64,24 +64,24 @@
               </span>
             </template>
             <template #cell-count="{ item }">{{ item.count }}</template>
-            <template #cell-shift="{ item }">{{ formatDuration(item.shiftSeconds || 0) }}</template>
+
             <template #cell-clocked="{ item }">{{ item.mostRecentClockIn ? formatTime(item.mostRecentClockIn) : '—' }}</template>
             <template #cell-lateCount="{ item }">
               <span :class="item.lateCount > 0 ? 'text-red-600 font-bold' : 'text-gray-600'">
                 {{ item.lateCount }}
               </span>
             </template>
-            <template v-if="!isSuperAdmin" #cell-late="{ item }">{{ formatDuration(item.lateSeconds || 0) }}</template>
+
             <template #cell-amount="{ item }">{{ formatCurrency(item.amount) }}</template>
             <template #cell-actions="{ item }"><button class="btn-secondary btn-xs" @click="openEdit(item)">Edit</button></template>
 
             <template #mobile-card="{ item }">
               <div class="font-medium text-gray-900 dark:text-gray-100 mb-1">{{ item.employeeName || item.user_id }}</div>
               <div class="text-xs text-gray-600 dark:text-gray-400">Entries: {{ item.count }}</div>
-              <div class="text-xs text-gray-600 dark:text-gray-400">Shift: {{ formatDuration(item.shiftSeconds || 0) }}</div>
+
               <div class="text-xs text-gray-600 dark:text-gray-400">Clock In: {{ item.mostRecentClockIn ? formatTime(item.mostRecentClockIn) : '—' }}</div>
               <div class="text-xs" :class="item.lateCount > 0 ? 'text-red-600 font-bold' : 'text-gray-600'">Late Count: {{ item.lateCount }}</div>
-              <div v-if="!isSuperAdmin" class="text-xs text-gray-600 dark:text-gray-400">Delay: {{ formatDuration(item.lateSeconds || 0) }}</div>
+
               <div class="text-xs text-gray-900 dark:text-gray-100 flex justify-between mt-1"><span>Amount</span><span>{{ formatCurrency(item.amount) }}</span></div>
               <div class="mt-2 text-right"><button class="btn-secondary btn-xs" @click="openEdit(item)">Edit</button></div>
             </template>
@@ -246,9 +246,6 @@ const loadEntries = async () => {
     if (res.success) {
       entries.value = res.data
       period.value = res.period
-      // map shift seconds per user id
-      shiftSecondsByUser.value = res.shiftSeconds || {}
-      lateSecondsByUser.value = res.lateSeconds || {}
     }
   } finally {
     loading.value = false
@@ -256,8 +253,6 @@ const loadEntries = async () => {
 }
 
 // Group entries per user (only users with entries for the period)
-const shiftSecondsByUser = ref({}) // { user_id: seconds }
-const lateSecondsByUser = ref({}) // { user_id: seconds }
 const groupByUser = computed(() => {
   const map = new Map()
   for (const e of entries.value) {
@@ -295,15 +290,33 @@ const groupByUser = computed(() => {
       
       // Check if this entry is late (more than 5 minutes after shift start)
       if (e.shift_start) {
-        const shiftStart = new Date(e.shift_start)
-        const lateDurationMs = clockIn.getTime() - shiftStart.getTime()
+        // e.shift_start is now a TIME string (e.g., "16:00:00")
+        // Compare with clock_in_at time in company timezone
+        const timezone = auth.user?.timezone || 'America/Lima'
+        
+        // Get clock-in time in company timezone
+        const clockInTimeLocal = clockIn.toLocaleTimeString('en-GB', {
+          timeZone: timezone,
+          hour12: false,
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit'
+        })
+        
+        // Parse both times for comparison (same date)
+        const clockInDate = clockIn.toLocaleDateString('sv-SE', { timeZone: timezone })
+        const scheduledDateTime = new Date(`${clockInDate}T${e.shift_start}`)
+        const actualDateTime = new Date(`${clockInDate}T${clockInTimeLocal}`)
+        
+        const lateDurationMs = actualDateTime.getTime() - scheduledDateTime.getTime()
         const lateMinutes = lateDurationMs / (1000 * 60)
         
         if (lateMinutes > 5) {
           curr.lateEntries += 1
           console.log(`⏰ Late entry for ${userName(key)}:`, {
             clockIn: clockIn.toISOString(),
-            shiftStart: shiftStart.toISOString(),
+            clockInTimeLocal,
+            shiftStart: e.shift_start,
             lateMinutes: Math.round(lateMinutes)
           })
         }
@@ -326,8 +339,6 @@ const groupByUser = computed(() => {
   }
   return Array.from(map.values()).map(u => ({
     ...u,
-    shiftSeconds: Number(shiftSecondsByUser.value[u.user_id] || 0),
-    lateSeconds: Number(lateSecondsByUser.value[u.user_id] || 0),
     // Show the most recent clock-in time for this user
     mostRecentClockIn: u.clockInTimes.length > 0 ? u.clockInTimes.sort().reverse()[0] : null,
     // Late count: number of entries where clock_in_at > shift_start + 5 minutes
