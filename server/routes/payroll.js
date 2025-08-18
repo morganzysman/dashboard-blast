@@ -6,11 +6,10 @@ import { config } from '../config/index.js'
 import { notifyUserPaid, notifyAdminsClockEvent } from '../services/notificationService.js'
 
 const router = Router()
-const TIMEZONE = 'America/Santiago'
 
 // Helpers
-function getBiweeklyPeriod(date = new Date()) {
-  const tzDate = new Date(date.toLocaleString('en-US', { timeZone: TIMEZONE }))
+function getBiweeklyPeriod(date = new Date(), timezone = 'America/Lima') {
+  const tzDate = new Date(date.toLocaleString('en-US', { timeZone: timezone }))
   const year = tzDate.getFullYear()
   const month = tzDate.getMonth()
   const day = tzDate.getDate()
@@ -47,6 +46,71 @@ async function resolveAccount(companyToken) {
     [companyToken, companyToken]
   )
   return q.rows[0] || null
+}
+
+// Get company timezone by company_id
+async function getCompanyTimezone(companyId) {
+  const q = await pool.query(
+    `SELECT timezone FROM companies WHERE id = $1`,
+    [companyId]
+  )
+  return q.rows[0]?.timezone || 'America/Lima'
+}
+
+// Convert local time to UTC using company timezone
+function convertLocalTimeToUTC(localDateStr, localTimeStr, timezone) {
+  try {
+    // Create a date string representing the local time in the company's timezone
+    const localDateTime = `${localDateStr}T${localTimeStr}:00`
+    
+    // Parse the components
+    const [year, month, day] = localDateStr.split('-').map(Number)
+    const [hour, minute, second = 0] = localTimeStr.split(':').map(Number)
+    
+    // Create a date representing this time, but we need to find what UTC time
+    // corresponds to this local time in the target timezone
+    
+    // Start with a rough estimate
+    let utcDate = new Date(Date.UTC(year, month - 1, day, hour, minute, second))
+    
+    // Iteratively adjust to find the correct UTC time
+    for (let i = 0; i < 5; i++) {
+      // Format this UTC time in the target timezone
+      const formatter = new Intl.DateTimeFormat('sv-SE', {
+        timeZone: timezone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+      })
+      
+      const formattedInTargetTz = formatter.format(utcDate)
+      const targetDateTime = `${localDateStr}T${localTimeStr}:00`
+      
+      if (formattedInTargetTz.replace(' ', 'T') === targetDateTime) {
+        return utcDate.toISOString()
+      }
+      
+      // Calculate the difference and adjust
+      const targetTime = new Date(targetDateTime)
+      const actualTime = new Date(formattedInTargetTz.replace(' ', 'T'))
+      const diff = targetTime.getTime() - actualTime.getTime()
+      
+      utcDate = new Date(utcDate.getTime() + diff)
+      
+      // If difference is small, we're close enough
+      if (Math.abs(diff) < 60000) break
+    }
+    
+    return utcDate.toISOString()
+  } catch (error) {
+    console.error('Error converting local time to UTC:', error)
+    // Fallback: treat as UTC
+    return new Date(`${localDateStr}T${localTimeStr}:00Z`).toISOString()
+  }
 }
 
 // QR secret for an account
@@ -169,9 +233,12 @@ router.post('/clock', requireAuth, async (req, res) => {
       return res.json({ success: true, data: { action: 'clock_out', entry: upd.rows[0] } })
     } else {
       // clock-in (store timestamptz server time; display handled by client)
+      // Get company timezone for proper shift calculation
+      const companyTimezone = await getCompanyTimezone(companyId2)
+      
       // Resolve scheduled shift for today for this user/account
-      // weekday in app timezone
-      const nowTz = new Date(new Date().toLocaleString('en-US', { timeZone: TIMEZONE }))
+      // weekday in company timezone
+      const nowTz = new Date(new Date().toLocaleString('en-US', { timeZone: companyTimezone }))
       const weekday = nowTz.getDay() // 0..6 (Sun..Sat)
       const qShift = await pool.query(
         `SELECT start_time, end_time FROM employee_shifts
@@ -181,19 +248,27 @@ router.post('/clock', requireAuth, async (req, res) => {
       let shiftStart = null
       let shiftEnd = null
       if (qShift.rowCount > 0) {
-        // Construct shift_start and shift_end as timestamptz on today using TIMEZONE
+        // Get today's date in company timezone
         const yyyy = nowTz.getFullYear()
         const mm = String(nowTz.getMonth() + 1).padStart(2, '0')
         const dd = String(nowTz.getDate()).padStart(2, '0')
-        const [sh, sm, ss] = qShift.rows[0].start_time.split ? qShift.rows[0].start_time.split(':') : qShift.rows[0].start_time.toString().split(':')
-        const [eh, em, es] = qShift.rows[0].end_time.split ? qShift.rows[0].end_time.split(':') : qShift.rows[0].end_time.toString().split(':')
-        const startIsoLocal = `${yyyy}-${mm}-${dd}T${String(sh).padStart(2,'0')}:${String(sm).padStart(2,'0')}:${String((ss||'00')).padStart(2,'0')}`
-        const endIsoLocal = `${yyyy}-${mm}-${dd}T${String(eh).padStart(2,'0')}:${String(em).padStart(2,'0')}:${String((es||'00')).padStart(2,'0')}`
-        // Convert these local times to UTC by constructing Date in TIMEZONE offset context
-        const shiftStartTz = new Date(new Date(startIsoLocal).toLocaleString('en-US', { timeZone: TIMEZONE }))
-        const shiftEndTz = new Date(new Date(endIsoLocal).toLocaleString('en-US', { timeZone: TIMEZONE }))
-        shiftStart = shiftStartTz.toISOString()
-        shiftEnd = shiftEndTz.toISOString()
+        const todayDate = `${yyyy}-${mm}-${dd}`
+        
+        // Parse shift times
+        const startTime = qShift.rows[0].start_time.toString()
+        const endTime = qShift.rows[0].end_time.toString()
+        
+        // Convert company local times to UTC
+        shiftStart = convertLocalTimeToUTC(todayDate, startTime, companyTimezone)
+        shiftEnd = convertLocalTimeToUTC(todayDate, endTime, companyTimezone)
+        
+        console.log(`🕐 Shift conversion for ${companyTimezone}:`, {
+          todayDate,
+          startTime,
+          endTime,
+          shiftStart,
+          shiftEnd
+        })
       }
       const ins = await pool.query(
         'INSERT INTO time_entries(user_id, company_token, clock_in_at, shift_start, shift_end) VALUES ($1, $2, NOW(), $3, $4) RETURNING *',
@@ -230,6 +305,10 @@ router.post('/clock', requireAuth, async (req, res) => {
 // List self time entries for current period (employee self-view)
 router.get('/me/entries', requireAuth, async (req, res) => {
   try {
+    // Get user's company timezone
+    const userCompanyId = req.user.companyId
+    const companyTimezone = userCompanyId ? await getCompanyTimezone(userCompanyId) : 'America/Lima'
+    
     // Optional date range override (?start=YYYY-MM-DD&end=YYYY-MM-DD)
     const qsStart = (req.query.start || '').toString().slice(0, 10)
     const qsEnd = (req.query.end || '').toString().slice(0, 10)
@@ -246,7 +325,7 @@ router.get('/me/entries', requireAuth, async (req, res) => {
       }
     } else {
       // Default to current biweekly period
-      const p = getBiweeklyPeriod()
+      const p = getBiweeklyPeriod(new Date(), companyTimezone)
       start = p.start
       end = p.end
     }
@@ -289,13 +368,18 @@ router.get('/me/open-entry', requireAuth, async (req, res) => {
 router.get('/me/shifts', requireAuth, async (req, res) => {
   try {
     const userId = req.user.userId
-    // Determine start of week (Sunday) in app timezone unless provided
+    
+    // Get user's company timezone
+    const userCompanyId = req.user.companyId
+    const companyTimezone = userCompanyId ? await getCompanyTimezone(userCompanyId) : 'America/Lima'
+    
+    // Determine start of week (Sunday) in company timezone unless provided
     let startParam = (req.query.week_start || '').toString().slice(0, 10)
     let startTz
     if (startParam) {
-      startTz = new Date(new Date(startParam).toLocaleString('en-US', { timeZone: TIMEZONE }))
+      startTz = new Date(new Date(startParam).toLocaleString('en-US', { timeZone: companyTimezone }))
     } else {
-      const nowTz = new Date(new Date().toLocaleString('en-US', { timeZone: TIMEZONE }))
+      const nowTz = new Date(new Date().toLocaleString('en-US', { timeZone: companyTimezone }))
       startTz = new Date(nowTz)
       startTz.setDate(nowTz.getDate() - nowTz.getDay()) // Sunday
     }
@@ -342,10 +426,13 @@ router.get('/admin/:companyToken/entries', requireAuth, async (req, res) => {
   try {
     const { companyToken } = req.params
     const { userId } = req.query
-    const { start, end } = getBiweeklyPeriod()
     const acct = await resolveAccount(companyToken)
     if (!acct) return res.status(404).json({ success: false, error: 'Account not found' })
     const companyId3 = acct.company_id
+    
+    // Get company timezone for proper period calculation
+    const companyTimezone = await getCompanyTimezone(companyId3)
+    const { start, end } = getBiweeklyPeriod(new Date(), companyTimezone)
     const isAdminOrSuper = req.user.role === 'admin' || req.user.role === 'super-admin'
     if (!isAdminOrSuper) return res.status(403).json({ success: false, error: 'Access denied' })
     const belongs = !!(req.user.companyId && companyId3 && req.user.companyId === companyId3)
@@ -539,7 +626,10 @@ router.post('/admin/:companyToken/pay', requireAuth, async (req, res) => {
     const bq = await pool.query('SELECT company_id FROM company_accounts WHERE company_token = $1', [companyToken])
     const companyId4 = bq.rows[0]?.company_id || null
     if (!(req.user.companyId && companyId4 && req.user.companyId === companyId4)) return res.status(403).json({ success: false, error: 'Access denied' })
-    const { start, end } = getBiweeklyPeriod()
+    
+    // Get company timezone for proper period calculation
+    const companyTimezone = await getCompanyTimezone(companyId4)
+    const { start, end, label } = getBiweeklyPeriod(new Date(), companyTimezone)
     // Fetch company currency settings
     const comp = await pool.query(
       `SELECT c.id, c.currency, c.currency_symbol
@@ -585,7 +675,7 @@ router.post('/admin/:companyToken/pay', requireAuth, async (req, res) => {
            paid = TRUE,
            paid_at = NOW(),
            snapshot = EXCLUDED.snapshot`,
-        [companyToken, userId, start, end, getBiweeklyPeriod().label, Math.round(totalSeconds), hourly, amount.toFixed(2), null]
+        [companyToken, userId, start, end, label, Math.round(totalSeconds), hourly, amount.toFixed(2), null]
       )
     }
     // mark all entries in period as paid
@@ -620,7 +710,10 @@ router.post('/admin/:companyToken/notify-paid', requireAuth, async (req, res) =>
     const bq = await pool.query('SELECT company_id FROM company_accounts WHERE company_token = $1', [companyToken])
     const companyId4 = bq.rows[0]?.company_id || null
     if (!(req.user.companyId && companyId4 && req.user.companyId === companyId4)) return res.status(403).json({ success: false, error: 'Access denied' })
-    const { start, end } = getBiweeklyPeriod()
+    
+    // Get company timezone for proper period calculation
+    const companyTimezone = await getCompanyTimezone(companyId4)
+    const { start, end } = getBiweeklyPeriod(new Date(), companyTimezone)
     const comp = await pool.query(
       `SELECT c.id, c.currency, c.currency_symbol
          FROM company_accounts ca

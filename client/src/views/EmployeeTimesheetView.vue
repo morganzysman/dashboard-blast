@@ -89,7 +89,7 @@
           </ResponsiveTable>
           <div class="mt-4 text-right text-gray-800 font-medium space-y-1">
             <div>Total time: {{ formatDuration(totalSeconds) }}</div>
-            <div>Total earned: {{ formatCurrency(totalAmount) }}</div>
+            <!-- <div>Total earned: {{ formatCurrency(totalAmount) }}</div> -->
           </div>
         </div>
       </div>
