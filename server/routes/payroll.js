@@ -325,7 +325,7 @@ router.post('/clock', requireAuth, async (req, res) => {
         })
       }
       const ins = await pool.query(
-        'INSERT INTO time_entries(user_id, company_token, clock_in_at, shift_start, shift_end) VALUES ($1, $2, NOW(), $3, $4) RETURNING *',
+        'INSERT INTO time_entries(user_id, company_token, clock_in_at, shift_start, shift_end) VALUES ($1, $2, NOW(), $3::TIME, $4::TIME) RETURNING *',
         [userId, company_token, shiftStart, shiftEnd]
       )
       // If we have a shiftStart and the difference exceeds 10 minutes, include message
