@@ -632,7 +632,13 @@ const openEdit = (row) => {
   // Even if there are no entries, open the modal so admin can add manual ones
   editEntry.value = {
     user_id: row.user_id,
-    list: list.map(e => ({ id: e.id, clock_in_at: e.clock_in_at?.slice(0,16), clock_out_at: e.clock_out_at?.slice(0,16), amount: e.amount, paid: !!e.paid }))
+    list: list.map(e => ({ 
+      id: e.id, 
+      clock_in_at: e.clock_in_at, // Keep full ISO string for timezone conversion
+      clock_out_at: e.clock_out_at, // Keep full ISO string for timezone conversion  
+      amount: e.amount, 
+      paid: !!e.paid 
+    }))
   }
 }
 
