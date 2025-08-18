@@ -109,13 +109,13 @@
           <div v-if="analyticsData && analyticsData.accounts.length > 1" class="w-full">
             <div class="flex items-center gap-2 sm:gap-3">
               <div class="relative w-12 h-12 sm:w-16 sm:h-16 flex-shrink-0">
-                <div class="w-full h-full rounded-full" :style="{ background: getOrdersPieChart() }"></div>
+                <div class="w-full h-full rounded-full" :style="{ background: getOrdersPieChart }"></div>
                 <div class="absolute inset-2 sm:inset-3 bg-blue-600 rounded-full flex items-center justify-center">
                   <span class="text-white text-xs font-bold">{{ analyticsData.accounts.length }}</span>
                 </div>
               </div>
               <div class="flex-1 space-y-1 text-xs sm:text-sm min-w-0">
-                <div v-for="account in getOrdersDistributionForChart()" :key="account.accountKey" class="min-w-0">
+                <div v-for="account in getOrdersDistributionForChart" :key="account.accountKey" class="min-w-0">
                   <div class="flex items-center justify-between">
                     <div class="flex items-center space-x-1 min-w-0 flex-1">
                       <div class="w-2 h-2 rounded-full flex-shrink-0" :style="{ backgroundColor: getAccountColor(account.accountKey) }"></div>
@@ -160,7 +160,7 @@
                 </div>
               </div>
               <div class="flex-1 space-y-1 text-xs sm:text-sm min-w-0">
-                <div v-for="account in getAccountTotalsForChart()" :key="account.accountKey" class="min-w-0">
+                <div v-for="account in getAccountTotalsForChart" :key="account.accountKey" class="min-w-0">
                   <div class="flex items-center justify-between">
                     <div class="flex items-center space-x-1 min-w-0 flex-1">
                       <div class="w-2 h-2 rounded-full flex-shrink-0" :style="{ backgroundColor: getAccountColor(account.accountKey) }"></div>
@@ -206,7 +206,7 @@
           <div v-if="analyticsData && analyticsData.aggregated.paymentMethods.length > 0" class="mt-2">
             <div class="flex items-center">
               <div class="relative w-12 h-12 sm:w-16 sm:h-16 flex-shrink-0">
-                <div class="w-full h-full rounded-full" :style="{ background: getPaymentMethodsPieChart() }"></div>
+                <div class="w-full h-full rounded-full" :style="{ background: getPaymentMethodsPieChart }"></div>
                 <div class="absolute inset-1.5 sm:inset-2 bg-purple-600 rounded-full flex items-center justify-center">
                   <span class="text-white text-xs font-bold">{{ analyticsData.aggregated.paymentMethods.length }}</span>
                 </div>
@@ -514,7 +514,11 @@ const getAccountColor = (accountKey) => {
   return `hsl(${hue}, ${saturation}%, ${lightness}%)`
 }
 
-const getAccountTotalsForChart = () => {
+// CONVERTED TO COMPUTED PROPERTY for reactivity
+const getAccountTotalsForChart = computed(() => {
+  // Access the force recompute trigger to ensure reactivity
+  const trigger = forceRecompute.value
+  
   if (!props.analyticsData || props.analyticsData.aggregated.accountsCount === 0) {
     return []
   }
@@ -534,11 +538,21 @@ const getAccountTotalsForChart = () => {
   // Calculate total amount across all accounts for the chart
   const totalAmountAcrossAllAccounts = accountTotals.reduce((sum, account) => sum + account.totalAmount, 0)
 
+  console.log('📊 getAccountTotalsForChart computed:', {
+    accountCount: accountTotals.length,
+    totalAmountAcrossAllAccounts,
+    forceRecomputeTrigger: trigger,
+    accountTotals: accountTotals.map(acc => ({
+      accountKey: acc.accountKey,
+      totalAmount: acc.totalAmount
+    }))
+  })
+
   return accountTotals.map(account => ({
     ...account,
     percent: totalAmountAcrossAllAccounts > 0 ? (account.totalAmount / totalAmountAcrossAllAccounts) * 100 : 0
   })).sort((a, b) => b.totalAmount - a.totalAmount) // Sort by total amount descending
-}
+})
 
 const getAccountTotalPayments = (account) => {
   if (!account.success || !account.data?.data) return 0
@@ -788,7 +802,11 @@ const refreshData = () => {
 
 
 // Generate pie chart for payment methods using conic-gradient
-const getPaymentMethodsPieChart = () => {
+// CONVERTED TO COMPUTED PROPERTY for reactivity
+const getPaymentMethodsPieChart = computed(() => {
+  // Access the force recompute trigger to ensure reactivity
+  const trigger = forceRecompute.value
+  
   if (!props.analyticsData || !props.analyticsData.aggregated.paymentMethods.length) {
     return 'conic-gradient(#6B7280 0deg 360deg)'
   }
@@ -796,6 +814,12 @@ const getPaymentMethodsPieChart = () => {
   const methods = props.analyticsData.aggregated.paymentMethods
   let currentAngle = 0
   const gradientStops = []
+
+  console.log('💳 getPaymentMethodsPieChart computed:', {
+    methodsCount: methods.length,
+    forceRecomputeTrigger: trigger,
+    methods: methods.map(m => ({ name: m.name, percent: m.percent, sum: m.sum }))
+  })
 
   methods.forEach((method, index) => {
     const color = getPaymentMethodColor(method.name)
@@ -807,11 +831,11 @@ const getPaymentMethodsPieChart = () => {
   })
 
   return `conic-gradient(${gradientStops.join(', ')})`
-}
+})
 
 // Generate pie chart for accounts using conic-gradient
 const getAccountsPieChart = () => {
-  const accounts = getAccountTotalsForChart()
+  const accounts = getAccountTotalsForChart.value
   if (!accounts || !accounts.length) {
     return 'conic-gradient(#6B7280 0deg 360deg)'
   }
@@ -831,8 +855,11 @@ const getAccountsPieChart = () => {
   return `conic-gradient(${gradientStops.join(', ')})`
 }
 
-// Get orders distribution for chart
-const getOrdersDistributionForChart = () => {
+// CONVERTED TO COMPUTED PROPERTY for reactivity
+const getOrdersDistributionForChart = computed(() => {
+  // Access the force recompute trigger to ensure reactivity
+  const trigger = forceRecompute.value
+  
   if (!props.ordersData || !props.ordersData.accounts || props.ordersData.accounts.length === 0) {
     return []
   }
@@ -849,21 +876,39 @@ const getOrdersDistributionForChart = () => {
   // Calculate total orders across all accounts for the chart
   const totalOrdersAcrossAllAccounts = ordersDistribution.reduce((sum, account) => sum + account.totalOrders, 0)
 
+  console.log('📦 getOrdersDistributionForChart computed:', {
+    accountCount: ordersDistribution.length,
+    totalOrdersAcrossAllAccounts,
+    forceRecomputeTrigger: trigger,
+    ordersDistribution: ordersDistribution.map(acc => ({
+      accountKey: acc.accountKey,
+      totalOrders: acc.totalOrders
+    }))
+  })
+
   return ordersDistribution.map(account => ({
     ...account,
     percent: totalOrdersAcrossAllAccounts > 0 ? (account.totalOrders / totalOrdersAcrossAllAccounts) * 100 : 0
   })).sort((a, b) => b.totalOrders - a.totalOrders) // Sort by total orders descending
-}
+})
 
-// Generate pie chart for orders distribution using conic-gradient
-const getOrdersPieChart = () => {
-  const ordersDistribution = getOrdersDistributionForChart()
+// CONVERTED TO COMPUTED PROPERTY for reactivity
+const getOrdersPieChart = computed(() => {
+  // Access the force recompute trigger to ensure reactivity
+  const trigger = forceRecompute.value
+  
+  const ordersDistribution = getOrdersDistributionForChart.value
   if (!ordersDistribution || !ordersDistribution.length) {
     return 'conic-gradient(#6B7280 0deg 360deg)'
   }
 
   let currentAngle = 0
   const gradientStops = []
+
+  console.log('📊 getOrdersPieChart computed:', {
+    distributionCount: ordersDistribution.length,
+    forceRecomputeTrigger: trigger
+  })
 
   ordersDistribution.forEach((account, index) => {
     const color = getAccountColor(account.accountKey)
@@ -875,7 +920,7 @@ const getOrdersPieChart = () => {
   })
 
   return `conic-gradient(${gradientStops.join(', ')})`
-}
+})
 
 
 </script> 
