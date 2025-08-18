@@ -60,56 +60,104 @@ async function getCompanyTimezone(companyId) {
 // Convert local time to UTC using company timezone
 function convertLocalTimeToUTC(localDateStr, localTimeStr, timezone) {
   try {
-    // Create a date string representing the local time in the company's timezone
-    const localDateTime = `${localDateStr}T${localTimeStr}:00`
+    console.log(`🔄 Converting: ${localDateStr} ${localTimeStr} in ${timezone}`)
     
-    // Parse the components
-    const [year, month, day] = localDateStr.split('-').map(Number)
-    const [hour, minute, second = 0] = localTimeStr.split(':').map(Number)
-    
-    // Create a date representing this time, but we need to find what UTC time
-    // corresponds to this local time in the target timezone
-    
-    // Start with a rough estimate
-    let utcDate = new Date(Date.UTC(year, month - 1, day, hour, minute, second))
-    
-    // Iteratively adjust to find the correct UTC time
-    for (let i = 0; i < 5; i++) {
-      // Format this UTC time in the target timezone
-      const formatter = new Intl.DateTimeFormat('sv-SE', {
-        timeZone: timezone,
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false
-      })
-      
-      const formattedInTargetTz = formatter.format(utcDate)
-      const targetDateTime = `${localDateStr}T${localTimeStr}:00`
-      
-      if (formattedInTargetTz.replace(' ', 'T') === targetDateTime) {
-        return utcDate.toISOString()
-      }
-      
-      // Calculate the difference and adjust
-      const targetTime = new Date(targetDateTime)
-      const actualTime = new Date(formattedInTargetTz.replace(' ', 'T'))
-      const diff = targetTime.getTime() - actualTime.getTime()
-      
-      utcDate = new Date(utcDate.getTime() + diff)
-      
-      // If difference is small, we're close enough
-      if (Math.abs(diff) < 60000) break
+    // Validate inputs
+    if (!localDateStr || !localTimeStr || !timezone) {
+      throw new Error(`Missing required parameters: date=${localDateStr}, time=${localTimeStr}, timezone=${timezone}`)
     }
     
-    return utcDate.toISOString()
+    // Parse and validate date components
+    const [year, month, day] = localDateStr.split('-').map(Number)
+    if (!year || !month || !day || month < 1 || month > 12 || day < 1 || day > 31) {
+      throw new Error(`Invalid date: ${localDateStr}`)
+    }
+    
+    // Parse and validate time components - handle HH:MM or HH:MM:SS format
+    const timeParts = localTimeStr.split(':')
+    if (timeParts.length < 2 || timeParts.length > 3) {
+      throw new Error(`Invalid time format: ${localTimeStr}`)
+    }
+    
+    const hour = parseInt(timeParts[0], 10)
+    const minute = parseInt(timeParts[1], 10)
+    const second = timeParts[2] ? parseInt(timeParts[2], 10) : 0
+    
+    if (hour < 0 || hour > 23 || minute < 0 || minute > 59 || second < 0 || second > 59) {
+      throw new Error(`Invalid time values: ${hour}:${minute}:${second}`)
+    }
+    
+    // Create a proper date-time string
+    const dateTimeString = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}T${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}:${second.toString().padStart(2, '0')}`
+    
+    // Use a simple approach: assume the time is in the target timezone and work backwards
+    // This approach is more reliable than complex timezone calculations
+    
+    // Create a date in local system time with the given components
+    const localSystemDate = new Date(year, month - 1, day, hour, minute, second)
+    
+    // Format this date as if it were in the target timezone to see what time it would be
+    const formatter = new Intl.DateTimeFormat('sv-SE', {
+      timeZone: timezone,
+      year: 'numeric',
+      month: '2-digit', 
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    })
+    
+    // Test different UTC times until we find one that formats to our target local time
+    const targetLocalTime = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')} ${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}:${second.toString().padStart(2, '0')}`
+    
+    // Start with an initial guess (could be off by timezone offset)
+    let testUtc = new Date(Date.UTC(year, month - 1, day, hour, minute, second))
+    
+    // Try to find the correct UTC time by iteration (max 24 attempts for safety)
+    for (let attempt = 0; attempt < 24; attempt++) {
+      const formattedTime = formatter.format(testUtc)
+      
+      if (formattedTime === targetLocalTime) {
+        // Found the right UTC time!
+        return testUtc.toISOString()
+      }
+      
+      // Calculate how far off we are
+      const actualLocalTime = new Date(formattedTime.replace(' ', 'T'))
+      const expectedLocalTime = new Date(targetLocalTime.replace(' ', 'T'))
+      const diffMs = expectedLocalTime.getTime() - actualLocalTime.getTime()
+      
+      // Adjust our UTC guess
+      testUtc = new Date(testUtc.getTime() + diffMs)
+      
+      // If we're very close (within 1 minute), accept it
+      if (Math.abs(diffMs) < 60000) {
+        return testUtc.toISOString()
+      }
+    }
+    
+    // If we couldn't converge, use the last attempt
+    const utcDate = testUtc
+    
+    const result = utcDate.toISOString()
+    console.log(`✅ Converted ${dateTimeString} (${timezone}) → ${result} (UTC)`)
+    
+    return result
   } catch (error) {
-    console.error('Error converting local time to UTC:', error)
-    // Fallback: treat as UTC
-    return new Date(`${localDateStr}T${localTimeStr}:00Z`).toISOString()
+    console.error('❌ Error converting local time to UTC:', error)
+    console.error(`   Input: ${localDateStr} ${localTimeStr} ${timezone}`)
+    
+    // Fallback: create a basic UTC time (assuming the input was already close to UTC)
+    try {
+      const fallback = new Date(`${localDateStr}T${localTimeStr}:00Z`).toISOString()
+      console.log(`🔧 Using fallback UTC time: ${fallback}`)
+      return fallback
+    } catch (fallbackError) {
+      console.error('❌ Fallback also failed:', fallbackError)
+      // Last resort: current time
+      return new Date().toISOString()
+    }
   }
 }
 
