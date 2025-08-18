@@ -472,62 +472,57 @@ const fromLocalDateTime = (localDateTime) => {
   const timezone = auth.user?.timezone || 'America/Lima'
   
   try {
-    // Parse the local datetime string
+    // Parse the input datetime string (YYYY-MM-DDTHH:mm)
     const [datePart, timePart] = localDateTime.split('T')
-    const [year, month, day] = datePart.split('-').map(Number)
-    const [hour, minute] = timePart.split(':').map(Number)
     
-    // Create a date string that represents this time in the company timezone
-    const dateStr = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`
-    const timeStr = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}:00`
+    // Create a proper datetime string for the company timezone
+    const localDateTimeStr = `${datePart}T${timePart}:00`
     
-    // First create a Date object in UTC for the local time
-    const localDateStr = `${dateStr}T${timeStr}`
+    // Create a temporary date object and find the UTC equivalent
+    // We'll use a simple approach: create dates in different timezones and compare
     
-    // Use a formatter to get what time this would be in UTC
-    // when interpreted in the company timezone
-    const formatter = new Intl.DateTimeFormat('sv-SE', {
-      timeZone: 'UTC',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: false,
-      timeZoneName: 'short'
-    })
+    // Method: Try different UTC offsets until we find one that formats 
+    // to our target local time in the company timezone
+    for (let offsetHours = -12; offsetHours <= 14; offsetHours++) {
+      const testUtcTime = new Date(`${datePart}T${timePart}:00.000Z`)
+      testUtcTime.setUTCHours(testUtcTime.getUTCHours() - offsetHours)
+      
+      // Format this UTC time in the company timezone
+      const formattedInCompanyTz = testUtcTime.toLocaleString('sv-SE', {
+        timeZone: timezone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+      })
+      
+      // Check if this matches our target
+      const targetFormat = `${datePart} ${timePart}:00`
+      if (formattedInCompanyTz === targetFormat) {
+        const utcResult = testUtcTime.toISOString()
+        console.log(`🕐 Converting local ${localDateTime} (${timezone}) to UTC ${utcResult}`, {
+          input: localDateTime,
+          timezone,
+          offsetHours,
+          testUtcTime: testUtcTime.toISOString(),
+          formattedInCompanyTz,
+          targetFormat
+        })
+        return utcResult
+      }
+    }
     
-    // Create a temporary date that's offset by the timezone difference
-    const tempDate = new Date(localDateStr)
-    const tzOffset = new Date().getTimezoneOffset() * 60000
-    const adjustedDate = new Date(tempDate.getTime() - tzOffset)
+    // If we couldn't find a match, throw an error
+    throw new Error(`Could not find valid UTC conversion for ${localDateTime} in ${timezone}`)
     
-    // Get the parts in UTC
-    const parts = formatter.formatToParts(adjustedDate)
-    const utcParts = {}
-    parts.forEach(part => {
-      utcParts[part.type] = part.value
-    })
-    
-    // Build the UTC string with the correct offset for the company timezone
-    const utcStr = `${utcParts.year}-${utcParts.month}-${utcParts.day}T${utcParts.hour}:${utcParts.minute}:${utcParts.second}.000Z`
-    
-    console.log(`🕐 Converting local ${localDateTime} (${timezone}) to UTC ${utcStr}`, {
-      input: localDateTime,
-      timezone,
-      localDateStr,
-      utcResult: utcStr,
-      offset: tzOffset / 3600000 // convert to hours
-    })
-    
-    return utcStr
   } catch (error) {
     console.error('❌ Error converting from local datetime:', error, {
       input: localDateTime,
       timezone
     })
-    // Don't use the fallback - it's better to fail explicitly
     throw new Error(`Failed to convert time: ${error.message}`)
   }
 }
