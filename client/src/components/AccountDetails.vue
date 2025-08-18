@@ -113,6 +113,10 @@
                       <h5 class="font-semibold text-red-300 mb-3 text-sm">📉 Costs:</h5>
                       <div class="space-y-2">
                         <div class="flex justify-between items-center">
+                          <span class="text-sm">Payment Fees:</span>
+                          <span class="text-red-300 font-bold">-{{ formatCurrency(getAccountGainBreakdown(account).paymentFees) }}</span>
+                        </div>
+                        <div class="flex justify-between items-center">
                           <span class="text-sm">Food Costs (30%):</span>
                           <span class="text-red-300 font-bold">-{{ formatCurrency(getAccountGainBreakdown(account).foodCosts) }}</span>
                         </div>
@@ -390,14 +394,32 @@ const accountGainBreakdowns = computed(() => {
     let clientSideRevenue = 0
     let clientSidePaymentMethods = []
     if (account.success && account.data?.data) {
-      clientSidePaymentMethods = (account.data.data || []).map(pm => ({
-        method: pm.name?.toLowerCase() || 'other',
-        revenue: pm.sum || 0,
-        fees: 0,
-        netRevenue: pm.sum || 0,
-        transactionCount: pm.count || 0,
-        costConfig: { cost_percentage: 0, fixed_cost: 0 }
-      }))
+      // Get payment method costs from profitability data if available
+      const serverPaymentCosts = new Map()
+      if (serverAcc?.paymentMethodBreakdown) {
+        serverAcc.paymentMethodBreakdown.forEach(pm => {
+          serverPaymentCosts.set(pm.method, pm.costConfig || { cost_percentage: 0, fixed_cost: 0 })
+        })
+      }
+      
+      clientSidePaymentMethods = (account.data.data || []).map(pm => {
+        const methodName = pm.name?.toLowerCase() || 'other'
+        const revenue = pm.sum || 0
+        const transactionCount = pm.count || 0
+        const costConfig = serverPaymentCosts.get(methodName) || { cost_percentage: 0, fixed_cost: 0 }
+        const percentageFee = revenue * (costConfig.cost_percentage / 100)
+        const fixedFee = transactionCount * (costConfig.fixed_cost || 0)
+        const fees = percentageFee + fixedFee
+        
+        return {
+          method: methodName,
+          revenue,
+          fees,
+          netRevenue: revenue - fees,
+          transactionCount,
+          costConfig
+        }
+      })
       clientSideRevenue = clientSidePaymentMethods.reduce((s, m) => s + (m.revenue || 0), 0)
     }
     
@@ -412,13 +434,13 @@ const accountGainBreakdowns = computed(() => {
       
       map.set(account.accountKey, {
         totalRevenue: serverAcc.grossSales || 0,
-        totalCosts: (serverAcc.foodCosts || 0) + (serverAcc.utilityCosts || 0) + (serverAcc.payrollCosts || 0),
-        paymentFees: 0,
+        totalCosts: (serverAcc.paymentFees || 0) + (serverAcc.foodCosts || 0) + (serverAcc.utilityCosts || 0) + (serverAcc.payrollCosts || 0),
+        paymentFees: serverAcc.paymentFees || 0,
         foodCosts: serverAcc.foodCosts || 0,
         utilityCosts: serverAcc.utilityCosts || 0,
         payrollCosts: serverAcc.payrollCosts || 0,
         payrollEntries: serverAcc.payrollEntries || 0,
-        finalGain: (serverAcc.grossSales || 0) - ((serverAcc.foodCosts || 0) + (serverAcc.utilityCosts || 0) + (serverAcc.payrollCosts || 0)),
+        finalGain: (serverAcc.grossSales || 0) - ((serverAcc.paymentFees || 0) + (serverAcc.foodCosts || 0) + (serverAcc.utilityCosts || 0) + (serverAcc.payrollCosts || 0)),
         daysInPeriod: serverAcc.daysInPeriod || calcDays(currentDateRange) || 1,
         paymentMethodBreakdown: serverAcc.paymentMethodBreakdown
       })
@@ -427,8 +449,11 @@ const accountGainBreakdowns = computed(() => {
     
     if (serverAcc && clientSideRevenue > 0) {
       // Use hybrid approach: client-side revenue with server-side costs
-      const foodCosts = clientSideRevenue * 0.3
-      const totalCosts = foodCosts + (serverAcc.utilityCosts || 0) + (serverAcc.payrollCosts || 0)
+      // Calculate payment fees from client-side payment methods
+      const paymentFees = clientSidePaymentMethods.reduce((sum, method) => sum + (method.fees || 0), 0)
+      const netRevenue = clientSideRevenue - paymentFees
+      const foodCosts = netRevenue * 0.3
+      const totalCosts = paymentFees + foodCosts + (serverAcc.utilityCosts || 0) + (serverAcc.payrollCosts || 0)
       
       console.log(`🔄 Using hybrid data for ${account.accountKey}:`, {
         clientSideRevenue,
@@ -440,7 +465,7 @@ const accountGainBreakdowns = computed(() => {
       map.set(account.accountKey, {
         totalRevenue: clientSideRevenue,
         totalCosts,
-        paymentFees: 0,
+        paymentFees,
         foodCosts,
         utilityCosts: serverAcc.utilityCosts || 0,
         payrollCosts: serverAcc.payrollCosts || 0,
@@ -469,8 +494,9 @@ const accountGainBreakdowns = computed(() => {
     // Fallback to pure client-side calculation
     const daysInPeriod = calcDays(currentDateRange)
     const totalRevenue = clientSideRevenue
-    const paymentFees = 0
-    const foodCosts = totalRevenue * 0.3
+    const paymentFees = clientSidePaymentMethods.reduce((sum, method) => sum + (method.fees || 0), 0)
+    const netRevenue = totalRevenue - paymentFees
+    const foodCosts = netRevenue * 0.3
     const utilityCosts = 0
     const totalCosts = paymentFees + foodCosts + utilityCosts
     const finalGain = totalRevenue - totalCosts
