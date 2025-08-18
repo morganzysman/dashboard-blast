@@ -368,8 +368,25 @@ const getEntryColor = (entry) => {
   
   // For past entries, check punctuality if shift_start exists
   if (entry.shift_start) {
-    const shiftStartDate = new Date(entry.shift_start)
-    const lateDurationMs = clockInDate.getTime() - shiftStartDate.getTime()
+    // entry.shift_start is now a TIME string (e.g., "16:00:00")
+    // Compare with clock_in_at time in company timezone
+    const timezone = auth.user?.timezone || 'America/Lima'
+    
+    // Get clock-in time in company timezone
+    const clockInTimeLocal = clockInDate.toLocaleTimeString('en-GB', {
+      timeZone: timezone,
+      hour12: false,
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    })
+    
+    // Parse both times for comparison (same date)
+    const clockInDateLocal = clockInDate.toLocaleDateString('sv-SE', { timeZone: timezone })
+    const scheduledDateTime = new Date(`${clockInDateLocal}T${entry.shift_start}`)
+    const actualDateTime = new Date(`${clockInDateLocal}T${clockInTimeLocal}`)
+    
+    const lateDurationMs = actualDateTime.getTime() - scheduledDateTime.getTime()
     const lateMinutes = lateDurationMs / (1000 * 60)
     
     // Blue if on time or less than 5 minutes late
@@ -396,8 +413,25 @@ const getEntryTooltip = (entry) => {
   
   // For past entries, check punctuality if shift_start exists
   if (entry.shift_start) {
-    const shiftStartDate = new Date(entry.shift_start)
-    const lateDurationMs = clockInDate.getTime() - shiftStartDate.getTime()
+    // entry.shift_start is now a TIME string (e.g., "16:00:00")
+    // Compare with clock_in_at time in company timezone
+    const timezone = auth.user?.timezone || 'America/Lima'
+    
+    // Get clock-in time in company timezone
+    const clockInTimeLocal = clockInDate.toLocaleTimeString('en-GB', {
+      timeZone: timezone,
+      hour12: false,
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    })
+    
+    // Parse both times for comparison (same date)
+    const clockInDateLocal = clockInDate.toLocaleDateString('sv-SE', { timeZone: timezone })
+    const scheduledDateTime = new Date(`${clockInDateLocal}T${entry.shift_start}`)
+    const actualDateTime = new Date(`${clockInDateLocal}T${clockInTimeLocal}`)
+    
+    const lateDurationMs = actualDateTime.getTime() - scheduledDateTime.getTime()
     const lateMinutes = Math.round(lateDurationMs / (1000 * 60))
     
     if (lateMinutes <= 0) {
