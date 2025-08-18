@@ -391,7 +391,10 @@ const toLocalDateTime = (utcIso) => {
   const timezone = auth.user?.timezone || 'America/Lima'
   
   try {
-    // Create a formatter that will give us date/time parts in the company timezone
+    // Parse the UTC ISO string
+    const utcDate = new Date(utcIso)
+    
+    // Format the date in the company timezone
     const formatter = new Intl.DateTimeFormat('sv-SE', {
       timeZone: timezone,
       year: 'numeric',
@@ -399,22 +402,34 @@ const toLocalDateTime = (utcIso) => {
       day: '2-digit',
       hour: '2-digit',
       minute: '2-digit',
-      hour12: false
+      hour12: false,
+      timeZoneName: 'short'
     })
     
-    // Format the UTC date in the company timezone
-    const localParts = formatter.formatToParts(new Date(utcIso))
+    // Get the parts in the company timezone
+    const parts = formatter.formatToParts(utcDate)
     const dateParts = {}
-    localParts.forEach(part => {
+    parts.forEach(part => {
       dateParts[part.type] = part.value
     })
     
     // Build the datetime-local string (YYYY-MM-DDThh:mm)
     const result = `${dateParts.year}-${dateParts.month}-${dateParts.day}T${dateParts.hour}:${dateParts.minute}`
-    console.log(`🕐 Converting UTC ${utcIso} to local ${result} (${timezone})`)
+    
+    console.log(`🕐 Converting UTC ${utcIso} to local ${result}`, {
+      input: utcIso,
+      timezone,
+      utcDate: utcDate.toISOString(),
+      localResult: result,
+      timezoneName: parts.find(p => p.type === 'timeZoneName')?.value || 'unknown'
+    })
+    
     return result
   } catch (error) {
-    console.error('Error converting to local datetime:', error)
+    console.error('❌ Error converting to local datetime:', error, {
+      input: utcIso,
+      timezone
+    })
     return ''
   }
 }
@@ -434,9 +449,12 @@ const fromLocalDateTime = (localDateTime) => {
     const dateStr = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`
     const timeStr = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}:00`
     
-    // Use the date object's timezone handling to convert to UTC
-    const localDate = new Date(`${dateStr}T${timeStr}`)
-    const utcParts = new Intl.DateTimeFormat('sv-SE', {
+    // First create a Date object in UTC for the local time
+    const localDateStr = `${dateStr}T${timeStr}`
+    
+    // Use a formatter to get what time this would be in UTC
+    // when interpreted in the company timezone
+    const formatter = new Intl.DateTimeFormat('sv-SE', {
       timeZone: 'UTC',
       year: 'numeric',
       month: '2-digit',
@@ -444,21 +462,41 @@ const fromLocalDateTime = (localDateTime) => {
       hour: '2-digit',
       minute: '2-digit',
       second: '2-digit',
-      hour12: false
-    }).formatToParts(localDate)
-    
-    const utcDateParts = {}
-    utcParts.forEach(part => {
-      utcDateParts[part.type] = part.value
+      hour12: false,
+      timeZoneName: 'short'
     })
     
-    const utcStr = `${utcDateParts.year}-${utcDateParts.month}-${utcDateParts.day}T${utcDateParts.hour}:${utcDateParts.minute}:${utcDateParts.second}.000Z`
-    console.log(`🕐 Converting local ${localDateTime} (${timezone}) to UTC ${utcStr}`)
+    // Create a temporary date that's offset by the timezone difference
+    const tempDate = new Date(localDateStr)
+    const tzOffset = new Date().getTimezoneOffset() * 60000
+    const adjustedDate = new Date(tempDate.getTime() - tzOffset)
+    
+    // Get the parts in UTC
+    const parts = formatter.formatToParts(adjustedDate)
+    const utcParts = {}
+    parts.forEach(part => {
+      utcParts[part.type] = part.value
+    })
+    
+    // Build the UTC string with the correct offset for the company timezone
+    const utcStr = `${utcParts.year}-${utcParts.month}-${utcParts.day}T${utcParts.hour}:${utcParts.minute}:${utcParts.second}.000Z`
+    
+    console.log(`🕐 Converting local ${localDateTime} (${timezone}) to UTC ${utcStr}`, {
+      input: localDateTime,
+      timezone,
+      localDateStr,
+      utcResult: utcStr,
+      offset: tzOffset / 3600000 // convert to hours
+    })
+    
     return utcStr
   } catch (error) {
-    console.error('Error converting from local datetime:', error)
-    // Fallback: treat as if it's already UTC
-    return new Date(`${localDateTime}:00.000Z`).toISOString()
+    console.error('❌ Error converting from local datetime:', error, {
+      input: localDateTime,
+      timezone
+    })
+    // Don't use the fallback - it's better to fail explicitly
+    throw new Error(`Failed to convert time: ${error.message}`)
   }
 }
 
