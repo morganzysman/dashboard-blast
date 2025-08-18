@@ -102,7 +102,24 @@ const buildWeekDays = (startStr) => {
   weekDays.value = arr
 }
 
-const formatTime = (t) => t?.toString().slice(0,5)
+const formatTime = (t) => {
+  if (!t) return ''
+  try {
+    // t is a TIMESTAMPTZ, so create a Date object
+    const date = new Date(t)
+    // Format in company timezone
+    const timezone = auth.user?.timezone || 'America/Lima'
+    return date.toLocaleTimeString('en-US', {
+      timeZone: timezone,
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    })
+  } catch (error) {
+    console.error('Error formatting time:', error)
+    return ''
+  }
+}
 
 const loadCalendar = async () => {
   if (!companyToken.value) return

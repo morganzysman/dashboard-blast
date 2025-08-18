@@ -148,14 +148,43 @@ const loadShifts = async () => {
     const res = await api.getUserShifts(props.user.id)
     const shifts = res?.data || []
     for (const s of shifts) {
+      // Convert UTC timestamps to local time strings
+      let startTime = ''
+      let endTime = ''
+      
+      if (s.start_time) {
+        const startDate = new Date(s.start_time)
+        startTime = startDate.toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false
+        })
+      }
+      
+      if (s.end_time) {
+        const endDate = new Date(s.end_time)
+        endTime = endDate.toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false
+        })
+      }
+      
+      console.log(`🕐 Converting shift times for weekday ${s.weekday}:`, {
+        start: { utc: s.start_time, local: startTime },
+        end: { utc: s.end_time, local: endTime }
+      })
+      
       form.value[s.weekday] = {
         id: s.id,
         company_token: s.company_token || '',
-        start_time: (s.start_time || '').toString().slice(0,5),
-        end_time: (s.end_time || '').toString().slice(0,5)
+        start_time: startTime,
+        end_time: endTime
       }
     }
-  } catch {}
+  } catch (error) {
+    console.error('❌ Error loading shifts:', error)
+  }
 }
 
 const clearDay = (wd) => {
@@ -170,11 +199,30 @@ const saveAll = async () => {
       const row = form.value[wd]
       const hasValues = !!row.company_token && !!row.start_time && !!row.end_time
       if (hasValues) {
+        // Convert local time strings to UTC timestamps
+        // Use a base date (e.g., 2000-01-01) since we only care about the time
+        const baseDate = '2000-01-01'
+        const startLocal = `${baseDate}T${row.start_time}:00`
+        const endLocal = `${baseDate}T${row.end_time}:00`
+        
+        // Create Date objects in local timezone
+        const startDate = new Date(startLocal)
+        const endDate = new Date(endLocal)
+        
+        // Convert to UTC ISO strings
+        const startUtc = startDate.toISOString()
+        const endUtc = endDate.toISOString()
+        
+        console.log(`🕐 Converting shift times for weekday ${wd}:`, {
+          start: { local: row.start_time, utc: startUtc },
+          end: { local: row.end_time, utc: endUtc }
+        })
+        
         await api.upsertUserShift(props.user.id, {
           company_token: row.company_token,
           weekday: wd,
-          start_time: row.start_time,
-          end_time: row.end_time
+          start_time: startUtc,
+          end_time: endUtc
         })
       } else if (row.id) {
         await api.deleteUserShift(props.user.id, row.id)
@@ -201,5 +249,6 @@ onMounted(async () => {
 
 <style scoped>
 </style>
+
 
 
