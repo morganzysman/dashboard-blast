@@ -128,9 +128,9 @@
         Payroll
       </router-link>
 
-      <!-- Admin & Super Admin: Shifts Calendar -->
+      <!-- Admin only: Shifts Calendar -->
       <router-link
-        v-if="authStore.user?.role === 'admin' || authStore.isSuperAdmin"
+        v-if="authStore.user?.role === 'admin'"
         to="/admin/shifts"
         class="sidebar-nav-item"
         :class="{ active: $route.name === 'AdminShiftsCalendar' }"
