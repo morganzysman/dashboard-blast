@@ -84,7 +84,26 @@
           </ResponsiveTable>
           <!-- Simple calendar-like visualization -->
           <div class="mt-6">
-            <h3 class="text-md font-semibold mb-2">Entries Calendar</h3>
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="text-md font-semibold">Entries Calendar</h3>
+              <div class="flex items-center gap-2 sm:gap-4 text-xs">
+                <div class="flex items-center gap-1">
+                  <div class="w-3 h-3 rounded bg-blue-500"></div>
+                  <span class="hidden sm:inline">On time (≤5 min late)</span>
+                  <span class="sm:hidden">On time</span>
+                </div>
+                <div class="flex items-center gap-1">
+                  <div class="w-3 h-3 rounded bg-red-500"></div>
+                  <span class="hidden sm:inline">Late (>5 min)</span>
+                  <span class="sm:hidden">Late</span>
+                </div>
+                <div class="flex items-center gap-1">
+                  <div class="w-3 h-3 rounded bg-gray-500"></div>
+                  <span class="hidden sm:inline">Future/No shift data</span>
+                  <span class="sm:hidden">Future</span>
+                </div>
+              </div>
+            </div>
             <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 lg:gap-3 text-xs">
               <div class="text-gray-500 hidden lg:block" v-for="d in ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']" :key="d">{{ d }}</div>
               <template v-for="day in daysInPeriod" :key="day.date">
@@ -92,7 +111,7 @@
                   <div class="text-[10px] text-gray-400 text-center lg:hidden">{{ new Date(day.date).toLocaleDateString(undefined, { weekday: 'short' }) }}</div>
                   <div class="text-[10px] text-gray-500 text-center">{{ new Date(day.date).getDate() }}</div>
                   <div class="space-y-1 mt-1">
-                    <div v-for="e in day.entries" :key="e.id" class="rounded px-1 py-0.5 text-[10px] text-white flex flex-wrap justify-between items-center gap-x-1" :style="{ backgroundColor: colorForUser(e.user_id) }" :title="userName(e.user_id)">
+                    <div v-for="e in day.entries" :key="e.id" class="rounded px-1 py-0.5 text-[10px] text-white flex flex-wrap justify-between items-center gap-x-1" :style="{ backgroundColor: getEntryColor(e) }" :title="`${userName(e.user_id)} - ${getEntryTooltip(e)}`">
                       <span class="truncate">{{ userName(e.user_id) }}</span>
                       <span>{{ formatTime(e.clock_in_at) }} - {{ e.clock_out_at ? formatTime(e.clock_out_at) : '...' }}</span>
                       <span class="ml-1">{{ e.amount ? formatCurrency(e.amount) : '' }}</span>
@@ -263,12 +282,69 @@ const groupByUser = computed(() => {
 
 const rows = computed(() => groupByUser.value.map(u => ({ ...u, amount: u.totalAmount })))
 
-// Deterministic color per user
+// Deterministic color per user (kept for any other usage)
 const colorForUser = (userId) => {
   const palette = ['#ef4444','#f59e0b','#10b981','#3b82f6','#8b5cf6','#ec4899','#14b8a6','#22c55e']
   let hash = 0
   for (let i=0;i<userId.length;i++) hash = (hash*31 + userId.charCodeAt(i)) >>> 0
   return palette[hash % palette.length]
+}
+
+// Color coding for calendar entries based on punctuality
+const getEntryColor = (entry) => {
+  const today = new Date()
+  const clockInDate = new Date(entry.clock_in_at)
+  
+  // If entry is in the future, use gray
+  if (clockInDate > today) {
+    return '#6b7280' // gray-500
+  }
+  
+  // For past entries, check punctuality if shift_start exists
+  if (entry.shift_start) {
+    const shiftStartDate = new Date(entry.shift_start)
+    const lateDurationMs = clockInDate.getTime() - shiftStartDate.getTime()
+    const lateMinutes = lateDurationMs / (1000 * 60)
+    
+    // Blue if on time or less than 5 minutes late
+    if (lateMinutes <= 5) {
+      return '#3b82f6' // blue-500
+    } else {
+      return '#ef4444' // red-500
+    }
+  }
+  
+  // Default to gray if no shift_start data
+  return '#6b7280' // gray-500
+}
+
+// Get tooltip text explaining the entry status
+const getEntryTooltip = (entry) => {
+  const today = new Date()
+  const clockInDate = new Date(entry.clock_in_at)
+  
+  // If entry is in the future
+  if (clockInDate > today) {
+    return 'Future shift'
+  }
+  
+  // For past entries, check punctuality if shift_start exists
+  if (entry.shift_start) {
+    const shiftStartDate = new Date(entry.shift_start)
+    const lateDurationMs = clockInDate.getTime() - shiftStartDate.getTime()
+    const lateMinutes = Math.round(lateDurationMs / (1000 * 60))
+    
+    if (lateMinutes <= 0) {
+      return `On time (${Math.abs(lateMinutes)} min early)`
+    } else if (lateMinutes <= 5) {
+      return `On time (${lateMinutes} min late)`
+    } else {
+      return `Late (${lateMinutes} min)`
+    }
+  }
+  
+  // Default for entries without shift data
+  return 'No shift data'
 }
 
 // Calendar days within period with entry cards
