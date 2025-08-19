@@ -109,8 +109,8 @@
               <div class="text-gray-500 hidden lg:block" v-for="d in ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']" :key="d">{{ d }}</div>
               <template v-for="day in daysInPeriod" :key="day.date">
                 <div class="border rounded p-2 min-h-[100px]">
-                  <div class="text-[10px] text-gray-400 text-center lg:hidden">{{ new Date(day.date).toLocaleDateString(undefined, { weekday: 'short' }) }}</div>
-                  <div class="text-[10px] text-gray-500 text-center">{{ new Date(day.date).getDate() }}</div>
+                  <div class="text-[10px] text-gray-400 text-center lg:hidden">{{ day.weekday }}</div>
+                  <div class="text-[10px] text-gray-500 text-center">{{ day.label }}</div>
                   <div class="space-y-1 mt-1">
                     <div v-for="e in day.entries" :key="e.id" class="rounded px-1 py-0.5 text-[10px] text-white flex flex-wrap justify-between items-center gap-x-1" :style="{ backgroundColor: getEntryColor(e) }" :title="`${userName(e.user_id)} - ${getEntryTooltip(e)}`">
                       <span class="truncate">{{ userName(e.user_id) }}</span>
@@ -441,13 +441,23 @@ const getEntryTooltip = (entry) => {
 // Calendar days within period with entry cards
 const daysInPeriod = computed(() => {
   if (!period.value.start || !period.value.end) return []
-  const start = new Date(period.value.start)
-  const end = new Date(period.value.end)
-  const days = []
   const timezone = auth.user?.timezone || 'America/Lima'
   
-  for (let d = new Date(start); d <= end; d.setDate(d.getDate()+1)) {
-    const iso = d.toISOString().slice(0,10)
+  // Create dates in company timezone to avoid UTC/local timezone mismatches
+  const startDate = new Date(period.value.start + 'T00:00:00')
+  const endDate = new Date(period.value.end + 'T23:59:59')
+  
+  const days = []
+  
+  // Generate calendar days using proper timezone-aware date iteration
+  for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+    const iso = d.toISOString().slice(0, 10)
+    
+    // Get the day number in company timezone (not UTC)
+    const dayInTimezone = new Date(iso + 'T12:00:00').toLocaleDateString('en-US', { 
+      timeZone: timezone,
+      day: 'numeric'
+    })
     
     // Filter entries by their clock_in_at date in company timezone
     const dayEntries = entries.value.filter(e => {
@@ -458,7 +468,16 @@ const daysInPeriod = computed(() => {
       return localDate === iso
     })
     
-    days.push({ date: iso, label: d.getDate(), entries: dayEntries })
+    days.push({ 
+      date: iso, 
+      label: parseInt(dayInTimezone), 
+      entries: dayEntries,
+      // Add weekday for mobile display
+      weekday: new Date(iso + 'T12:00:00').toLocaleDateString('en-US', { 
+        timeZone: timezone,
+        weekday: 'short' 
+      })
+    })
   }
   return days
 })
