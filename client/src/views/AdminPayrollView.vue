@@ -443,21 +443,25 @@ const daysInPeriod = computed(() => {
   if (!period.value.start || !period.value.end) return []
   const timezone = auth.user?.timezone || 'America/Lima'
   
-  // Create dates in company timezone to avoid UTC/local timezone mismatches
-  const startDate = new Date(period.value.start + 'T00:00:00')
-  const endDate = new Date(period.value.end + 'T23:59:59')
-  
   const days = []
   
-  // Generate calendar days using proper timezone-aware date iteration
-  for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-    const iso = d.toISOString().slice(0, 10)
-    
-    // Get the day number in company timezone (not UTC)
-    const dayInTimezone = new Date(iso + 'T12:00:00').toLocaleDateString('en-US', { 
-      timeZone: timezone,
-      day: 'numeric'
-    })
+  // Parse period dates as local dates in company timezone
+  // The server sends dates like "2025-08-16" which represent local dates
+  // We need to treat them as dates in the company timezone, not UTC
+  const startDateParts = period.value.start.split('-').map(Number)
+  const endDateParts = period.value.end.split('-').map(Number)
+  
+  // Create local dates for start and end in company timezone
+  // We'll iterate day by day and format each day in the company timezone
+  let currentDate = new Date(startDateParts[0], startDateParts[1] - 1, startDateParts[2])
+  const endDate = new Date(endDateParts[0], endDateParts[1] - 1, endDateParts[2])
+  
+  while (currentDate <= endDate) {
+    // Get the ISO date string that represents this day
+    const year = currentDate.getFullYear()
+    const month = String(currentDate.getMonth() + 1).padStart(2, '0')
+    const day = String(currentDate.getDate()).padStart(2, '0')
+    const iso = `${year}-${month}-${day}`
     
     // Filter entries by their clock_in_at date in company timezone
     const dayEntries = entries.value.filter(e => {
@@ -468,17 +472,21 @@ const daysInPeriod = computed(() => {
       return localDate === iso
     })
     
+    // Get weekday name for this date in company timezone
+    const tempDate = new Date(year, currentDate.getMonth(), currentDate.getDate(), 12, 0, 0)
+    const weekday = tempDate.toLocaleDateString('en-US', { weekday: 'short' })
+    
     days.push({ 
       date: iso, 
-      label: parseInt(dayInTimezone), 
+      label: currentDate.getDate(), 
       entries: dayEntries,
-      // Add weekday for mobile display
-      weekday: new Date(iso + 'T12:00:00').toLocaleDateString('en-US', { 
-        timeZone: timezone,
-        weekday: 'short' 
-      })
+      weekday: weekday
     })
+    
+    // Move to next day
+    currentDate.setDate(currentDate.getDate() + 1)
   }
+  
   return days
 })
 
