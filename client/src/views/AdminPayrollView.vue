@@ -58,7 +58,7 @@
             mobileTitleField="employee"
           >
             <template #cell-employee="{ item }">
-              {{ item.employeeName || item.user_id }}
+                {{ item.employeeName || item.user_id }}
             </template>
             <template #cell-count="{ item }">{{ item.count }}</template>
 
@@ -444,9 +444,20 @@ const daysInPeriod = computed(() => {
   const start = new Date(period.value.start)
   const end = new Date(period.value.end)
   const days = []
+  const timezone = auth.user?.timezone || 'America/Lima'
+  
   for (let d = new Date(start); d <= end; d.setDate(d.getDate()+1)) {
     const iso = d.toISOString().slice(0,10)
-    const dayEntries = entries.value.filter(e => e.clock_in_at.slice(0,10) === iso)
+    
+    // Filter entries by their clock_in_at date in company timezone
+    const dayEntries = entries.value.filter(e => {
+      if (!e.clock_in_at) return false
+      // Convert UTC clock_in_at to company timezone date
+      const clockInDate = new Date(e.clock_in_at)
+      const localDate = clockInDate.toLocaleDateString('sv-SE', { timeZone: timezone })
+      return localDate === iso
+    })
+    
     days.push({ date: iso, label: d.getDate(), entries: dayEntries })
   }
   return days
