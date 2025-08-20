@@ -269,13 +269,19 @@ router.post('/clock', requireAuth, async (req, res) => {
       )
       // Notify admins
       try {
+        const companyTimezone = await getCompanyTimezone(companyId2)
         await notifyAdminsClockEvent({
           companyId: companyId2,
           companyToken: company_token,
           userId,
           userName: req.user.userName,
           action: 'clock_out',
-          timestamp: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+          timestamp: new Date().toLocaleTimeString('en-US', { 
+            timeZone: companyTimezone,
+            hour: '2-digit', 
+            minute: '2-digit' 
+          }),
+          timezone: companyTimezone
         })
       } catch {}
       return res.json({ success: true, data: { action: 'clock_out', entry: upd.rows[0] } })
@@ -359,15 +365,51 @@ router.post('/clock', requireAuth, async (req, res) => {
           diffMinutes: Math.round(diffMinutes)
         })
       }
-      // Notify admins
+      // Notify admins with punctuality information
       try {
+        let punctualityInfo = null
+        if (shiftStart) {
+          const clockInAt = new Date(ins.rows[0].clock_in_at)
+          
+          // Convert clock-in time to local time string for comparison
+          const clockInTimeLocal = clockInAt.toLocaleTimeString('en-GB', {
+            timeZone: companyTimezone,
+            hour12: false,
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+          })
+          
+          // Parse both times for comparison (same date, different times)
+          const todayDate = clockInAt.toLocaleDateString('sv-SE', { timeZone: companyTimezone })
+          const scheduledDateTime = new Date(`${todayDate}T${shiftStart}`)
+          const actualDateTime = new Date(`${todayDate}T${clockInTimeLocal}`)
+          
+          const diffMinutes = Math.round((actualDateTime.getTime() - scheduledDateTime.getTime()) / 60000)
+          
+          if (diffMinutes > 0) {
+            punctualityInfo = { type: 'late', minutes: diffMinutes }
+          } else if (diffMinutes < 0) {
+            punctualityInfo = { type: 'early', minutes: Math.abs(diffMinutes) }
+          } else {
+            punctualityInfo = { type: 'on_time', minutes: 0 }
+          }
+        }
+        
         await notifyAdminsClockEvent({
           companyId: companyId2,
           companyToken: company_token,
           userId,
           userName: req.user.userName,
           action: 'clock_in',
-          timestamp: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+          timestamp: new Date().toLocaleTimeString('en-US', { 
+            timeZone: companyTimezone,
+            hour: '2-digit', 
+            minute: '2-digit' 
+          }),
+          timezone: companyTimezone,
+          punctuality: punctualityInfo,
+          shiftStart: shiftStart
         })
       } catch {}
       return res.json({ success: true, data: { action: 'clock_in', entry: ins.rows[0], lateNotice } })

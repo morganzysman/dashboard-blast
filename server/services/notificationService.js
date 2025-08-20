@@ -334,7 +334,7 @@ export function scheduleLateEmployeeAlerts() {
 }
 
 // Notify company admins that an employee clocked in/out
-export async function notifyAdminsClockEvent({ companyId, companyToken, userId, userName, action, timestamp }) {
+export async function notifyAdminsClockEvent({ companyId, companyToken, userId, userName, action, timestamp, timezone, punctuality, shiftStart }) {
   try {
     // Resolve account name
     const acct = await pool.query(`SELECT account_name FROM company_accounts WHERE company_id = $1 AND company_token = $2 LIMIT 1`, [companyId, companyToken])
@@ -354,15 +354,42 @@ export async function notifyAdminsClockEvent({ companyId, companyToken, userId, 
       return { sent: 0, devices: 0 }
     }
 
+    // Build enhanced notification message
     const titleAction = action === 'clock_in' ? '🔓 Clock In' : '🔒 Clock Out'
-    const body = `${userName || 'Employee'} ${action === 'clock_in' ? 'clocked in' : 'clocked out'} at ${timestamp} • ${accountName}`
+    let body = `${userName || 'Employee'} ${action === 'clock_in' ? 'clocked in' : 'clocked out'} at ${timestamp}`
+    
+    // Add punctuality information for clock-in events
+    if (action === 'clock_in' && punctuality) {
+      if (punctuality.type === 'late') {
+        body += ` (${punctuality.minutes} min late)`
+      } else if (punctuality.type === 'early') {
+        body += ` (${punctuality.minutes} min early)`
+      } else if (punctuality.type === 'on_time') {
+        body += ` (on time)`
+      }
+    }
+    
+    body += ` • ${accountName}`
+    
     const payload = {
       title: titleAction,
       body,
       icon: '/icons/icon-192x192.png',
       badge: '/icons/icon-72x72.png',
       tag: `clock-${userId}-${action}-${companyToken}`,
-      data: { type: 'clock-event', userId, userName, action, companyToken, accountName, timestamp, url: '/admin/payroll' }
+      data: { 
+        type: 'clock-event', 
+        userId, 
+        userName, 
+        action, 
+        companyToken, 
+        accountName, 
+        timestamp, 
+        timezone,
+        punctuality,
+        shiftStart,
+        url: '/admin/payroll' 
+      }
     }
 
     let sent = 0
