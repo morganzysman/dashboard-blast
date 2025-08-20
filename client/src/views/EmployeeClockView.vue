@@ -380,7 +380,15 @@ const todayLabel = computed(() => new Date().toLocaleDateString(undefined, {
   weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
 }))
 
-const formatTime = (iso) => new Date(iso).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+const formatTime = (iso) => {
+  const timezone = authStore.user?.timezone || 'America/Lima'
+  return new Date(iso).toLocaleTimeString('en-US', { 
+    timeZone: timezone,
+    hour: '2-digit', 
+    minute: '2-digit',
+    hour12: false
+  })
+}
 </script>
 
 <style scoped>

@@ -126,7 +126,18 @@ const formatDuration = (secs) => {
   return `${h}h ${m}m ${s}s`
 }
 
-const formatDateTime = (iso) => new Date(iso).toLocaleString('en-CL', { timeZone: 'America/Santiago' })
+const formatDateTime = (iso) => {
+  const timezone = auth.user?.timezone || 'America/Lima'
+  return new Date(iso).toLocaleString('en-US', { 
+    timeZone: timezone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  })
+}
   const formatTimeShort = (t) => {
     if (!t) return ''
     try {
