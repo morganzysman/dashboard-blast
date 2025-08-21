@@ -84,7 +84,6 @@
               <div class="font-medium text-gray-900 dark:text-gray-100 mb-1">{{ accountLabel(item.company_token) }}</div>
               <div class="text-xs text-gray-600 dark:text-gray-400">{{ formatDateTime(item.clock_in_at) }} → {{ item.clock_out_at ? formatDateTime(item.clock_out_at) : '—' }}</div>
               <div class="text-xs text-gray-600 dark:text-gray-400">Duration: {{ formatDuration(secondsBetween(item.clock_in_at, item.clock_out_at)) }}</div>
-              <div class="text-xs text-gray-900 dark:text-gray-100 flex justify-between"><span>Amount</span><span>{{ formatCurrency(item.amount) }}</span></div>
             </template>
           </ResponsiveTable>
           <div class="mt-4 text-right text-gray-800 font-medium space-y-1">
