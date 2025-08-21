@@ -114,7 +114,7 @@
                 <div class="flex items-center gap-1">
                   <div class="w-3 h-3 rounded bg-gray-500"></div>
                   <span class="hidden sm:inline">No shift data</span>
-                  <span class="sm:hidden">Future</span>
+                  <span class="sm:hidden">No shift data</span>
                 </div>
               </div>
             </div>
