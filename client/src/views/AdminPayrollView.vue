@@ -83,6 +83,19 @@
               <div class="mt-2 text-right"><button class="btn-secondary btn-xs" @click="openEdit(item)">Edit</button></div>
             </template>
           </ResponsiveTable>
+          
+          <!-- Employee Summary -->
+          <div class="mt-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <div class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Summary for {{ rows.length }} employee{{ rows.length !== 1 ? 's' : '' }}
+              </div>
+              <div class="text-lg font-bold text-gray-900 dark:text-gray-100">
+                Total Amount: {{ formatCurrency(totalEmployeeAmount) }}
+              </div>
+            </div>
+          </div>
+          
           <!-- Simple calendar-like visualization -->
           <div class="mt-6">
             <div class="flex items-center justify-between mb-2">
@@ -100,7 +113,7 @@
                 </div>
                 <div class="flex items-center gap-1">
                   <div class="w-3 h-3 rounded bg-gray-500"></div>
-                  <span class="hidden sm:inline">Future/No shift data</span>
+                  <span class="hidden sm:inline">No shift data</span>
                   <span class="sm:hidden">Future</span>
                 </div>
               </div>
@@ -344,6 +357,11 @@ const groupByUser = computed(() => {
 })
 
 const rows = computed(() => groupByUser.value.map(u => ({ ...u, amount: u.totalAmount })))
+
+// Calculate total amount across all employees
+const totalEmployeeAmount = computed(() => {
+  return rows.value.reduce((total, employee) => total + (employee.amount || 0), 0)
+})
 
 
 
