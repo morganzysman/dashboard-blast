@@ -67,8 +67,7 @@
               { key: 'account', label: 'Account', headerClass: 'whitespace-normal', cellClass: 'whitespace-normal break-words max-w-[180px]', skeletonWidth: 'w-40' },
               { key: 'clock_in', label: 'Clock In', headerClass: 'whitespace-normal', cellClass: 'whitespace-normal', skeletonWidth: 'w-32' },
               { key: 'clock_out', label: 'Clock Out', headerClass: 'whitespace-normal', cellClass: 'whitespace-normal', skeletonWidth: 'w-24' },
-              { key: 'duration', label: 'Duration', headerClass: 'whitespace-normal', cellClass: 'whitespace-normal', skeletonWidth: 'w-20' },
-              { key: 'amount', label: 'Amount', headerClass: 'whitespace-normal', cellClass: 'whitespace-normal text-right', skeletonWidth: 'w-16' }
+              { key: 'duration', label: 'Duration', headerClass: 'whitespace-normal', cellClass: 'whitespace-normal', skeletonWidth: 'w-20' }
             ]"
             :stickyHeader="true"
             :loading="loading"
@@ -79,7 +78,6 @@
             <template #cell-clock_in="{ item }">{{ formatDateTime(item.clock_in_at) }}</template>
             <template #cell-clock_out="{ item }">{{ item.clock_out_at ? formatDateTime(item.clock_out_at) : '—' }}</template>
             <template #cell-duration="{ item }">{{ formatDuration(secondsBetween(item.clock_in_at, item.clock_out_at)) }}</template>
-            <template #cell-amount="{ item }"><div class="flex items-center justify-end gap-2"><span>{{ formatCurrency(item.amount) }}</span><span v-if="item.paid" class="text-green-600">$</span></div></template>
             <template #mobile-card="{ item }">
               <div class="font-medium text-gray-900 dark:text-gray-100 mb-1">{{ accountLabel(item.company_token) }}</div>
               <div class="text-xs text-gray-600 dark:text-gray-400">{{ formatDateTime(item.clock_in_at) }} → {{ item.clock_out_at ? formatDateTime(item.clock_out_at) : '—' }}</div>
@@ -116,7 +114,6 @@ const secondsBetween = (a,b) => {
 }
 
 const totalSeconds = computed(() => entries.value.reduce((s, e) => s + secondsBetween(e.clock_in_at, e.clock_out_at), 0))
-const totalAmount = computed(() => entries.value.reduce((s, e) => s + Number(e.amount || 0), 0))
 
 const formatDuration = (secs) => {
   const h = Math.floor(secs / 3600)
@@ -164,10 +161,7 @@ const formatDateTime = (iso) => {
       return t
     }
   }
-const formatCurrency = (n) => {
-  const symbol = auth.user?.currencySymbol || 'S/'
-  return `${symbol} ${(Number(n)||0).toFixed(2)}`
-}
+
 
 // Map company_token to a readable account name if available from session
 const accountLabel = (token) => {
