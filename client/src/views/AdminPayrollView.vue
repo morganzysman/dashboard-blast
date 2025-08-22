@@ -631,6 +631,28 @@ const daysInPeriod = computed(() => {
   if (!period.value.start || !period.value.end) return []
   const timezone = auth.user?.timezone || 'America/Lima'
   
+  console.log('🗓️ Calendar period:', {
+    start: period.value.start,
+    end: period.value.end,
+    timezone,
+    entriesCount: entries.value.length
+  })
+  
+  // Debug specific entries for August 21st
+  const aug21Entries = entries.value.filter(e => {
+    if (!e.clock_in_at) return false
+    const clockInDate = new Date(e.clock_in_at)
+    const localDate = clockInDate.toLocaleDateString('sv-SE', { timeZone: timezone })
+    return localDate === '2025-08-21'
+  })
+  
+  console.log('🔍 August 21st entries:', aug21Entries.map(e => ({
+    id: e.id,
+    clockInAt: e.clock_in_at,
+    localDate: new Date(e.clock_in_at).toLocaleDateString('sv-SE', { timeZone: timezone }),
+    user: userName(e.user_id)
+  })))
+  
   const days = []
   
   // Parse period dates as local dates in company timezone
@@ -657,6 +679,18 @@ const daysInPeriod = computed(() => {
       // Convert UTC clock_in_at to company timezone date
       const clockInDate = new Date(e.clock_in_at)
       const localDate = clockInDate.toLocaleDateString('sv-SE', { timeZone: timezone })
+      
+      // Debug logging for date mapping
+      if (localDate === iso) {
+        console.log(`📅 Entry mapped to ${iso}:`, {
+          entryId: e.id,
+          clockInAt: e.clock_in_at,
+          localDate,
+          iso,
+          timezone
+        })
+      }
+      
       return localDate === iso
     })
     
