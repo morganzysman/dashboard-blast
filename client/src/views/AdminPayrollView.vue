@@ -749,16 +749,16 @@ const daysInPeriod = computed(() => {
     currentDate.setDate(currentDate.getDate() + 1)
   }
   
+  // Debug the final calendar days array
+  console.log('📅 Final calendar days:', days.map(day => ({
+    date: day.date,
+    label: day.label,
+    weekday: day.weekday,
+    entriesCount: day.entries.length
+  })))
+  
   return days
 })
-
-// Debug the final calendar days array
-console.log('📅 Final calendar days:', days.map(day => ({
-  date: day.date,
-  label: day.label,
-  weekday: day.weekday,
-  entriesCount: day.entries.length
-})))
 
 // Map user id to name
 const userIdToName = ref(new Map())
