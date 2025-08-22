@@ -24,41 +24,7 @@
           </div>
         </div>
         
-        <!-- Tabs -->
         <div class="mt-4">
-          <div class="border-b border-gray-200">
-            <nav class="-mb-px flex space-x-8">
-              <button
-                @click="activeTab = 'payroll'"
-                :class="[
-                  activeTab === 'payroll'
-                    ? 'border-primary-500 text-primary-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300',
-                  'whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm'
-                ]"
-              >
-                Payroll Summary
-              </button>
-              <button
-                @click="activeTab = 'approvals'"
-                :class="[
-                  activeTab === 'approvals'
-                    ? 'border-primary-500 text-primary-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300',
-                  'whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm'
-                ]"
-              >
-                Pending Approvals
-                <span v-if="pendingApprovals.length > 0" class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                  {{ pendingApprovals.length }}
-                </span>
-              </button>
-            </nav>
-          </div>
-        </div>
-
-        <!-- Payroll Tab Content -->
-        <div v-show="activeTab === 'payroll'" class="mt-4">
           <div class="mb-3 flex items-center gap-2 flex-wrap">
             <template v-if="isSuperAdmin">
               <label class="text-xs text-gray-700">Company</label>
@@ -74,6 +40,98 @@
             </select>
             <button class="btn-secondary btn-sm" @click="loadEntries">Load</button>
             <button v-if="companyToken" class="btn-secondary btn-sm" @click="downloadQr">Download QR</button>
+          </div>
+          
+          <!-- Pending Approvals Section -->
+          <div v-if="companyToken" class="mb-6">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-md font-semibold text-gray-900">
+                Pending Approvals
+                <span v-if="pendingApprovals.length > 0" class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                  {{ pendingApprovals.length }}
+                </span>
+              </h3>
+              <button class="btn-secondary btn-sm" @click="loadPendingApprovals" :disabled="loadingApprovals">
+                {{ loadingApprovals ? 'Loading...' : 'Refresh' }}
+              </button>
+            </div>
+            
+            <div v-if="loadingApprovals" class="text-center py-4 text-gray-500">
+              Loading pending approvals...
+            </div>
+            
+            <div v-else-if="pendingApprovals.length === 0" class="text-center py-4 text-gray-500 bg-gray-50 rounded-lg">
+              No entries pending approval for this account.
+            </div>
+            
+            <ResponsiveTable
+              v-else
+              :items="pendingApprovals"
+              :columns="[
+                { key: 'user_name', label: 'Employee', skeletonWidth: 'w-40' },
+                { key: 'clock_in_out', label: 'Clock In/Out', skeletonWidth: 'w-32' },
+                { key: 'duration', label: 'Duration', skeletonWidth: 'w-20' },
+                { key: 'amount', label: 'Amount', cellClass: 'text-right', skeletonWidth: 'w-16' },
+                { key: 'actions', label: 'Actions', skeletonWidth: 'w-24' }
+              ]"
+              :stickyHeader="false"
+              :loading="false"
+              rowKeyField="id"
+              mobileTitleField="user_name"
+            >
+              <template #cell-user_name="{ item }">
+                {{ item.user_name }}
+                <div class="text-xs text-gray-500">{{ item.user_email }}</div>
+              </template>
+              
+              <template #cell-clock_in_out="{ item }">
+                <div class="text-xs">
+                  <div>In: {{ formatDateTime(item.clock_in_at) }}</div>
+                  <div>Out: {{ formatDateTime(item.clock_out_at) }}</div>
+                </div>
+              </template>
+              
+              <template #cell-duration="{ item }">
+                {{ formatDurationHours(item.clock_in_at, item.clock_out_at) }}
+              </template>
+              
+              <template #cell-amount="{ item }">
+                {{ formatCurrency(item.amount) }}
+              </template>
+              
+              <template #cell-actions="{ item }">
+                <div class="flex gap-1">
+                  <button class="btn-secondary btn-xs" @click="openEditEntry(item)">Edit</button>
+                  <button class="btn-primary btn-xs" @click="approveEntry(item.id)" :disabled="approvingEntry === item.id">
+                    {{ approvingEntry === item.id ? 'Approving...' : 'Approve' }}
+                  </button>
+                </div>
+              </template>
+
+              <template #mobile-card="{ item }">
+                <div class="font-medium text-gray-900 mb-1">{{ item.user_name }}</div>
+                <div class="text-xs text-gray-600 mb-2">{{ item.user_email }}</div>
+                <div class="text-xs text-gray-600">
+                  <div>In: {{ formatDateTime(item.clock_in_at) }}</div>
+                  <div>Out: {{ formatDateTime(item.clock_out_at) }}</div>
+                  <div>Duration: {{ formatDurationHours(item.clock_in_at, item.clock_out_at) }}</div>
+                </div>
+                <div class="flex justify-between items-center mt-2">
+                  <span class="font-medium">{{ formatCurrency(item.amount) }}</span>
+                  <div class="flex gap-1">
+                    <button class="btn-secondary btn-xs" @click="openEditEntry(item)">Edit</button>
+                    <button class="btn-primary btn-xs" @click="approveEntry(item.id)" :disabled="approvingEntry === item.id">
+                      {{ approvingEntry === item.id ? 'Approving...' : 'Approve' }}
+                    </button>
+                  </div>
+                </div>
+              </template>
+            </ResponsiveTable>
+          </div>
+          
+          <!-- Employee Summary Table -->
+          <div class="mb-4">
+            <h3 class="text-md font-semibold text-gray-900 mb-3">Employee Summary</h3>
           </div>
           <ResponsiveTable
             :items="rows"
@@ -176,91 +234,6 @@
           </div>
         </div>
 
-        <!-- Approvals Tab Content -->
-        <div v-show="activeTab === 'approvals'" class="mt-4">
-          <div class="mb-3 flex items-center gap-2 flex-wrap">
-            <template v-if="isSuperAdmin">
-              <label class="text-xs text-gray-700">Company</label>
-              <select v-model="selectedCompanyIdApprovals" class="form-input" @change="loadCompanyAccountsApprovals">
-                <option value="">Select company</option>
-                <option v-for="c in companies" :key="c.id" :value="c.id">{{ c.name }}</option>
-              </select>
-            </template>
-
-            <label class="text-xs text-gray-700">Account</label>
-            <select v-model="companyTokenApprovals" class="form-input" @change="loadPendingApprovals">
-              <option v-for="acc in accountsApprovals" :key="acc.company_token" :value="acc.company_token">{{ acc.account_name || acc.company_token }}</option>
-            </select>
-            <button class="btn-secondary btn-sm" @click="loadPendingApprovals">Load</button>
-          </div>
-          
-          <ResponsiveTable
-            :items="pendingApprovals"
-            :columns="[
-              { key: 'user_name', label: 'Employee', skeletonWidth: 'w-40' },
-              { key: 'clock_in_out', label: 'Clock In/Out', skeletonWidth: 'w-32' },
-              { key: 'duration', label: 'Duration', skeletonWidth: 'w-20' },
-              { key: 'amount', label: 'Amount', cellClass: 'text-right', skeletonWidth: 'w-16' },
-              { key: 'actions', label: 'Actions', skeletonWidth: 'w-24' }
-            ]"
-            :stickyHeader="true"
-            :loading="loadingApprovals"
-            rowKeyField="id"
-            mobileTitleField="user_name"
-          >
-            <template #cell-user_name="{ item }">
-              {{ item.user_name }}
-              <div class="text-xs text-gray-500">{{ item.user_email }}</div>
-            </template>
-            
-            <template #cell-clock_in_out="{ item }">
-              <div class="text-xs">
-                <div>In: {{ formatDateTime(item.clock_in_at) }}</div>
-                <div>Out: {{ formatDateTime(item.clock_out_at) }}</div>
-              </div>
-            </template>
-            
-            <template #cell-duration="{ item }">
-              {{ formatDurationHours(item.clock_in_at, item.clock_out_at) }}
-            </template>
-            
-            <template #cell-amount="{ item }">
-              {{ formatCurrency(item.amount) }}
-            </template>
-            
-            <template #cell-actions="{ item }">
-              <div class="flex gap-1">
-                <button class="btn-secondary btn-xs" @click="openEditEntry(item)">Edit</button>
-                <button class="btn-primary btn-xs" @click="approveEntry(item.id)" :disabled="approvingEntry === item.id">
-                  {{ approvingEntry === item.id ? 'Approving...' : 'Approve' }}
-                </button>
-              </div>
-            </template>
-
-            <template #mobile-card="{ item }">
-              <div class="font-medium text-gray-900 mb-1">{{ item.user_name }}</div>
-              <div class="text-xs text-gray-600 mb-2">{{ item.user_email }}</div>
-              <div class="text-xs text-gray-600">
-                <div>In: {{ formatDateTime(item.clock_in_at) }}</div>
-                <div>Out: {{ formatDateTime(item.clock_out_at) }}</div>
-                <div>Duration: {{ formatDurationHours(item.clock_in_at, item.clock_out_at) }}</div>
-              </div>
-              <div class="flex justify-between items-center mt-2">
-                <span class="font-medium">{{ formatCurrency(item.amount) }}</span>
-                <div class="flex gap-1">
-                  <button class="btn-secondary btn-xs" @click="openEditEntry(item)">Edit</button>
-                  <button class="btn-primary btn-xs" @click="approveEntry(item.id)" :disabled="approvingEntry === item.id">
-                    {{ approvingEntry === item.id ? 'Approving...' : 'Approve' }}
-                  </button>
-                </div>
-              </div>
-            </template>
-          </ResponsiveTable>
-          
-          <div v-if="!loadingApprovals && pendingApprovals.length === 0" class="text-center py-8 text-gray-500">
-            No pending approvals found for this account.
-          </div>
-        </div>
       </div>
     </div>
 
@@ -370,13 +343,9 @@ const editEntry = ref(null)
 const deleteConfirmation = ref(null)
 const deleting = ref(false)
 
-// Approvals tab state
-const activeTab = ref('payroll')
+// Approvals state
 const pendingApprovals = ref([])
 const loadingApprovals = ref(false)
-const accountsApprovals = ref([])
-const selectedCompanyIdApprovals = ref(auth.user?.company_id || '')
-const companyTokenApprovals = ref('')
 const approvingEntry = ref(null)
 
 const periodLabel = computed(() => `${period.value.start} → ${period.value.end}`)
@@ -390,6 +359,8 @@ const loadEntries = async () => {
       entries.value = res.data
       period.value = res.period
     }
+    // Also load pending approvals for the same account
+    await loadPendingApprovals()
   } finally {
     loading.value = false
   }
@@ -968,30 +939,12 @@ const downloadQr = async () => {
 }
 
 // Approvals functionality
-const loadCompanyAccountsApprovals = async () => {
-  if (!selectedCompanyIdApprovals.value) { 
-    accountsApprovals.value = []
-    companyTokenApprovals.value = ''
-    return 
-  }
-  try {
-    const res = await api.listCompanyAccounts(selectedCompanyIdApprovals.value)
-    accountsApprovals.value = res?.data || []
-    companyTokenApprovals.value = accountsApprovals.value[0]?.company_token || ''
-    if (companyTokenApprovals.value) {
-      await loadPendingApprovals()
-    }
-  } catch (e) {
-    accountsApprovals.value = []
-    companyTokenApprovals.value = ''
-  }
-}
 
 const loadPendingApprovals = async () => {
-  if (!companyTokenApprovals.value) return
+  if (!companyToken.value) return
   loadingApprovals.value = true
   try {
-    const res = await api.getPendingApprovals(companyTokenApprovals.value)
+    const res = await api.getPendingApprovals(companyToken.value)
     if (res.success) {
       pendingApprovals.value = res.data
     }
@@ -1066,23 +1019,6 @@ const formatDurationHours = (clockIn, clockOut) => {
   return `${duration.toFixed(1)}h`
 }
 
-// Initialize approvals tab when switching
-const initializeApprovalsTab = async () => {
-  if (isSuperAdmin.value && !selectedCompanyIdApprovals.value && companies.value.length) {
-    selectedCompanyIdApprovals.value = companies.value[0].id
-  } else if (!isSuperAdmin.value) {
-    selectedCompanyIdApprovals.value = auth.user?.company_id || ''
-  }
-  await loadCompanyAccountsApprovals()
-}
-
-// Initialize approvals tab when needed
-const originalActiveTab = activeTab.value
-const watchActiveTab = () => {
-  if (activeTab.value === 'approvals' && originalActiveTab !== 'approvals') {
-    initializeApprovalsTab()
-  }
-}
 </script>
 
 <style scoped>
