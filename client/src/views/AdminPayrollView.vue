@@ -169,21 +169,16 @@
                       <span class="truncate">{{ userName(e.user_id) }}</span>
                       <div class="flex items-center gap-1">
                         <!-- Approval status icon - larger and more prominent -->
-                        <div v-if="e.approved_by" 
-                             class="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center" 
-                             :title="`Approved by ${e.approved_by_name || 'Manager'}`">
-                          <span class="text-white text-[8px] font-bold">✓</span>
-                        </div>
-                        <div v-else-if="e.clock_out_at && !e.paid" 
-                             class="w-4 h-4 rounded-full bg-orange-500 flex items-center justify-center animate-pulse" 
-                             title="Pending approval">
-                          <span class="text-white text-[8px] font-bold">⏳</span>
-                        </div>
-                        <div v-else-if="!e.clock_out_at" 
-                             class="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center" 
-                             title="Currently working">
-                          <span class="text-white text-[8px] font-bold">●</span>
-                        </div>
+                                <div v-if="e.approved_by"
+              class="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center"
+              :title="`Approved by ${e.approved_by_name || 'Manager'}`">
+          <span class="text-white text-[8px] font-bold">✓</span>
+        </div>
+        <div v-else-if="e.clock_out_at && !e.paid"
+              class="w-4 h-4 rounded-full bg-orange-500 flex items-center justify-center animate-pulse"
+              title="Pending approval">
+          <span class="text-white text-[8px] font-bold">⏳</span>
+        </div>
                         
                         <!-- Payment status icon -->
                         <div v-if="e.paid" 
