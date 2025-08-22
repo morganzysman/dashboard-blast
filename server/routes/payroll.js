@@ -936,10 +936,10 @@ router.post('/admin/entries/:id/approve', requireAuth, async (req, res) => {
     // Approve the entry
     const updateQuery = await pool.query(
       'UPDATE time_entries SET approved_by = $1, updated_at = NOW() WHERE id = $2 RETURNING *',
-      [req.user.id, id]
+      [req.user.userId, id]
     )
     
-    console.log(`✅ Admin ${req.user.email} approved time entry ${id}`)
+    console.log(`✅ Admin ${req.user.userEmail} approved time entry ${id}`)
     
     res.json({ 
       success: true, 
