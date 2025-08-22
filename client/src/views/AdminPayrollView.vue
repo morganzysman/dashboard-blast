@@ -205,16 +205,6 @@
                   <span class="sm:hidden">Late</span>
                 </div>
                 <div class="flex items-center gap-1">
-                  <div class="w-3 h-3 rounded bg-orange-500"></div>
-                  <span class="hidden sm:inline">Pending approval</span>
-                  <span class="sm:hidden">Pending</span>
-                </div>
-                <div class="flex items-center gap-1">
-                  <div class="w-3 h-3 rounded bg-green-500"></div>
-                  <span class="hidden sm:inline">Approved</span>
-                  <span class="sm:hidden">Approved</span>
-                </div>
-                <div class="flex items-center gap-1">
                   <div class="w-3 h-3 rounded bg-gray-500"></div>
                   <span class="hidden sm:inline">No shift data</span>
                   <span class="sm:hidden">No shift data</span>
@@ -238,22 +228,22 @@
                       @click="openCalendarEntryActions(e, $event)"
                     >
                       <!-- Entry content -->
-                      <div class="flex flex-wrap justify-between items-center gap-x-1">
-                        <span class="truncate font-medium">{{ userName(e.user_id) }}</span>
-                        <span class="text-[9px] opacity-90">{{ formatTime(e.clock_in_at) }} - {{ e.clock_out_at ? formatTime(e.clock_out_at) : '...' }}</span>
-                      </div>
-                      
-                      <!-- Status indicators row -->
-                      <div class="flex items-center justify-between mt-0.5">
-                        <span class="text-[9px] font-medium">{{ e.amount ? formatCurrency(e.amount) : '' }}</span>
-                        <div class="flex items-center gap-0.5">
-                          <!-- Approval status -->
-                          <span v-if="e.approved_by" class="inline-flex items-center justify-center w-3 h-3 bg-green-500 rounded-full text-[8px] font-bold" title="Approved by">✓</span>
-                          <span v-else-if="e.clock_out_at && !e.paid" class="inline-flex items-center justify-center w-3 h-3 bg-orange-500 rounded-full text-[8px] font-bold animate-pulse" title="Pending approval">!</span>
+                      <div class="flex justify-between items-center gap-x-1">
+                        <span class="truncate">{{ userName(e.user_id) }}</span>
+                        <div class="flex items-center gap-1">
+                          <!-- Approval status icon -->
+                          <span v-if="e.approved_by" class="text-green-400 text-[10px]" :title="`Approved by ${e.approved_by_name || 'Manager'}`">✓</span>
+                          <span v-else-if="e.clock_out_at && !e.paid" class="text-orange-300 text-[10px] animate-pulse" title="Pending approval">●</span>
                           
-                          <!-- Payment status -->
-                          <span v-if="e.paid" class="inline-flex items-center justify-center w-3 h-3 bg-blue-500 rounded-full text-[8px] font-bold" title="Paid">$</span>
+                          <!-- Payment status icon -->
+                          <span v-if="e.paid" class="text-yellow-300 text-[10px]" title="Paid">$</span>
                         </div>
+                      </div>
+                      <div class="text-[9px] opacity-90 mt-1">
+                        {{ formatTime(e.clock_in_at) }} - {{ e.clock_out_at ? formatTime(e.clock_out_at) : '...' }}
+                      </div>
+                      <div class="text-[9px] font-medium mt-0.5">
+                        {{ e.amount ? formatCurrency(e.amount) : '' }}
                       </div>
                       
                       <!-- Hover overlay with actions (only show for pending entries) -->
@@ -539,24 +529,6 @@ const totalEmployeeAmount = computed(() => {
 
 // Color coding for calendar entries based on punctuality
 const getEntryColor = (entry) => {
-  // Priority order: Paid > Approved > Pending > Punctuality > Default
-  
-  // If paid, show darker green (highest priority)
-  if (entry.paid) {
-    return '#059669' // emerald-600
-  }
-  
-  // If approved but not paid, show green
-  if (entry.approved_by) {
-    return '#10b981' // emerald-500
-  }
-  
-  // If completed but pending approval, show orange
-  if (entry.clock_out_at && !entry.approved_by) {
-    return '#f59e0b' // amber-500
-  }
-  
-  // For incomplete entries (no clock_out_at), check punctuality if shift_start exists
   const today = new Date()
   const clockInDate = new Date(entry.clock_in_at)
   
