@@ -269,30 +269,12 @@
         <p class="text-xs text-gray-500 mb-3">Period: {{ periodLabel }} • Times shown in {{ auth.user?.timezone || 'America/Lima' }}</p>
         <div class="max-h-[60vh] overflow-auto space-y-3 pr-1">
           <div v-for="(e, idx) in editEntry.list" :key="e.id || `new-${idx}`" class="relative grid grid-cols-1 sm:grid-cols-3 gap-2 items-end rounded p-2" :class="e.paid ? 'bg-gray-50 opacity-70' : e.approved_by ? 'bg-green-50 opacity-70' : isComplexEntry(e) ? 'bg-yellow-50' : 'bg-white'">
-            <!-- Smart detection warning -->
-            <div v-if="!e.paid && !e.approved_by && isComplexEntry(e)" class="absolute -top-2 -right-1">
-              <div class="relative group">
-                <div class="w-5 h-5 rounded-full bg-yellow-500 flex items-center justify-center cursor-help">
-                  <span class="text-white text-[10px] font-bold">🤖</span>
-                </div>
-                <!-- Tooltip -->
-                <div class="absolute bottom-full right-0 mb-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg p-3 text-xs hidden group-hover:block z-10">
-                  <div class="font-medium text-gray-900 mb-1">Smart Detection Flags:</div>
-                  <ul class="space-y-1 text-gray-600">
-                    <li v-if="getLateDuration(e) > 30" class="flex items-center gap-1">
-                      <span class="text-red-500">⚠️</span> {{ getLateDuration(e) }} minutes late
-                    </li>
-                    <li v-if="getWorkDuration(e) > 12" class="flex items-center gap-1">
-                      <span class="text-yellow-500">⚠️</span> Long shift: {{ getWorkDuration(e).toFixed(1) }} hours
-                    </li>
-                    <li v-if="getWorkDuration(e) < 0.5" class="flex items-center gap-1">
-                      <span class="text-yellow-500">⚠️</span> Very short shift: {{ (getWorkDuration(e) * 60).toFixed(0) }} minutes
-                    </li>
-                    <li v-if="!e.amount || e.amount <= 0" class="flex items-center gap-1">
-                      <span class="text-red-500">⚠️</span> Missing or invalid amount
-                    </li>
-                  </ul>
-                </div>
+            <!-- AI Smart Detection Warning -->
+            <div v-if="!e.paid && !e.approved_by && isComplexEntry(e)" class="col-span-full mb-2 p-2 bg-yellow-50 border border-yellow-200 rounded-md">
+              <div class="flex items-center gap-2 text-xs text-yellow-800">
+                <span class="text-yellow-600">🤖</span>
+                <span class="font-medium">AI Review Required:</span>
+                <span>{{ getSmartDetectionReason(e) }}</span>
               </div>
             </div>
             <div>
@@ -1181,6 +1163,36 @@ const getWorkDuration = (entry) => {
   return (new Date(entry.clock_out_at) - new Date(entry.clock_in_at)) / (1000 * 60 * 60) // hours
 }
 
+// Get human-readable reason for smart detection
+const getSmartDetectionReason = (entry) => {
+  if (!entry.shift_start || !entry.clock_in_at || !entry.clock_out_at) {
+    return "Missing shift or time data"
+  }
+  
+  const reasons = []
+  
+  // Check if very late
+  const lateDuration = getLateDuration(entry)
+  if (lateDuration > 30) {
+    reasons.push(`${lateDuration} minutes late`)
+  }
+  
+  // Check work duration
+  const workDuration = getWorkDuration(entry)
+  if (workDuration > 12) {
+    reasons.push(`Long shift (${workDuration.toFixed(1)} hours)`)
+  } else if (workDuration < 0.5) {
+    reasons.push(`Very short shift (${(workDuration * 60).toFixed(0)} minutes)`)
+  }
+  
+  // Check if amount seems wrong or missing
+  if (!entry.amount || entry.amount <= 0) {
+    reasons.push("Missing or invalid amount")
+  }
+  
+  return reasons.join(", ")
+}
+
 // Check if entry needs review before approval (complex cases)
 const isComplexEntry = (entry) => {
   // Consider an entry complex if:
@@ -1189,39 +1201,26 @@ const isComplexEntry = (entry) => {
   // 3. It's missing amount calculation
   
   if (!entry.shift_start || !entry.clock_in_at || !entry.clock_out_at) {
-    console.log('🔍 Smart detection: Missing required data', { 
-      shift_start: entry.shift_start, 
-      clock_in_at: entry.clock_in_at, 
-      clock_out_at: entry.clock_out_at 
-    })
     return false // Can't determine complexity without full data
   }
   
   // Very late (more than 30 minutes)
   const lateDuration = getLateDuration(entry)
   if (lateDuration > 30) {
-    console.log('🔍 Smart detection: Very late entry', { lateDuration })
     return true
   }
   
   // Check work duration
   const workDuration = getWorkDuration(entry)
   if (workDuration > 12 || workDuration < 0.5) {
-    console.log('🔍 Smart detection: Unusual work duration', { workDuration })
     return true
   }
   
   // Check if amount seems wrong or missing
   if (!entry.amount || entry.amount <= 0) {
-    console.log('🔍 Smart detection: Missing or invalid amount', { amount: entry.amount })
     return true
   }
   
-  console.log('🔍 Smart detection: Entry is normal', { 
-    lateDuration, 
-    workDuration, 
-    amount: entry.amount 
-  })
   return false
 }
 
