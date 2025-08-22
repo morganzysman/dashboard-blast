@@ -730,12 +730,35 @@ const daysInPeriod = computed(() => {
       weekday: weekday
     })
     
+    // Debug calendar day creation
+    if (iso === '2025-08-21') {
+      console.log('🗓️ Calendar day created for August 21st:', {
+        date: iso,
+        label: currentDate.getDate(),
+        weekday: weekday,
+        entriesCount: dayEntries.length,
+        entries: dayEntries.map(e => ({
+          id: e.id,
+          user: userName(e.user_id),
+          clockInAt: e.clock_in_at
+        }))
+      })
+    }
+    
     // Move to next day
     currentDate.setDate(currentDate.getDate() + 1)
   }
   
   return days
 })
+
+// Debug the final calendar days array
+console.log('📅 Final calendar days:', days.map(day => ({
+  date: day.date,
+  label: day.label,
+  weekday: day.weekday,
+  entriesCount: day.entries.length
+})))
 
 // Map user id to name
 const userIdToName = ref(new Map())
