@@ -148,13 +148,14 @@
             <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 lg:gap-3 text-xs">
               <div class="text-gray-500 hidden lg:block" v-for="d in ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']" :key="d">{{ d }}</div>
               <div 
-                v-for="day in daysInPeriod" 
-                :key="day.date"
+                v-for="day in calendarGrid" 
+                :key="day.date || `empty-${day.index}`"
                 class="border rounded p-2 min-h-[100px]"
+                :class="!day.date ? 'bg-gray-50' : ''"
               >
-                <div class="text-[10px] text-gray-400 text-center lg:hidden">{{ day.weekday }}</div>
-                <div class="text-[10px] text-gray-500 text-center">{{ day.label }}</div>
-                <div class="space-y-1 mt-1">
+                <div class="text-[10px] text-gray-400 text-center lg:hidden">{{ day.weekday || '' }}</div>
+                <div class="text-[10px] text-gray-500 text-center">{{ day.label || '' }}</div>
+                <div class="space-y-1 mt-1" v-if="day.date">
                   <div 
                     v-for="e in day.entries" 
                     :key="e.id" 
@@ -763,6 +764,47 @@ const daysInPeriod = computed(() => {
   })))
   
   return days
+})
+
+// Create a proper calendar grid that aligns with weekdays
+const calendarGrid = computed(() => {
+  const days = daysInPeriod.value
+  if (days.length === 0) return []
+  
+  const timezone = auth.user?.timezone || 'America/Lima'
+  const grid = []
+  
+  // Find the first day of the period and get its weekday
+  const firstDay = days[0]
+  const firstDate = new Date(firstDay.date + 'T12:00:00')
+  const firstWeekday = firstDate.toLocaleDateString('en-US', { 
+    weekday: 'short',
+    timeZone: timezone 
+  })
+  
+  // Map weekdays to indices (0 = Sun, 1 = Mon, etc.)
+  const weekdayMap = { 'Sun': 0, 'Mon': 1, 'Tue': 2, 'Wed': 3, 'Thu': 4, 'Fri': 5, 'Sat': 6 }
+  const firstWeekdayIndex = weekdayMap[firstWeekday]
+  
+  // Add empty cells before the first day to align with the weekday
+  for (let i = 0; i < firstWeekdayIndex; i++) {
+    grid.push({ date: null, index: i, isEmpty: true })
+  }
+  
+  // Add all the actual days
+  days.forEach((day, index) => {
+    grid.push({ ...day, index: firstWeekdayIndex + index })
+  })
+  
+  console.log('🗓️ Calendar grid created:', {
+    firstDay: firstDay.date,
+    firstWeekday,
+    firstWeekdayIndex,
+    totalCells: grid.length,
+    emptyCells: firstWeekdayIndex
+  })
+  
+  return grid
 })
 
 // Map user id to name
