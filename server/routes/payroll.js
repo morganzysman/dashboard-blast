@@ -590,7 +590,7 @@ router.put('/admin/entries/:id', requireAuth, async (req, res) => {
          clock_out_at = COALESCE($2, clock_out_at),
          amount = COALESCE($3::numeric, amount),
          updated_at = NOW()
-       WHERE id = $4 AND paid = FALSE
+       WHERE id = $4 AND paid = FALSE AND approved_by IS NULL
        RETURNING *`, [clock_in_at, clock_out_at, amount, id]
     )
     if (upd.rowCount === 0) return res.status(404).json({ success: false, error: 'Entry not found or locked' })

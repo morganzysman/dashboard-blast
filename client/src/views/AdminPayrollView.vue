@@ -206,9 +206,9 @@
                       class="absolute inset-0 bg-black bg-opacity-80 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-1"
                       @click.stop
                     >
-                      <!-- Edit button for all completed entries -->
+                      <!-- Edit button for non-approved and non-paid entries -->
                       <button 
-                        v-if="!e.paid"
+                        v-if="!e.approved_by && !e.paid"
                         @click="openEditEntry(e)"
                         class="inline-flex items-center px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-[8px] font-medium transition-colors shadow-md"
                         title="Edit entry times and amount"
@@ -273,7 +273,7 @@
         </div>
         <p class="text-xs text-gray-500 mb-3">Period: {{ periodLabel }} • Times shown in {{ auth.user?.timezone || 'America/Lima' }}</p>
         <div class="max-h-[60vh] overflow-auto space-y-3 pr-1">
-          <div v-for="(e, idx) in editEntry.list" :key="e.id || `new-${idx}`" class="grid grid-cols-1 sm:grid-cols-3 gap-2 items-end rounded p-2" :class="e.paid ? 'bg-gray-50 opacity-70' : 'bg-white'">
+          <div v-for="(e, idx) in editEntry.list" :key="e.id || `new-${idx}`" class="grid grid-cols-1 sm:grid-cols-3 gap-2 items-end rounded p-2" :class="e.paid ? 'bg-gray-50 opacity-70' : e.approved_by ? 'bg-green-50 opacity-70' : 'bg-white'">
             <div>
               <label class="text-xs text-gray-700">Clock In</label>
               <input 
@@ -281,7 +281,7 @@
                 @input="e.clock_in_at = fromLocalDateTime($event.target.value)" 
                 type="datetime-local" 
                 class="form-input w-full" 
-                :disabled="e.paid" 
+                :disabled="e.paid || e.approved_by" 
               />
             </div>
             <div>
@@ -291,16 +291,16 @@
                 @input="e.clock_out_at = fromLocalDateTime($event.target.value)" 
                 type="datetime-local" 
                 class="form-input w-full" 
-                :disabled="e.paid" 
+                :disabled="e.paid || e.approved_by" 
               />
             </div>
             <div>
               <label class="text-xs text-gray-700">Amount</label>
-              <input v-model="e.amount" type="number" inputmode="decimal" min="0" step="any" class="form-input w-full" :disabled="e.paid" />
+              <input v-model="e.amount" type="number" inputmode="decimal" min="0" step="any" class="form-input w-full" :disabled="e.paid || e.approved_by" />
             </div>
             <div class="sm:col-span-3 flex justify-end gap-2">
               <button v-if="!e.id" class="btn-danger btn-xs" @click="removeNewEntry(idx)">Remove</button>
-              <button v-else-if="e.id && !e.paid" class="btn-danger btn-xs" @click="confirmDeleteEntry(e.id, idx)">Delete</button>
+              <button v-else-if="e.id && !e.paid && !e.approved_by" class="btn-danger btn-xs" @click="confirmDeleteEntry(e.id, idx)">Delete</button>
             </div>
           </div>
         </div>
@@ -851,7 +851,8 @@ const openEdit = (row) => {
       clock_in_at: e.clock_in_at, // Keep full ISO string for timezone conversion
       clock_out_at: e.clock_out_at, // Keep full ISO string for timezone conversion  
       amount: e.amount, 
-      paid: !!e.paid 
+      paid: !!e.paid,
+      approved_by: e.approved_by // Track approval status for UI logic
     }))
   }
 }
@@ -863,7 +864,7 @@ const saveEdit = async () => {
   
   try {
     for (const e of list) {
-      if (e.paid) continue
+      if (e.paid || e.approved_by) continue // Skip paid or approved entries
       const body = {
         clock_in_at: e.clock_in_at ? new Date(e.clock_in_at).toISOString() : null,
         clock_out_at: e.clock_out_at ? new Date(e.clock_out_at).toISOString() : null,
@@ -921,8 +922,8 @@ const saveEdit = async () => {
   await loadEntries()
 }
 
-const editableCount = computed(() => (editEntry.value?.list || []).filter(e => !e.paid).length)
-const editableSum = computed(() => (editEntry.value?.list || []).filter(e => !e.paid).reduce((s,e)=> s + Number(e.amount||0), 0))
+const editableCount = computed(() => (editEntry.value?.list || []).filter(e => !e.paid && !e.approved_by).length)
+const editableSum = computed(() => (editEntry.value?.list || []).filter(e => !e.paid && !e.approved_by).reduce((s,e)=> s + Number(e.amount||0), 0))
 
   const addNewEntry = () => {
     if (!editEntry.value) return
@@ -1187,7 +1188,8 @@ const editBeforeApprove = (entry) => {
       clock_in_at: entry.clock_in_at,
       clock_out_at: entry.clock_out_at,
       amount: entry.amount,
-      paid: entry.paid || false
+      paid: entry.paid || false,
+      approved_by: entry.approved_by
     }],
     approveAfterSave: true // Flag to approve after saving
   }
@@ -1227,7 +1229,8 @@ const openEditEntry = (entry) => {
       clock_in_at: entry.clock_in_at,
       clock_out_at: entry.clock_out_at,
       amount: entry.amount,
-      paid: entry.paid || false
+      paid: entry.paid || false,
+      approved_by: entry.approved_by
     }]
   }
 }
