@@ -50,9 +50,7 @@
             :items="rows"
             :columns="[
               { key: 'employee', label: 'Employee', skeletonWidth: 'w-40' },
-              { key: 'count', label: 'Entries', skeletonWidth: 'w-10' },
-              { key: 'pendingApprovals', label: 'Missing Approvals', skeletonWidth: 'w-16' },
-              { key: 'clocked', label: 'Clock In Time', skeletonWidth: 'w-20' },
+              { key: 'count', label: 'Entries', skeletonWidth: 'w-20' },
               { key: 'lateCount', label: 'Late Count', skeletonWidth: 'w-24' },
               { key: 'amount', label: 'Amount', cellClass: 'text-right', skeletonWidth: 'w-16' },
               { key: 'actions', label: 'Actions', skeletonWidth: 'w-16' }
@@ -65,14 +63,14 @@
             <template #cell-employee="{ item }">
                 {{ item.employeeName || item.user_id }}
             </template>
-            <template #cell-count="{ item }">{{ item.count }}</template>
-            <template #cell-pendingApprovals="{ item }">
-              <span :class="item.pendingApprovalCount > 0 ? 'text-orange-600 font-bold' : 'text-gray-600'">
-                {{ item.pendingApprovalCount || 0 }}
-              </span>
+            <template #cell-count="{ item }">
+              <div class="flex items-center gap-1">
+                <span>{{ item.count }}</span>
+                <span v-if="item.pendingApprovalCount > 0" class="text-orange-600 font-bold text-xs">
+                  (Missing {{ item.pendingApprovalCount }} Approvals)
+                </span>
+              </div>
             </template>
-
-            <template #cell-clocked="{ item }">{{ item.mostRecentClockIn ? formatTime(item.mostRecentClockIn) : '—' }}</template>
             <template #cell-lateCount="{ item }">
               <span :class="item.lateCount > 0 ? 'text-red-600 font-bold' : 'text-gray-600'">
                 {{ item.lateCount }}
@@ -84,12 +82,13 @@
 
             <template #mobile-card="{ item }">
               <div class="font-medium text-gray-900 dark:text-gray-100 mb-1">{{ item.employeeName || item.user_id }}</div>
-              <div class="text-xs text-gray-600 dark:text-gray-400">Entries: {{ item.count }}</div>
-              <div class="text-xs" :class="item.pendingApprovalCount > 0 ? 'text-orange-600 font-bold' : 'text-gray-600'">Missing Approvals: {{ item.pendingApprovalCount || 0 }}</div>
-
-              <div class="text-xs text-gray-600 dark:text-gray-400">Clock In: {{ item.mostRecentClockIn ? formatTime(item.mostRecentClockIn) : '—' }}</div>
+              <div class="text-xs text-gray-600 dark:text-gray-400">
+                Entries: {{ item.count }}
+                <span v-if="item.pendingApprovalCount > 0" class="text-orange-600 font-bold ml-1">
+                  (Missing {{ item.pendingApprovalCount }} Approvals)
+                </span>
+              </div>
               <div class="text-xs" :class="item.lateCount > 0 ? 'text-red-600 font-bold' : 'text-gray-600'">Late Count: {{ item.lateCount }}</div>
-
               <div class="text-xs text-gray-900 dark:text-gray-100 flex justify-between mt-1"><span>Amount</span><span>{{ formatCurrency(item.amount) }}</span></div>
               <div class="mt-2 text-right"><button class="btn-secondary btn-xs" @click="openEdit(item)">Edit</button></div>
             </template>
