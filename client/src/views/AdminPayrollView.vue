@@ -873,7 +873,9 @@ const openEdit = (row) => {
       clock_out_at: e.clock_out_at, // Keep full ISO string for timezone conversion  
       amount: e.amount, 
       paid: !!e.paid,
-      approved_by: e.approved_by // Track approval status for UI logic
+      approved_by: e.approved_by, // Track approval status for UI logic
+      shift_start: e.shift_start, // Required for smart detection
+      shift_end: e.shift_end // Required for smart detection
     }))
   }
 }
@@ -1187,25 +1189,39 @@ const isComplexEntry = (entry) => {
   // 3. It's missing amount calculation
   
   if (!entry.shift_start || !entry.clock_in_at || !entry.clock_out_at) {
+    console.log('🔍 Smart detection: Missing required data', { 
+      shift_start: entry.shift_start, 
+      clock_in_at: entry.clock_in_at, 
+      clock_out_at: entry.clock_out_at 
+    })
     return false // Can't determine complexity without full data
   }
   
   // Very late (more than 30 minutes)
-  if (getLateDuration(entry) > 30) {
+  const lateDuration = getLateDuration(entry)
+  if (lateDuration > 30) {
+    console.log('🔍 Smart detection: Very late entry', { lateDuration })
     return true
   }
   
   // Check work duration
   const workDuration = getWorkDuration(entry)
   if (workDuration > 12 || workDuration < 0.5) {
+    console.log('🔍 Smart detection: Unusual work duration', { workDuration })
     return true
   }
   
   // Check if amount seems wrong or missing
   if (!entry.amount || entry.amount <= 0) {
+    console.log('🔍 Smart detection: Missing or invalid amount', { amount: entry.amount })
     return true
   }
   
+  console.log('🔍 Smart detection: Entry is normal', { 
+    lateDuration, 
+    workDuration, 
+    amount: entry.amount 
+  })
   return false
 }
 
@@ -1219,7 +1235,9 @@ const editBeforeApprove = (entry) => {
       clock_out_at: entry.clock_out_at,
       amount: entry.amount,
       paid: entry.paid || false,
-      approved_by: entry.approved_by
+      approved_by: entry.approved_by,
+      shift_start: entry.shift_start, // Required for smart detection
+      shift_end: entry.shift_end // Required for smart detection
     }],
     approveAfterSave: true // Flag to approve after saving
   }
@@ -1260,7 +1278,9 @@ const openEditEntry = (entry) => {
       clock_out_at: entry.clock_out_at,
       amount: entry.amount,
       paid: entry.paid || false,
-      approved_by: entry.approved_by
+      approved_by: entry.approved_by,
+      shift_start: entry.shift_start, // Required for smart detection
+      shift_end: entry.shift_end // Required for smart detection
     }]
   }
 }
