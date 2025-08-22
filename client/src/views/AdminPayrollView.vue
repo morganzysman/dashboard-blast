@@ -138,10 +138,10 @@
                 </div>
                 <div class="flex items-center gap-1">
                   <div class="w-3 h-3 rounded-full bg-orange-500 flex items-center justify-center animate-pulse">
-                    <span class="text-white text-[6px] font-bold">⏳</span>
+                    <span class="text-white text-[6px] font-bold">⋯</span>
                   </div>
                   <span class="hidden sm:inline">Pending</span>
-                  <span class="sm:hidden">⏳</span>
+                  <span class="sm:hidden">⋯</span>
                 </div>
               </div>
             </div>
@@ -177,7 +177,7 @@
         <div v-else-if="e.clock_out_at && !e.paid"
               class="w-4 h-4 rounded-full bg-orange-500 flex items-center justify-center animate-pulse"
               title="Pending approval">
-          <span class="text-white text-[8px] font-bold">⏳</span>
+          <span class="text-white text-[8px] font-bold">⋯</span>
         </div>
                         
                         <!-- Payment status icon -->
@@ -1060,7 +1060,7 @@ const showEntryTooltip = (entry, event) => {
   } else if (entry.approved_by) {
     statusText = `✅ Approved by ${entry.approved_by_name || 'Manager'}`
   } else if (entry.clock_out_at) {
-    statusText = '⏳ Pending approval'
+            statusText = '⋯ Pending approval'
   } else {
     statusText = '🕒 Working'
   }
