@@ -42,93 +42,6 @@
             <button v-if="companyToken" class="btn-secondary btn-sm" @click="downloadQr">Download QR</button>
           </div>
           
-          <!-- Pending Approvals Section -->
-          <div v-if="companyToken" class="mb-6">
-            <div class="flex items-center justify-between mb-3">
-              <h3 class="text-md font-semibold text-gray-900">
-                Pending Approvals
-                <span v-if="pendingApprovals.length > 0" class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                  {{ pendingApprovals.length }}
-                </span>
-              </h3>
-              <button class="btn-secondary btn-sm" @click="loadPendingApprovals" :disabled="loadingApprovals">
-                {{ loadingApprovals ? 'Loading...' : 'Refresh' }}
-              </button>
-            </div>
-            
-            <div v-if="loadingApprovals" class="text-center py-4 text-gray-500">
-              Loading pending approvals...
-            </div>
-            
-            <div v-else-if="pendingApprovals.length === 0" class="text-center py-4 text-gray-500 bg-gray-50 rounded-lg">
-              No entries pending approval for this account.
-            </div>
-            
-            <ResponsiveTable
-              v-else
-              :items="pendingApprovals"
-              :columns="[
-                { key: 'user_name', label: 'Employee', skeletonWidth: 'w-40' },
-                { key: 'clock_in_out', label: 'Clock In/Out', skeletonWidth: 'w-32' },
-                { key: 'duration', label: 'Duration', skeletonWidth: 'w-20' },
-                { key: 'amount', label: 'Amount', cellClass: 'text-right', skeletonWidth: 'w-16' },
-                { key: 'actions', label: 'Actions', skeletonWidth: 'w-24' }
-              ]"
-              :stickyHeader="false"
-              :loading="false"
-              rowKeyField="id"
-              mobileTitleField="user_name"
-            >
-              <template #cell-user_name="{ item }">
-                {{ item.user_name }}
-                <div class="text-xs text-gray-500">{{ item.user_email }}</div>
-              </template>
-              
-              <template #cell-clock_in_out="{ item }">
-                <div class="text-xs">
-                  <div>In: {{ formatDateTime(item.clock_in_at) }}</div>
-                  <div>Out: {{ formatDateTime(item.clock_out_at) }}</div>
-                </div>
-              </template>
-              
-              <template #cell-duration="{ item }">
-                {{ formatDurationHours(item.clock_in_at, item.clock_out_at) }}
-              </template>
-              
-              <template #cell-amount="{ item }">
-                {{ formatCurrency(item.amount) }}
-              </template>
-              
-              <template #cell-actions="{ item }">
-                <div class="flex gap-1">
-                  <button class="btn-secondary btn-xs" @click="openEditEntry(item)">Edit</button>
-                  <button class="btn-primary btn-xs" @click="approveEntry(item.id)" :disabled="approvingEntry === item.id">
-                    {{ approvingEntry === item.id ? 'Approving...' : 'Approve' }}
-                  </button>
-                </div>
-              </template>
-
-              <template #mobile-card="{ item }">
-                <div class="font-medium text-gray-900 mb-1">{{ item.user_name }}</div>
-                <div class="text-xs text-gray-600 mb-2">{{ item.user_email }}</div>
-                <div class="text-xs text-gray-600">
-                  <div>In: {{ formatDateTime(item.clock_in_at) }}</div>
-                  <div>Out: {{ formatDateTime(item.clock_out_at) }}</div>
-                  <div>Duration: {{ formatDurationHours(item.clock_in_at, item.clock_out_at) }}</div>
-                </div>
-                <div class="flex justify-between items-center mt-2">
-                  <span class="font-medium">{{ formatCurrency(item.amount) }}</span>
-                  <div class="flex gap-1">
-                    <button class="btn-secondary btn-xs" @click="openEditEntry(item)">Edit</button>
-                    <button class="btn-primary btn-xs" @click="approveEntry(item.id)" :disabled="approvingEntry === item.id">
-                      {{ approvingEntry === item.id ? 'Approving...' : 'Approve' }}
-                    </button>
-                  </div>
-                </div>
-              </template>
-            </ResponsiveTable>
-          </div>
-          
           <!-- Employee Summary Table -->
           <div class="mb-4">
             <h3 class="text-md font-semibold text-gray-900 mb-3">Employee Summary</h3>
@@ -138,10 +51,9 @@
             :columns="[
               { key: 'employee', label: 'Employee', skeletonWidth: 'w-40' },
               { key: 'count', label: 'Entries', skeletonWidth: 'w-10' },
-
+              { key: 'pendingApprovals', label: 'Missing Approvals', skeletonWidth: 'w-16' },
               { key: 'clocked', label: 'Clock In Time', skeletonWidth: 'w-20' },
               { key: 'lateCount', label: 'Late Count', skeletonWidth: 'w-24' },
-
               { key: 'amount', label: 'Amount', cellClass: 'text-right', skeletonWidth: 'w-16' },
               { key: 'actions', label: 'Actions', skeletonWidth: 'w-16' }
             ]"
@@ -154,6 +66,11 @@
                 {{ item.employeeName || item.user_id }}
             </template>
             <template #cell-count="{ item }">{{ item.count }}</template>
+            <template #cell-pendingApprovals="{ item }">
+              <span :class="item.pendingApprovalCount > 0 ? 'text-orange-600 font-bold' : 'text-gray-600'">
+                {{ item.pendingApprovalCount || 0 }}
+              </span>
+            </template>
 
             <template #cell-clocked="{ item }">{{ item.mostRecentClockIn ? formatTime(item.mostRecentClockIn) : '—' }}</template>
             <template #cell-lateCount="{ item }">
@@ -168,6 +85,7 @@
             <template #mobile-card="{ item }">
               <div class="font-medium text-gray-900 dark:text-gray-100 mb-1">{{ item.employeeName || item.user_id }}</div>
               <div class="text-xs text-gray-600 dark:text-gray-400">Entries: {{ item.count }}</div>
+              <div class="text-xs" :class="item.pendingApprovalCount > 0 ? 'text-orange-600 font-bold' : 'text-gray-600'">Missing Approvals: {{ item.pendingApprovalCount || 0 }}</div>
 
               <div class="text-xs text-gray-600 dark:text-gray-400">Clock In: {{ item.mostRecentClockIn ? formatTime(item.mostRecentClockIn) : '—' }}</div>
               <div class="text-xs" :class="item.lateCount > 0 ? 'text-red-600 font-bold' : 'text-gray-600'">Late Count: {{ item.lateCount }}</div>
@@ -191,9 +109,10 @@
           
           <!-- Simple calendar-like visualization -->
           <div class="mt-6">
-            <div class="flex items-center justify-between mb-2">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
               <h3 class="text-md font-semibold">Entries Calendar</h3>
-              <div class="flex items-center gap-2 sm:gap-4 text-xs">
+              <div class="flex flex-wrap items-center gap-2 sm:gap-4 text-xs">
+                <!-- Time status colors -->
                 <div class="flex items-center gap-1">
                   <div class="w-3 h-3 rounded bg-blue-500"></div>
                   <span class="hidden sm:inline">On time (≤5 min late)</span>
@@ -209,12 +128,27 @@
                   <span class="hidden sm:inline">No shift data</span>
                   <span class="sm:hidden">No shift data</span>
                 </div>
+                <!-- Approval status icons -->
+                <div class="flex items-center gap-1 ml-2 pl-2 border-l border-gray-300">
+                  <div class="w-3 h-3 rounded-full bg-green-500 flex items-center justify-center">
+                    <span class="text-white text-[6px] font-bold">✓</span>
+                  </div>
+                  <span class="hidden sm:inline">Approved</span>
+                  <span class="sm:hidden">✓</span>
+                </div>
+                <div class="flex items-center gap-1">
+                  <div class="w-3 h-3 rounded-full bg-orange-500 flex items-center justify-center animate-pulse">
+                    <span class="text-white text-[6px] font-bold">⏳</span>
+                  </div>
+                  <span class="hidden sm:inline">Pending</span>
+                  <span class="sm:hidden">⏳</span>
+                </div>
               </div>
             </div>
             <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 lg:gap-3 text-xs">
               <div class="text-gray-500 hidden lg:block" v-for="d in ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']" :key="d">{{ d }}</div>
-              <template v-for="day in daysInPeriod" :key="day.date">
-                <div class="border rounded p-2 min-h-[100px]">
+              <template v-for="day in daysInPeriod">
+                <div :key="day.date" class="border rounded p-2 min-h-[100px]">
                   <div class="text-[10px] text-gray-400 text-center lg:hidden">{{ day.weekday }}</div>
                   <div class="text-[10px] text-gray-500 text-center">{{ day.label }}</div>
                   <div class="space-y-1 mt-1">
@@ -231,12 +165,29 @@
                       <div class="flex justify-between items-center gap-x-1">
                         <span class="truncate">{{ userName(e.user_id) }}</span>
                         <div class="flex items-center gap-1">
-                          <!-- Approval status icon -->
-                          <span v-if="e.approved_by" class="text-green-400 text-[10px]" :title="`Approved by ${e.approved_by_name || 'Manager'}`">✓</span>
-                          <span v-else-if="e.clock_out_at && !e.paid" class="text-orange-300 text-[10px] animate-pulse" title="Pending approval">●</span>
+                          <!-- Approval status icon - larger and more prominent -->
+                          <div v-if="e.approved_by" 
+                               class="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center" 
+                               :title="`Approved by ${e.approved_by_name || 'Manager'}`">
+                            <span class="text-white text-[8px] font-bold">✓</span>
+                          </div>
+                          <div v-else-if="e.clock_out_at && !e.paid" 
+                               class="w-4 h-4 rounded-full bg-orange-500 flex items-center justify-center animate-pulse" 
+                               title="Pending approval">
+                            <span class="text-white text-[8px] font-bold">⏳</span>
+                          </div>
+                          <div v-else-if="!e.clock_out_at" 
+                               class="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center" 
+                               title="Currently working">
+                            <span class="text-white text-[8px] font-bold">●</span>
+                          </div>
                           
                           <!-- Payment status icon -->
-                          <span v-if="e.paid" class="text-yellow-300 text-[10px]" title="Paid">$</span>
+                          <div v-if="e.paid" 
+                               class="w-3 h-3 rounded-full bg-yellow-500 flex items-center justify-center ml-1" 
+                               title="Paid">
+                            <span class="text-white text-[6px] font-bold">$</span>
+                          </div>
                         </div>
                       </div>
                       <div class="text-[9px] opacity-90 mt-1">
@@ -246,27 +197,51 @@
                         {{ e.amount ? formatCurrency(e.amount) : '' }}
                       </div>
                       
-                      <!-- Hover overlay with actions (only show for pending entries) -->
+                      <!-- Hover overlay with actions (show for different entry states) -->
                       <div 
-                        v-if="e.clock_out_at && !e.approved_by && !e.paid"
-                        class="absolute inset-0 bg-black bg-opacity-75 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-1"
+                        v-if="e.clock_out_at"
+                        class="absolute inset-0 bg-black bg-opacity-80 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-1"
                         @click.stop
                       >
+                        <!-- Edit button for all completed entries -->
                         <button 
+                          v-if="!e.paid"
                           @click="openEditEntry(e)"
-                          class="inline-flex items-center px-1.5 py-0.5 bg-gray-600 hover:bg-gray-700 text-white rounded text-[8px] font-medium transition-colors"
-                          title="Edit entry"
+                          class="inline-flex items-center px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-[8px] font-medium transition-colors shadow-md"
+                          title="Edit entry times and amount"
                         >
-                          ✏️
+                          <span class="mr-0.5">✏️</span> Edit
                         </button>
+                        
+                        <!-- Quick approve button for pending entries -->
                         <button 
-                          @click="approveEntry(e.id)"
+                          v-if="!e.approved_by && !e.paid"
+                          @click="quickApproveEntry(e.id)"
                           :disabled="approvingEntry === e.id"
-                          class="inline-flex items-center px-1.5 py-0.5 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white rounded text-[8px] font-medium transition-colors"
-                          :title="approvingEntry === e.id ? 'Approving...' : 'Approve entry'"
+                          class="inline-flex items-center px-2 py-1 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white rounded text-[8px] font-medium transition-colors shadow-md"
+                          :title="approvingEntry === e.id ? 'Approving...' : 'Quick approve this entry'"
                         >
-                          {{ approvingEntry === e.id ? '⏳' : '✓' }}
+                          <span class="mr-0.5">{{ approvingEntry === e.id ? '⏳' : '✓' }}</span>
+                          {{ approvingEntry === e.id ? 'Approving...' : 'Approve' }}
                         </button>
+                        
+                        <!-- Edit & Approve button for more complex cases -->
+                        <button 
+                          v-if="!e.approved_by && !e.paid && isComplexEntry(e)"
+                          @click="editBeforeApprove(e)"
+                          class="inline-flex items-center px-2 py-1 bg-yellow-600 hover:bg-yellow-700 text-white rounded text-[8px] font-medium transition-colors shadow-md"
+                          title="Review and approve this entry"
+                        >
+                          <span class="mr-0.5">🔍</span> Review
+                        </button>
+                        
+                        <!-- Already approved indicator -->
+                        <div 
+                          v-if="e.approved_by"
+                          class="inline-flex items-center px-2 py-1 bg-green-800 text-white rounded text-[8px] font-medium"
+                        >
+                          <span class="mr-0.5">✅</span> Approved
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -328,9 +303,33 @@
           </div>
         </div>
         <div class="mt-3 text-right text-sm text-gray-600">Total selected: {{ editEntry.list.length }} • Editable: {{ editableCount }} • Sum: {{ formatCurrency(editableSum) }}</div>
-        <div class="mt-4 flex justify-end gap-2">
-          <button class="btn-secondary btn-sm" @click="editEntry=null">Cancel</button>
-          <button class="btn-primary btn-sm" :disabled="editableCount === 0" :class="{ 'opacity-50 cursor-not-allowed': editableCount === 0 }" @click="saveEdit">Save</button>
+        <div class="mt-4 flex justify-between">
+          <div class="flex items-center gap-2">
+            <span v-if="editEntry.approveAfterSave" class="text-xs text-green-600 font-medium">
+              ✅ Will approve after saving
+            </span>
+          </div>
+          <div class="flex gap-2">
+            <button class="btn-secondary btn-sm" @click="editEntry=null">Cancel</button>
+            <button 
+              v-if="editEntry.approveAfterSave"
+              class="btn-success btn-sm" 
+              :disabled="editableCount === 0" 
+              :class="{ 'opacity-50 cursor-not-allowed': editableCount === 0 }" 
+              @click="saveEdit"
+            >
+              Save & Approve
+            </button>
+            <button 
+              v-else
+              class="btn-primary btn-sm" 
+              :disabled="editableCount === 0" 
+              :class="{ 'opacity-50 cursor-not-allowed': editableCount === 0 }" 
+              @click="saveEdit"
+            >
+              Save
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -393,9 +392,7 @@ const editEntry = ref(null)
 const deleteConfirmation = ref(null)
 const deleting = ref(false)
 
-// Approvals state
-const pendingApprovals = ref([])
-const loadingApprovals = ref(false)
+// Approvals state (for calendar interactions only)
 const approvingEntry = ref(null)
 
 // Tooltip state
@@ -417,8 +414,6 @@ const loadEntries = async () => {
       entries.value = res.data
       period.value = res.period
     }
-    // Also load pending approvals for the same account
-    await loadPendingApprovals()
   } finally {
     loading.value = false
   }
@@ -437,7 +432,8 @@ const groupByUser = computed(() => {
       totalAmount: 0,
       clockInTimes: [],
       entries: [],
-      lateEntries: 0
+      lateEntries: 0,
+      pendingApprovals: 0
     }
     
     // Calculate duration properly - times are already in UTC, just calculate difference
@@ -494,6 +490,11 @@ const groupByUser = computed(() => {
         }
       }
       
+      // Count entries that need approval (clocked out but not approved)
+      if (e.clock_out_at && !e.approved_by) {
+        curr.pendingApprovals += 1
+      }
+      
       // Log for debugging
       if (!e.clock_out_at) {
         console.log(`⏰ Open entry for ${userName(key)}:`, {
@@ -514,7 +515,9 @@ const groupByUser = computed(() => {
     // Show the most recent clock-in time for this user
     mostRecentClockIn: u.clockInTimes.length > 0 ? u.clockInTimes.sort().reverse()[0] : null,
     // Late count: number of entries where clock_in_at > shift_start + 5 minutes
-    lateCount: u.lateEntries
+    lateCount: u.lateEntries,
+    // Pending approval count: number of completed entries without approval
+    pendingApprovalCount: u.pendingApprovals
   })).sort((a,b)=> (a.employeeName||'').localeCompare(b.employeeName||''))
 })
 
@@ -853,27 +856,67 @@ const openEdit = (row) => {
 
 const saveEdit = async () => {
   const list = editEntry.value.list || []
+  const shouldApproveAfter = editEntry.value.approveAfterSave
+  const entryIdsToApprove = []
+  
+  try {
     for (const e of list) {
-    if (e.paid) continue
+      if (e.paid) continue
       const body = {
         clock_in_at: e.clock_in_at ? new Date(e.clock_in_at).toISOString() : null,
         clock_out_at: e.clock_out_at ? new Date(e.clock_out_at).toISOString() : null,
         amount: e.amount != null && e.amount !== '' ? Number(e.amount) : undefined
       }
+      
       if (e.id) {
         await api.updateEntry(e.id, body)
+        if (shouldApproveAfter && e.clock_out_at && !e.paid) {
+          entryIdsToApprove.push(e.id)
+        }
       } else {
         // New entry
         if (!body.clock_in_at) continue
-        await api.createEntry({
+        const newEntry = await api.createEntry({
           user_id: editEntry.value.user_id,
           company_token: companyToken.value,
           ...body
         })
+        if (shouldApproveAfter && body.clock_out_at && newEntry.data?.id) {
+          entryIdsToApprove.push(newEntry.data.id)
+        }
       }
+    }
+    
+    // If we should approve after saving, do it now
+    if (shouldApproveAfter && entryIdsToApprove.length > 0) {
+      for (const entryId of entryIdsToApprove) {
+        await api.approveEntry(entryId)
+      }
+      
+      window.showNotification?.({ 
+        type: 'success', 
+        title: 'Success', 
+        message: `Entry saved and approved successfully` 
+      })
+    } else {
+      window.showNotification?.({ 
+        type: 'success', 
+        title: 'Success', 
+        message: 'Entry saved successfully' 
+      })
+    }
+    
+  } catch (error) {
+    console.error('❌ Failed to save/approve entry:', error)
+    window.showNotification?.({ 
+      type: 'error', 
+      title: 'Error', 
+      message: 'Failed to save entry' 
+    })
   }
+  
   editEntry.value = null
-  loadEntries()
+  await loadEntries()
 }
 
 const editableCount = computed(() => (editEntry.value?.list || []).filter(e => !e.paid).length)
@@ -1051,23 +1094,100 @@ const openCalendarEntryActions = (entry, event) => {
 
 // Approvals functionality
 
-const loadPendingApprovals = async () => {
-  if (!companyToken.value) return
-  loadingApprovals.value = true
+// Quick approve an entry without editing
+const quickApproveEntry = async (entryId) => {
+  approvingEntry.value = entryId
   try {
-    const res = await api.getPendingApprovals(companyToken.value)
+    const res = await api.approveEntry(entryId)
     if (res.success) {
-      pendingApprovals.value = res.data
+      // Update the entry in the current entries list
+      const entryIndex = entries.value.findIndex(e => e.id === entryId)
+      if (entryIndex !== -1) {
+        entries.value[entryIndex].approved_by = auth.user.id
+        entries.value[entryIndex].approved_by_name = auth.user.name
+      }
+      
+      window.showNotification?.({ 
+        type: 'success', 
+        title: 'Success', 
+        message: 'Entry approved successfully' 
+      })
+      
+      // Reload entries to get updated data
+      await loadEntries()
     }
   } catch (e) {
-    console.error('❌ Failed to load pending approvals:', e)
+    console.error('❌ Failed to approve entry:', e)
     window.showNotification?.({ 
       type: 'error', 
       title: 'Error', 
-      message: 'Failed to load pending approvals' 
+      message: 'Failed to approve entry' 
     })
   } finally {
-    loadingApprovals.value = false
+    approvingEntry.value = null
+  }
+}
+
+// Check if entry needs review before approval (complex cases)
+const isComplexEntry = (entry) => {
+  // Consider an entry complex if:
+  // 1. It's very late (more than 30 minutes)
+  // 2. It has unusual hours (more than 12 hours)
+  // 3. It's missing amount calculation
+  
+  if (!entry.shift_start || !entry.clock_in_at || !entry.clock_out_at) {
+    return false // Can't determine complexity without full data
+  }
+  
+  // Check if very late
+  const timezone = auth.user?.timezone || 'America/Lima'
+  const clockInDate = new Date(entry.clock_in_at)
+  const clockInTimeLocal = clockInDate.toLocaleTimeString('en-GB', {
+    timeZone: timezone,
+    hour12: false,
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  })
+  
+  const clockInDateLocal = clockInDate.toLocaleDateString('sv-SE', { timeZone: timezone })
+  const scheduledDateTime = new Date(`${clockInDateLocal}T${entry.shift_start}`)
+  const actualDateTime = new Date(`${clockInDateLocal}T${clockInTimeLocal}`)
+  
+  const lateDurationMs = actualDateTime.getTime() - scheduledDateTime.getTime()
+  const lateMinutes = lateDurationMs / (1000 * 60)
+  
+  // Very late (more than 30 minutes)
+  if (lateMinutes > 30) {
+    return true
+  }
+  
+  // Check work duration
+  const workDuration = (new Date(entry.clock_out_at) - new Date(entry.clock_in_at)) / (1000 * 60 * 60) // hours
+  if (workDuration > 12 || workDuration < 0.5) {
+    return true
+  }
+  
+  // Check if amount seems wrong or missing
+  if (!entry.amount || entry.amount <= 0) {
+    return true
+  }
+  
+  return false
+}
+
+// Open edit modal with approval context
+const editBeforeApprove = (entry) => {
+  editEntry.value = {
+    user_id: entry.user_id,
+    list: [{
+      id: entry.id,
+      clock_in_at: entry.clock_in_at,
+      clock_out_at: entry.clock_out_at,
+      amount: entry.amount,
+      paid: entry.paid || false
+    }],
+    approveAfterSave: true // Flag to approve after saving
   }
 }
 
