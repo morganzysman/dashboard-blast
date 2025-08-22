@@ -720,8 +720,13 @@ const daysInPeriod = computed(() => {
     })
     
     // Get weekday name for this date in company timezone
-    const tempDate = new Date(year, currentDate.getMonth(), currentDate.getDate(), 12, 0, 0)
-    const weekday = tempDate.toLocaleDateString('en-US', { weekday: 'short' })
+    // Create a date string in the company timezone and parse it to get the correct weekday
+    const dateString = `${year}-${month}-${day}T12:00:00`
+    const tempDate = new Date(dateString)
+    const weekday = tempDate.toLocaleDateString('en-US', { 
+      weekday: 'short',
+      timeZone: timezone 
+    })
     
     days.push({ 
       date: iso, 
