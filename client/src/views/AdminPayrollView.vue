@@ -273,7 +273,33 @@
         </div>
         <p class="text-xs text-gray-500 mb-3">Period: {{ periodLabel }} • Times shown in {{ auth.user?.timezone || 'America/Lima' }}</p>
         <div class="max-h-[60vh] overflow-auto space-y-3 pr-1">
-          <div v-for="(e, idx) in editEntry.list" :key="e.id || `new-${idx}`" class="grid grid-cols-1 sm:grid-cols-3 gap-2 items-end rounded p-2" :class="e.paid ? 'bg-gray-50 opacity-70' : e.approved_by ? 'bg-green-50 opacity-70' : 'bg-white'">
+          <div v-for="(e, idx) in editEntry.list" :key="e.id || `new-${idx}`" class="relative grid grid-cols-1 sm:grid-cols-3 gap-2 items-end rounded p-2" :class="e.paid ? 'bg-gray-50 opacity-70' : e.approved_by ? 'bg-green-50 opacity-70' : isComplexEntry(e) ? 'bg-yellow-50' : 'bg-white'">
+            <!-- Smart detection warning -->
+            <div v-if="!e.paid && !e.approved_by && isComplexEntry(e)" class="absolute -top-2 -right-1">
+              <div class="relative group">
+                <div class="w-5 h-5 rounded-full bg-yellow-500 flex items-center justify-center cursor-help">
+                  <span class="text-white text-[10px] font-bold">🤖</span>
+                </div>
+                <!-- Tooltip -->
+                <div class="absolute bottom-full right-0 mb-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg p-3 text-xs hidden group-hover:block z-10">
+                  <div class="font-medium text-gray-900 mb-1">Smart Detection Flags:</div>
+                  <ul class="space-y-1 text-gray-600">
+                    <li v-if="getLateDuration(e) > 30" class="flex items-center gap-1">
+                      <span class="text-red-500">⚠️</span> {{ getLateDuration(e) }} minutes late
+                    </li>
+                    <li v-if="getWorkDuration(e) > 12" class="flex items-center gap-1">
+                      <span class="text-yellow-500">⚠️</span> Long shift: {{ getWorkDuration(e).toFixed(1) }} hours
+                    </li>
+                    <li v-if="getWorkDuration(e) < 0.5" class="flex items-center gap-1">
+                      <span class="text-yellow-500">⚠️</span> Very short shift: {{ (getWorkDuration(e) * 60).toFixed(0) }} minutes
+                    </li>
+                    <li v-if="!e.amount || e.amount <= 0" class="flex items-center gap-1">
+                      <span class="text-red-500">⚠️</span> Missing or invalid amount
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
             <div>
               <label class="text-xs text-gray-700">Clock In</label>
               <input 
@@ -1131,18 +1157,10 @@ const quickApproveEntry = async (entryId) => {
   }
 }
 
-// Check if entry needs review before approval (complex cases)
-const isComplexEntry = (entry) => {
-  // Consider an entry complex if:
-  // 1. It's very late (more than 30 minutes)
-  // 2. It has unusual hours (more than 12 hours)
-  // 3. It's missing amount calculation
+// Helper functions for smart detection
+const getLateDuration = (entry) => {
+  if (!entry.shift_start || !entry.clock_in_at) return 0
   
-  if (!entry.shift_start || !entry.clock_in_at || !entry.clock_out_at) {
-    return false // Can't determine complexity without full data
-  }
-  
-  // Check if very late
   const timezone = auth.user?.timezone || 'America/Lima'
   const clockInDate = new Date(entry.clock_in_at)
   const clockInTimeLocal = clockInDate.toLocaleTimeString('en-GB', {
@@ -1158,15 +1176,32 @@ const isComplexEntry = (entry) => {
   const actualDateTime = new Date(`${clockInDateLocal}T${clockInTimeLocal}`)
   
   const lateDurationMs = actualDateTime.getTime() - scheduledDateTime.getTime()
-  const lateMinutes = lateDurationMs / (1000 * 60)
+  return Math.round(lateDurationMs / (1000 * 60)) // minutes
+}
+
+const getWorkDuration = (entry) => {
+  if (!entry.clock_in_at || !entry.clock_out_at) return 0
+  return (new Date(entry.clock_out_at) - new Date(entry.clock_in_at)) / (1000 * 60 * 60) // hours
+}
+
+// Check if entry needs review before approval (complex cases)
+const isComplexEntry = (entry) => {
+  // Consider an entry complex if:
+  // 1. It's very late (more than 30 minutes)
+  // 2. It has unusual hours (more than 12 hours)
+  // 3. It's missing amount calculation
+  
+  if (!entry.shift_start || !entry.clock_in_at || !entry.clock_out_at) {
+    return false // Can't determine complexity without full data
+  }
   
   // Very late (more than 30 minutes)
-  if (lateMinutes > 30) {
+  if (getLateDuration(entry) > 30) {
     return true
   }
   
   // Check work duration
-  const workDuration = (new Date(entry.clock_out_at) - new Date(entry.clock_in_at)) / (1000 * 60 * 60) // hours
+  const workDuration = getWorkDuration(entry)
   if (workDuration > 12 || workDuration < 0.5) {
     return true
   }
