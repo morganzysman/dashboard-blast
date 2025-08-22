@@ -147,106 +147,108 @@
             </div>
             <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 lg:gap-3 text-xs">
               <div class="text-gray-500 hidden lg:block" v-for="d in ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']" :key="d">{{ d }}</div>
-              <template v-for="day in daysInPeriod">
-                <div :key="day.date" class="border rounded p-2 min-h-[100px]">
-                  <div class="text-[10px] text-gray-400 text-center lg:hidden">{{ day.weekday }}</div>
-                  <div class="text-[10px] text-gray-500 text-center">{{ day.label }}</div>
-                  <div class="space-y-1 mt-1">
+              <div 
+                v-for="day in daysInPeriod" 
+                :key="day.date"
+                class="border rounded p-2 min-h-[100px]"
+              >
+                <div class="text-[10px] text-gray-400 text-center lg:hidden">{{ day.weekday }}</div>
+                <div class="text-[10px] text-gray-500 text-center">{{ day.label }}</div>
+                <div class="space-y-1 mt-1">
+                  <div 
+                    v-for="e in day.entries" 
+                    :key="e.id" 
+                    class="relative group rounded px-1 py-0.5 text-[10px] text-white cursor-pointer transition-all duration-200 hover:shadow-md hover:scale-105" 
+                    :style="{ backgroundColor: getEntryColor(e) }"
+                    @mouseenter="showEntryTooltip(e, $event)"
+                    @mouseleave="hideEntryTooltip"
+                    @click="openCalendarEntryActions(e, $event)"
+                  >
+                    <!-- Entry content -->
+                    <div class="flex justify-between items-center gap-x-1">
+                      <span class="truncate">{{ userName(e.user_id) }}</span>
+                      <div class="flex items-center gap-1">
+                        <!-- Approval status icon - larger and more prominent -->
+                        <div v-if="e.approved_by" 
+                             class="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center" 
+                             :title="`Approved by ${e.approved_by_name || 'Manager'}`">
+                          <span class="text-white text-[8px] font-bold">✓</span>
+                        </div>
+                        <div v-else-if="e.clock_out_at && !e.paid" 
+                             class="w-4 h-4 rounded-full bg-orange-500 flex items-center justify-center animate-pulse" 
+                             title="Pending approval">
+                          <span class="text-white text-[8px] font-bold">⏳</span>
+                        </div>
+                        <div v-else-if="!e.clock_out_at" 
+                             class="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center" 
+                             title="Currently working">
+                          <span class="text-white text-[8px] font-bold">●</span>
+                        </div>
+                        
+                        <!-- Payment status icon -->
+                        <div v-if="e.paid" 
+                             class="w-3 h-3 rounded-full bg-yellow-500 flex items-center justify-center ml-1" 
+                             title="Paid">
+                          <span class="text-white text-[6px] font-bold">$</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="text-[9px] opacity-90 mt-1">
+                      {{ formatTime(e.clock_in_at) }} - {{ e.clock_out_at ? formatTime(e.clock_out_at) : '...' }}
+                    </div>
+                    <div class="text-[9px] font-medium mt-0.5">
+                      {{ e.amount ? formatCurrency(e.amount) : '' }}
+                    </div>
+                    
+                    <!-- Hover overlay with actions (show for different entry states) -->
                     <div 
-                      v-for="e in day.entries" 
-                      :key="e.id" 
-                      class="relative group rounded px-1 py-0.5 text-[10px] text-white cursor-pointer transition-all duration-200 hover:shadow-md hover:scale-105" 
-                      :style="{ backgroundColor: getEntryColor(e) }"
-                      @mouseenter="showEntryTooltip(e, $event)"
-                      @mouseleave="hideEntryTooltip"
-                      @click="openCalendarEntryActions(e, $event)"
+                      v-if="e.clock_out_at"
+                      class="absolute inset-0 bg-black bg-opacity-80 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-1"
+                      @click.stop
                     >
-                      <!-- Entry content -->
-                      <div class="flex justify-between items-center gap-x-1">
-                        <span class="truncate">{{ userName(e.user_id) }}</span>
-                        <div class="flex items-center gap-1">
-                          <!-- Approval status icon - larger and more prominent -->
-                          <div v-if="e.approved_by" 
-                               class="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center" 
-                               :title="`Approved by ${e.approved_by_name || 'Manager'}`">
-                            <span class="text-white text-[8px] font-bold">✓</span>
-                          </div>
-                          <div v-else-if="e.clock_out_at && !e.paid" 
-                               class="w-4 h-4 rounded-full bg-orange-500 flex items-center justify-center animate-pulse" 
-                               title="Pending approval">
-                            <span class="text-white text-[8px] font-bold">⏳</span>
-                          </div>
-                          <div v-else-if="!e.clock_out_at" 
-                               class="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center" 
-                               title="Currently working">
-                            <span class="text-white text-[8px] font-bold">●</span>
-                          </div>
-                          
-                          <!-- Payment status icon -->
-                          <div v-if="e.paid" 
-                               class="w-3 h-3 rounded-full bg-yellow-500 flex items-center justify-center ml-1" 
-                               title="Paid">
-                            <span class="text-white text-[6px] font-bold">$</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div class="text-[9px] opacity-90 mt-1">
-                        {{ formatTime(e.clock_in_at) }} - {{ e.clock_out_at ? formatTime(e.clock_out_at) : '...' }}
-                      </div>
-                      <div class="text-[9px] font-medium mt-0.5">
-                        {{ e.amount ? formatCurrency(e.amount) : '' }}
-                      </div>
-                      
-                      <!-- Hover overlay with actions (show for different entry states) -->
-                      <div 
-                        v-if="e.clock_out_at"
-                        class="absolute inset-0 bg-black bg-opacity-80 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-1"
-                        @click.stop
+                      <!-- Edit button for all completed entries -->
+                      <button 
+                        v-if="!e.paid"
+                        @click="openEditEntry(e)"
+                        class="inline-flex items-center px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-[8px] font-medium transition-colors shadow-md"
+                        title="Edit entry times and amount"
                       >
-                        <!-- Edit button for all completed entries -->
-                        <button 
-                          v-if="!e.paid"
-                          @click="openEditEntry(e)"
-                          class="inline-flex items-center px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-[8px] font-medium transition-colors shadow-md"
-                          title="Edit entry times and amount"
-                        >
-                          <span class="mr-0.5">✏️</span> Edit
-                        </button>
-                        
-                        <!-- Quick approve button for pending entries -->
-                        <button 
-                          v-if="!e.approved_by && !e.paid"
-                          @click="quickApproveEntry(e.id)"
-                          :disabled="approvingEntry === e.id"
-                          class="inline-flex items-center px-2 py-1 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white rounded text-[8px] font-medium transition-colors shadow-md"
-                          :title="approvingEntry === e.id ? 'Approving...' : 'Quick approve this entry'"
-                        >
-                          <span class="mr-0.5">{{ approvingEntry === e.id ? '⏳' : '✓' }}</span>
-                          {{ approvingEntry === e.id ? 'Approving...' : 'Approve' }}
-                        </button>
-                        
-                        <!-- Edit & Approve button for more complex cases -->
-                        <button 
-                          v-if="!e.approved_by && !e.paid && isComplexEntry(e)"
-                          @click="editBeforeApprove(e)"
-                          class="inline-flex items-center px-2 py-1 bg-yellow-600 hover:bg-yellow-700 text-white rounded text-[8px] font-medium transition-colors shadow-md"
-                          title="Review and approve this entry"
-                        >
-                          <span class="mr-0.5">🔍</span> Review
-                        </button>
-                        
-                        <!-- Already approved indicator -->
-                        <div 
-                          v-if="e.approved_by"
-                          class="inline-flex items-center px-2 py-1 bg-green-800 text-white rounded text-[8px] font-medium"
-                        >
-                          <span class="mr-0.5">✅</span> Approved
-                        </div>
+                        <span class="mr-0.5">✏️</span> Edit
+                      </button>
+                      
+                      <!-- Quick approve button for pending entries -->
+                      <button 
+                        v-if="!e.approved_by && !e.paid"
+                        @click="quickApproveEntry(e.id)"
+                        :disabled="approvingEntry === e.id"
+                        class="inline-flex items-center px-2 py-1 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white rounded text-[8px] font-medium transition-colors shadow-md"
+                        :title="approvingEntry === e.id ? 'Approving...' : 'Quick approve this entry'"
+                      >
+                        <span class="mr-0.5">{{ approvingEntry === e.id ? '⏳' : '✓' }}</span>
+                        {{ approvingEntry === e.id ? 'Approving...' : 'Approve' }}
+                      </button>
+                      
+                      <!-- Edit & Approve button for more complex cases -->
+                      <button 
+                        v-if="!e.approved_by && !e.paid && isComplexEntry(e)"
+                        @click="editBeforeApprove(e)"
+                        class="inline-flex items-center px-2 py-1 bg-yellow-600 hover:bg-yellow-700 text-white rounded text-[8px] font-medium transition-colors shadow-md"
+                        title="Review and approve this entry"
+                      >
+                        <span class="mr-0.5">🔍</span> Review
+                      </button>
+                      
+                      <!-- Already approved indicator -->
+                      <div 
+                        v-if="e.approved_by"
+                        class="inline-flex items-center px-2 py-1 bg-green-800 text-white rounded text-[8px] font-medium"
+                      >
+                        <span class="mr-0.5">✅</span> Approved
                       </div>
                     </div>
                   </div>
                 </div>
-              </template>
+              </div>
             </div>
           </div>
         </div>
