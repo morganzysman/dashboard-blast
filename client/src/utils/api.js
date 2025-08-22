@@ -238,7 +238,11 @@ export const api = {
     if (weekStart) params.set('week_start', weekStart)
     const qs = params.toString()
     return apiRequest(`/api/payroll/me/shifts${qs ? `?${qs}` : ''}`, { method: 'GET' })
-  }
+  },
+
+  // Approval workflow
+  getPendingApprovals: (companyToken) => apiRequest(`/api/payroll/admin/${companyToken}/pending-approvals`, { method: 'GET' }),
+  approveEntry: (id) => apiRequest(`/api/payroll/admin/entries/${id}/approve`, { method: 'POST' })
 }
 
 export default api 

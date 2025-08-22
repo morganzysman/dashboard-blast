@@ -23,7 +23,42 @@
             </div>
           </div>
         </div>
+        
+        <!-- Tabs -->
         <div class="mt-4">
+          <div class="border-b border-gray-200">
+            <nav class="-mb-px flex space-x-8">
+              <button
+                @click="activeTab = 'payroll'"
+                :class="[
+                  activeTab === 'payroll'
+                    ? 'border-primary-500 text-primary-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300',
+                  'whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm'
+                ]"
+              >
+                Payroll Summary
+              </button>
+              <button
+                @click="activeTab = 'approvals'"
+                :class="[
+                  activeTab === 'approvals'
+                    ? 'border-primary-500 text-primary-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300',
+                  'whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm'
+                ]"
+              >
+                Pending Approvals
+                <span v-if="pendingApprovals.length > 0" class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                  {{ pendingApprovals.length }}
+                </span>
+              </button>
+            </nav>
+          </div>
+        </div>
+
+        <!-- Payroll Tab Content -->
+        <div v-show="activeTab === 'payroll'" class="mt-4">
           <div class="mb-3 flex items-center gap-2 flex-wrap">
             <template v-if="isSuperAdmin">
               <label class="text-xs text-gray-700">Company</label>
@@ -129,12 +164,101 @@
                       <span class="truncate">{{ userName(e.user_id) }}</span>
                       <span>{{ formatTime(e.clock_in_at) }} - {{ e.clock_out_at ? formatTime(e.clock_out_at) : '...' }}</span>
                       <span class="ml-1">{{ e.amount ? formatCurrency(e.amount) : '' }}</span>
-                      <span v-if="e.paid" class="ml-1 bg-green-600 text-white rounded px-1">$</span>
+                      <div class="flex items-center gap-1 ml-1">
+                        <span v-if="e.approved_by" class="bg-blue-600 text-white rounded px-1" title="Approved">✓</span>
+                        <span v-if="e.paid" class="bg-green-600 text-white rounded px-1" title="Paid">$</span>
+                      </div>
                     </div>
                   </div>
                 </div>
               </template>
             </div>
+          </div>
+        </div>
+
+        <!-- Approvals Tab Content -->
+        <div v-show="activeTab === 'approvals'" class="mt-4">
+          <div class="mb-3 flex items-center gap-2 flex-wrap">
+            <template v-if="isSuperAdmin">
+              <label class="text-xs text-gray-700">Company</label>
+              <select v-model="selectedCompanyIdApprovals" class="form-input" @change="loadCompanyAccountsApprovals">
+                <option value="">Select company</option>
+                <option v-for="c in companies" :key="c.id" :value="c.id">{{ c.name }}</option>
+              </select>
+            </template>
+
+            <label class="text-xs text-gray-700">Account</label>
+            <select v-model="companyTokenApprovals" class="form-input" @change="loadPendingApprovals">
+              <option v-for="acc in accountsApprovals" :key="acc.company_token" :value="acc.company_token">{{ acc.account_name || acc.company_token }}</option>
+            </select>
+            <button class="btn-secondary btn-sm" @click="loadPendingApprovals">Load</button>
+          </div>
+          
+          <ResponsiveTable
+            :items="pendingApprovals"
+            :columns="[
+              { key: 'user_name', label: 'Employee', skeletonWidth: 'w-40' },
+              { key: 'clock_in_out', label: 'Clock In/Out', skeletonWidth: 'w-32' },
+              { key: 'duration', label: 'Duration', skeletonWidth: 'w-20' },
+              { key: 'amount', label: 'Amount', cellClass: 'text-right', skeletonWidth: 'w-16' },
+              { key: 'actions', label: 'Actions', skeletonWidth: 'w-24' }
+            ]"
+            :stickyHeader="true"
+            :loading="loadingApprovals"
+            rowKeyField="id"
+            mobileTitleField="user_name"
+          >
+            <template #cell-user_name="{ item }">
+              {{ item.user_name }}
+              <div class="text-xs text-gray-500">{{ item.user_email }}</div>
+            </template>
+            
+            <template #cell-clock_in_out="{ item }">
+              <div class="text-xs">
+                <div>In: {{ formatDateTime(item.clock_in_at) }}</div>
+                <div>Out: {{ formatDateTime(item.clock_out_at) }}</div>
+              </div>
+            </template>
+            
+            <template #cell-duration="{ item }">
+              {{ formatDuration(item.clock_in_at, item.clock_out_at) }}
+            </template>
+            
+            <template #cell-amount="{ item }">
+              {{ formatCurrency(item.amount) }}
+            </template>
+            
+            <template #cell-actions="{ item }">
+              <div class="flex gap-1">
+                <button class="btn-secondary btn-xs" @click="openEditEntry(item)">Edit</button>
+                <button class="btn-primary btn-xs" @click="approveEntry(item.id)" :disabled="approvingEntry === item.id">
+                  {{ approvingEntry === item.id ? 'Approving...' : 'Approve' }}
+                </button>
+              </div>
+            </template>
+
+            <template #mobile-card="{ item }">
+              <div class="font-medium text-gray-900 mb-1">{{ item.user_name }}</div>
+              <div class="text-xs text-gray-600 mb-2">{{ item.user_email }}</div>
+              <div class="text-xs text-gray-600">
+                <div>In: {{ formatDateTime(item.clock_in_at) }}</div>
+                <div>Out: {{ formatDateTime(item.clock_out_at) }}</div>
+                <div>Duration: {{ formatDuration(item.clock_in_at, item.clock_out_at) }}</div>
+              </div>
+              <div class="flex justify-between items-center mt-2">
+                <span class="font-medium">{{ formatCurrency(item.amount) }}</span>
+                <div class="flex gap-1">
+                  <button class="btn-secondary btn-xs" @click="openEditEntry(item)">Edit</button>
+                  <button class="btn-primary btn-xs" @click="approveEntry(item.id)" :disabled="approvingEntry === item.id">
+                    {{ approvingEntry === item.id ? 'Approving...' : 'Approve' }}
+                  </button>
+                </div>
+              </div>
+            </template>
+          </ResponsiveTable>
+          
+          <div v-if="!loadingApprovals && pendingApprovals.length === 0" class="text-center py-8 text-gray-500">
+            No pending approvals found for this account.
           </div>
         </div>
       </div>
@@ -245,6 +369,15 @@ const paying = ref(false)
 const editEntry = ref(null)
 const deleteConfirmation = ref(null)
 const deleting = ref(false)
+
+// Approvals tab state
+const activeTab = ref('payroll')
+const pendingApprovals = ref([])
+const loadingApprovals = ref(false)
+const accountsApprovals = ref([])
+const selectedCompanyIdApprovals = ref(auth.user?.company_id || '')
+const companyTokenApprovals = ref('')
+const approvingEntry = ref(null)
 
 const periodLabel = computed(() => `${period.value.start} → ${period.value.end}`)
 
@@ -831,6 +964,123 @@ const downloadQr = async () => {
     URL.revokeObjectURL(url)
   } catch (e) {
     window.showNotification?.({ type: 'error', title: 'QR Download', message: e.message || 'Failed to download QR' })
+  }
+}
+
+// Approvals functionality
+const loadCompanyAccountsApprovals = async () => {
+  if (!selectedCompanyIdApprovals.value) { 
+    accountsApprovals.value = []
+    companyTokenApprovals.value = ''
+    return 
+  }
+  try {
+    const res = await api.listCompanyAccounts(selectedCompanyIdApprovals.value)
+    accountsApprovals.value = res?.data || []
+    companyTokenApprovals.value = accountsApprovals.value[0]?.company_token || ''
+    if (companyTokenApprovals.value) {
+      await loadPendingApprovals()
+    }
+  } catch (e) {
+    accountsApprovals.value = []
+    companyTokenApprovals.value = ''
+  }
+}
+
+const loadPendingApprovals = async () => {
+  if (!companyTokenApprovals.value) return
+  loadingApprovals.value = true
+  try {
+    const res = await api.getPendingApprovals(companyTokenApprovals.value)
+    if (res.success) {
+      pendingApprovals.value = res.data
+    }
+  } catch (e) {
+    console.error('❌ Failed to load pending approvals:', e)
+    window.showNotification?.({ 
+      type: 'error', 
+      title: 'Error', 
+      message: 'Failed to load pending approvals' 
+    })
+  } finally {
+    loadingApprovals.value = false
+  }
+}
+
+const approveEntry = async (entryId) => {
+  approvingEntry.value = entryId
+  try {
+    const res = await api.approveEntry(entryId)
+    if (res.success) {
+      // Remove from pending approvals list
+      pendingApprovals.value = pendingApprovals.value.filter(entry => entry.id !== entryId)
+      window.showNotification?.({ 
+        type: 'success', 
+        title: 'Success', 
+        message: 'Entry approved successfully' 
+      })
+    }
+  } catch (e) {
+    console.error('❌ Failed to approve entry:', e)
+    window.showNotification?.({ 
+      type: 'error', 
+      title: 'Error', 
+      message: 'Failed to approve entry' 
+    })
+  } finally {
+    approvingEntry.value = null
+  }
+}
+
+const openEditEntry = (entry) => {
+  // Open the same edit modal but for a single entry in approval context
+  editEntry.value = {
+    user_id: entry.user_id,
+    list: [{
+      id: entry.id,
+      clock_in_at: entry.clock_in_at,
+      clock_out_at: entry.clock_out_at,
+      amount: entry.amount,
+      paid: entry.paid || false
+    }]
+  }
+}
+
+// Utility functions for approvals tab
+const formatDateTime = (iso) => {
+  if (!iso) return '—'
+  const timezone = auth.user?.timezone || 'America/Lima'
+  return new Date(iso).toLocaleString('en-US', { 
+    timeZone: timezone,
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit', 
+    minute: '2-digit',
+    hour12: false
+  })
+}
+
+const formatDuration = (clockIn, clockOut) => {
+  if (!clockIn || !clockOut) return '—'
+  const duration = (new Date(clockOut) - new Date(clockIn)) / 1000 / 3600
+  return `${duration.toFixed(1)}h`
+}
+
+// Initialize approvals tab when switching
+const initializeApprovalsTab = async () => {
+  if (isSuperAdmin.value && !selectedCompanyIdApprovals.value && companies.value.length) {
+    selectedCompanyIdApprovals.value = companies.value[0].id
+  } else if (!isSuperAdmin.value) {
+    selectedCompanyIdApprovals.value = auth.user?.company_id || ''
+  }
+  await loadCompanyAccountsApprovals()
+}
+
+// Initialize approvals tab when needed
+const originalActiveTab = activeTab.value
+const watchActiveTab = () => {
+  if (activeTab.value === 'approvals' && originalActiveTab !== 'approvals') {
+    initializeApprovalsTab()
   }
 }
 </script>

@@ -447,9 +447,13 @@ router.get('/me/entries', requireAuth, async (req, res) => {
       end = p.end
     }
     const q = await pool.query(
-      `SELECT * FROM time_entries
-       WHERE user_id = $1 AND clock_in_at >= $2::date AND clock_in_at < ($3::date + INTERVAL '1 day')
-       ORDER BY clock_in_at DESC`,
+      `SELECT te.*,
+              approver.name as approved_by_name,
+              approver.email as approved_by_email
+       FROM time_entries te
+       LEFT JOIN users approver ON approver.id = te.approved_by
+       WHERE te.user_id = $1 AND te.clock_in_at >= $2::date AND te.clock_in_at < ($3::date + INTERVAL '1 day')
+       ORDER BY te.clock_in_at DESC`,
       [req.user.userId, start, end]
     )
     res.json({ success: true, data: q.rows, period: { start, end } })
@@ -559,8 +563,11 @@ router.get('/admin/:companyToken/entries', requireAuth, async (req, res) => {
     let whereUser = ''
     if (userId) { params.push(userId); whereUser = ' AND user_id = $4' }
     const q = await pool.query(
-       `SELECT te.*
+       `SELECT te.*,
+               approver.name as approved_by_name,
+               approver.email as approved_by_email
        FROM time_entries te
+       LEFT JOIN users approver ON approver.id = te.approved_by
        WHERE company_token = $1
          AND te.clock_in_at >= $2::date AND te.clock_in_at < ($3::date + INTERVAL '1 day')
          ${whereUser}
@@ -837,6 +844,111 @@ router.post('/admin/:companyToken/notify-paid', requireAuth, async (req, res) =>
     }
     res.json({ success: true })
   } catch (e) {
+    res.status(500).json({ success: false, error: e.message })
+  }
+})
+
+// Admin: Get entries pending approval for a company
+router.get('/admin/:companyToken/pending-approvals', requireAuth, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin' && req.user.role !== 'super-admin') {
+      return res.status(403).json({ success: false, error: 'Access denied' })
+    }
+    
+    const { companyToken } = req.params
+    
+    // For admins (not super), ensure the account belongs to their company
+    if (req.user.role === 'admin') {
+      const cq = await pool.query('SELECT company_id FROM company_accounts WHERE company_token = $1', [companyToken])
+      const companyId = cq.rows[0]?.company_id || null
+      const belongs = !!(req.user.companyId && companyId && req.user.companyId === companyId)
+      if (!belongs) return res.status(403).json({ success: false, error: 'Access denied' })
+    }
+    
+    // Get entries that are clocked out but not approved yet
+    const query = await pool.query(
+      `SELECT 
+         te.id, 
+         te.user_id, 
+         te.company_token,
+         te.clock_in_at,
+         te.clock_out_at,
+         te.amount,
+         te.approved_by,
+         te.paid,
+         u.name as user_name,
+         u.email as user_email
+       FROM time_entries te
+       JOIN users u ON u.id = te.user_id
+       WHERE te.company_token = $1 
+         AND te.clock_out_at IS NOT NULL 
+         AND te.approved_by IS NULL
+         AND te.paid = FALSE
+       ORDER BY te.clock_out_at DESC`,
+      [companyToken]
+    )
+    
+    res.json({ success: true, data: query.rows })
+    
+  } catch (e) {
+    console.error('❌ Get pending approvals error:', e)
+    res.status(500).json({ success: false, error: e.message })
+  }
+})
+
+// Admin: Approve a time entry
+router.post('/admin/entries/:id/approve', requireAuth, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin' && req.user.role !== 'super-admin') {
+      return res.status(403).json({ success: false, error: 'Access denied' })
+    }
+    
+    const { id } = req.params
+    
+    // First check if the entry exists and is not already approved
+    const checkQuery = await pool.query(
+      'SELECT id, user_id, company_token, approved_by, paid FROM time_entries WHERE id = $1',
+      [id]
+    )
+    
+    if (checkQuery.rowCount === 0) {
+      return res.status(404).json({ success: false, error: 'Entry not found' })
+    }
+    
+    const entry = checkQuery.rows[0]
+    
+    if (entry.approved_by) {
+      return res.status(400).json({ success: false, error: 'Entry already approved' })
+    }
+    
+    if (entry.paid) {
+      return res.status(400).json({ success: false, error: 'Cannot approve paid entries' })
+    }
+    
+    // For admins (not super), ensure the account belongs to their company
+    if (req.user.role === 'admin') {
+      const cq = await pool.query('SELECT company_id FROM company_accounts WHERE company_token = $1', [entry.company_token])
+      const companyId = cq.rows[0]?.company_id || null
+      const belongs = !!(req.user.companyId && companyId && req.user.companyId === companyId)
+      if (!belongs) return res.status(403).json({ success: false, error: 'Access denied' })
+    }
+    
+    // Approve the entry
+    const updateQuery = await pool.query(
+      'UPDATE time_entries SET approved_by = $1, updated_at = NOW() WHERE id = $2 RETURNING *',
+      [req.user.id, id]
+    )
+    
+    console.log(`✅ Admin ${req.user.email} approved time entry ${id}`)
+    
+    res.json({ 
+      success: true, 
+      message: 'Entry approved successfully',
+      data: updateQuery.rows[0]
+    })
+    
+  } catch (e) {
+    console.error('❌ Approve entry error:', e)
     res.status(500).json({ success: false, error: e.message })
   }
 })

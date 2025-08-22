@@ -67,7 +67,8 @@
               { key: 'account', label: 'Account', headerClass: 'whitespace-normal', cellClass: 'whitespace-normal break-words max-w-[180px]', skeletonWidth: 'w-40' },
               { key: 'clock_in', label: 'Clock In', headerClass: 'whitespace-normal', cellClass: 'whitespace-normal', skeletonWidth: 'w-32' },
               { key: 'clock_out', label: 'Clock Out', headerClass: 'whitespace-normal', cellClass: 'whitespace-normal', skeletonWidth: 'w-24' },
-              { key: 'duration', label: 'Duration', headerClass: 'whitespace-normal', cellClass: 'whitespace-normal', skeletonWidth: 'w-20' }
+              { key: 'duration', label: 'Duration', headerClass: 'whitespace-normal', cellClass: 'whitespace-normal', skeletonWidth: 'w-20' },
+              { key: 'status', label: 'Status', headerClass: 'whitespace-normal', cellClass: 'whitespace-normal', skeletonWidth: 'w-16' }
             ]"
             :stickyHeader="true"
             :loading="loading"
@@ -78,10 +79,34 @@
             <template #cell-clock_in="{ item }">{{ formatDateTime(item.clock_in_at) }}</template>
             <template #cell-clock_out="{ item }">{{ item.clock_out_at ? formatDateTime(item.clock_out_at) : '—' }}</template>
             <template #cell-duration="{ item }">{{ formatDuration(secondsBetween(item.clock_in_at, item.clock_out_at)) }}</template>
+            <template #cell-status="{ item }">
+              <div class="flex items-center gap-1">
+                <span v-if="item.approved_by" class="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded" :title="`Approved by ${item.approved_by_name || 'Manager'}`">
+                  ✓ Approved
+                </span>
+                <span v-else-if="item.clock_out_at" class="inline-flex items-center px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded">
+                  ⏳ Pending
+                </span>
+                <span v-if="item.paid" class="inline-flex items-center px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded">
+                  $ Paid
+                </span>
+              </div>
+            </template>
             <template #mobile-card="{ item }">
               <div class="font-medium text-gray-900 dark:text-gray-100 mb-1">{{ accountLabel(item.company_token) }}</div>
               <div class="text-xs text-gray-600 dark:text-gray-400">{{ formatDateTime(item.clock_in_at) }} → {{ item.clock_out_at ? formatDateTime(item.clock_out_at) : '—' }}</div>
-              <div class="text-xs text-gray-600 dark:text-gray-400">Duration: {{ formatDuration(secondsBetween(item.clock_in_at, item.clock_out_at)) }}</div>
+              <div class="text-xs text-gray-600 dark:text-gray-400 mb-2">Duration: {{ formatDuration(secondsBetween(item.clock_in_at, item.clock_out_at)) }}</div>
+              <div class="flex items-center gap-1">
+                <span v-if="item.approved_by" class="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded" :title="`Approved by ${item.approved_by_name || 'Manager'}`">
+                  ✓ Approved
+                </span>
+                <span v-else-if="item.clock_out_at" class="inline-flex items-center px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded">
+                  ⏳ Pending
+                </span>
+                <span v-if="item.paid" class="inline-flex items-center px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded">
+                  $ Paid
+                </span>
+              </div>
             </template>
           </ResponsiveTable>
           <div class="mt-4 text-right text-gray-800 font-medium space-y-1">
