@@ -205,6 +205,16 @@
                   <span class="sm:hidden">Late</span>
                 </div>
                 <div class="flex items-center gap-1">
+                  <div class="w-3 h-3 rounded bg-orange-500"></div>
+                  <span class="hidden sm:inline">Pending approval</span>
+                  <span class="sm:hidden">Pending</span>
+                </div>
+                <div class="flex items-center gap-1">
+                  <div class="w-3 h-3 rounded bg-green-500"></div>
+                  <span class="hidden sm:inline">Approved</span>
+                  <span class="sm:hidden">Approved</span>
+                </div>
+                <div class="flex items-center gap-1">
                   <div class="w-3 h-3 rounded bg-gray-500"></div>
                   <span class="hidden sm:inline">No shift data</span>
                   <span class="sm:hidden">No shift data</span>
@@ -218,13 +228,55 @@
                   <div class="text-[10px] text-gray-400 text-center lg:hidden">{{ day.weekday }}</div>
                   <div class="text-[10px] text-gray-500 text-center">{{ day.label }}</div>
                   <div class="space-y-1 mt-1">
-                    <div v-for="e in day.entries" :key="e.id" class="rounded px-1 py-0.5 text-[10px] text-white flex flex-wrap justify-between items-center gap-x-1" :style="{ backgroundColor: getEntryColor(e) }" :title="`${userName(e.user_id)} - ${getEntryTooltip(e)}`">
-                      <span class="truncate">{{ userName(e.user_id) }}</span>
-                      <span>{{ formatTime(e.clock_in_at) }} - {{ e.clock_out_at ? formatTime(e.clock_out_at) : '...' }}</span>
-                      <span class="ml-1">{{ e.amount ? formatCurrency(e.amount) : '' }}</span>
-                      <div class="flex items-center gap-1 ml-1">
-                        <span v-if="e.approved_by" class="bg-blue-600 text-white rounded px-1" title="Approved">✓</span>
-                        <span v-if="e.paid" class="bg-green-600 text-white rounded px-1" title="Paid">$</span>
+                    <div 
+                      v-for="e in day.entries" 
+                      :key="e.id" 
+                      class="relative group rounded px-1 py-0.5 text-[10px] text-white cursor-pointer transition-all duration-200 hover:shadow-md hover:scale-105" 
+                      :style="{ backgroundColor: getEntryColor(e) }"
+                      @mouseenter="showEntryTooltip(e, $event)"
+                      @mouseleave="hideEntryTooltip"
+                      @click="openCalendarEntryActions(e, $event)"
+                    >
+                      <!-- Entry content -->
+                      <div class="flex flex-wrap justify-between items-center gap-x-1">
+                        <span class="truncate font-medium">{{ userName(e.user_id) }}</span>
+                        <span class="text-[9px] opacity-90">{{ formatTime(e.clock_in_at) }} - {{ e.clock_out_at ? formatTime(e.clock_out_at) : '...' }}</span>
+                      </div>
+                      
+                      <!-- Status indicators row -->
+                      <div class="flex items-center justify-between mt-0.5">
+                        <span class="text-[9px] font-medium">{{ e.amount ? formatCurrency(e.amount) : '' }}</span>
+                        <div class="flex items-center gap-0.5">
+                          <!-- Approval status -->
+                          <span v-if="e.approved_by" class="inline-flex items-center justify-center w-3 h-3 bg-green-500 rounded-full text-[8px] font-bold" title="Approved by">✓</span>
+                          <span v-else-if="e.clock_out_at && !e.paid" class="inline-flex items-center justify-center w-3 h-3 bg-orange-500 rounded-full text-[8px] font-bold animate-pulse" title="Pending approval">!</span>
+                          
+                          <!-- Payment status -->
+                          <span v-if="e.paid" class="inline-flex items-center justify-center w-3 h-3 bg-blue-500 rounded-full text-[8px] font-bold" title="Paid">$</span>
+                        </div>
+                      </div>
+                      
+                      <!-- Hover overlay with actions (only show for pending entries) -->
+                      <div 
+                        v-if="e.clock_out_at && !e.approved_by && !e.paid"
+                        class="absolute inset-0 bg-black bg-opacity-75 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-1"
+                        @click.stop
+                      >
+                        <button 
+                          @click="openEditEntry(e)"
+                          class="inline-flex items-center px-1.5 py-0.5 bg-gray-600 hover:bg-gray-700 text-white rounded text-[8px] font-medium transition-colors"
+                          title="Edit entry"
+                        >
+                          ✏️
+                        </button>
+                        <button 
+                          @click="approveEntry(e.id)"
+                          :disabled="approvingEntry === e.id"
+                          class="inline-flex items-center px-1.5 py-0.5 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white rounded text-[8px] font-medium transition-colors"
+                          :title="approvingEntry === e.id ? 'Approving...' : 'Approve entry'"
+                        >
+                          {{ approvingEntry === e.id ? '⏳' : '✓' }}
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -236,6 +288,14 @@
 
       </div>
     </div>
+
+    <!-- Tooltip for calendar entries -->
+    <div 
+      v-if="entryTooltip.show"
+      class="fixed z-50 bg-white border border-gray-200 rounded-lg shadow-lg p-3 pointer-events-none max-w-xs"
+      :style="{ left: entryTooltip.x + 'px', top: entryTooltip.y + 'px' }"
+      v-html="entryTooltip.content"
+    ></div>
 
     <!-- Edit Modal -->
     <div v-if="editEntry" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
@@ -347,6 +407,14 @@ const deleting = ref(false)
 const pendingApprovals = ref([])
 const loadingApprovals = ref(false)
 const approvingEntry = ref(null)
+
+// Tooltip state
+const entryTooltip = ref({
+  show: false,
+  content: '',
+  x: 0,
+  y: 0
+})
 
 const periodLabel = computed(() => `${period.value.start} → ${period.value.end}`)
 
@@ -471,6 +539,24 @@ const totalEmployeeAmount = computed(() => {
 
 // Color coding for calendar entries based on punctuality
 const getEntryColor = (entry) => {
+  // Priority order: Paid > Approved > Pending > Punctuality > Default
+  
+  // If paid, show darker green (highest priority)
+  if (entry.paid) {
+    return '#059669' // emerald-600
+  }
+  
+  // If approved but not paid, show green
+  if (entry.approved_by) {
+    return '#10b981' // emerald-500
+  }
+  
+  // If completed but pending approval, show orange
+  if (entry.clock_out_at && !entry.approved_by) {
+    return '#f59e0b' // amber-500
+  }
+  
+  // For incomplete entries (no clock_out_at), check punctuality if shift_start exists
   const today = new Date()
   const clockInDate = new Date(entry.clock_in_at)
   
@@ -935,6 +1021,59 @@ const downloadQr = async () => {
     URL.revokeObjectURL(url)
   } catch (e) {
     window.showNotification?.({ type: 'error', title: 'QR Download', message: e.message || 'Failed to download QR' })
+  }
+}
+
+// Calendar interaction functions
+const showEntryTooltip = (entry, event) => {
+  const timezone = auth.user?.timezone || 'America/Lima'
+  const clockInTime = formatTime(entry.clock_in_at)
+  const clockOutTime = entry.clock_out_at ? formatTime(entry.clock_out_at) : 'Still working'
+  const duration = entry.clock_out_at ? formatDurationHours(entry.clock_in_at, entry.clock_out_at) : 'In progress'
+  
+  let statusText = ''
+  if (entry.paid) {
+    statusText = '✅ Paid'
+  } else if (entry.approved_by) {
+    statusText = `✅ Approved by ${entry.approved_by_name || 'Manager'}`
+  } else if (entry.clock_out_at) {
+    statusText = '⏳ Pending approval'
+  } else {
+    statusText = '🕒 Working'
+  }
+  
+  const content = `
+    <div class="text-sm font-medium">${userName(entry.user_id)}</div>
+    <div class="text-xs text-gray-600 mt-1">
+      <div><strong>Time:</strong> ${clockInTime} - ${clockOutTime}</div>
+      <div><strong>Duration:</strong> ${duration}</div>
+      <div><strong>Amount:</strong> ${entry.amount ? formatCurrency(entry.amount) : 'TBD'}</div>
+      <div><strong>Status:</strong> ${statusText}</div>
+    </div>
+  `
+  
+  entryTooltip.value = {
+    show: true,
+    content,
+    x: event.clientX + 10,
+    y: event.clientY - 10
+  }
+}
+
+const hideEntryTooltip = () => {
+  entryTooltip.value.show = false
+}
+
+const openCalendarEntryActions = (entry, event) => {
+  // If entry is pending approval, show quick actions
+  if (entry.clock_out_at && !entry.approved_by && !entry.paid) {
+    // Actions are handled by the hover overlay buttons
+    return
+  }
+  
+  // For other entries, just show the edit modal
+  if (entry.clock_out_at) {
+    openEditEntry(entry)
   }
 }
 
