@@ -418,6 +418,16 @@ const loadEntries = async () => {
     if (res.success) {
       entries.value = res.data
       period.value = res.period
+      console.log('📥 Loaded entries:', {
+        count: res.data.length,
+        period: res.period,
+        sampleEntries: res.data.slice(0, 3).map(e => ({
+          id: e.id,
+          clockInAt: e.clock_in_at,
+          user: e.user_id,
+          amount: e.amount
+        }))
+      })
     }
   } finally {
     loading.value = false
@@ -637,6 +647,21 @@ const daysInPeriod = computed(() => {
     timezone,
     entriesCount: entries.value.length
   })
+  
+  // Debug all entries to see what dates we have
+  console.log('📊 All entries by date:', entries.value.reduce((acc, e) => {
+    if (!e.clock_in_at) return acc
+    const clockInDate = new Date(e.clock_in_at)
+    const localDate = clockInDate.toLocaleDateString('sv-SE', { timeZone: timezone })
+    if (!acc[localDate]) acc[localDate] = []
+    acc[localDate].push({
+      id: e.id,
+      clockInAt: e.clock_in_at,
+      user: userName(e.user_id),
+      amount: e.amount
+    })
+    return acc
+  }, {}))
   
   // Debug specific entries for August 21st
   const aug21Entries = entries.value.filter(e => {
