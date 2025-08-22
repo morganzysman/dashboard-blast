@@ -195,10 +195,52 @@
                       {{ e.amount ? formatCurrency(e.amount) : '' }}
                     </div>
                     
-                    <!-- Hover overlay with actions (show for different entry states) -->
+                    <!-- Mobile action buttons (always visible on mobile) -->
+                    <div v-if="e.clock_out_at" class="flex gap-1 mt-1 lg:hidden">
+                      <!-- Edit button for non-approved and non-paid entries -->
+                      <button 
+                        v-if="!e.approved_by && !e.paid"
+                        @click.stop="openEditEntry(e)"
+                        class="flex-1 px-1 py-0.5 bg-blue-600 text-white rounded text-[8px] font-medium"
+                        title="Edit entry"
+                      >
+                        ✏️
+                      </button>
+                      
+                      <!-- Quick approve button for pending entries -->
+                      <button 
+                        v-if="!e.approved_by && !e.paid"
+                        @click.stop="quickApproveEntry(e.id)"
+                        :disabled="approvingEntry === e.id"
+                        class="flex-1 px-1 py-0.5 bg-green-600 disabled:bg-green-400 text-white rounded text-[8px] font-medium"
+                        :title="approvingEntry === e.id ? 'Approving...' : 'Quick approve'"
+                      >
+                        {{ approvingEntry === e.id ? '⏳' : '✓' }}
+                      </button>
+                      
+                      <!-- Edit & Approve button for complex cases -->
+                      <button 
+                        v-if="!e.approved_by && !e.paid && isComplexEntry(e)"
+                        @click.stop="editBeforeApprove(e)"
+                        class="flex-1 px-1 py-0.5 bg-yellow-600 text-white rounded text-[8px] font-medium"
+                        title="Review and approve"
+                      >
+                        🔍
+                      </button>
+                      
+                      <!-- Already approved indicator -->
+                      <div 
+                        v-if="e.approved_by"
+                        class="flex-1 px-1 py-0.5 bg-green-800 text-white rounded text-[8px] font-medium text-center"
+                      >
+                        ✅
+                      </div>
+                    </div>
+                    
+                    <!-- Desktop hover overlay with actions (hidden on mobile) -->
                     <div 
                       v-if="e.clock_out_at"
-                      class="absolute inset-0 bg-black bg-opacity-80 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-1"
+                      class="absolute inset-0 bg-black bg-opacity-80 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-1 hidden lg:flex"
                       @click.stop
                     >
                       <!-- Edit button for non-approved and non-paid entries -->
