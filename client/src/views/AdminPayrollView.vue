@@ -221,7 +221,7 @@
             </template>
             
             <template #cell-duration="{ item }">
-              {{ formatDuration(item.clock_in_at, item.clock_out_at) }}
+              {{ formatDurationHours(item.clock_in_at, item.clock_out_at) }}
             </template>
             
             <template #cell-amount="{ item }">
@@ -243,7 +243,7 @@
               <div class="text-xs text-gray-600">
                 <div>In: {{ formatDateTime(item.clock_in_at) }}</div>
                 <div>Out: {{ formatDateTime(item.clock_out_at) }}</div>
-                <div>Duration: {{ formatDuration(item.clock_in_at, item.clock_out_at) }}</div>
+                <div>Duration: {{ formatDurationHours(item.clock_in_at, item.clock_out_at) }}</div>
               </div>
               <div class="flex justify-between items-center mt-2">
                 <span class="font-medium">{{ formatCurrency(item.amount) }}</span>
@@ -1060,7 +1060,7 @@ const formatDateTime = (iso) => {
   })
 }
 
-const formatDuration = (clockIn, clockOut) => {
+const formatDurationHours = (clockIn, clockOut) => {
   if (!clockIn || !clockOut) return '—'
   const duration = (new Date(clockOut) - new Date(clockIn)) / 1000 / 3600
   return `${duration.toFixed(1)}h`
