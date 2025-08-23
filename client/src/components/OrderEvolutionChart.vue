@@ -33,7 +33,7 @@
 
       <!-- Chart Container -->
       <div v-else-if="chartData && chartData.datasets && chartData.datasets.length" class="relative">
-        <canvas :key="chartKey" ref="chartCanvas" class="w-full h-48 sm:h-56"></canvas>
+        <canvas :key="chartKey" ref="chartCanvas" class="w-full h-48 sm:h-56" :height="chartCanvasHeight" style="display:block;"></canvas>
         
         <!-- Chart Legend -->
         <div class="mt-3 flex flex-wrap gap-3 justify-center">
@@ -88,6 +88,7 @@ const loading = ref(false)
 const error = ref(null)
 const evolutionData = ref(null)
 const chartKey = ref(0)
+const chartCanvasHeight = 224 // px, aligns with h-56
 
 // Helper: parse labels like DD-MM-YYYY into a sortable timestamp
 const parseDateLabelToTs = (label) => {
@@ -264,7 +265,10 @@ const initChart = () => {
     data: chartData.value,
     options: {
       responsive: true,
-      maintainAspectRatio: true,
+      maintainAspectRatio: false,
+      resizeDelay: 0,
+      parsing: false,
+      animation: { duration: 0 },
       // Explicit events list to avoid undefined includes() in Chart.js internals
       events: ['mousemove','mouseout','click','touchstart','touchmove','touchend'],
       plugins: {
