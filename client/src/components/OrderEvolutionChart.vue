@@ -146,12 +146,10 @@ const fetchEvolutionData = async () => {
     const startDate = props.currentDateRange.startDate
     const endDate = props.currentDateRange.endDate
     
-    const url = new URL('https://api.olaclick.app/ms-reports/auth/dashboard/general_indicators/evolution_chart')
-    url.searchParams.set('filter[start_date]', startDate)
-    url.searchParams.set('filter[end_date]', endDate)
-    url.searchParams.set('filter[start_time]', '00:00:00')
-    url.searchParams.set('filter[end_time]', '23:59:59')
-    url.searchParams.set('filter[sources]', 'INBOUND,OUTBOUND')
+    // Use our server-side route instead of direct API call
+    const url = new URL('/api/analytics/order-evolution', window.location.origin)
+    url.searchParams.set('start_date', startDate)
+    url.searchParams.set('end_date', endDate)
     url.searchParams.set('timezone', props.timezone)
 
     console.log('📊 Fetching order evolution data:', {
@@ -161,13 +159,17 @@ const fetchEvolutionData = async () => {
       url: url.toString()
     })
 
-    const data = await apiRequest(url.toString(), {
+    const response = await apiRequest(url.toString(), {
       method: 'GET'
     })
     
-    evolutionData.value = data
+    if (!response.success) {
+      throw new Error(response.error || 'Failed to fetch order evolution data')
+    }
+    
+    evolutionData.value = response
 
-    console.log('📊 Order evolution data received:', data)
+    console.log('📊 Order evolution data received:', response)
 
   } catch (err) {
     console.error('❌ Error fetching order evolution data:', err)

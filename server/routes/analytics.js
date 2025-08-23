@@ -301,5 +301,77 @@ router.get('/profitability', requireAuth, async (req, res) => {
   }
 })
 
+// Order Evolution Chart endpoint
+router.get('/order-evolution', requireAuth, async (req, res) => {
+  try {
+    const { start_date, end_date, timezone } = req.query
+    
+    if (!start_date || !end_date) {
+      return res.status(400).json({
+        success: false,
+        error: 'start_date and end_date are required'
+      })
+    }
+
+    // Build the OlaClick API URL
+    const url = new URL('https://api.olaclick.app/ms-reports/auth/dashboard/general_indicators/evolution_chart')
+    url.searchParams.set('filter[start_date]', start_date)
+    url.searchParams.set('filter[end_date]', end_date)
+    url.searchParams.set('filter[start_time]', '00:00:00')
+    url.searchParams.set('filter[end_time]', '23:59:59')
+    url.searchParams.set('filter[sources]', 'INBOUND,OUTBOUND')
+    url.searchParams.set('timezone', timezone || 'America/Lima')
+
+    console.log('📊 Fetching order evolution data from OlaClick:', {
+      start_date,
+      end_date,
+      timezone,
+      url: url.toString()
+    })
+
+    // Make the request to OlaClick API
+    const response = await fetch(url.toString(), {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        // Add any required OlaClick authentication headers here
+        // This should use the user's OlaClick credentials or API tokens
+      }
+    })
+
+    if (!response.ok) {
+      console.error('❌ OlaClick API error:', response.status, response.statusText)
+      return res.status(response.status).json({
+        success: false,
+        error: `OlaClick API error: ${response.status} ${response.statusText}`
+      })
+    }
+
+    const data = await response.json()
+    
+    console.log('📊 Order evolution data received from OlaClick:', {
+      dataPoints: data.data?.length || 0,
+      dateRange: `${start_date} to ${end_date}`
+    })
+
+    return res.json({
+      success: true,
+      data: data.data || [],
+      period: {
+        start: start_date,
+        end: end_date,
+        timezone: timezone || 'America/Lima'
+      }
+    })
+
+  } catch (error) {
+    console.error('❌ Error fetching order evolution data:', error)
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to fetch order evolution data'
+    })
+  }
+})
+
 export default router
 
