@@ -101,6 +101,38 @@ const parseDateLabelToTs = (label) => {
   return Number.isFinite(ts) ? ts : 0
 }
 
+// Helper: format Date -> DD-MM-YYYY in a given timezone
+const formatDateToLabel = (date, timezone) => {
+  try {
+    const parts = date.toLocaleDateString('en-GB', {
+      timeZone: timezone || 'America/Lima',
+      day: '2-digit', month: '2-digit', year: 'numeric'
+    }).split('/')
+    // en-GB => DD/MM/YYYY
+    if (parts.length === 3) {
+      const [dd, mm, yyyy] = parts
+      return `${dd}-${mm}-${yyyy}`
+    }
+  } catch (_) {}
+  // Fallback using UTC
+  const yyyy = date.getUTCFullYear()
+  const mm = String(date.getUTCMonth() + 1).padStart(2, '0')
+  const dd = String(date.getUTCDate()).padStart(2, '0')
+  return `${dd}-${mm}-${yyyy}`
+}
+
+// Generate inclusive per-day labels from current range
+const generateDateLabels = (startStr, endStr, timezone) => {
+  if (!startStr || !endStr) return []
+  const start = new Date(`${startStr}T00:00:00`)
+  const end = new Date(`${endStr}T00:00:00`)
+  const labels = []
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    labels.push(formatDateToLabel(d, timezone))
+  }
+  return labels
+}
+
 // Chart data computed property
 const chartData = computed(() => {
   if (!evolutionData.value || !evolutionData.value.accounts) return null
@@ -110,15 +142,12 @@ const chartData = computed(() => {
   
   if (successfulAccounts.length === 0) return null
 
-  // Get all unique dates from all accounts to create consistent labels
-  const allDates = new Set()
-  successfulAccounts.forEach(account => {
-    account.data.forEach(item => {
-      allDates.add(item.label)
-    })
-  })
-  
-  const sortedDates = Array.from(allDates).sort((a, b) => parseDateLabelToTs(a) - parseDateLabelToTs(b))
+  // Build full per-day labels from the selected date range
+  const sortedDates = generateDateLabels(
+    evolutionData.value?.period?.start || props.currentDateRange?.start,
+    evolutionData.value?.period?.end || props.currentDateRange?.end,
+    props.timezone
+  )
   
   // Create a dataset for each successful account
   const accountDatasets = successfulAccounts.map((account, index) => {
