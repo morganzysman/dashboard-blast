@@ -489,7 +489,7 @@ const accountGainBreakdowns = computed(() => {
           payrollCosts: serverAcc.payrollCosts || 0,
           payrollEntries: serverAcc.payrollEntries || 0,
           finalGain: clientSideRevenue - totalCosts,
-          daysInPeriod: serverAcc.daysInPeriod || calcDays(currentDateRange) || 1,
+          daysInPeriod: calcDays(currentDateRange) || 1,
           paymentMethodBreakdown: clientSidePaymentMethods
         })
         return
@@ -513,7 +513,7 @@ const accountGainBreakdowns = computed(() => {
         payrollCosts: serverAcc.payrollCosts || 0,
         payrollEntries: serverAcc.payrollEntries || 0,
         finalGain: (serverAcc.grossSales || 0) - ((serverAcc.paymentFees || 0) + (serverAcc.foodCosts || 0) + (serverAcc.utilityCosts || 0) + (serverAcc.payrollCosts || 0)),
-        daysInPeriod: serverAcc.daysInPeriod || calcDays(currentDateRange) || 1,
+        daysInPeriod: calcDays(currentDateRange) || 1,
         paymentMethodBreakdown: serverAcc.paymentMethodBreakdown || []
       })
       return
