@@ -320,6 +320,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import KpiCard from './ui/KpiCard.vue'
+import OrderEvolutionChart from './OrderEvolutionChart.vue'
 import { useAuthStore } from '../stores/auth'
 import { calculateDaysInPeriod as calcDays } from '../composables/useProfitability'
 

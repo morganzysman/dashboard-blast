@@ -27,6 +27,13 @@
       :key="`${currentDateRange.start}-${currentDateRange.end}-${profitabilityData?.period?.start || ''}-${profitabilityData?.period?.end || ''}`"
     />
 
+    <!-- Order Evolution Chart Component -->
+    <OrderEvolutionChart
+      :current-date-range="currentDateRange"
+      :timezone="authStore.user?.timezone || 'America/Lima'"
+      :accounts="analyticsDataWithServiceMetrics?.accounts || []"
+    />
+
     <!-- Loading State -->
     <div v-if="loading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
       <div class="card">
@@ -98,6 +105,7 @@ import { ref, onMounted, computed, nextTick } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import DashboardOverview from '../components/DashboardOverview.vue'
 import AccountDetails from '../components/AccountDetails.vue'
+import OrderEvolutionChart from '../components/OrderEvolutionChart.vue'
 import api from '../utils/api'
 
 const authStore = useAuthStore()
