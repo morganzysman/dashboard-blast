@@ -88,6 +88,18 @@ const loading = ref(false)
 const error = ref(null)
 const evolutionData = ref(null)
 
+// Helper: parse labels like DD-MM-YYYY into a sortable timestamp
+const parseDateLabelToTs = (label) => {
+  if (!label || typeof label !== 'string') return 0
+  const parts = label.split('-')
+  if (parts.length !== 3) return 0
+  const [dd, mm, yyyy] = parts
+  // Build ISO date to avoid locale issues
+  const iso = `${yyyy}-${mm}-${dd}T00:00:00`
+  const ts = new Date(iso).getTime()
+  return Number.isFinite(ts) ? ts : 0
+}
+
 // Chart data computed property
 const chartData = computed(() => {
   if (!evolutionData.value || !evolutionData.value.accounts) return null
@@ -105,7 +117,7 @@ const chartData = computed(() => {
     })
   })
   
-  const sortedDates = Array.from(allDates).sort()
+  const sortedDates = Array.from(allDates).sort((a, b) => parseDateLabelToTs(a) - parseDateLabelToTs(b))
   
   // Create a dataset for each successful account
   const accountDatasets = successfulAccounts.map((account, index) => {
