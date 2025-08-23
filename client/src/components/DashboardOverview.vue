@@ -536,8 +536,8 @@ const getAccountTotalsForChart = computed(() => {
   }
 
   const accountTotals = analyticsData.accounts.map(account => {
-    const totalPayments = getAccountTotalPayments(account)
-    const totalAmount = getAccountTotalAmount(account)
+    const totalPayments = getAccountTotalPayments.value(account)
+    const totalAmount = getAccountTotalAmount.value(account)
     return {
       accountKey: account.accountKey,
       account: account.account,
@@ -568,27 +568,59 @@ const getAccountTotalsForChart = computed(() => {
   })).sort((a, b) => b.totalAmount - a.totalAmount) // Sort by total amount descending
 })
 
-const getAccountTotalPayments = (account) => {
-  if (!account.success || !account.data?.data) return 0
-  return account.data.data.reduce((sum, method) => sum + (method.count || 0), 0)
-}
-
-const getAccountTotalAmount = (account) => {
-  if (!account.success || !account.data?.data) return 0
-  return account.data.data.reduce((sum, method) => sum + (method.sum || 0), 0)
-}
-
-const getAccountTotalOrders = (account) => {
-  if (!account.success) return 0
+// CONVERTED TO COMPUTED PROPERTIES for reactivity
+const getAccountTotalPayments = computed(() => {
+  // Access the force recompute trigger to ensure reactivity
+  const trigger = forceRecompute.value
   
-  // Only use service metrics data for orders - this is the correct source that updates with dates
-  if (account.serviceMetrics) {
-    const ordersFromServiceMetrics = Object.values(account.serviceMetrics).reduce((sum, service) => sum + (service?.orders?.current_period ?? 0), 0);
-    return ordersFromServiceMetrics;
+  // Explicitly access reactive dependencies
+  const analyticsData = props.analyticsData
+  const selectedDateRange = props.selectedDateRange
+  const currentDateRange = props.currentDateRange
+  
+  return (account) => {
+    if (!account.success || !account.data?.data) return 0
+    return account.data.data.reduce((sum, method) => sum + (method.count || 0), 0)
   }
+})
+
+const getAccountTotalAmount = computed(() => {
+  // Access the force recompute trigger to ensure reactivity
+  const trigger = forceRecompute.value
   
-  return 0
-}
+  // Explicitly access reactive dependencies
+  const analyticsData = props.analyticsData
+  const selectedDateRange = props.selectedDateRange
+  const currentDateRange = props.currentDateRange
+  
+  return (account) => {
+    if (!account.success || !account.data?.data) return 0
+    return account.data.data.reduce((sum, method) => sum + (method.sum || 0), 0)
+  }
+})
+
+// CONVERTED TO COMPUTED PROPERTY for reactivity
+const getAccountTotalOrders = computed(() => {
+  // Access the force recompute trigger to ensure reactivity
+  const trigger = forceRecompute.value
+  
+  // Explicitly access reactive dependencies
+  const ordersData = props.ordersData
+  const selectedDateRange = props.selectedDateRange
+  const currentDateRange = props.currentDateRange
+  
+  return (account) => {
+    if (!account.success) return 0
+    
+    // Only use service metrics data for orders - this is the correct source that updates with dates
+    if (account.serviceMetrics) {
+      const ordersFromServiceMetrics = Object.values(account.serviceMetrics).reduce((sum, service) => sum + (service?.orders?.current_period ?? 0), 0);
+      return ordersFromServiceMetrics;
+    }
+    
+    return 0
+  }
+})
 
 const getServiceColor = (serviceType) => {
   const colors = {
@@ -683,59 +715,182 @@ const aggregatedGrossSales = computed(() => {
 
 // Client-side fee computation removed
 
-// Aggregated payment fees across all accounts
-const getAggregatedPaymentFees = () => {
-  if (props.profitabilityData?.company) {
-    return props.profitabilityData.company.paymentFees || 0
-  }
-  return 0
-}
+// CONVERTED TO COMPUTED PROPERTIES for reactivity
+const getAggregatedPaymentFees = computed(() => {
+  // Access the force recompute trigger to ensure reactivity
+  const trigger = forceRecompute.value
+  
+  // Explicitly access reactive dependencies
+  const profitabilityData = props.profitabilityData
+  const selectedDateRange = props.selectedDateRange
+  const currentDateRange = props.currentDateRange
+  
+  const fees = profitabilityData?.company?.paymentFees || 0
+  
+  console.log('💰 getAggregatedPaymentFees computed:', {
+    fees,
+    hasCompanyData: !!profitabilityData?.company,
+    selectedDateRange,
+    currentDateRange,
+    forceRecomputeTrigger: trigger
+  })
+  
+  return fees
+})
 
-// Net sales after fees
-const getAggregatedNetSalesAfterFees = () => {
-  if (props.profitabilityData?.company) {
-    return props.profitabilityData.company.netAfterFees || 0
+const getAggregatedNetSalesAfterFees = computed(() => {
+  // Access the force recompute trigger to ensure reactivity
+  const trigger = forceRecompute.value
+  
+  // Explicitly access reactive dependencies
+  const profitabilityData = props.profitabilityData
+  const selectedDateRange = props.selectedDateRange
+  const currentDateRange = props.currentDateRange
+  
+  if (profitabilityData?.company) {
+    const netSales = profitabilityData.company.netAfterFees || 0
+    console.log('💰 getAggregatedNetSalesAfterFees computed (server):', {
+      netSales,
+      forceRecomputeTrigger: trigger
+    })
+    return netSales
   }
-  return aggregatedGrossSales.value - getAggregatedPaymentFees()
-}
+  
+  const netSales = aggregatedGrossSales.value - getAggregatedPaymentFees.value
+  console.log('💰 getAggregatedNetSalesAfterFees computed (calculated):', {
+    netSales,
+    grossSales: aggregatedGrossSales.value,
+    fees: getAggregatedPaymentFees.value,
+    forceRecomputeTrigger: trigger
+  })
+  
+  return netSales
+})
 
-// Blended fee rate
-const getAggregatedFeeRate = () => {
-  if (props.profitabilityData?.company) {
-    return props.profitabilityData.company.feeRate || 0
+const getAggregatedFeeRate = computed(() => {
+  // Access the force recompute trigger to ensure reactivity
+  const trigger = forceRecompute.value
+  
+  // Explicitly access reactive dependencies
+  const profitabilityData = props.profitabilityData
+  const selectedDateRange = props.selectedDateRange
+  const currentDateRange = props.currentDateRange
+  
+  if (profitabilityData?.company) {
+    const feeRate = profitabilityData.company.feeRate || 0
+    console.log('💰 getAggregatedFeeRate computed (server):', {
+      feeRate,
+      forceRecomputeTrigger: trigger
+    })
+    return feeRate
   }
+  
   const gross = aggregatedGrossSales.value
   if (gross <= 0) return 0
-  return getAggregatedPaymentFees() / gross
-}
+  
+  const feeRate = getAggregatedPaymentFees.value / gross
+  console.log('💰 getAggregatedFeeRate computed (calculated):', {
+    feeRate,
+    gross,
+    fees: getAggregatedPaymentFees.value,
+    forceRecomputeTrigger: trigger
+  })
+  
+  return feeRate
+})
 
-// Tips
-const getAggregatedTips = () => {
-  if (props.profitabilityData?.company) {
-    return props.profitabilityData.company.tips || 0
+const getAggregatedTips = computed(() => {
+  // Access the force recompute trigger to ensure reactivity
+  const trigger = forceRecompute.value
+  
+  // Explicitly access reactive dependencies
+  const profitabilityData = props.profitabilityData
+  const analyticsData = props.analyticsData
+  const selectedDateRange = props.selectedDateRange
+  const currentDateRange = props.currentDateRange
+  
+  if (profitabilityData?.company) {
+    const tips = profitabilityData.company.tips || 0
+    console.log('💰 getAggregatedTips computed (server):', {
+      tips,
+      forceRecomputeTrigger: trigger
+    })
+    return tips
   }
-  return props.analyticsData?.aggregated?.totalTips || 0
-}
+  
+  const tips = analyticsData?.aggregated?.totalTips || 0
+  console.log('💰 getAggregatedTips computed (analytics):', {
+    tips,
+    forceRecomputeTrigger: trigger
+  })
+  
+  return tips
+})
 
-const getAggregatedTipRate = () => {
-  if (props.profitabilityData?.company) {
-    return props.profitabilityData.company.tipRate || 0
+const getAggregatedTipRate = computed(() => {
+  // Access the force recompute trigger to ensure reactivity
+  const trigger = forceRecompute.value
+  
+  // Explicitly access reactive dependencies
+  const profitabilityData = props.profitabilityData
+  const selectedDateRange = props.selectedDateRange
+  const currentDateRange = props.currentDateRange
+  
+  if (profitabilityData?.company) {
+    const tipRate = profitabilityData.company.tipRate || 0
+    console.log('💰 getAggregatedTipRate computed (server):', {
+      tipRate,
+      forceRecomputeTrigger: trigger
+    })
+    return tipRate
   }
+  
   const gross = aggregatedGrossSales.value
   if (gross <= 0) return 0
-  return getAggregatedTips() / gross
-}
+  
+  const tipRate = getAggregatedTips.value / gross
+  console.log('💰 getAggregatedTipRate computed (calculated):', {
+    tipRate,
+    gross,
+    tips: getAggregatedTips.value,
+    forceRecomputeTrigger: trigger
+  })
+  
+  return tipRate
+})
 
-// Operating margin = operating profit / gross
-const getAggregatedOperatingMargin = () => {
-  if (props.profitabilityData?.company) {
-    return props.profitabilityData.company.operatingMargin || 0
+const getAggregatedOperatingMargin = computed(() => {
+  // Access the force recompute trigger to ensure reactivity
+  const trigger = forceRecompute.value
+  
+  // Explicitly access reactive dependencies
+  const profitabilityData = props.profitabilityData
+  const selectedDateRange = props.selectedDateRange
+  const currentDateRange = props.currentDateRange
+  
+  if (profitabilityData?.company) {
+    const margin = profitabilityData.company.operatingMargin || 0
+    console.log('💰 getAggregatedOperatingMargin computed (server):', {
+      margin,
+      forceRecomputeTrigger: trigger
+    })
+    return margin
   }
+  
   const gross = aggregatedGrossSales.value
   if (gross <= 0) return 0
+  
   const operatingProfit = aggregatedDailyGain.value
-  return operatingProfit / gross
-}
+  const margin = operatingProfit / gross
+  console.log('💰 getAggregatedOperatingMargin computed (calculated):', {
+    margin,
+    gross,
+    operatingProfit,
+    forceRecomputeTrigger: trigger
+  })
+  
+  return margin
+})
 
 // Fees by payment method (distribution)
 const getFeesByMethodDistribution = () => {
