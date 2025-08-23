@@ -342,6 +342,18 @@ router.get('/order-evolution', requireAuth, async (req, res) => {
     url.searchParams.set('filter[sources]', 'INBOUND,OUTBOUND')
     url.searchParams.set('timezone', timezone || 'America/Lima')
 
+    // Construct cookie header for authentication
+    let cookieHeader
+    try {
+      cookieHeader = constructCookieHeader(account)
+    } catch (cookieError) {
+      console.error('❌ Cookie construction failed:', cookieError.message)
+      return res.status(500).json({
+        success: false,
+        error: 'Authentication setup failed'
+      })
+    }
+
     console.log('📊 Fetching order evolution data from OlaClick:', {
       start_date,
       end_date,
@@ -355,18 +367,6 @@ router.get('/order-evolution', requireAuth, async (req, res) => {
         'referer': 'https://orders.olaclick.app/'
       }
     })
-
-    // Construct cookie header for authentication
-    let cookieHeader
-    try {
-      cookieHeader = constructCookieHeader(account)
-    } catch (cookieError) {
-      console.error('❌ Cookie construction failed:', cookieError.message)
-      return res.status(500).json({
-        success: false,
-        error: 'Authentication setup failed'
-      })
-    }
 
     // Prepare headers with proper OlaClick authentication
     const headers = {
