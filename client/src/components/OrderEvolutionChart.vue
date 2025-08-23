@@ -31,14 +31,36 @@
         </div>
       </div>
 
-      <!-- Chart Container -->
-      <div v-else-if="chartData && chartData.datasets && chartData.datasets.length" class="relative">
-        <canvas :key="chartKey" ref="chartCanvas" class="w-full h-48 sm:h-56" :height="chartCanvasHeight" style="display:block;"></canvas>
-        
-        <!-- Chart Legend -->
+      <!-- Chart Container (SVG) -->
+      <div v-else-if="svgChart" class="relative">
+        <svg :viewBox="`0 0 ${svgChart.width} ${svgChart.height}`" width="100%" preserveAspectRatio="xMidYMid meet">
+          <!-- Axes -->
+          <line :x1="svgChart.padding" :y1="svgChart.height - svgChart.padding" :x2="svgChart.width - svgChart.padding" :y2="svgChart.height - svgChart.padding" stroke="#E5E7EB" stroke-width="1" />
+          <line :x1="svgChart.padding" :y1="svgChart.padding" :x2="svgChart.padding" :y2="svgChart.height - svgChart.padding" stroke="#E5E7EB" stroke-width="1" />
+
+          <!-- Optional grid lines -->
+          <g v-for="g in 4" :key="`grid-${g}`">
+            <line :x1="svgChart.padding" :x2="svgChart.width - svgChart.padding" :y1="svgChart.padding + (g * (svgChart.plotHeight/5))" :y2="svgChart.padding + (g * (svgChart.plotHeight/5))" stroke="#F3F4F6" stroke-width="1" />
+          </g>
+
+          <!-- Lines and points -->
+          <g v-for="ds in svgChart.datasets" :key="ds.label">
+            <polyline :points="ds.points" fill="none" :stroke="ds.color" stroke-width="2" />
+            <circle v-for="(pt, idx) in ds.circles" :key="`${ds.label}-${idx}`" :cx="pt.cx" :cy="pt.cy" r="2.5" :fill="ds.color" />
+          </g>
+
+          <!-- X labels: first/middle/last -->
+          <g v-if="svgChart.labels.length" fill="#6B7280" font-size="10" text-anchor="middle">
+            <text :x="svgChart.xAt(0)" :y="svgChart.height - svgChart.padding + 14">{{ svgChart.labels[0] }}</text>
+            <text v-if="svgChart.labels.length > 2" :x="svgChart.xAt(Math.floor((svgChart.labels.length-1)/2))" :y="svgChart.height - svgChart.padding + 14">{{ svgChart.labels[Math.floor((svgChart.labels.length-1)/2)] }}</text>
+            <text v-if="svgChart.labels.length > 1" :x="svgChart.xAt(svgChart.labels.length-1)" :y="svgChart.height - svgChart.padding + 14">{{ svgChart.labels[svgChart.labels.length-1] }}</text>
+          </g>
+        </svg>
+
+        <!-- Legend -->
         <div class="mt-3 flex flex-wrap gap-3 justify-center">
-          <div v-for="dataset in chartData.datasets" :key="dataset.label" class="flex items-center space-x-1">
-            <div class="w-2 h-2 rounded-full" :style="{ backgroundColor: dataset.borderColor }"></div>
+          <div v-for="dataset in svgChart.datasets" :key="dataset.label" class="flex items-center space-x-1">
+            <div class="w-2 h-2 rounded-full" :style="{ backgroundColor: dataset.color }"></div>
             <span class="text-xs text-gray-600">{{ dataset.label }}</span>
           </div>
         </div>
@@ -58,13 +80,9 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch, computed, nextTick } from 'vue'
-import { Chart, registerables } from 'chart.js'
+import { ref, onMounted, watch, computed } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { apiRequest } from '../utils/api'
-
-// Register Chart.js components
-Chart.register(...registerables)
 
 const props = defineProps({
   currentDateRange: {
@@ -82,13 +100,10 @@ const props = defineProps({
 })
 
 const authStore = useAuthStore()
-const chartCanvas = ref(null)
-const chart = ref(null)
 const loading = ref(false)
 const error = ref(null)
 const evolutionData = ref(null)
 const chartKey = ref(0)
-const chartCanvasHeight = 224 // px, aligns with h-56
 
 // Helper: parse labels like DD-MM-YYYY into a sortable timestamp
 const parseDateLabelToTs = (label) => {
@@ -198,6 +213,34 @@ const chartData = computed(() => {
   }
 })
 
+// SVG chart builder
+const svgChart = computed(() => {
+  if (!chartData.value || !chartData.value.datasets?.length) return null
+  const width = 800
+  const height = 240
+  const padding = 28
+  const labels = chartData.value.labels
+  const plotWidth = width - padding * 2
+  const plotHeight = height - padding * 2
+  const allVals = chartData.value.datasets.flatMap(ds => ds.data)
+  const maxY = Math.max(1, ...allVals)
+  const xAt = (idx) => {
+    if (labels.length <= 1) return padding + plotWidth / 2
+    const step = plotWidth / (labels.length - 1)
+    return padding + idx * step
+  }
+  const yAt = (val) => {
+    const ratio = val / maxY
+    return height - padding - ratio * plotHeight
+  }
+  const datasets = chartData.value.datasets.map(ds => {
+    const pointsArr = labels.map((_, i) => ({ cx: xAt(i), cy: yAt(ds.data[i] || 0) }))
+    const points = pointsArr.map(p => `${p.cx},${p.cy}`).join(' ')
+    return { label: ds.label, color: ds.borderColor || '#3B82F6', circles: pointsArr, points }
+  })
+  return { width, height, padding, labels, plotHeight, datasets, xAt }
+})
+
 // Fetch evolution data
 const fetchEvolutionData = async () => {
   if (!props.currentDateRange?.start || !props.currentDateRange?.end) {
@@ -237,10 +280,6 @@ const fetchEvolutionData = async () => {
 
     console.log('📊 Order evolution data received:', response)
 
-    // Ensure initial chart render immediately after data arrives
-    await nextTick()
-    initChart()
-
   } catch (err) {
     console.error('❌ Error fetching order evolution data:', err)
     error.value = err.message || 'Failed to load order evolution data'
@@ -249,110 +288,7 @@ const fetchEvolutionData = async () => {
   }
 }
 
-// Initialize chart
-const initChart = () => {
-  if (!chartCanvas.value || !chartData.value) return
-
-  // Destroy existing chart
-  if (chart.value) {
-    chart.value.destroy()
-  }
-
-  const ctx = chartCanvas.value.getContext('2d')
-  
-  chart.value = new Chart(ctx, {
-    type: 'line',
-    data: chartData.value,
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      resizeDelay: 0,
-      parsing: false,
-      animation: { duration: 0 },
-      // Explicit events list to avoid undefined includes() in Chart.js internals
-      events: ['mousemove','mouseout','click','touchstart','touchmove','touchend'],
-      plugins: {
-        legend: {
-          display: false // We'll use custom legend
-        },
-        tooltip: {
-          mode: 'index',
-          intersect: false,
-          backgroundColor: 'rgba(0, 0, 0, 0.8)',
-          titleColor: '#fff',
-          bodyColor: '#fff',
-          borderColor: 'rgba(255, 255, 255, 0.1)',
-          borderWidth: 1,
-          cornerRadius: 8,
-          displayColors: true,
-          callbacks: {
-            title: (context) => {
-              return `Date: ${context[0].label}`
-            },
-            label: (context) => {
-              return `${context.dataset.label}: ${context.parsed.y} orders`
-            }
-          }
-        }
-      },
-      scales: {
-        x: {
-          type: 'category',
-          display: true,
-          title: {
-            display: true,
-            text: 'Date',
-            color: '#6B7280'
-          },
-          grid: {
-            color: 'rgba(0, 0, 0, 0.1)'
-          },
-          ticks: {
-            color: '#6B7280',
-            maxRotation: 45
-          }
-        },
-        y: {
-          display: true,
-          title: {
-            display: true,
-            text: 'Orders',
-            color: '#6B7280'
-          },
-          grid: {
-            color: 'rgba(0, 0, 0, 0.1)'
-          },
-          ticks: {
-            color: '#6B7280',
-            beginAtZero: true,
-            stepSize: 1
-          }
-        }
-      },
-      interaction: {
-        mode: 'nearest',
-        axis: 'x',
-        intersect: false
-      },
-      elements: {
-        point: {
-          radius: 3,
-          hoverRadius: 5
-        }
-      }
-    }
-  })
-}
-
-// Watch for data changes and update chart
-watch(chartData, () => {
-  if (!chartData.value) return
-  // Force canvas remount to reset Chart.js internal state
-  chartKey.value += 1
-  nextTick(() => {
-    initChart()
-  })
-}, { deep: true })
+// No chart library watchers required
 
 // Watch for date range changes
 watch(() => props.currentDateRange, () => {
@@ -366,12 +302,6 @@ watch(() => props.accounts, () => {
 
 onMounted(() => {
   fetchEvolutionData()
-})
-
-onUnmounted(() => {
-  if (chart.value) {
-    chart.value.destroy()
-  }
 })
 </script>
 
