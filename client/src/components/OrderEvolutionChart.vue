@@ -235,6 +235,8 @@ const initChart = () => {
     options: {
       responsive: true,
       maintainAspectRatio: true,
+      // Explicit events list to avoid undefined includes() in Chart.js internals
+      events: ['mousemove','mouseout','click','touchstart','touchmove','touchend'],
       plugins: {
         legend: {
           display: false // We'll use custom legend
