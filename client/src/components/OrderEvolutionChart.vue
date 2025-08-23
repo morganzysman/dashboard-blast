@@ -33,7 +33,7 @@
 
       <!-- Chart Container -->
       <div v-else-if="chartData && chartData.datasets && chartData.datasets.length" class="relative">
-        <canvas ref="chartCanvas" class="w-full h-48 sm:h-56"></canvas>
+        <canvas :key="chartKey" ref="chartCanvas" class="w-full h-48 sm:h-56"></canvas>
         
         <!-- Chart Legend -->
         <div class="mt-3 flex flex-wrap gap-3 justify-center">
@@ -87,6 +87,7 @@ const chart = ref(null)
 const loading = ref(false)
 const error = ref(null)
 const evolutionData = ref(null)
+const chartKey = ref(0)
 
 // Helper: parse labels like DD-MM-YYYY into a sortable timestamp
 const parseDateLabelToTs = (label) => {
@@ -313,15 +314,10 @@ const initChart = () => {
 // Watch for data changes and update chart
 watch(chartData, () => {
   if (!chartData.value) return
+  // Force canvas remount to reset Chart.js internal state
+  chartKey.value += 1
   nextTick(() => {
-    if (chart.value && chartCanvas.value) {
-      // Update existing chart in place
-      chart.value.data.labels = chartData.value.labels
-      chart.value.data.datasets = chartData.value.datasets
-      chart.value.update()
-    } else {
-      initChart()
-    }
+    initChart()
   })
 }, { deep: true })
 
