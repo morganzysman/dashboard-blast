@@ -134,7 +134,7 @@ const chartData = computed(() => {
 
 // Fetch evolution data
 const fetchEvolutionData = async () => {
-  if (!props.currentDateRange?.startDate || !props.currentDateRange?.endDate) {
+  if (!props.currentDateRange?.start || !props.currentDateRange?.end) {
     error.value = 'Date range not specified'
     return
   }
@@ -143,8 +143,8 @@ const fetchEvolutionData = async () => {
   error.value = null
 
   try {
-    const startDate = props.currentDateRange.startDate
-    const endDate = props.currentDateRange.endDate
+    const startDate = props.currentDateRange.start
+    const endDate = props.currentDateRange.end
     
     // Use our server-side route instead of direct API call
     const url = new URL('/api/analytics/order-evolution', window.location.origin)
