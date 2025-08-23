@@ -405,10 +405,18 @@ const accountGainBreakdowns = computed(() => {
   const currentDateRange = props.currentDateRange
   const analyticsData = props.analyticsData
   const trigger = forceRecompute.value // Access the trigger to force reactivity
+
+  // Use server profitability only when its period matches the current date range
+  const pdStart = profitabilityData?.period?.start
+  const pdEnd = profitabilityData?.period?.end
+  const curStart = currentDateRange?.start
+  const curEnd = currentDateRange?.end
+  const profitabilityInSync = !!(pdStart && pdEnd && curStart && curEnd && pdStart === curStart && pdEnd === curEnd)
   
   // Debug log to track profitability data changes
   console.log('🔄 AccountDetails: Computing gain breakdowns', {
     profitabilityDataPeriod: profitabilityData?.period,
+    profitabilityInSync,
     currentDateRange: currentDateRange,
     profitabilityAccounts: profitabilityData?.accounts?.length || 0,
     profitabilityTimestamp: profitabilityData?.timestamp,
@@ -453,7 +461,7 @@ const accountGainBreakdowns = computed(() => {
       clientSideRevenue = clientSidePaymentMethods.reduce((s, m) => s + (m.revenue || 0), 0)
     }
     
-    if (serverAcc && serverAcc.paymentMethodBreakdown && (serverAcc.grossSales || 0) > 0) {
+    if (profitabilityInSync && serverAcc && serverAcc.paymentMethodBreakdown && (serverAcc.grossSales || 0) > 0) {
       // Use server data when it has actual revenue data
       console.log(`💰 Using server profitability data for ${account.accountKey}:`, {
         operatingProfit: serverAcc.operatingProfit,
@@ -479,7 +487,7 @@ const accountGainBreakdowns = computed(() => {
       return
     }
     
-    if (serverAcc && clientSideRevenue > 0) {
+    if (profitabilityInSync && serverAcc && clientSideRevenue > 0) {
       // Use hybrid approach: client-side revenue with server-side costs
       // Calculate payment fees from client-side payment methods
       const paymentFees = clientSidePaymentMethods.reduce((sum, method) => sum + (method.fees || 0), 0)
