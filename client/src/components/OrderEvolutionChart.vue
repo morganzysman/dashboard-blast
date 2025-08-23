@@ -261,6 +261,7 @@ const initChart = () => {
       },
       scales: {
         x: {
+          type: 'category',
           display: true,
           title: {
             display: true,
@@ -309,11 +310,17 @@ const initChart = () => {
 
 // Watch for data changes and update chart
 watch(chartData, () => {
-  if (chartData.value) {
-    nextTick(() => {
+  if (!chartData.value) return
+  nextTick(() => {
+    if (chart.value && chartCanvas.value) {
+      // Update existing chart in place
+      chart.value.data.labels = chartData.value.labels
+      chart.value.data.datasets = chartData.value.datasets
+      chart.value.update()
+    } else {
       initChart()
-    })
-  }
+    }
+  })
 }, { deep: true })
 
 // Watch for date range changes
