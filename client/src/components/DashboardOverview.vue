@@ -144,7 +144,7 @@
           
 
       <!-- TOTAL AMOUNT KPI with embedded chart --> 
-      <KpiCard :label="`${formatGainPeriodLabel()} AMOUNT`" :value="formatCurrency(aggregatedGrossSales)" tone="neutral" :key="`total-amount-${forceRecompute}`">
+      <KpiCard :label="`${formatGainPeriodLabel()} AMOUNT`" :value="formatCurrency(aggregatedGrossSales)" tone="neutral" :key="`total-amount-${forceRecompute}-${analyticsData?.timestamp || 0}`">
         <template #icon>
           <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
@@ -159,7 +159,7 @@
                   <span class="text-white text-xs font-bold">{{ analyticsData.accounts.length }}</span>
                 </div>
               </div>
-              <div class="flex-1 space-y-1 text-xs sm:text-sm min-w-0">
+              <div class="flex-1 space-y-1 text-xs sm:text-sm min-w-0" :key="`chart-content-${forceRecompute}-${analyticsData?.timestamp || 0}`">
                 <div v-for="account in getAccountTotalsForChart" :key="account.accountKey" class="min-w-0">
                   <div class="flex items-center justify-between">
                     <div class="flex items-center space-x-1 min-w-0 flex-1">
@@ -403,21 +403,27 @@ const aggregatedDailyGain = computed(() => {
   // Access the force recompute trigger to ensure reactivity
   const trigger = forceRecompute.value
   
-  const serverProfit = props.profitabilityData?.company?.operatingProfit || 0
-  const analyticsGross = props.analyticsData?.aggregated?.totalAmount || 0
+  // Explicitly access reactive dependencies
+  const profitabilityData = props.profitabilityData
+  const analyticsData = props.analyticsData
+  const selectedDateRange = props.selectedDateRange
+  const currentDateRange = props.currentDateRange
+  
+  const serverProfit = profitabilityData?.company?.operatingProfit || 0
+  const analyticsGross = analyticsData?.aggregated?.totalAmount || 0
   
   console.log('💰 aggregatedDailyGain computed:', {
-    profitabilityPeriod: props.profitabilityData?.period,
+    profitabilityPeriod: profitabilityData?.period,
     serverProfit,
     analyticsGross,
-    hasCompanyData: !!props.profitabilityData?.company,
-    selectedDateRange: props.selectedDateRange,
-    currentDateRange: props.currentDateRange,
+    hasCompanyData: !!profitabilityData?.company,
+    selectedDateRange,
+    currentDateRange,
     forceRecomputeTrigger: trigger
   })
   
   // Prefer server-side profitability if available
-  if (props.profitabilityData?.company) {
+  if (profitabilityData?.company) {
     return serverProfit
   }
   
@@ -519,11 +525,16 @@ const getAccountTotalsForChart = computed(() => {
   // Access the force recompute trigger to ensure reactivity
   const trigger = forceRecompute.value
   
-  if (!props.analyticsData || props.analyticsData.aggregated.accountsCount === 0) {
+  // Explicitly access reactive dependencies
+  const analyticsData = props.analyticsData
+  const selectedDateRange = props.selectedDateRange
+  const currentDateRange = props.currentDateRange
+  
+  if (!analyticsData || analyticsData.aggregated.accountsCount === 0) {
     return []
   }
 
-  const accountTotals = props.analyticsData.accounts.map(account => {
+  const accountTotals = analyticsData.accounts.map(account => {
     const totalPayments = getAccountTotalPayments(account)
     const totalAmount = getAccountTotalAmount(account)
     return {
@@ -541,6 +552,8 @@ const getAccountTotalsForChart = computed(() => {
   console.log('📊 getAccountTotalsForChart computed:', {
     accountCount: accountTotals.length,
     totalAmountAcrossAllAccounts,
+    selectedDateRange,
+    currentDateRange,
     forceRecomputeTrigger: trigger,
     accountTotals: accountTotals.map(acc => ({
       accountKey: acc.accountKey,
@@ -591,12 +604,18 @@ const totalOrders = computed(() => {
   // Access the force recompute trigger to ensure reactivity
   const trigger = forceRecompute.value
   
-  const ordersTotal = props.ordersData?.aggregated?.totalOrders || 0
+  // Explicitly access reactive dependencies
+  const ordersData = props.ordersData
+  const selectedDateRange = props.selectedDateRange
+  const currentDateRange = props.currentDateRange
+  
+  const ordersTotal = ordersData?.aggregated?.totalOrders || 0
   
   console.log('📊 totalOrders computed:', {
     ordersTotal,
-    hasOrdersData: !!props.ordersData,
-    selectedDateRange: props.selectedDateRange,
+    hasOrdersData: !!ordersData,
+    selectedDateRange,
+    currentDateRange,
     forceRecomputeTrigger: trigger
   })
   
@@ -608,13 +627,19 @@ const aggregatedGrossSales = computed(() => {
   // Access the force recompute trigger to ensure reactivity
   const trigger = forceRecompute.value
   
-  const profitabilityAmount = props.profitabilityData?.company?.grossSales || 0
-  const analyticsAmount = props.analyticsData?.aggregated?.totalAmount || 0
+  // Explicitly access all reactive dependencies to ensure proper tracking
+  const profitabilityData = props.profitabilityData
+  const analyticsData = props.analyticsData
+  const selectedDateRange = props.selectedDateRange
+  const currentDateRange = props.currentDateRange
+  
+  const profitabilityAmount = profitabilityData?.company?.grossSales || 0
+  const analyticsAmount = analyticsData?.aggregated?.totalAmount || 0
   
   // Calculate from individual accounts if aggregated is 0 but accounts have data
   let calculatedFromAccounts = 0
-  if (props.analyticsData?.accounts) {
-    calculatedFromAccounts = props.analyticsData.accounts.reduce((total, account) => {
+  if (analyticsData?.accounts) {
+    calculatedFromAccounts = analyticsData.accounts.reduce((total, account) => {
       if (account.success && account.data?.data) {
         return total + account.data.data.reduce((sum, method) => sum + (method.sum || 0), 0)
       }
@@ -623,14 +648,14 @@ const aggregatedGrossSales = computed(() => {
   }
   
   console.log('💰 aggregatedGrossSales computed:', {
-    profitabilityPeriod: props.profitabilityData?.period,
+    profitabilityPeriod: profitabilityData?.period,
     profitabilityAmount,
     analyticsAmount,
     calculatedFromAccounts,
-    selectedDateRange: props.selectedDateRange,
-    currentDateRange: props.currentDateRange,
+    selectedDateRange,
+    currentDateRange,
     forceRecomputeTrigger: trigger,
-    accountsData: props.analyticsData?.accounts?.map(acc => ({
+    accountsData: analyticsData?.accounts?.map(acc => ({
       accountKey: acc.accountKey,
       success: acc.success,
       dataLength: acc.data?.data?.length || 0
@@ -638,7 +663,7 @@ const aggregatedGrossSales = computed(() => {
   })
   
   // Priority: profitability > calculated from accounts > analytics aggregated
-  if (props.profitabilityData?.company && profitabilityAmount > 0) {
+  if (profitabilityData?.company && profitabilityAmount > 0) {
     return profitabilityAmount
   }
   
