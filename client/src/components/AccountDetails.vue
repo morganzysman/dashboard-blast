@@ -461,7 +461,7 @@ const accountGainBreakdowns = computed(() => {
       clientSideRevenue = clientSidePaymentMethods.reduce((s, m) => s + (m.revenue || 0), 0)
     }
     
-    if (profitabilityInSync && serverAcc) {
+    if (serverAcc) {
       // Prefer hybrid: current-period revenue with server-side costs when we have revenue
       if (clientSideRevenue > 0) {
         // Use hybrid approach: client-side revenue with server-side costs
@@ -519,37 +519,7 @@ const accountGainBreakdowns = computed(() => {
       return
     }
 
-    if (profitabilityInSync && serverAcc && clientSideRevenue > 0) {
-      // Use hybrid approach: client-side revenue with server-side costs
-      // Calculate payment fees from client-side payment methods
-      const paymentFees = clientSidePaymentMethods.reduce((sum, method) => sum + (method.fees || 0), 0)
-      const netRevenue = clientSideRevenue - paymentFees
-      const foodCosts = netRevenue * 0.3
-      const totalCosts = paymentFees + foodCosts + (serverAcc.utilityCosts || 0) + (serverAcc.payrollCosts || 0)
-      
-      console.log(`🔄 Using hybrid data for ${account.accountKey}:`, {
-        clientSideRevenue,
-        paymentFees,
-        serverPayrollCosts: serverAcc.payrollCosts,
-        serverUtilityCosts: serverAcc.utilityCosts,
-        calculatedFoodCosts: foodCosts,
-        clientSidePaymentMethods
-      })
-      
-      map.set(account.accountKey, {
-        totalRevenue: clientSideRevenue,
-        totalCosts,
-        paymentFees,
-        foodCosts,
-        utilityCosts: serverAcc.utilityCosts || 0,
-        payrollCosts: serverAcc.payrollCosts || 0,
-        payrollEntries: serverAcc.payrollEntries || 0,
-        finalGain: clientSideRevenue - totalCosts,
-        daysInPeriod: serverAcc.daysInPeriod || calcDays(currentDateRange) || 1,
-        paymentMethodBreakdown: clientSidePaymentMethods
-      })
-      return
-    }
+    
     
     if (!account.success || !account.data?.data) {
       map.set(account.accountKey, {
