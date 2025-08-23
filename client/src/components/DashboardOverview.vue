@@ -399,46 +399,49 @@ const formatGainPeriodLabel = () => {
 
 // Per-account gain is now provided by server; for overview aggregated card we rely on company.operatingProfit
 
-// Aggregated gain across all accounts - CONVERTED TO COMPUTED PROPERTY
+// Aggregated gain across all accounts - sum of account gains for reactivity
 const aggregatedDailyGain = computed(() => {
-  // Access the force recompute trigger to ensure reactivity
   const trigger = forceRecompute.value
-  
-  // Explicitly access reactive dependencies
   const profitabilityData = props.profitabilityData
   const analyticsData = props.analyticsData
   const selectedDateRange = props.selectedDateRange
   const currentDateRange = props.currentDateRange
-  
-  const serverProfit = profitabilityData?.company?.operatingProfit || 0
+
+  // If server provides per-account operatingProfit, sum them for the period
+  let sumFromAccounts = 0
+  if (Array.isArray(profitabilityData?.accounts) && profitabilityData.accounts.length > 0) {
+    sumFromAccounts = profitabilityData.accounts.reduce((sum, acc) => sum + (acc.operatingProfit || 0), 0)
+  }
+
+  const serverCompanyProfit = profitabilityData?.company?.operatingProfit || 0
   const analyticsGross = analyticsData?.aggregated?.totalAmount || 0
-  
+
   console.log('💰 aggregatedDailyGain computed:', {
     profitabilityPeriod: profitabilityData?.period,
-    serverProfit,
+    sumFromAccounts,
+    serverCompanyProfit,
     analyticsGross,
-    hasCompanyData: !!profitabilityData?.company,
+    hasAccountData: Array.isArray(profitabilityData?.accounts) && profitabilityData.accounts.length > 0,
     selectedDateRange,
     currentDateRange,
     forceRecomputeTrigger: trigger
   })
-  
-  // Prefer server-side profitability if available
-  if (profitabilityData?.company) {
-    return serverProfit
+
+  // Priority: sum of account gains (most reactive to per-account changes)
+  if (sumFromAccounts !== 0 || (Array.isArray(profitabilityData?.accounts) && profitabilityData.accounts.length > 0)) {
+    return sumFromAccounts
   }
-  
-  // Fallback: estimate from analytics totals when server data missing
+
+  // Next: company aggregate from server
+  if (profitabilityData?.company) {
+    return serverCompanyProfit
+  }
+
+  // Fallback: approximate from analytics totals
   if (analyticsGross <= 0) return 0
   const food = analyticsGross * 0.3
   const fallbackProfit = analyticsGross - food
-  
-  console.log('📊 Using fallback calculation:', {
-    analyticsGross,
-    foodCosts: food,
-    fallbackProfit
-  })
-  
+  console.log('📊 Using fallback calculation:', { analyticsGross, foodCosts: food, fallbackProfit })
   return fallbackProfit
 })
 
