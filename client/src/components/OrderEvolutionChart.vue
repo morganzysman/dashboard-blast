@@ -38,9 +38,10 @@
           <line :x1="svgChart.padding" :y1="svgChart.height - svgChart.padding" :x2="svgChart.width - svgChart.padding" :y2="svgChart.height - svgChart.padding" stroke="#E5E7EB" stroke-width="1" />
           <line :x1="svgChart.padding" :y1="svgChart.padding" :x2="svgChart.padding" :y2="svgChart.height - svgChart.padding" stroke="#E5E7EB" stroke-width="1" />
 
-          <!-- Optional grid lines -->
-          <g v-for="g in 4" :key="`grid-${g}`">
-            <line :x1="svgChart.padding" :x2="svgChart.width - svgChart.padding" :y1="svgChart.padding + (g * (svgChart.plotHeight/5))" :y2="svgChart.padding + (g * (svgChart.plotHeight/5))" stroke="#F3F4F6" stroke-width="1" />
+          <!-- Grid lines and Y-axis labels -->
+          <g v-for="t in svgChart.ticks" :key="`tick-${t.value}`">
+            <line :x1="svgChart.padding" :x2="svgChart.width - svgChart.padding" :y1="t.y" :y2="t.y" stroke="#F3F4F6" stroke-width="1" />
+            <text :x="svgChart.padding - 6" :y="t.y + 3" fill="#6B7280" font-size="10" text-anchor="end">{{ t.value }}</text>
           </g>
 
           <!-- Lines and points -->
@@ -218,12 +219,17 @@ const svgChart = computed(() => {
   if (!chartData.value || !chartData.value.datasets?.length) return null
   const width = 800
   const height = 240
-  const padding = 28
+  const padding = 36
   const labels = chartData.value.labels
   const plotWidth = width - padding * 2
   const plotHeight = height - padding * 2
   const allVals = chartData.value.datasets.flatMap(ds => ds.data)
   const maxY = Math.max(1, ...allVals)
+  // Build nice ticks (5 steps)
+  const steps = 5
+  const rawStep = Math.max(1, Math.ceil(maxY / steps))
+  const step = rawStep
+  const tickValues = Array.from({ length: steps + 1 }, (_, i) => i * step)
   const xAt = (idx) => {
     if (labels.length <= 1) return padding + plotWidth / 2
     const step = plotWidth / (labels.length - 1)
@@ -238,7 +244,8 @@ const svgChart = computed(() => {
     const points = pointsArr.map(p => `${p.cx},${p.cy}`).join(' ')
     return { label: ds.label, color: ds.borderColor || '#3B82F6', circles: pointsArr, points }
   })
-  return { width, height, padding, labels, plotHeight, datasets, xAt }
+  const ticks = tickValues.map(v => ({ value: v, y: yAt(v) }))
+  return { width, height, padding, labels, plotHeight, datasets, xAt, ticks }
 })
 
 // Fetch evolution data
