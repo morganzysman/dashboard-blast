@@ -32,7 +32,7 @@
       </div>
 
       <!-- Chart Container -->
-      <div v-else-if="chartData" class="relative">
+      <div v-else-if="chartData && chartData.datasets && chartData.datasets.length" class="relative">
         <canvas ref="chartCanvas" class="w-full h-48 sm:h-56"></canvas>
         
         <!-- Chart Legend -->
@@ -205,6 +205,10 @@ const fetchEvolutionData = async () => {
     evolutionData.value = response
 
     console.log('📊 Order evolution data received:', response)
+
+    // Ensure initial chart render immediately after data arrives
+    await nextTick()
+    initChart()
 
   } catch (err) {
     console.error('❌ Error fetching order evolution data:', err)
