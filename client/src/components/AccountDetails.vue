@@ -461,17 +461,49 @@ const accountGainBreakdowns = computed(() => {
       clientSideRevenue = clientSidePaymentMethods.reduce((s, m) => s + (m.revenue || 0), 0)
     }
     
-    if (profitabilityInSync && serverAcc && serverAcc.paymentMethodBreakdown && (serverAcc.grossSales || 0) > 0) {
-      // Use server data when it has actual revenue data
-      console.log(`💰 Using server profitability data for ${account.accountKey}:`, {
+    if (profitabilityInSync && serverAcc) {
+      // Prefer hybrid: current-period revenue with server-side costs when we have revenue
+      if (clientSideRevenue > 0) {
+        // Use hybrid approach: client-side revenue with server-side costs
+        // Calculate payment fees from client-side payment methods
+        const paymentFees = clientSidePaymentMethods.reduce((sum, method) => sum + (method.fees || 0), 0)
+        const netRevenue = clientSideRevenue - paymentFees
+        const foodCosts = netRevenue * 0.3
+        const totalCosts = paymentFees + foodCosts + (serverAcc.utilityCosts || 0) + (serverAcc.payrollCosts || 0)
+        
+        console.log(`🔄 Using hybrid data for ${account.accountKey}:`, {
+          clientSideRevenue,
+          paymentFees,
+          serverPayrollCosts: serverAcc.payrollCosts,
+          serverUtilityCosts: serverAcc.utilityCosts,
+          calculatedFoodCosts: foodCosts,
+          clientSidePaymentMethods
+        })
+        
+        map.set(account.accountKey, {
+          totalRevenue: clientSideRevenue,
+          totalCosts,
+          paymentFees,
+          foodCosts,
+          utilityCosts: serverAcc.utilityCosts || 0,
+          payrollCosts: serverAcc.payrollCosts || 0,
+          payrollEntries: serverAcc.payrollEntries || 0,
+          finalGain: clientSideRevenue - totalCosts,
+          daysInPeriod: serverAcc.daysInPeriod || calcDays(currentDateRange) || 1,
+          paymentMethodBreakdown: clientSidePaymentMethods
+        })
+        return
+      }
+
+      // Fallback to server-only figures when no client-side revenue is available
+      console.log(`💰 Using server-only profitability for ${account.accountKey}:`, {
         operatingProfit: serverAcc.operatingProfit,
         grossSales: serverAcc.grossSales,
         paymentFees: serverAcc.paymentFees,
         payrollCosts: serverAcc.payrollCosts,
         payrollEntries: serverAcc.payrollEntries,
-        paymentMethodBreakdown: serverAcc.paymentMethodBreakdown
+        utilityCosts: serverAcc.utilityCosts
       })
-      
       map.set(account.accountKey, {
         totalRevenue: serverAcc.grossSales || 0,
         totalCosts: (serverAcc.paymentFees || 0) + (serverAcc.foodCosts || 0) + (serverAcc.utilityCosts || 0) + (serverAcc.payrollCosts || 0),
@@ -482,11 +514,11 @@ const accountGainBreakdowns = computed(() => {
         payrollEntries: serverAcc.payrollEntries || 0,
         finalGain: (serverAcc.grossSales || 0) - ((serverAcc.paymentFees || 0) + (serverAcc.foodCosts || 0) + (serverAcc.utilityCosts || 0) + (serverAcc.payrollCosts || 0)),
         daysInPeriod: serverAcc.daysInPeriod || calcDays(currentDateRange) || 1,
-        paymentMethodBreakdown: serverAcc.paymentMethodBreakdown
+        paymentMethodBreakdown: serverAcc.paymentMethodBreakdown || []
       })
       return
     }
-    
+
     if (profitabilityInSync && serverAcc && clientSideRevenue > 0) {
       // Use hybrid approach: client-side revenue with server-side costs
       // Calculate payment fees from client-side payment methods
