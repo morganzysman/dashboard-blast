@@ -144,7 +144,7 @@
           
 
       <!-- TOTAL AMOUNT KPI with embedded chart --> 
-      <KpiCard :label="`${formatGainPeriodLabel()} AMOUNT`" :value="formatCurrency(aggregatedGrossSales)" tone="neutral" :key="`total-amount-${forceRecompute}-${analyticsData?.timestamp || 0}`">
+      <KpiCard :label="`${formatGainPeriodLabel()} AMOUNT`" :value="formatCurrency(aggregatedGrossSales)" tone="neutral" :key="`total-amount-${forceRecompute}`">
         <template #icon>
           <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
@@ -159,7 +159,7 @@
                   <span class="text-white text-xs font-bold">{{ analyticsData.accounts.length }}</span>
                 </div>
               </div>
-              <div class="flex-1 space-y-1 text-xs sm:text-sm min-w-0" :key="`chart-content-${forceRecompute}-${analyticsData?.timestamp || 0}`">
+              <div class="flex-1 space-y-1 text-xs sm:text-sm min-w-0" :key="`chart-content-${forceRecompute}`">
                 <div v-for="account in getAccountTotalsForChart" :key="account.accountKey" class="min-w-0">
                   <div class="flex items-center justify-between">
                     <div class="flex items-center space-x-1 min-w-0 flex-1">
@@ -664,15 +664,21 @@ const aggregatedGrossSales = computed(() => {
   })
   
   // Priority: profitability > calculated from accounts > analytics aggregated
+  let finalAmount = 0
+  
   if (profitabilityData?.company && profitabilityAmount > 0) {
-    return profitabilityAmount
+    finalAmount = profitabilityAmount
+    console.log('💰 Using profitability data:', finalAmount)
+  } else if (calculatedFromAccounts > 0) {
+    finalAmount = calculatedFromAccounts
+    console.log('💰 Using calculated from accounts:', finalAmount)
+  } else {
+    finalAmount = analyticsAmount
+    console.log('💰 Using analytics aggregated:', finalAmount)
   }
   
-  if (calculatedFromAccounts > 0) {
-    return calculatedFromAccounts
-  }
-  
-  return analyticsAmount
+  console.log('💰 Final aggregatedGrossSales value:', finalAmount)
+  return finalAmount
 })
 
 // Client-side fee computation removed
