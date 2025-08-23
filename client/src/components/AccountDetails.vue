@@ -464,12 +464,18 @@ const accountGainBreakdowns = computed(() => {
     if (serverAcc) {
       // Prefer hybrid: current-period revenue with server-side costs when we have revenue
       if (clientSideRevenue > 0) {
+        // Derive utility costs for the selected period using server per-period or per-day if mismatched
+        const currentDays = calcDays(currentDateRange) || 1
+        const serverDays = serverAcc?.daysInPeriod || currentDays
+        const serverUtilTotal = serverAcc?.utilityCosts || 0
+        const utilityPerDay = serverDays > 0 ? (serverUtilTotal / serverDays) : serverUtilTotal
+        const utilityCostsForPeriod = utilityPerDay * currentDays
         // Use hybrid approach: client-side revenue with server-side costs
         // Calculate payment fees from client-side payment methods
         const paymentFees = clientSidePaymentMethods.reduce((sum, method) => sum + (method.fees || 0), 0)
         const netRevenue = clientSideRevenue - paymentFees
         const foodCosts = netRevenue * 0.3
-        const totalCosts = paymentFees + foodCosts + (serverAcc.utilityCosts || 0) + (serverAcc.payrollCosts || 0)
+        const totalCosts = paymentFees + foodCosts + utilityCostsForPeriod + (serverAcc.payrollCosts || 0)
         
         console.log(`🔄 Using hybrid data for ${account.accountKey}:`, {
           clientSideRevenue,
@@ -485,7 +491,7 @@ const accountGainBreakdowns = computed(() => {
           totalCosts,
           paymentFees,
           foodCosts,
-          utilityCosts: serverAcc.utilityCosts || 0,
+          utilityCosts: utilityCostsForPeriod,
           payrollCosts: serverAcc.payrollCosts || 0,
           payrollEntries: serverAcc.payrollEntries || 0,
           finalGain: clientSideRevenue - totalCosts,
@@ -504,15 +510,20 @@ const accountGainBreakdowns = computed(() => {
         payrollEntries: serverAcc.payrollEntries,
         utilityCosts: serverAcc.utilityCosts
       })
+      const currentDays = calcDays(currentDateRange) || 1
+      const serverDays = serverAcc?.daysInPeriod || currentDays
+      const serverUtilTotal = serverAcc?.utilityCosts || 0
+      const utilityPerDay = serverDays > 0 ? (serverUtilTotal / serverDays) : serverUtilTotal
+      const utilityCostsForPeriod = utilityPerDay * currentDays
       map.set(account.accountKey, {
         totalRevenue: serverAcc.grossSales || 0,
-        totalCosts: (serverAcc.paymentFees || 0) + (serverAcc.foodCosts || 0) + (serverAcc.utilityCosts || 0) + (serverAcc.payrollCosts || 0),
+        totalCosts: (serverAcc.paymentFees || 0) + (serverAcc.foodCosts || 0) + utilityCostsForPeriod + (serverAcc.payrollCosts || 0),
         paymentFees: serverAcc.paymentFees || 0,
         foodCosts: serverAcc.foodCosts || 0,
-        utilityCosts: serverAcc.utilityCosts || 0,
+        utilityCosts: utilityCostsForPeriod,
         payrollCosts: serverAcc.payrollCosts || 0,
         payrollEntries: serverAcc.payrollEntries || 0,
-        finalGain: (serverAcc.grossSales || 0) - ((serverAcc.paymentFees || 0) + (serverAcc.foodCosts || 0) + (serverAcc.utilityCosts || 0) + (serverAcc.payrollCosts || 0)),
+        finalGain: (serverAcc.grossSales || 0) - ((serverAcc.paymentFees || 0) + (serverAcc.foodCosts || 0) + utilityCostsForPeriod + (serverAcc.payrollCosts || 0)),
         daysInPeriod: calcDays(currentDateRange) || 1,
         paymentMethodBreakdown: serverAcc.paymentMethodBreakdown || []
       })
