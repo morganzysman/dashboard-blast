@@ -85,12 +85,21 @@ router.get('/profitability', requireAuth, async (req, res) => {
     // For payroll we pass [startDate, endDate, ...accountTokens], so placeholders start at $3
     const payrollAccPlaceholders = accountTokens.map((_, i) => `$${i + 3}`).join(', ')
     const payrollQuery = `
-      SELECT company_token, COALESCE(SUM(amount), 0) AS payroll_sum, COUNT(*) AS entries_count
-      FROM time_entries
-      WHERE clock_in_at >= $1::date AND clock_in_at < ($2::date + INTERVAL '1 day')
-        AND clock_out_at IS NOT NULL
-        AND company_token IN (${payrollAccPlaceholders})
-      GROUP BY company_token
+      SELECT te.company_token,
+             COALESCE(SUM(
+               COALESCE(
+                 te.amount,
+                 (EXTRACT(EPOCH FROM (te.clock_out_at - te.clock_in_at)) / 3600.0) * COALESCE(u.hourly_rate, 0)
+               )
+             ), 0) AS payroll_sum,
+             COUNT(*) AS entries_count
+      FROM time_entries te
+      LEFT JOIN users u ON u.id = te.user_id
+      WHERE te.clock_in_at >= $1::date
+        AND te.clock_in_at < ($2::date + INTERVAL '1 day')
+        AND te.clock_out_at IS NOT NULL
+        AND te.company_token IN (${payrollAccPlaceholders})
+      GROUP BY te.company_token
     `
 
     const [utilityRes, paymentCostsRes, payrollRes] = await Promise.all([
