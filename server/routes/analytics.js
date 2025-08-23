@@ -313,6 +313,26 @@ router.get('/order-evolution', requireAuth, async (req, res) => {
       })
     }
 
+    // Fetch accounts by user's company
+    let userAccounts = []
+    if (req.user.companyId) {
+      const q = await pool.query('SELECT company_token, api_token FROM company_accounts WHERE company_id = $1', [req.user.companyId])
+      userAccounts = q.rows.map(r => ({ company_token: r.company_token, api_token: r.api_token }))
+    }
+    
+    if (userAccounts.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'No accounts found for user'
+      })
+    }
+
+    // Use the first account for now (we can extend this to support multiple accounts later)
+    const account = userAccounts[0]
+
+    // Import the OlaClick service functions
+    const { constructCookieHeader } = await import('../services/olaClickService.js')
+
     // Build the OlaClick API URL
     const url = new URL('https://api.olaclick.app/ms-reports/auth/dashboard/general_indicators/evolution_chart')
     url.searchParams.set('filter[start_date]', start_date)
@@ -326,17 +346,38 @@ router.get('/order-evolution', requireAuth, async (req, res) => {
       start_date,
       end_date,
       timezone,
+      account: account.company_token,
       url: url.toString()
     })
+
+    // Construct cookie header for authentication
+    let cookieHeader
+    try {
+      cookieHeader = constructCookieHeader(account)
+    } catch (cookieError) {
+      console.error('❌ Cookie construction failed:', cookieError.message)
+      return res.status(500).json({
+        success: false,
+        error: 'Authentication setup failed'
+      })
+    }
+
+    // Prepare headers with proper OlaClick authentication
+    const headers = {
+      'accept': 'application/json,multipart/form-data',
+      'accept-language': 'en-US,en;q=0.8',
+      'app-company-token': account.company_token,
+      'content-type': 'application/json',
+      'cookie': cookieHeader,
+      'origin': 'https://orders.olaclick.app',
+      'referer': 'https://orders.olaclick.app/',
+      'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36'
+    }
 
     // Make the request to OlaClick API
     const response = await fetch(url.toString(), {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        // Add any required OlaClick authentication headers here
-        // This should use the user's OlaClick credentials or API tokens
-      }
+      headers
     })
 
     if (!response.ok) {
