@@ -4,7 +4,7 @@
       <div class="flex items-center justify-between mb-4">
         <div class="min-w-0 flex-1">
           <h3 class="text-lg font-semibold text-gray-900">Order Evolution</h3>
-          <p class="text-sm text-gray-500">Daily order trends over the selected period</p>
+          <p class="text-sm text-gray-500">Daily order trends over the selected period (aggregated across all accounts)</p>
         </div>
         <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
           <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -94,36 +94,25 @@ const chartData = computed(() => {
 
   const data = evolutionData.value.data
   
-  // Group data by account if multiple accounts exist
+  // The OlaClick API returns aggregated data for all accounts combined
+  // We'll show this as a single dataset with the total orders
   const accountDatasets = []
   
+  // Create a single dataset for total orders across all accounts
+  accountDatasets.push({
+    label: props.accounts.length > 1 ? 'Total Orders (All Accounts)' : 'Total Orders',
+    data: data.map(item => item.qty_total || 0),
+    borderColor: '#3B82F6',
+    backgroundColor: '#3B82F620',
+    borderWidth: 2,
+    fill: false,
+    tension: 0.4
+  })
+
+  // If we have multiple accounts, we could potentially add individual account lines
+  // by making separate API calls per account, but for now we'll show the aggregated data
   if (props.accounts.length > 1) {
-    // For multiple accounts, create separate datasets
-    props.accounts.forEach((account, index) => {
-      const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4']
-      const color = colors[index % colors.length]
-      
-      accountDatasets.push({
-        label: account.account,
-        data: data.map(item => item.qty_total || 0), // Using qty_total for now
-        borderColor: color,
-        backgroundColor: color + '20',
-        borderWidth: 2,
-        fill: false,
-        tension: 0.4
-      })
-    })
-  } else {
-    // Single account or aggregated data
-    accountDatasets.push({
-      label: 'Total Orders',
-      data: data.map(item => item.qty_total || 0),
-      borderColor: '#3B82F6',
-      backgroundColor: '#3B82F620',
-      borderWidth: 2,
-      fill: false,
-      tension: 0.4
-    })
+    console.log('📊 Multiple accounts detected, showing aggregated order data for all accounts')
   }
 
   return {
@@ -195,7 +184,7 @@ const initChart = () => {
     data: chartData.value,
     options: {
       responsive: true,
-      maintainAspectRatio: false,
+      maintainAspectRatio: true,
       plugins: {
         legend: {
           display: false // We'll use custom legend
