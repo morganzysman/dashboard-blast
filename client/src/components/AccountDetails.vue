@@ -377,6 +377,23 @@ watch(
   { deep: true, immediate: false }
 )
 
+// Ensure reactivity on analytics/orders/selected range changes as well
+watch(
+  [() => props.analyticsData, () => props.ordersData, () => props.selectedDateRange, () => props.currentDateRange],
+  (newValues, oldValues) => {
+    const [newAnalytics, newOrders, newSelectedRange, newCurrentRange] = newValues
+    const [oldAnalytics, oldOrders, oldSelectedRange, oldCurrentRange] = oldValues
+    console.log('👀 Analytics/Orders/Range watcher triggered:', {
+      analyticsChanged: newAnalytics !== oldAnalytics,
+      ordersChanged: newOrders !== oldOrders,
+      selectedRangeChanged: newSelectedRange !== oldSelectedRange,
+      currentRangeChanged: newCurrentRange !== oldCurrentRange
+    })
+    forceRecompute.value++
+  },
+  { deep: true, immediate: false }
+)
+
 // Create a reactive computed property for account gain breakdowns
 const accountGainBreakdowns = computed(() => {
   const map = new Map()
