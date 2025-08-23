@@ -170,13 +170,6 @@
         Companies
       </router-link>
     </nav>
-
-    <!-- Footer -->
-    <div class="absolute bottom-0 left-0 right-0 p-6 border-t border-gray-200">
-      <div class="text-xs text-gray-500">
-        v2.0.0 - Vue.js Edition
-      </div>
-    </div>
   </nav>
 </template>
 

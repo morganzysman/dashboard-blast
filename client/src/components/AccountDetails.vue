@@ -73,12 +73,12 @@
               <!-- Daily Gain KPI -->
               <div class="bg-purple-50 rounded-lg p-3 text-center">
                 <p class="text-sm sm:text-lg font-bold truncate" :class="getDailyGainClass(account)">
-                  {{ formatCurrency(getAccountDailyGain(account)) }}
+                  {{ formatCurrency(accountDailyGains.get(account.accountKey) || 0) }}
                 </p>
                 <p class="text-xs text-purple-500">{{ formatGainPeriodLabel() }} Gain</p>
 
                 <!-- Popover for details -->
-                <Popover class="mt-2 inline-block" :panel-class="'left-1/2 -translate-x-1/2 lg:left-auto lg:right-0 lg:translate-x-0'">
+                <Popover class="mt-2 inline-block" :panel-class="'left-1/2 -translate-x-1/2 lg:left-auto lg:right-0 lg:translate-x-0'" :key="`breakdown-${account.accountKey}-${forceRecompute}`">
                   <template #button>
                     <span class="text-xs text-purple-600 hover:text-purple-800 underline">View breakdown</span>
                   </template>
@@ -89,7 +89,7 @@
                     <!-- Revenue by Payment Method -->
                     <div>
                       <h5 class="font-semibold text-blue-300 mb-3 text-sm">📊 Revenue by Payment Method:</h5>
-                      <div v-for="method in getAccountGainBreakdown(account).paymentMethodBreakdown" :key="method.method" class="mb-2">
+                      <div v-for="method in accountBreakdowns.get(account.accountKey)?.paymentMethodBreakdown || []" :key="method.method" class="mb-2">
                         <div class="flex justify-between items-center mb-1">
                           <span class="capitalize text-sm font-medium">{{ method.method }}:</span>
                           <span class="text-green-300 font-bold">{{ formatCurrency(method.netRevenue) }}</span>
@@ -103,7 +103,7 @@
                       <div class="border-t border-blue-700 pt-2 mt-3">
                         <div class="flex justify-between items-center">
                           <span class="text-sm font-bold text-blue-300">Total Revenue:</span>
-                          <span class="text-blue-300 font-bold">{{ formatCurrency(getAccountGainBreakdown(account).totalRevenue) }}</span>
+                          <span class="text-blue-300 font-bold">{{ formatCurrency(accountBreakdowns.get(account.accountKey)?.totalRevenue || 0) }}</span>
                         </div>
                       </div>
                     </div>
@@ -114,26 +114,26 @@
                       <div class="space-y-2">
                         <div class="flex justify-between items-center">
                           <span class="text-sm">Payment Fees:</span>
-                          <span class="text-red-300 font-bold">-{{ formatCurrency(getAccountGainBreakdown(account).paymentFees) }}</span>
+                          <span class="text-red-300 font-bold">-{{ formatCurrency(accountBreakdowns.get(account.accountKey)?.paymentFees || 0) }}</span>
                         </div>
                         <div class="flex justify-between items-center">
                           <span class="text-sm">Food Costs (30%):</span>
-                          <span class="text-red-300 font-bold">-{{ formatCurrency(getAccountGainBreakdown(account).foodCosts) }}</span>
+                          <span class="text-red-300 font-bold">-{{ formatCurrency(accountBreakdowns.get(account.accountKey)?.foodCosts || 0) }}</span>
                         </div>
                         <div class="flex justify-between items-center">
-                          <span class="text-sm">Utility Costs ({{ getAccountGainBreakdown(account).daysInPeriod }} days):</span>
-                          <span class="text-red-300 font-bold">-{{ formatCurrency(getAccountGainBreakdown(account).utilityCosts) }}</span>
+                          <span class="text-sm">Utility Costs ({{ accountBreakdowns.get(account.accountKey)?.daysInPeriod || 1 }} days):</span>
+                          <span class="text-red-300 font-bold">-{{ formatCurrency(accountBreakdowns.get(account.accountKey)?.utilityCosts || 0) }}</span>
                         </div>
                         <div class="flex justify-between items-center">
-                          <span class="text-sm">Payroll ({{ getAccountGainBreakdown(account).payrollEntries }} entries):</span>
-                          <span class="text-red-300 font-bold">-{{ formatCurrency(getAccountGainBreakdown(account).payrollCosts) }}</span>
+                          <span class="text-sm">Payroll ({{ accountBreakdowns.get(account.accountKey)?.payrollEntries || 0 }} entries):</span>
+                          <span class="text-red-300 font-bold">-{{ formatCurrency(accountBreakdowns.get(account.accountKey)?.payrollCosts || 0) }}</span>
                         </div>
                       </div>
                       <!-- Total Costs -->
                       <div class="border-t border-red-700 pt-2 mt-3">
                         <div class="flex justify-between items-center">
                           <span class="text-sm font-bold text-red-300">Total Costs:</span>
-                          <span class="text-red-300 font-bold">-{{ formatCurrency(getAccountGainBreakdown(account).totalCosts) }}</span>
+                          <span class="text-red-300 font-bold">-{{ formatCurrency(accountBreakdowns.get(account.accountKey)?.totalCosts || 0) }}</span>
                         </div>
                       </div>
                     </div>
@@ -142,8 +142,8 @@
                     <div class="border-t-2 border-gray-600 pt-3 mt-3">
                       <div class="flex justify-between items-center">
                         <span class="text-lg font-bold">Final Gain:</span>
-                        <span class="text-lg font-bold" :class="getAccountDailyGain(account) > 0 ? 'text-green-300' : 'text-red-300'">
-                          {{ formatCurrency(getAccountGainBreakdown(account).finalGain) }}
+                        <span class="text-lg font-bold" :class="(accountDailyGains.get(account.accountKey) || 0) > 0 ? 'text-green-300' : 'text-red-300'">
+                          {{ formatCurrency(accountBreakdowns.get(account.accountKey)?.finalGain || 0) }}
                         </span>
                       </div>
                     </div>
@@ -311,8 +311,8 @@ const getServerAccount = (account) => {
 const getAccountDailyGain = (account) => {
   // Access the trigger to ensure reactivity
   const trigger = forceRecompute.value
-  // Use the same logic as the hover breakdown to avoid discrepancies
-  const breakdown = getAccountGainBreakdown(account)
+  // Use the reactive computed property for consistency
+  const breakdown = accountBreakdowns.value.get(account.accountKey)
   
   console.log(`💰 getAccountDailyGain for ${account.accountKey}:`, {
     finalGain: breakdown?.finalGain || 0,
@@ -321,6 +321,19 @@ const getAccountDailyGain = (account) => {
   
   return breakdown?.finalGain || 0
 }
+
+// Create reactive computed properties for each account's daily gain
+const accountDailyGains = computed(() => {
+  const gains = new Map()
+  
+  if (!props.analyticsData?.accounts) return gains
+  
+  props.analyticsData.accounts.forEach(account => {
+    gains.set(account.accountKey, getAccountDailyGain(account))
+  })
+  
+  return gains
+})
 
 // Calculate number of days in the current date range
 const calculateDaysInPeriod = () => calcDays(props.currentDateRange)
@@ -560,10 +573,23 @@ const getAccountGainBreakdown = (account) => {
   return result
 }
 
+// Create reactive computed properties for each account's breakdown to ensure reactivity in popover
+const accountBreakdowns = computed(() => {
+  const breakdowns = new Map()
+  
+  if (!props.analyticsData?.accounts) return breakdowns
+  
+  props.analyticsData.accounts.forEach(account => {
+    breakdowns.set(account.accountKey, getAccountGainBreakdown(account))
+  })
+  
+  return breakdowns
+})
+
 // Get CSS class for daily gain (green for positive, red for negative)
 const getDailyGainClass = (account) => {
   if (isAccountGainDisabled()) return 'text-gray-400'
-  const gain = getAccountDailyGain(account)
+  const gain = accountDailyGains.value.get(account.accountKey) || 0
   if (gain > 0) return 'text-green-600'
   if (gain < 0) return 'text-red-600'
   return 'text-gray-600'
