@@ -154,7 +154,7 @@
           <div v-if="analyticsData && analyticsData.accounts.length > 1" class="w-full">
             <div class="flex items-center gap-2 sm:gap-3">
               <div class="relative w-12 h-12 sm:w-16 sm:h-16 flex-shrink-0">
-                <div class="w-full h-full rounded-full" :style="{ background: getAccountsPieChart() }"></div>
+                <div class="w-full h-full rounded-full" :style="{ background: getAccountsPieChart }"></div>
                 <div class="absolute inset-2 sm:inset-3 bg-green-600 rounded-full flex items-center justify-center">
                   <span class="text-white text-xs font-bold">{{ analyticsData.accounts.length }}</span>
                 </div>
@@ -865,8 +865,11 @@ const getPaymentMethodsPieChart = computed(() => {
   return `conic-gradient(${gradientStops.join(', ')})`
 })
 
-// Generate pie chart for accounts using conic-gradient
-const getAccountsPieChart = () => {
+// CONVERTED TO COMPUTED PROPERTY for reactivity
+const getAccountsPieChart = computed(() => {
+  // Access the force recompute trigger to ensure reactivity
+  const trigger = forceRecompute.value
+  
   const accounts = getAccountTotalsForChart.value
   if (!accounts || !accounts.length) {
     return 'conic-gradient(#6B7280 0deg 360deg)'
@@ -874,6 +877,11 @@ const getAccountsPieChart = () => {
 
   let currentAngle = 0
   const gradientStops = []
+
+  console.log('💰 getAccountsPieChart computed:', {
+    accountCount: accounts.length,
+    forceRecomputeTrigger: trigger
+  })
 
   accounts.forEach((account, index) => {
     const color = getAccountColor(account.accountKey)
@@ -885,7 +893,7 @@ const getAccountsPieChart = () => {
   })
 
   return `conic-gradient(${gradientStops.join(', ')})`
-}
+})
 
 // CONVERTED TO COMPUTED PROPERTY for reactivity
 const getOrdersDistributionForChart = computed(() => {
