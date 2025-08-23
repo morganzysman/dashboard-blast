@@ -301,7 +301,7 @@ router.get('/profitability', requireAuth, async (req, res) => {
   }
 })
 
-// Order Evolution Chart endpoint
+// Order Evolution Chart endpoint - Fetch data for each account individually
 router.get('/order-evolution', requireAuth, async (req, res) => {
   try {
     const { start_date, end_date, timezone } = req.query
@@ -321,102 +321,133 @@ router.get('/order-evolution', requireAuth, async (req, res) => {
     }
     
     if (userAccounts.length === 0) {
-      return res.status(404).json({
-        success: false,
-        error: 'No accounts found for user'
+      return res.json({
+        success: true,
+        accounts: [],
+        period: {
+          start: start_date,
+          end: end_date,
+          timezone: timezone || 'America/Lima'
+        }
       })
     }
-
-    // Use the first account for now (we can extend this to support multiple accounts later)
-    const account = userAccounts[0]
 
     // Import the OlaClick service functions
     const { constructCookieHeader } = await import('../services/olaClickService.js')
 
-    // Build the OlaClick API URL
-    const url = new URL('https://api.olaclick.app/ms-reports/auth/dashboard/general_indicators/evolution_chart')
-    url.searchParams.set('filter[start_date]', start_date)
-    url.searchParams.set('filter[end_date]', end_date)
-    url.searchParams.set('filter[start_time]', '00:00:00')
-    url.searchParams.set('filter[end_time]', '23:59:59')
-    url.searchParams.set('filter[sources]', 'INBOUND,OUTBOUND')
-    url.searchParams.set('timezone', timezone || 'America/Lima')
-
-    // Construct cookie header for authentication
-    let cookieHeader
-    try {
-      cookieHeader = constructCookieHeader(account)
-    } catch (cookieError) {
-      console.error('❌ Cookie construction failed:', cookieError.message)
-      return res.status(500).json({
-        success: false,
-        error: 'Authentication setup failed'
-      })
-    }
-
-    console.log('📊 Fetching order evolution data from OlaClick:', {
-      start_date,
-      end_date,
-      timezone,
-      account: account.company_token,
-      url: url.toString(),
-      headers: {
-        'app-company-token': account.company_token,
-        'cookie': cookieHeader.substring(0, 100) + '...',
-        'origin': 'https://orders.olaclick.app',
-        'referer': 'https://orders.olaclick.app/'
-      }
-    })
-
-    // Prepare headers with proper OlaClick authentication
-    const headers = {
-      'accept': 'application/json,multipart/form-data',
-      'accept-language': 'en-US,en;q=0.8',
-      'app-company-token': account.company_token,
-      'content-type': 'application/json',
-      'cookie': cookieHeader,
-      'origin': 'https://orders.olaclick.app',
-      'referer': 'https://orders.olaclick.app/',
-      'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36'
-    }
-
-    // Make the request to OlaClick API
-    const response = await fetch(url.toString(), {
-      method: 'GET',
-      headers
-    })
-
-    if (!response.ok) {
-      console.error('❌ OlaClick API error:', response.status, response.statusText)
-      
-      // Try to get the response body for more details
-      let errorDetails = 'No error details available'
+    // Fetch evolution data for each account in parallel
+    const evolutionPromises = userAccounts.map(async (account) => {
       try {
-        const errorResponse = await response.text()
-        console.error('❌ OlaClick API error response body:', errorResponse)
-        errorDetails = errorResponse
-      } catch (textError) {
-        console.error('❌ Could not read error response body:', textError.message)
-      }
-      
-      return res.status(response.status).json({
-        success: false,
-        error: `OlaClick API error: ${response.status} ${response.statusText}`,
-        details: errorDetails
-      })
-    }
+        // Build the OlaClick API URL for this account
+        const url = new URL('https://api.olaclick.app/ms-reports/auth/dashboard/general_indicators/evolution_chart')
+        url.searchParams.set('filter[start_date]', start_date)
+        url.searchParams.set('filter[end_date]', end_date)
+        url.searchParams.set('filter[start_time]', '00:00:00')
+        url.searchParams.set('filter[end_time]', '23:59:59')
+        url.searchParams.set('filter[sources]', 'INBOUND,OUTBOUND')
+        url.searchParams.set('timezone', timezone || 'America/Lima')
 
-    const data = await response.json()
+        // Construct cookie header for authentication
+        let cookieHeader
+        try {
+          cookieHeader = constructCookieHeader(account)
+        } catch (cookieError) {
+          console.error('❌ Cookie construction failed for account', account.company_token, ':', cookieError.message)
+          return {
+            accountKey: account.company_token,
+            account: account.company_token,
+            success: false,
+            error: 'Authentication setup failed',
+            data: []
+          }
+        }
+
+        console.log('📊 Fetching order evolution data from OlaClick for account:', {
+          start_date,
+          end_date,
+          timezone,
+          account: account.company_token,
+          url: url.toString()
+        })
+
+        // Prepare headers with proper OlaClick authentication
+        const headers = {
+          'accept': 'application/json,multipart/form-data',
+          'accept-language': 'en-US,en;q=0.8',
+          'app-company-token': account.company_token,
+          'content-type': 'application/json',
+          'cookie': cookieHeader,
+          'origin': 'https://orders.olaclick.app',
+          'referer': 'https://orders.olaclick.app/',
+          'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36'
+        }
+
+        // Make the request to OlaClick API
+        const response = await fetch(url.toString(), {
+          method: 'GET',
+          headers
+        })
+
+        if (!response.ok) {
+          console.error('❌ OlaClick API error for account', account.company_token, ':', response.status, response.statusText)
+          
+          // Try to get the response body for more details
+          let errorDetails = 'No error details available'
+          try {
+            const errorResponse = await response.text()
+            console.error('❌ OlaClick API error response body for account', account.company_token, ':', errorResponse)
+            errorDetails = errorResponse
+          } catch (textError) {
+            console.error('❌ Could not read error response body for account', account.company_token, ':', textError.message)
+          }
+          
+          return {
+            accountKey: account.company_token,
+            account: account.company_token,
+            success: false,
+            error: `OlaClick API error: ${response.status} ${response.statusText}`,
+            details: errorDetails,
+            data: []
+          }
+        }
+
+        const data = await response.json()
+        
+        console.log('📊 Order evolution data received from OlaClick for account', account.company_token, ':', {
+          dataPoints: data.data?.length || 0,
+          dateRange: `${start_date} to ${end_date}`
+        })
+
+        return {
+          accountKey: account.company_token,
+          account: account.company_token,
+          success: true,
+          data: data.data || []
+        }
+
+      } catch (error) {
+        console.error('❌ Error fetching order evolution data for account', account.company_token, ':', error)
+        return {
+          accountKey: account.company_token,
+          account: account.company_token,
+          success: false,
+          error: 'Failed to fetch order evolution data',
+          data: []
+        }
+      }
+    })
+
+    const accountsData = await Promise.all(evolutionPromises)
     
-    console.log('📊 Order evolution data received from OlaClick:', {
-      dataPoints: data.data?.length || 0,
-      dateRange: `${start_date} to ${end_date}`,
-      fullResponse: data
+    console.log('📊 Order evolution data for all accounts:', {
+      accountCount: accountsData.length,
+      successfulAccounts: accountsData.filter(acc => acc.success).length,
+      dateRange: `${start_date} to ${end_date}`
     })
 
     return res.json({
       success: true,
-      data: data.data || [],
+      accounts: accountsData,
       period: {
         start: start_date,
         end: end_date,

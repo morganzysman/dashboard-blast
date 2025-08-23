@@ -4,7 +4,7 @@
       <div class="flex items-center justify-between mb-4">
         <div class="min-w-0 flex-1">
           <h3 class="text-lg font-semibold text-gray-900">Order Evolution</h3>
-          <p class="text-sm text-gray-500">Daily order trends over the selected period (aggregated across all accounts)</p>
+          <p class="text-sm text-gray-500">Daily order trends over the selected period (separate lines for each account)</p>
         </div>
         <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
           <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -90,33 +90,67 @@ const evolutionData = ref(null)
 
 // Chart data computed property
 const chartData = computed(() => {
-  if (!evolutionData.value || !evolutionData.value.data) return null
+  if (!evolutionData.value || !evolutionData.value.accounts) return null
 
-  const data = evolutionData.value.data
+  const accounts = evolutionData.value.accounts
+  const successfulAccounts = accounts.filter(acc => acc.success && acc.data && acc.data.length > 0)
   
-  // The OlaClick API returns aggregated data for all accounts combined
-  // We'll show this as a single dataset with the total orders
-  const accountDatasets = []
+  if (successfulAccounts.length === 0) return null
+
+  // Get all unique dates from all accounts to create consistent labels
+  const allDates = new Set()
+  successfulAccounts.forEach(account => {
+    account.data.forEach(item => {
+      allDates.add(item.label)
+    })
+  })
   
-  // Create a single dataset for total orders across all accounts
-  accountDatasets.push({
-    label: props.accounts.length > 1 ? 'Total Orders (All Accounts)' : 'Total Orders',
-    data: data.map(item => item.qty_total || 0),
-    borderColor: '#3B82F6',
-    backgroundColor: '#3B82F620',
-    borderWidth: 2,
-    fill: false,
-    tension: 0.4
+  const sortedDates = Array.from(allDates).sort()
+  
+  // Create a dataset for each successful account
+  const accountDatasets = successfulAccounts.map((account, index) => {
+    // Generate a color for this account
+    const colors = [
+      '#3B82F6', // Blue
+      '#10B981', // Green
+      '#F59E0B', // Yellow
+      '#EF4444', // Red
+      '#8B5CF6', // Purple
+      '#06B6D4', // Cyan
+      '#F97316', // Orange
+      '#84CC16'  // Lime
+    ]
+    const color = colors[index % colors.length]
+    
+    // Create data points for this account, filling in missing dates with 0
+    const accountData = sortedDates.map(date => {
+      const dataPoint = account.data.find(item => item.label === date)
+      return dataPoint ? (dataPoint.qty_total || 0) : 0
+    })
+    
+    return {
+      label: account.account,
+      data: accountData,
+      borderColor: color,
+      backgroundColor: color + '20',
+      borderWidth: 2,
+      fill: false,
+      tension: 0.4
+    }
   })
 
-  // If we have multiple accounts, we could potentially add individual account lines
-  // by making separate API calls per account, but for now we'll show the aggregated data
-  if (props.accounts.length > 1) {
-    console.log('📊 Multiple accounts detected, showing aggregated order data for all accounts')
-  }
+  console.log('📊 Chart data computed:', {
+    accountCount: successfulAccounts.length,
+    dateCount: sortedDates.length,
+    datasets: accountDatasets.map(ds => ({
+      label: ds.label,
+      dataPoints: ds.data.length,
+      color: ds.borderColor
+    }))
+  })
 
   return {
-    labels: data.map(item => item.label),
+    labels: sortedDates,
     datasets: accountDatasets
   }
 })
