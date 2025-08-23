@@ -201,8 +201,8 @@
                       <button 
                         v-if="!e.approved_by && !e.paid"
                         @click.stop="openEditEntry(e)"
-                        class="flex-1 px-1 py-0.5 bg-blue-600 text-white rounded text-[8px] font-medium"
-                        title="Edit entry"
+                        class="btn-secondary btn-sm flex-1 !px-1 !py-0.5"
+                        aria-label="Edit entry"
                       >
                         ✏️
                       </button>
@@ -212,8 +212,8 @@
                         v-if="!e.approved_by && !e.paid"
                         @click.stop="quickApproveEntry(e.id)"
                         :disabled="approvingEntry === e.id"
-                        class="flex-1 px-1 py-0.5 bg-green-600 disabled:bg-green-400 text-white rounded text-[8px] font-medium"
-                        :title="approvingEntry === e.id ? 'Approving...' : 'Quick approve'"
+                        class="btn-success btn-sm flex-1 disabled:opacity-50 !px-1 !py-0.5"
+                        :aria-label="approvingEntry === e.id ? 'Approving' : 'Quick approve'"
                       >
                         {{ approvingEntry === e.id ? '⏳' : '✓' }}
                       </button>
@@ -222,8 +222,8 @@
                       <button 
                         v-if="!e.approved_by && !e.paid && isComplexEntry(e)"
                         @click.stop="editBeforeApprove(e)"
-                        class="flex-1 px-1 py-0.5 bg-yellow-600 text-white rounded text-[8px] font-medium"
-                        title="Review and approve"
+                        class="btn-warning btn-sm flex-1 !px-1 !py-0.5"
+                        aria-label="Review and approve"
                       >
                         🔍
                       </button>
@@ -247,8 +247,8 @@
                       <button 
                         v-if="!e.approved_by && !e.paid"
                         @click="openEditEntry(e)"
-                        class="inline-flex items-center px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-[8px] font-medium transition-colors shadow-md"
-                        title="Edit entry times and amount"
+                        class="btn-secondary btn-sm inline-flex items-center"
+                        aria-label="Edit entry times and amount"
                       >
                         <span class="mr-0.5">✏️</span> Edit
                       </button>
@@ -258,8 +258,8 @@
                         v-if="!e.approved_by && !e.paid"
                         @click="quickApproveEntry(e.id)"
                         :disabled="approvingEntry === e.id"
-                        class="inline-flex items-center px-2 py-1 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white rounded text-[8px] font-medium transition-colors shadow-md"
-                        :title="approvingEntry === e.id ? 'Approving...' : 'Quick approve this entry'"
+                        class="btn-success btn-sm inline-flex items-center disabled:opacity-50"
+                        :aria-label="approvingEntry === e.id ? 'Approving' : 'Quick approve this entry'"
                       >
                         <span class="mr-0.5">{{ approvingEntry === e.id ? '⏳' : '✓' }}</span>
                         {{ approvingEntry === e.id ? 'Approving...' : 'Approve' }}
@@ -269,8 +269,8 @@
                       <button 
                         v-if="!e.approved_by && !e.paid && isComplexEntry(e)"
                         @click="editBeforeApprove(e)"
-                        class="inline-flex items-center px-2 py-1 bg-yellow-600 hover:bg-yellow-700 text-white rounded text-[8px] font-medium transition-colors shadow-md"
-                        title="Review and approve this entry"
+                        class="btn-warning btn-sm inline-flex items-center"
+                        aria-label="Review and approve this entry"
                       >
                         <span class="mr-0.5">🔍</span> Review
                       </button>
