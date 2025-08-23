@@ -347,7 +347,13 @@ router.get('/order-evolution', requireAuth, async (req, res) => {
       end_date,
       timezone,
       account: account.company_token,
-      url: url.toString()
+      url: url.toString(),
+      headers: {
+        'app-company-token': account.company_token,
+        'cookie': cookieHeader.substring(0, 100) + '...',
+        'origin': 'https://orders.olaclick.app',
+        'referer': 'https://orders.olaclick.app/'
+      }
     })
 
     // Construct cookie header for authentication
@@ -382,9 +388,21 @@ router.get('/order-evolution', requireAuth, async (req, res) => {
 
     if (!response.ok) {
       console.error('❌ OlaClick API error:', response.status, response.statusText)
+      
+      // Try to get the response body for more details
+      let errorDetails = 'No error details available'
+      try {
+        const errorResponse = await response.text()
+        console.error('❌ OlaClick API error response body:', errorResponse)
+        errorDetails = errorResponse
+      } catch (textError) {
+        console.error('❌ Could not read error response body:', textError.message)
+      }
+      
       return res.status(response.status).json({
         success: false,
-        error: `OlaClick API error: ${response.status} ${response.statusText}`
+        error: `OlaClick API error: ${response.status} ${response.statusText}`,
+        details: errorDetails
       })
     }
 
@@ -392,7 +410,8 @@ router.get('/order-evolution', requireAuth, async (req, res) => {
     
     console.log('📊 Order evolution data received from OlaClick:', {
       dataPoints: data.data?.length || 0,
-      dateRange: `${start_date} to ${end_date}`
+      dateRange: `${start_date} to ${end_date}`,
+      fullResponse: data
     })
 
     return res.json({
