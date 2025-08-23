@@ -680,11 +680,18 @@ const aggregatedGrossSales = computed(() => {
     }, 0)
   }
   
+  const pdStart = profitabilityData?.period?.start
+  const pdEnd = profitabilityData?.period?.end
+  const curStart = currentDateRange?.start
+  const curEnd = currentDateRange?.end
+  const profitabilityInSync = !!(pdStart && pdEnd && curStart && curEnd && pdStart === curStart && pdEnd === curEnd)
+
   console.log('💰 aggregatedGrossSales computed:', {
     profitabilityPeriod: profitabilityData?.period,
     profitabilityAmount,
     analyticsAmount,
     calculatedFromAccounts,
+    profitabilityInSync,
     selectedDateRange,
     currentDateRange,
     forceRecomputeTrigger: trigger,
@@ -695,12 +702,12 @@ const aggregatedGrossSales = computed(() => {
     }))
   })
   
-  // Priority: profitability > calculated from accounts > analytics aggregated
+  // Priority: in-sync profitability > calculated from accounts > analytics aggregated
   let finalAmount = 0
   
-  if (profitabilityData?.company && profitabilityAmount > 0) {
+  if (profitabilityData?.company && profitabilityInSync && profitabilityAmount > 0) {
     finalAmount = profitabilityAmount
-    console.log('💰 Using profitability data:', finalAmount)
+    console.log('💰 Using profitability data (in sync):', finalAmount)
   } else if (calculatedFromAccounts > 0) {
     finalAmount = calculatedFromAccounts
     console.log('💰 Using calculated from accounts:', finalAmount)
