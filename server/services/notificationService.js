@@ -25,8 +25,8 @@ export function configureWebPush() {
 
 // Schedule daily reports with frequency-based delivery
 export function scheduleDailyReports() {
-  // Run every 30 minutes to check for users who need notifications
-  cron.schedule('*/30 * * * *', async () => {
+  // Run every 5 minutes to check for users who need notifications
+  cron.schedule('*/5 * * * *', async () => {
     console.log('🔔 Checking for users ready for notifications...');
     
     try {
@@ -140,7 +140,7 @@ export function scheduleDailyReports() {
     }
   });
   
-  console.log('⏰ Frequency-based notifications scheduled to run every 30 minutes');
+  console.log('⏰ Frequency-based notifications scheduled to run every 5 minutes');
 }
 
 // Manual employee notification: shift updated
@@ -468,6 +468,7 @@ async function generateUserDailyReport(user, subscriptionData) {
     // Determine notification title based on frequency
     const getFrequencyLabel = (freq) => {
       switch(freq) {
+        case 5: return '5-Minute';
         case 30: return '30-Minute';
         case 60: return 'Hourly';
         case 240: return '4-Hour';

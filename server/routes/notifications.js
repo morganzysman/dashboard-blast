@@ -460,11 +460,11 @@ router.put('/settings/frequency', requireAuth, async (req, res) => {
     const { frequency } = req.body;
     
     // Validate frequency
-    const validFrequencies = [30, 60, 240, 480];
+    const validFrequencies = [5, 30, 60, 240, 480];
     if (!validFrequencies.includes(frequency)) {
       return res.status(400).json({
         success: false,
-        error: 'Invalid frequency. Must be one of: 30, 60, 240, 480 (minutes)'
+        error: 'Invalid frequency. Must be one of: 5, 30, 60, 240, 480 (minutes)'
       });
     }
     

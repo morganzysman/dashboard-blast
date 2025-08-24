@@ -278,7 +278,7 @@ app.listen(config.port, '0.0.0.0', () => {
   console.log(`   📈 7-day comparison trends`);
   console.log(`   📱 PWA with offline support`);
   console.log(`   🔔 Push notifications & daily reports`);
-  console.log(`   ⏰ Frequency-based notifications (30min, 1h, 4h, 8h) - checked every 30 minutes`);
+  console.log(`   ⏰ Frequency-based notifications (5min, 30min, 1h, 4h, 8h) - checked every 5 minutes`);
   console.log(`🌐 Server listening on all interfaces (0.0.0.0:${config.port})`);
   console.log(`📁 Modular Architecture:`);
   console.log(`   ├── server/config/ - Configuration management`);

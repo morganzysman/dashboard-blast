@@ -129,6 +129,7 @@
               :disabled="loading"
               class="form-input"
             >
+              <option value="5">{{ $t('notifications.every5Minutes') }}</option>
               <option value="30">{{ $t('notifications.every30Minutes') }}</option>
               <option value="60">{{ $t('notifications.every1Hour') }}</option>
               <option value="240">{{ $t('notifications.every4Hours') }}</option>
@@ -454,6 +455,7 @@ const getDeviceInfo = (userAgent) => {
 
 const getFrequencyLabel = (frequency) => {
   switch(frequency) {
+    case 5: return t('notifications.5minutes')
     case 30: return t('notifications.30minutes')
     case 60: return t('notifications.1hour')
     case 240: return t('notifications.4hours')
