@@ -3,8 +3,8 @@
     <div class="card-body p-4">
       <div class="flex items-center justify-between mb-4">
         <div class="min-w-0 flex-1">
-          <h3 class="text-lg font-semibold text-gray-900">Order Evolution</h3>
-          <p class="text-sm text-gray-500">Daily order trends over the selected period (separate lines for each account)</p>
+          <h3 class="text-lg font-semibold text-gray-900">{{ $t('dashboard.orderEvolution') }}</h3>
+          <p class="text-sm text-gray-500">{{ $t('dashboard.dailyOrderTrends') }}</p>
         </div>
         <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
           <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -17,7 +17,7 @@
       <div v-if="loading" class="flex items-center justify-center h-48 sm:h-56">
         <div class="text-center">
           <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-          <p class="text-sm text-gray-500">Loading order evolution data...</p>
+          <p class="text-sm text-gray-500">{{ $t('dashboard.loadingOrderData') }}</p>
         </div>
       </div>
 
@@ -73,7 +73,7 @@
           <svg class="w-12 h-12 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
           </svg>
-          <p class="text-sm text-gray-500">No order data available for the selected period</p>
+          <p class="text-sm text-gray-500">{{ $t('dashboard.noOrderData') }}</p>
         </div>
       </div>
     </div>

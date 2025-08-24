@@ -61,17 +61,17 @@
           <label class="form-label">{{ $t('modals.userModal.userRole') }}</label>
           <select v-model="form.role" class="form-input" required>
             <option value="">{{ $t('modals.userModal.selectRole') }}</option>
-            <option v-if="isSuperAdmin" value="super-admin">Super Admin</option>
-            <option value="admin">Admin</option>
-            <option value="employee">Employee</option>
+            <option v-if="isSuperAdmin" value="super-admin">{{ $t('admin.superAdmin') }}</option>
+            <option value="admin">{{ $t('admin.admin') }}</option>
+            <option value="employee">{{ $t('admin.employee') }}</option>
           </select>
-          <p class="text-xs text-gray-500 mt-1" v-if="!isSuperAdmin">Admins can only create Admins and Employees for their company.</p>
+          <p class="text-xs text-gray-500 mt-1" v-if="!isSuperAdmin">{{ $t('admin.adminCreateRestriction') }}</p>
         </div>
 
         <!-- Hourly Rate (for employees) -->
         <div v-if="form.role === 'employee'" class="grid grid-cols-2 gap-2">
           <div>
-            <label class="form-label">Hourly Rate</label>
+            <label class="form-label">{{ $t('admin.hourlyRate') }}</label>
             <input
               v-model.number="form.hourly_rate"
               type="number"
@@ -87,12 +87,12 @@
         <div v-if="isSuperAdmin">
           <label class="form-label">Company (Tenant)</label>
           <select v-model="form.company_id" class="form-input">
-            <option value="">Select a company</option>
+            <option value="">{{ $t('modals.userModal.selectCompany') }}</option>
             <option v-for="c in companies" :key="c.id" :value="c.id">
               {{ c.name }}
             </option>
           </select>
-          <p class="text-xs text-gray-500 mt-1">As super-admin, set the tenant company. Admins default to their own company.</p>
+          <p class="text-xs text-gray-500 mt-1">{{ $t('admin.superAdminCompanyNote') }}</p>
         </div>
 
         <!-- Settings are managed at the company level -->
@@ -112,7 +112,7 @@
                 </svg>
               </div>
               <div>
-                <h4 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Employee Warnings</h4>
+                <h4 class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $t('employee.warnings.title') }}</h4>
                 <p class="text-sm text-gray-500 dark:text-gray-400">Manage disciplinary records and performance issues</p>
               </div>
             </div>
@@ -221,7 +221,7 @@
                   </svg>
                 </div>
                 <p class="text-sm text-green-600 dark:text-green-400 font-medium">✅ No warnings on record</p>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Employee has a clean disciplinary record</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ $t('employee.warnings.cleanRecord') }}</p>
               </div>
               
               <!-- Warnings List -->

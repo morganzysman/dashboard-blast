@@ -153,7 +153,13 @@
     "realtimeAnalytics": "Analíticas en tiempo real de sus cuentas de OlaClick",
     "last7Days": "Últimos 7 Días",
     "last30Days": "Últimos 30 Días",
-    "applyRange": "Aplicar Rango"
+    "applyRange": "Aplicar Rango",
+    "orderEvolution": "Evolución de Pedidos",
+    "dailyOrderTrends": "Tendencias diarias de pedidos durante el período seleccionado (líneas separadas para cada cuenta)",
+    "loadingOrderData": "Cargando datos de evolución de pedidos...",
+    "noOrderData": "No hay datos de pedidos disponibles para el período seleccionado",
+    "feesByPaymentMethod": "Tarifas por Método de Pago",
+    "netRevenueByPaymentMethod": "Ingresos Netos por Método de Pago"
   },
   "languages": {
     "en": "English",
@@ -201,7 +207,9 @@
     "admin": "Administrador",
     "employee": "Empleado",
     "activeSessions": "Sesiones Activas",
-    "pushSubscription": "Notificaciones Push"
+    "pushSubscription": "Notificaciones Push",
+    "adminCreateRestriction": "Los administradores solo pueden crear administradores y empleados para su empresa.",
+    "superAdminCompanyNote": "Como super-administrador, establezca la empresa inquilina. Los administradores por defecto a su propia empresa."
   },
   "employee": {
     "clock": {
@@ -256,7 +264,8 @@
       "low": "Bajo",
       "medium": "Medio",
       "high": "Alto",
-      "critical": "Crítico"
+      "critical": "Crítico",
+      "cleanRecord": "El empleado tiene un registro disciplinario limpio"
     }
   },
   "payroll": {
@@ -321,7 +330,9 @@
     "noShifts": "No hay turnos programados para este período",
     "weekView": "Vista Semanal",
     "monthView": "Vista Mensual",
-    "dayView": "Vista Diaria"
+    "dayView": "Vista Diaria",
+    "defineWeeklyShifts": "Definir turnos semanales por cuenta. Los horarios son locales (HH:MM, 24h).",
+    "showsCurrentSelections": "Muestra las selecciones actuales por día de la semana"
   },
   "rentability": {
     "title": "Análisis de Rentabilidad",
@@ -370,6 +381,8 @@
     "pushSettings": "Configuración de Notificaciones Push",
     "enable": "Habilitar Notificaciones",
     "disable": "Deshabilitar Notificaciones",
+    "every5Minutes": "Cada 5 minutos",
+    "5minutes": "5 minutos",
     "types": {
       "info": "Información",
       "warning": "Advertencia",

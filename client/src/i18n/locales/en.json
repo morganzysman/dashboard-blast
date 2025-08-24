@@ -164,7 +164,13 @@
     "realtimeAnalytics": "Real-time analytics from your OlaClick accounts",
     "last7Days": "Last 7 Days",
     "last30Days": "Last 30 Days",
-    "applyRange": "Apply Range"
+    "applyRange": "Apply Range",
+    "orderEvolution": "Order Evolution",
+    "dailyOrderTrends": "Daily order trends over the selected period (separate lines for each account)",
+    "loadingOrderData": "Loading order evolution data...",
+    "noOrderData": "No order data available for the selected period",
+    "feesByPaymentMethod": "Fees by Payment Method",
+    "netRevenueByPaymentMethod": "Net Revenue by Payment Method"
   },
   "languages": {
     "en": "English",
@@ -220,7 +226,9 @@
     "admin": "Admin",
     "employee": "Employee",
     "activeSessions": "Active Sessions",
-    "pushSubscription": "Push Notifications"
+    "pushSubscription": "Push Notifications",
+    "adminCreateRestriction": "Admins can only create Admins and Employees for their company.",
+    "superAdminCompanyNote": "As super-admin, set the tenant company. Admins default to their own company."
   },
   "employee": {
     "clock": {
@@ -275,7 +283,8 @@
       "low": "Low",
       "medium": "Medium",
       "high": "High",
-      "critical": "Critical"
+      "critical": "Critical",
+      "cleanRecord": "Employee has a clean disciplinary record"
     }
   },
   "payroll": {
@@ -340,7 +349,9 @@
     "noShifts": "No shifts scheduled for this period",
     "weekView": "Week View",
     "monthView": "Month View",
-    "dayView": "Day View"
+    "dayView": "Day View",
+    "defineWeeklyShifts": "Define weekly shifts per account. Times are local (HH:MM, 24h).",
+    "showsCurrentSelections": "Shows current selections per weekday"
   },
   "rentability": {
     "title": "Profitability Analysis",
@@ -440,6 +451,7 @@
     "settings": "Notification Settings",
     "frequency": "Notification Frequency",
     "frequencyDescription": "Choose how often you want to receive sales reports",
+    "every5Minutes": "Every 5 minutes",
     "every30Minutes": "Every 30 minutes",
     "every1Hour": "Every 1 hour",
     "every4Hours": "Every 4 hours",
@@ -470,6 +482,7 @@
     "unknown": "Unknown",
     "withinNextCheck": "Within next check",
     "active": "Notifications Active",
+    "5minutes": "5 minutes",
     "30minutes": "30 minutes",
     "1hour": "1 hour",
     "4hours": "4 hours",

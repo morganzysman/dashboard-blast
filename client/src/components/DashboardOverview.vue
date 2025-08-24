@@ -193,7 +193,7 @@
         <div class="card-body p-3 sm:p-4">
           <div class="flex items-center justify-between mb-2">
             <div class="min-w-0 flex-1">
-              <p class="text-purple-100 text-xs sm:text-sm font-medium">PAYMENT METHODS</p>
+              <p class="text-purple-100 text-xs sm:text-sm font-medium">{{ $t('rentability.paymentMethods').toUpperCase() }}</p>
             </div>
             <div class="w-8 h-8 sm:w-10 sm:h-10 bg-purple-400 bg-opacity-30 rounded-lg flex items-center justify-center flex-shrink-0">
               <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -256,7 +256,7 @@
         <div class="card-body">
           <div class="flex items-center justify-between mb-3">
             <div class="min-w-0 flex-1">
-              <p class="text-xs sm:text-sm font-medium text-gray-700">Fees by Payment Method</p>
+              <p class="text-xs sm:text-sm font-medium text-gray-700">{{ $t('dashboard.feesByPaymentMethod') }}</p>
             </div>
           </div>
           <div class="flex items-center justify-center">
@@ -285,7 +285,7 @@
         <div class="card-body">
           <div class="flex items-center justify-between mb-3">
             <div class="min-w-0 flex-1">
-              <p class="text-xs sm:text-sm font-medium text-gray-700">Net Revenue by Payment Method</p>
+              <p class="text-xs sm:text-sm font-medium text-gray-700">{{ $t('dashboard.netRevenueByPaymentMethod') }}</p>
             </div>
           </div>
           <div class="flex items-center justify-center">

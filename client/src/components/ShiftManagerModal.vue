@@ -4,24 +4,24 @@
       <div class="modal-content">
         <div class="modal-panel w-full max-w-3xl">
           <div class="modal-header flex items-center justify-between">
-            <h3 class="text-md font-semibold">Manage Shifts - {{ user?.email }}</h3>
+            <h3 class="text-md font-semibold">{{ $t('modals.shiftManager.title') }} - {{ user?.email }}</h3>
             <div class="space-x-2">
-              <button class="btn-secondary btn-xs" @click="$emit('close')">Close</button>
-              <button class="btn-primary btn-xs" :disabled="saving" @click="saveAll">{{ saving ? 'Saving...' : 'Save' }}</button>
+              <button class="btn-secondary btn-xs" @click="$emit('close')">{{ $t('common.close') }}</button>
+              <button class="btn-primary btn-xs" :disabled="saving" @click="saveAll">{{ saving ? $t('common.loading') : $t('common.save') }}</button>
             </div>
           </div>
           <div class="modal-body">
-            <p class="text-xs text-gray-500 mb-3">Define weekly shifts per account. Times are local (HH:MM, 24h).</p>
+            <p class="text-xs text-gray-500 mb-3">{{ $t('shifts.defineWeeklyShifts') }}</p>
 
             <div class="overflow-auto">
               <table class="min-w-full text-sm">
                 <thead class="sticky top-0 bg-white z-10 dark:bg-gray-800">
                   <tr class="text-left text-gray-600 dark:text-gray-300">
-                    <th class="py-2 pr-2">Weekday</th>
-                    <th class="py-2 pr-2">Account</th>
-                    <th class="py-2 pr-2">Start</th>
-                    <th class="py-2 pr-2">End</th>
-                    <th class="py-2 pr-2">Actions</th>
+                    <th class="py-2 pr-2">{{ $t('shifts.weekday') }}</th>
+                    <th class="py-2 pr-2">{{ $t('rentability.account') }}</th>
+                    <th class="py-2 pr-2">{{ $t('common.start') }}</th>
+                    <th class="py-2 pr-2">{{ $t('common.end') }}</th>
+                    <th class="py-2 pr-2">{{ $t('companies.actions') }}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -42,7 +42,7 @@
                       <input v-model="form[wd].end_time" type="time" class="form-input w-full" />
                     </td>
                     <td class="py-2 pr-2 w-24">
-                      <button class="btn-danger btn-xs" @click="clearDay(wd)" :disabled="!form[wd].company_token && !form[wd].start_time && !form[wd].end_time">Clear</button>
+                      <button class="btn-danger btn-xs" @click="clearDay(wd)" :disabled="!form[wd].company_token && !form[wd].start_time && !form[wd].end_time">{{ $t('common.clear') }}</button>
                     </td>
                   </tr>
                 </tbody>
@@ -52,7 +52,7 @@
             <div class="mt-4">
               <div class="flex items-center justify-between mb-2">
                 <h4 class="text-sm font-semibold text-gray-900">Preview (This Week)</h4>
-                <span class="text-xs text-gray-500 hidden sm:inline">Shows current selections per weekday</span>
+                <span class="text-xs text-gray-500 hidden sm:inline">{{ $t('shifts.showsCurrentSelections') }}</span>
               </div>
               <div class="grid grid-cols-7 gap-2 text-xs">
                 <div class="text-gray-500" v-for="d in ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']" :key="d">{{ d }}</div>
@@ -71,7 +71,7 @@
           </div>
           <div class="modal-footer">
             <div class="flex justify-end gap-2">
-              <button class="btn-secondary btn-sm" @click="$emit('close')">Close</button>
+              <button class="btn-secondary btn-sm" @click="$emit('close')">{{ $t('common.close') }}</button>
               <button class="btn-primary btn-sm" :disabled="saving" @click="saveAll">{{ saving ? 'Saving...' : 'Save' }}</button>
             </div>
           </div>

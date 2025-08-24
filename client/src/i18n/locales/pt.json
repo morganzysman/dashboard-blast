@@ -154,7 +154,13 @@
     "realtimeAnalytics": "Análises em tempo real das suas contas OlaClick",
     "last7Days": "Últimos 7 Dias",
     "last30Days": "Últimos 30 Dias",
-    "applyRange": "Aplicar Intervalo"
+    "applyRange": "Aplicar Intervalo",
+    "orderEvolution": "Evolução de Pedidos",
+    "dailyOrderTrends": "Tendências diárias de pedidos durante o período selecionado (linhas separadas para cada conta)",
+    "loadingOrderData": "Carregando dados de evolução de pedidos...",
+    "noOrderData": "Nenhum dado de pedido disponível para o período selecionado",
+    "feesByPaymentMethod": "Taxas por Método de Pagamento",
+    "netRevenueByPaymentMethod": "Receita Líquida por Método de Pagamento"
   },
   "languages": {
     "en": "English",
@@ -202,7 +208,9 @@
     "admin": "Admin",
     "employee": "Funcionário",
     "activeSessions": "Sessões Ativas",
-    "pushSubscription": "Notificações Push"
+    "pushSubscription": "Notificações Push",
+    "adminCreateRestriction": "Administradores só podem criar administradores e funcionários para sua empresa.",
+    "superAdminCompanyNote": "Como super-administrador, defina a empresa inquilina. Administradores padrão para sua própria empresa."
   },
   "employee": {
     "clock": {
@@ -257,7 +265,8 @@
       "low": "Baixa",
       "medium": "Média",
       "high": "Alta",
-      "critical": "Crítica"
+      "critical": "Crítica",
+      "cleanRecord": "Funcionário tem um registro disciplinar limpo"
     }
   },
   "payroll": {
@@ -322,7 +331,9 @@
     "noShifts": "Nenhum turno agendado para este período",
     "weekView": "Visualização Semanal",
     "monthView": "Visualização Mensal",
-    "dayView": "Visualização Diária"
+    "dayView": "Visualização Diária",
+    "defineWeeklyShifts": "Definir turnos semanais por conta. Horários são locais (HH:MM, 24h).",
+    "showsCurrentSelections": "Mostra as seleções atuais por dia da semana"
   },
   "rentability": {
     "title": "Análise de Rentabilidade",
@@ -371,6 +382,8 @@
     "pushSettings": "Configurações de Notificação Push",
     "enable": "Habilitar Notificações",
     "disable": "Desabilitar Notificações",
+    "every5Minutes": "A cada 5 minutos",
+    "5minutes": "5 minutos",
     "types": {
       "info": "Informação",
       "warning": "Aviso", 

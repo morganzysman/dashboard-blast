@@ -154,7 +154,13 @@
     "realtimeAnalytics": "Analyses en temps réel de vos comptes OlaClick",
     "last7Days": "7 Derniers Jours",
     "last30Days": "30 Derniers Jours",
-    "applyRange": "Appliquer la Plage"
+    "applyRange": "Appliquer la Plage",
+    "orderEvolution": "Évolution des Commandes",
+    "dailyOrderTrends": "Tendances quotidiennes des commandes sur la période sélectionnée (lignes séparées pour chaque compte)",
+    "loadingOrderData": "Chargement des données d'évolution des commandes...",
+    "noOrderData": "Aucune donnée de commande disponible pour la période sélectionnée",
+    "feesByPaymentMethod": "Frais par Méthode de Paiement",
+    "netRevenueByPaymentMethod": "Chiffre d'Affaires Net par Méthode de Paiement"
   },
   "languages": {
     "en": "English",
@@ -202,7 +208,9 @@
     "admin": "Administrateur",
     "employee": "Employé",
     "activeSessions": "Sessions actives",
-    "pushSubscription": "Notifications push"
+    "pushSubscription": "Notifications push",
+    "adminCreateRestriction": "Les administrateurs ne peuvent créer que des administrateurs et des employés pour leur entreprise.",
+    "superAdminCompanyNote": "En tant que super-administrateur, définissez l'entreprise locataire. Les administrateurs par défaut à leur propre entreprise."
   },
   "employee": {
     "clock": {
@@ -257,7 +265,8 @@
       "low": "Faible",
       "medium": "Moyen",
       "high": "Élevé",
-      "critical": "Critique"
+      "critical": "Critique",
+      "cleanRecord": "L'employé a un dossier disciplinaire propre"
     }
   },
   "payroll": {
@@ -322,7 +331,9 @@
     "noShifts": "Aucune équipe programmée pour cette période",
     "weekView": "Vue hebdomadaire",
     "monthView": "Vue mensuelle",
-    "dayView": "Vue journalière"
+    "dayView": "Vue journalière",
+    "defineWeeklyShifts": "Définir les équipes hebdomadaires par compte. Les heures sont locales (HH:MM, 24h).",
+    "showsCurrentSelections": "Affiche les sélections actuelles par jour de la semaine"
   },
   "rentability": {
     "title": "Analyse de rentabilité",
@@ -371,6 +382,8 @@
     "pushSettings": "Paramètres des notifications push",
     "enable": "Activer les notifications",
     "disable": "Désactiver les notifications",
+    "every5Minutes": "Toutes les 5 minutes",
+    "5minutes": "5 minutes",
     "types": {
       "info": "Information",
       "warning": "Avertissement",
