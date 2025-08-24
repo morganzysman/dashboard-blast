@@ -432,6 +432,8 @@
     "noUtilityCosts": "No utility costs configured",
     "totalMonthly": "Total Monthly",
     "totalDaily": "Total Daily",
+    "perMonth": "/month",
+    "perDay": "/day",
     "paymentMethod": "Payment Method",
     "percentage": "Percentage",
     "fixedCost": "Fixed Cost",

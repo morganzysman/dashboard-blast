@@ -415,7 +415,11 @@
     "noData": "No hay datos disponibles para el período seleccionado",
     "loading": "Cargando análisis...",
     "error": "Error al cargar datos de rentabilidad",
-    "paymentMethodRemoved": "Método de Pago Eliminado"
+    "paymentMethodRemoved": "Método de Pago Eliminado",
+    "totalMonthly": "Total Mensual",
+    "totalDaily": "Total Diario",
+    "perMonth": "/mes",
+    "perDay": "/día"
   },
   "notifications": {
     "title": "Notificaciones",

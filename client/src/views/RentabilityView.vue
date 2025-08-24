@@ -74,33 +74,29 @@
             <div class="flex items-center justify-between mb-3">
               <h6 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">🏠 {{ $t('rentability.utilityCosts') }}</h6>
               <div class="text-right">
-                <div class="text-sm font-medium text-blue-600">{{ formatCurrency(cost.total_monthly) }}/month</div>
-                <div class="text-xs text-green-600">{{ formatCurrency(cost.total_daily) }}/day</div>
+                <div class="text-sm font-medium text-blue-600">{{ formatCurrency(cost.total_monthly) }} {{ $t('rentability.perMonth') }}</div>
+                <div class="text-xs text-green-600">{{ formatCurrency(cost.total_daily) }} {{ $t('rentability.perDay') }}</div>
               </div>
             </div>
-            <template v-for="(value, key) in getCostBreakdown(cost)" :key="key">
-              <div v-if="value > 0" class="flex items-center justify-between text-sm">
-                <span class="text-gray-600 capitalize">{{ formatCostLabel(key) }}</span>
+            <div v-for="(value, key) in getCostBreakdown(cost)" :key="key" class="flex items-center justify-between text-sm">
+                <span class="text-gray-600">{{ $t(`rentability.costFields.${key}`) }}</span>
                 <div class="text-right">
                   <span class="font-medium text-gray-900">{{ formatCurrency(value) }}</span>
-                  <span class="text-gray-400 ml-2">({{ formatCurrency(value / 30) }}/day)</span>
+                  <span class="text-gray-400 ml-2">({{ formatCurrency(value / 30) }} {{ $t('rentability.perDay') }})</span>
                 </div>
-              </div>
-            </template>
+            </div>
           </div>
 
           <!-- Payment Method Costs Breakdown -->
           <div v-if="getAccountPaymentCosts(cost.company_token).length > 0" class="space-y-2 pt-3 border-t border-gray-100">
             <h6 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">💳 {{ $t('rentability.paymentProcessingCosts') }}</h6>
-            <template v-for="paymentCost in getAccountPaymentCosts(cost.company_token)" :key="paymentCost.payment_method_code">
-              <div class="flex items-center justify-between text-sm">
+            <div v-for="paymentCost in getAccountPaymentCosts(cost.company_token)" :key="paymentCost.payment_method_code" class="flex items-center justify-between text-sm">
                 <span class="text-gray-600 capitalize">{{ formatPaymentMethodName(paymentCost.payment_method_code) }}</span>
                 <div class="text-right">
                   <span class="font-medium text-purple-600">{{ paymentCost.cost_percentage }}%</span>
                   <span v-if="paymentCost.fixed_cost > 0" class="text-gray-400 ml-1">+ {{ formatCurrency(paymentCost.fixed_cost) }}</span>
                 </div>
-              </div>
-            </template>
+            </div>
           </div>
         </div>
       </div>
