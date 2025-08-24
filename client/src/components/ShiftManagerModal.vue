@@ -51,7 +51,7 @@
 
             <div class="mt-4">
               <div class="flex items-center justify-between mb-2">
-                <h4 class="text-sm font-semibold text-gray-900">Preview (This Week)</h4>
+                <h4 class="text-sm font-semibold text-gray-900">{{ $t('shifts.previewThisWeek') }}</h4>
                 <span class="text-xs text-gray-500 hidden sm:inline">{{ $t('shifts.showsCurrentSelections') }}</span>
               </div>
               <div class="grid grid-cols-7 gap-2 text-xs">

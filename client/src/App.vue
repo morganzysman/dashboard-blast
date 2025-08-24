@@ -5,7 +5,7 @@
       <div class="bg-white rounded-lg p-8 shadow-xl">
         <div class="flex items-center space-x-4">
           <div class="loading-spinner"></div>
-          <span class="text-gray-700">Loading...</span>
+          <span class="text-gray-700">{{ $t('common.loading') }}</span>
         </div>
       </div>
     </div>

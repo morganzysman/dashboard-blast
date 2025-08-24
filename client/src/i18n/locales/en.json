@@ -175,7 +175,8 @@
     "accountDetails": "Account Details",
     "avgTicket": "Avg Ticket",
     "viewBreakdown": "View breakdown",
-    "switchDateRangeMessage": "Switch to a predefined date range to view detailed service metrics"
+    "switchDateRangeMessage": "Switch to a predefined date range to view detailed service metrics",
+    "tips": "Tips"
   },
   "languages": {
     "en": "English",
@@ -368,7 +369,8 @@
     "monthView": "Month View",
     "dayView": "Day View",
     "defineWeeklyShifts": "Define weekly shifts per account. Times are local (HH:MM, 24h).",
-    "showsCurrentSelections": "Shows current selections per weekday"
+    "showsCurrentSelections": "Shows current selections per weekday",
+    "previewThisWeek": "Preview (This Week)"
   },
   "rentability": {
     "title": "Profitability Analysis",

@@ -85,7 +85,7 @@
 
         <!-- Company Selection (super-admin only) -->
         <div v-if="isSuperAdmin">
-          <label class="form-label">Company (Tenant)</label>
+          <label class="form-label">{{ $t('modals.userModal.assignedCompany') }}</label>
           <select v-model="form.company_id" class="form-input">
             <option value="">{{ $t('modals.userModal.selectCompany') }}</option>
             <option v-for="c in companies" :key="c.id" :value="c.id">

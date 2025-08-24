@@ -53,7 +53,7 @@
             <div>
               <div class="text-lg font-semibold">{{ c.name }}</div>
               <div class="text-xs text-gray-500">{{ c.id }}</div>
-              <div class="text-xs text-gray-500 mt-1">Timezone: {{ c.timezone || 'America/Lima' }} • Currency: {{ c.currency || 'PEN' }} • Language: {{ getLanguageName(c.language) }}</div>
+              <div class="text-xs text-gray-500 mt-1">{{ $t('companies.timezone') }}: {{ c.timezone || 'America/Lima' }} • {{ $t('companies.currency') }}: {{ c.currency || 'PEN' }} • {{ $t('companies.language') }}: {{ getLanguageName(c.language) }}</div>
             </div>
             <div class="flex items-center space-x-2">
               <button class="btn-danger" @click="deleteCompany(c.id)" :title="$t('common.delete')">{{ $t('common.delete') }}</button>

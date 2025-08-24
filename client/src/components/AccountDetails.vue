@@ -62,7 +62,7 @@
 
               <div class="bg-amber-50 rounded-lg p-3 text-center">
                 <p class="text-sm sm:text-lg font-bold text-amber-600 truncate">{{ formatCurrency(getAccountTotalTips(account)) }}</p>
-                <p class="text-xs text-amber-500">Tips</p>
+                <p class="text-xs text-amber-500">{{ $t('dashboard.tips') }}</p>
               </div>
 
               <div class="bg-emerald-50 rounded-lg p-3 text-center">

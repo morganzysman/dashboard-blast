@@ -164,7 +164,8 @@
     "accountDetails": "Detalles de la Cuenta",
     "avgTicket": "Ticket Promedio",
     "viewBreakdown": "Ver desglose",
-    "switchDateRangeMessage": "Cambie a un rango de fechas predefinido para ver métricas de servicio detalladas"
+    "switchDateRangeMessage": "Cambie a un rango de fechas predefinido para ver métricas de servicio detalladas",
+    "tips": "Propinas"
   },
   "languages": {
     "en": "English",
@@ -349,7 +350,8 @@
     "monthView": "Vista Mensual",
     "dayView": "Vista Diaria",
     "defineWeeklyShifts": "Definir turnos semanales por cuenta. Los horarios son locales (HH:MM, 24h).",
-    "showsCurrentSelections": "Muestra las selecciones actuales por día de la semana"
+    "showsCurrentSelections": "Muestra las selecciones actuales por día de la semana",
+    "previewThisWeek": "Vista previa (Esta semana)"
   },
   "rentability": {
     "title": "Análisis de Rentabilidad",
