@@ -1,4 +1,5 @@
 <template>
+  <div>
   <header class="page-header">
     <div class="flex items-center justify-between">
       <!-- Mobile menu button and page title -->
@@ -105,10 +106,12 @@
     :is-open="showChangePasswordModal" 
     @close="closeChangePasswordModal" 
   />
+  </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import ChangePasswordModal from './ChangePasswordModal.vue'
@@ -116,6 +119,7 @@ import ChangePasswordModal from './ChangePasswordModal.vue'
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
+const { t } = useI18n()
 
 const showUserMenu = ref(false)
 const showChangePasswordModal = ref(false)
@@ -137,14 +141,14 @@ const closeChangePasswordModal = () => {
 
 const pageTitle = computed(() => {
   const isAdminSuite = authStore.isSuperAdmin || authStore.isAdmin
-  const base = isAdminSuite ? 'Management Suite' : 'Workforce'
+  const base = isAdminSuite ? t('navigation.managementSuite') : t('navigation.workforce')
   const routeNames = {
-    Admin: 'Management Suite',
+    Admin: t('navigation.managementSuite'),
     Dashboard: base,
     Notifications: base,
     EmployeeClock: base,
     EmployeeTimesheet: base,
-    Companies: 'Management Suite'
+    Companies: t('navigation.managementSuite')
   }
   return routeNames[route.name] || base
 })
@@ -153,7 +157,7 @@ const pageSubtitle = computed(() => {
   const routeSubtitles = {
     Dashboard: '',
     Admin: '',
-    Notifications: 'Push notification settings'
+    Notifications: t('notifications.pushSettings')
   }
   return routeSubtitles[route.name] || ''
 })

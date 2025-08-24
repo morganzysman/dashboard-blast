@@ -124,7 +124,9 @@
     "timesheet": "Folha de Ponto",
     "warnings": "Advertências",
     "clock": "Ponto",
-    "toggleDarkMode": "Alternar modo escuro"
+    "toggleDarkMode": "Alternar modo escuro",
+    "managementSuite": "Suite de Gestão",
+    "workforce": "Equipe"
   },
   "auth": {
     "email": "Email",

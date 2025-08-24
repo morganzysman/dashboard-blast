@@ -123,7 +123,9 @@
     "shifts": "Turnos",
     "timesheet": "Registro de Tiempo",
     "warnings": "Advertencias",
-    "clock": "Reloj"
+    "clock": "Reloj",
+    "managementSuite": "Suite de Gestión",
+    "workforce": "Personal"
   },
   "auth": {
     "email": "Correo Electrónico",

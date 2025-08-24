@@ -127,7 +127,9 @@
     "clock": "Clock",
     "toggleDarkMode": "Toggle dark mode",
     "shiftsCalendar": "Shifts Calendar",
-    "userManagement": "User Management"
+    "userManagement": "User Management",
+    "managementSuite": "Management Suite",
+    "workforce": "Workforce"
   },
   "auth": {
     "email": "Email",

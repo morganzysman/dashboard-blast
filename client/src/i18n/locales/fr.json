@@ -124,7 +124,9 @@
     "timesheet": "Feuille de temps",
     "warnings": "Avertissements",
     "clock": "Pointeuse",
-    "toggleDarkMode": "Basculer le mode sombre"
+    "toggleDarkMode": "Basculer le mode sombre",
+    "managementSuite": "Suite de Gestion",
+    "workforce": "Équipe"
   },
   "auth": {
     "email": "E-mail",
