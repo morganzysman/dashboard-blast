@@ -31,7 +31,8 @@ export const useAuthStore = defineStore('auth', () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password }),
+        // Normalize email on the client as well (backend also lowercases)
+        body: JSON.stringify({ email: String(email || '').trim().toLowerCase(), password }),
       })
 
       const data = await response.json()
