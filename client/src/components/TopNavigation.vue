@@ -29,7 +29,7 @@
           class="touch-target rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 px-2 sm:px-3 py-2 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
           @click="toggleDarkMode"
           :aria-pressed="isDark"
-          title="Toggle dark mode"
+          :title="$t('navigation.toggleDarkMode')"
         >
           <svg v-if="!isDark" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M12 8a4 4 0 100 8 4 4 0 000-8z"/>
@@ -83,7 +83,7 @@
               <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-6 6H6a6 6 0 01-6-6 6 6 0 016-6h7m1 0V3a2 2 0 014 0v4M9 12l2 2 4-4"></path>
               </svg>
-              Change Password
+              {{ $t('auth.changePassword') }}
             </button>
             
             <div class="border-t border-gray-200 my-1"></div>
@@ -92,7 +92,7 @@
               <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
               </svg>
-              Logout
+              {{ $t('common.logout') }}
             </button>
           </div>
         </div>

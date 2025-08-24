@@ -105,7 +105,8 @@
     "shifts": "Équipes",
     "timesheet": "Feuille de temps",
     "warnings": "Avertissements",
-    "clock": "Pointeuse"
+    "clock": "Pointeuse",
+    "toggleDarkMode": "Basculer le mode sombre"
   },
   "auth": {
     "email": "E-mail",
@@ -392,8 +393,10 @@
       "personalInfo": "Informations personnelles",
       "accountInfo": "Informations du compte",
       "permissions": "Permissions",
+      "fullName": "Nom complet",
       "firstName": "Prénom",
       "lastName": "Nom de famille",
+      "adminCanEdit": "L'administrateur peut modifier",
       "emailAddress": "Adresse e-mail",
       "phoneNumber": "Numéro de téléphone",
       "password": "Mot de passe",

@@ -6,7 +6,7 @@
       <!-- Modal Header -->
       <div class="flex justify-between items-center mb-6">
         <h3 class="text-lg font-medium text-gray-900">
-          {{ isEdit ? 'Edit User' : 'Create New User' }}
+          {{ isEdit ? $t('modals.userModal.editTitle') : $t('modals.userModal.createTitle') }}
         </h3>
         <button @click="closeModal" class="text-gray-400 hover:text-gray-600">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -19,48 +19,48 @@
       <form @submit.prevent="handleSubmit" class="space-y-6">
         <!-- Basic Info -->
         <div>
-          <label class="form-label">Full Name</label>
+          <label class="form-label">{{ $t('modals.userModal.fullName') }}</label>
           <input
             v-model="form.name"
             type="text"
             required
             class="form-input"
-            placeholder="Enter full name"
+            :placeholder="$t('modals.userModal.fullName')"
           />
         </div>
 
         <div>
-          <label class="form-label">Email Address</label>
+          <label class="form-label">{{ $t('modals.userModal.emailAddress') }}</label>
           <input
             v-model="form.email"
             type="email"
             required
             class="form-input"
-            placeholder="Enter email address"
+            :placeholder="$t('modals.userModal.emailAddress')"
             :disabled="isEdit && auth.user?.role !== 'admin' && auth.user?.role !== 'super-admin'"
           />
           <p v-if="isEdit && (auth.user?.role === 'admin' || auth.user?.role === 'super-admin')" class="text-xs text-gray-500 mt-1">
-            As an admin, you can edit this user's email address.
+            {{ $t('modals.userModal.adminCanEdit') }}
           </p>
         </div>
 
         <div v-if="!isEdit">
-          <label class="form-label">Password</label>
+          <label class="form-label">{{ $t('modals.userModal.password') }}</label>
           <input
             v-model="form.password"
             type="password"
             required
             class="form-input"
-            placeholder="Enter password"
+            :placeholder="$t('modals.userModal.password')"
             minlength="6"
           />
         </div>
 
         <!-- Role Selection -->
         <div>
-          <label class="form-label">Role</label>
+          <label class="form-label">{{ $t('modals.userModal.userRole') }}</label>
           <select v-model="form.role" class="form-input" required>
-            <option value="">Select role</option>
+            <option value="">{{ $t('modals.userModal.selectRole') }}</option>
             <option v-if="isSuperAdmin" value="super-admin">Super Admin</option>
             <option value="admin">Admin</option>
             <option value="employee">Employee</option>

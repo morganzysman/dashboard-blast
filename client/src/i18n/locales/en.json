@@ -115,7 +115,8 @@
     "shifts": "Shifts",
     "timesheet": "Timesheet",
     "warnings": "Warnings",
-    "clock": "Clock"
+    "clock": "Clock",
+    "toggleDarkMode": "Toggle dark mode"
   },
   "auth": {
     "email": "Email",
@@ -518,9 +519,11 @@
       "isActive": "Account Active",
       "hourlyRate": "Hourly Rate (optional)",
       "required": "This field is required",
-      "emailInvalid": "Please enter a valid email address",
+      "emailInvalid": "Please enter a valid email address", 
       "passwordMismatch": "Passwords do not match",
-      "passwordTooShort": "Password must be at least 6 characters"
+      "passwordTooShort": "Password must be at least 6 characters",
+      "adminCanEdit": "As an admin, you can edit this user's email address.",
+      "fullName": "Full Name"
     },
     "changePassword": {
       "title": "Change Password",

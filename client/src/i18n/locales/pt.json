@@ -105,7 +105,8 @@
     "shifts": "Turnos",
     "timesheet": "Folha de Ponto",
     "warnings": "Advertências",
-    "clock": "Ponto"
+    "clock": "Ponto",
+    "toggleDarkMode": "Alternar modo escuro"
   },
   "auth": {
     "email": "Email",
@@ -392,8 +393,10 @@
       "personalInfo": "Informações Pessoais",
       "accountInfo": "Informações da Conta",
       "permissions": "Permissões",
+      "fullName": "Nome Completo",
       "firstName": "Primeiro Nome",
       "lastName": "Sobrenome",
+      "adminCanEdit": "Administrador pode editar",
       "emailAddress": "Endereço de Email",
       "phoneNumber": "Número de Telefone",
       "password": "Senha",
