@@ -93,7 +93,8 @@
     "days": "Días",
     "weeks": "Semanas",
     "months": "Meses",
-    "years": "Años"
+    "years": "Años",
+    "optional": "Opcional"
   },
   "navigation": {
     "dashboard": "Panel de Control",
@@ -159,7 +160,11 @@
     "loadingOrderData": "Cargando datos de evolución de pedidos...",
     "noOrderData": "No hay datos de pedidos disponibles para el período seleccionado",
     "feesByPaymentMethod": "Tarifas por Método de Pago",
-    "netRevenueByPaymentMethod": "Ingresos Netos por Método de Pago"
+    "netRevenueByPaymentMethod": "Ingresos Netos por Método de Pago",
+    "accountDetails": "Detalles de la Cuenta",
+    "avgTicket": "Ticket Promedio",
+    "viewBreakdown": "Ver desglose",
+    "switchDateRangeMessage": "Cambie a un rango de fechas predefinido para ver métricas de servicio detalladas"
   },
   "languages": {
     "en": "English",
@@ -265,7 +270,14 @@
       "medium": "Medio",
       "high": "Alto",
       "critical": "Crítico",
-      "cleanRecord": "El empleado tiene un registro disciplinario limpio"
+      "cleanRecord": "El empleado tiene un registro disciplinario limpio",
+      "deleteWarning": "Eliminar advertencia",
+      "manageRecords": "Gestionar registros disciplinarios y problemas de rendimiento",
+      "issueNewWarning": "Emitir Nueva Advertencia",
+      "category": "Categoría de Advertencia",
+      "selectCategory": "Seleccionar categoría",
+      "specificMotive": "Motivo Específico",
+      "warningHistory": "Historial de Advertencias"
     }
   },
   "payroll": {
@@ -297,7 +309,12 @@
     "entryDetails": "Detalles del Registro",
     "clockInRequired": "La hora de entrada es requerida",
     "clockOutRequired": "La hora de salida es requerida",
-    "invalidTimeRange": "La hora de salida debe ser posterior a la hora de entrada"
+    "invalidTimeRange": "La hora de salida debe ser posterior a la hora de entrada",
+    "reviewRecommended": "Revisión recomendada",
+    "editEntry": "Editar registro",
+    "reviewAndApprove": "Revisar y aprobar",
+    "editEntryTimesAndAmount": "Editar horarios y cantidad del registro",
+    "reviewAndApproveEntry": "Revisar y aprobar este registro"
   },
   "shifts": {
     "title": "Gestión de Turnos",

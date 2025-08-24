@@ -1,6 +1,6 @@
 <template>
   <div class="space-y-4">
-    <h3 class="text-base sm:text-lg font-medium text-gray-900">🏪 Account Details</h3>
+    <h3 class="text-base sm:text-lg font-medium text-gray-900">🏪 {{ $t('dashboard.accountDetails') }}</h3>
 
     <!-- Loading skeletons -->
     <div v-if="loading" class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
@@ -39,7 +39,7 @@
           <!-- Account Header -->
           <div class="flex items-center gap-2 mb-4">
             <span class="badge" :class="account.success ? 'badge-success' : 'badge-danger'">
-              {{ account.success ? 'Active' : 'Error' }}
+              {{ account.success ? $t('common.active') : $t('common.error') }}
             </span>
             <div class="relative group">
               <h4 class="font-medium text-gray-900 text-sm sm:text-base truncate cursor-pointer" :title="account.account">
@@ -57,7 +57,7 @@
             <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               <div class="bg-indigo-50 rounded-lg p-3 text-center">
                 <p class="text-sm sm:text-lg font-bold text-indigo-600 truncate">{{ formatCurrency(getAccountAvgTicket(account)) }}</p>
-                <p class="text-xs text-indigo-500">Avg Ticket</p>
+                <p class="text-xs text-indigo-500">{{ $t('dashboard.avgTicket') }}</p>
               </div>
 
               <div class="bg-amber-50 rounded-lg p-3 text-center">
@@ -80,7 +80,7 @@
                 <!-- Popover for details -->
                 <Popover class="mt-2 inline-block" :panel-class="'left-1/2 -translate-x-1/2 lg:left-auto lg:right-0 lg:translate-x-0'" :key="`breakdown-${account.accountKey}-${forceRecompute}`">
                   <template #button>
-                    <span class="text-xs text-purple-600 hover:text-purple-800 underline">View breakdown</span>
+                    <span class="text-xs text-purple-600 hover:text-purple-800 underline">{{ $t('dashboard.viewBreakdown') }}</span>
                   </template>
                   <template #title>
                     <h4 class="font-bold text-purple-300 text-sm">💰 Gain Breakdown ({{ formatGainPeriodLabel() }})</h4>
@@ -219,14 +219,14 @@
                   </div>
                   <div class="space-y-0.5">
                     <div class="flex items-center justify-between text-xs text-gray-500">
-                      <span>Orders</span>
+                      <span>{{ $t('dashboard.totalOrders') }}</span>
                       <div class="text-right">
                         <span class="font-bold text-gray-900">{{ account.serviceMetrics[type]?.orders?.current_period ?? 0 }}</span>
                         <span class="text-gray-400 ml-1">({{ getAccountServiceOrderPercentage(account, type) }}%)</span>
                       </div>
                     </div>
                     <div class="flex items-center justify-between text-xs text-gray-500">
-                      <span>Sales</span>
+                      <span>{{ $t('rentability.revenue') }}</span>
                       <span class="font-bold text-gray-900">{{ formatCurrency(account.serviceMetrics[type]?.sales?.current_period ?? 0) }}</span>
                     </div>
                     <div class="flex items-center justify-between text-xs text-gray-500">
@@ -250,7 +250,7 @@
               </div>
               <div class="text-center py-4">
                 <p class="text-xs sm:text-sm text-gray-500">Service metrics are only available for predefined periods (Today, Yesterday, etc.)</p>
-                <p class="text-xs sm:text-sm text-gray-400 mt-1">Switch to a predefined date range to view detailed service metrics</p>
+                <p class="text-xs sm:text-sm text-gray-400 mt-1">{{ $t('dashboard.switchDateRangeMessage') }}</p>
               </div>
             </div>
 

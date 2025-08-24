@@ -11,7 +11,7 @@
           </div>
           <div class="ml-3">
             <h1 class="text-xl font-bold text-gray-900 dark:text-gray-100">OlaClick</h1>
-            <p class="text-sm text-gray-500 dark:text-gray-400">Analytics</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400">{{ $t('dashboard.analytics') }}</p>
           </div>
         </div>
         <!-- Mobile close button -->

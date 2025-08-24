@@ -94,6 +94,7 @@
     "weeks": "Weeks",
     "months": "Months",
     "years": "Years",
+    "optional": "Optional",
     "monthly": "Monthly",
     "for": "for",
     "load": "Load",
@@ -170,7 +171,11 @@
     "loadingOrderData": "Loading order evolution data...",
     "noOrderData": "No order data available for the selected period",
     "feesByPaymentMethod": "Fees by Payment Method",
-    "netRevenueByPaymentMethod": "Net Revenue by Payment Method"
+    "netRevenueByPaymentMethod": "Net Revenue by Payment Method",
+    "accountDetails": "Account Details",
+    "avgTicket": "Avg Ticket",
+    "viewBreakdown": "View breakdown",
+    "switchDateRangeMessage": "Switch to a predefined date range to view detailed service metrics"
   },
   "languages": {
     "en": "English",
@@ -284,7 +289,14 @@
       "medium": "Medium",
       "high": "High",
       "critical": "Critical",
-      "cleanRecord": "Employee has a clean disciplinary record"
+      "cleanRecord": "Employee has a clean disciplinary record",
+      "deleteWarning": "Delete warning",
+      "manageRecords": "Manage disciplinary records and performance issues",
+      "issueNewWarning": "Issue New Warning",
+      "category": "Warning Category",
+      "selectCategory": "Select category",
+      "specificMotive": "Specific Motive",
+      "warningHistory": "Warning History"
     }
   },
   "payroll": {
@@ -316,7 +328,12 @@
     "entryDetails": "Entry Details",
     "clockInRequired": "Clock in time is required",
     "clockOutRequired": "Clock out time is required",
-    "invalidTimeRange": "Clock out time must be after clock in time"
+    "invalidTimeRange": "Clock out time must be after clock in time",
+    "reviewRecommended": "Review recommended",
+    "editEntry": "Edit entry",
+    "reviewAndApprove": "Review and approve",
+    "editEntryTimesAndAmount": "Edit entry times and amount",
+    "reviewAndApproveEntry": "Review and approve this entry"
   },
   "shifts": {
     "title": "Shift Management",

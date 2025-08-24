@@ -93,7 +93,8 @@
     "days": "Jours",
     "weeks": "Semaines",
     "months": "Mois",
-    "years": "Années"
+    "years": "Années",
+    "optional": "Optionnel"
   },
   "navigation": {
     "dashboard": "Tableau de bord",
@@ -160,7 +161,11 @@
     "loadingOrderData": "Chargement des données d'évolution des commandes...",
     "noOrderData": "Aucune donnée de commande disponible pour la période sélectionnée",
     "feesByPaymentMethod": "Frais par Méthode de Paiement",
-    "netRevenueByPaymentMethod": "Chiffre d'Affaires Net par Méthode de Paiement"
+    "netRevenueByPaymentMethod": "Chiffre d'Affaires Net par Méthode de Paiement",
+    "accountDetails": "Détails du Compte",
+    "avgTicket": "Ticket Moyen",
+    "viewBreakdown": "Voir la répartition",
+    "switchDateRangeMessage": "Passez à une plage de dates prédéfinie pour voir les métriques de service détaillées"
   },
   "languages": {
     "en": "English",
@@ -266,7 +271,14 @@
       "medium": "Moyen",
       "high": "Élevé",
       "critical": "Critique",
-      "cleanRecord": "L'employé a un dossier disciplinaire propre"
+      "cleanRecord": "L'employé a un dossier disciplinaire propre",
+      "deleteWarning": "Supprimer l'avertissement",
+      "manageRecords": "Gérer les dossiers disciplinaires et les problèmes de performance",
+      "issueNewWarning": "Émettre un Nouvel Avertissement",
+      "category": "Catégorie d'Avertissement",
+      "selectCategory": "Sélectionner une catégorie",
+      "specificMotive": "Motif Spécifique",
+      "warningHistory": "Historique des Avertissements"
     }
   },
   "payroll": {
@@ -298,7 +310,12 @@
     "entryDetails": "Détails de la saisie",
     "clockInRequired": "L'heure d'arrivée est requise",
     "clockOutRequired": "L'heure de départ est requise",
-    "invalidTimeRange": "L'heure de départ doit être postérieure à l'heure d'arrivée"
+    "invalidTimeRange": "L'heure de départ doit être postérieure à l'heure d'arrivée",
+    "reviewRecommended": "Examen recommandé",
+    "editEntry": "Modifier la saisie",
+    "reviewAndApprove": "Examiner et approuver",
+    "editEntryTimesAndAmount": "Modifier les heures et le montant de la saisie",
+    "reviewAndApproveEntry": "Examiner et approuver cette saisie"
   },
   "shifts": {
     "title": "Gestion des équipes",

@@ -171,7 +171,7 @@
                         <!-- Review warning icon for complex entries -->
                         <div v-if="isComplexEntry(e) && !e.approved_by && e.clock_out_at && !e.paid"
                              class="w-4 h-4 rounded-full bg-yellow-500 flex items-center justify-center"
-                             title="Review recommended">
+                             :title="$t('payroll.reviewRecommended')">
                           <span class="text-white text-[8px] font-bold">!</span>
                         </div>
                         <!-- Approval status icon - larger and more prominent -->
@@ -182,14 +182,14 @@
         </div>
         <div v-else-if="e.clock_out_at && !e.paid"
               class="w-4 h-4 rounded-full bg-orange-500 flex items-center justify-center animate-pulse"
-              title="Pending approval">
+              :title="$t('payroll.pendingApproval')">
           <span class="text-white text-[8px] font-bold">⋯</span>
         </div>
                         
                         <!-- Payment status icon -->
                         <div v-if="e.paid" 
                              class="w-3 h-3 rounded-full bg-yellow-500 flex items-center justify-center ml-1" 
-                             title="Paid">
+                             :title="$t('payroll.paid')">
                           <span class="text-white text-[6px] font-bold">$</span>
                         </div>
                       </div>
@@ -208,7 +208,7 @@
                         v-if="!e.approved_by && !e.paid"
                         @click.stop="openEditEntry(e)"
                         class="btn-secondary btn-sm flex-1 !px-1 !py-0.5"
-                        aria-label="Edit entry"
+                        :aria-label="$t('payroll.editEntry')"
                       >
                         ✏️
                       </button>
@@ -229,7 +229,7 @@
                         v-if="!e.approved_by && !e.paid && isComplexEntry(e)"
                         @click.stop="editBeforeApprove(e)"
                         class="btn-warning btn-sm flex-1 !px-1 !py-0.5"
-                        aria-label="Review and approve"
+                        :aria-label="$t('payroll.reviewAndApprove')"
                       >
                         🔍
                       </button>
@@ -254,7 +254,7 @@
                         v-if="!e.approved_by && !e.paid"
                         @click="openEditEntry(e)"
                         class="btn-secondary btn-sm inline-flex items-center"
-                        aria-label="Edit entry times and amount"
+                        :aria-label="$t('payroll.editEntryTimesAndAmount')"
                       >
                         <span class="mr-0.5">✏️</span> {{ $t('common.edit') }}
                       </button>
@@ -276,7 +276,7 @@
                         v-if="!e.approved_by && !e.paid && isComplexEntry(e)"
                         @click="editBeforeApprove(e)"
                         class="btn-warning btn-sm inline-flex items-center"
-                        aria-label="Review and approve this entry"
+                        :aria-label="$t('payroll.reviewAndApproveEntry')"
                       >
                         <span class="mr-0.5">🔍</span> {{ $t('payroll.review') }}
                       </button>
@@ -1365,12 +1365,12 @@ const getSmartDetectionReason = (entry) => {
   
   // Check if amount seems wrong or missing
   if (!entry.amount || entry.amount <= 0) {
-    reasons.push("Missing or invalid amount")
+    reasons.push("Missing or invalid amount") // TODO: Add to i18n
   }
   
   // If no specific reasons could be determined but shift data is missing, indicate it
   if (reasons.length === 0 && (!entry.shift_start || !entry.clock_in_at || !entry.clock_out_at)) {
-    reasons.push("Missing shift or time data")
+    reasons.push("Missing shift or time data") // TODO: Add to i18n
   }
   
   return reasons.join(", ")
