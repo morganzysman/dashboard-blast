@@ -76,6 +76,21 @@ export async function apiRequest(url, options = {}) {
       throw new ApiError('Access forbidden', 403, data)
     }
     
+    // Handle rate limiting (429) from upstream (e.g., OlaClick)
+    if (response.status === 429 || /Too\s*Many\s*Attempts/i.test(data?.message || '') || /ThrottleRequestsException/.test(data?.exception || '')) {
+      const retryAfterHeader = response.headers?.get?.('Retry-After')
+      const retryAfterMsg = retryAfterHeader ? ` Please try again in ${retryAfterHeader} seconds.` : ' Please reload in a few minutes.'
+      const userMessage = `Rate limit reached.${retryAfterMsg}`
+      console.log(`⏳ Rate limited (429).${retryAfterHeader ? ` Retry-After: ${retryAfterHeader}s` : ''}`)
+      window.showNotification?.({
+        type: 'warning',
+        title: 'Rate limit reached',
+        message: userMessage,
+        duration: 6000
+      })
+      throw new ApiError(userMessage, 429, data)
+    }
+
     // Handle other client errors (400-499)
     if (response.status >= 400 && response.status < 500) {
       const errorMessage = data.error || data.message || `Request failed (${response.status})`
