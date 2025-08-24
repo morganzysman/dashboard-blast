@@ -117,7 +117,7 @@ router.post('/subscribe', requireAuth, async (req, res) => {
       subscribedAt: new Date().toISOString(),
       userAgent,
       endpoint: subscription.endpoint,
-      notificationFrequency: notificationFrequency || 30 // Default to 30 minutes
+      notificationFrequency: Number(notificationFrequency) || 30 // Default to 30 minutes
     };
     
     await storePushSubscription(userId, subscriptionData);
@@ -458,10 +458,11 @@ router.put('/settings/frequency', requireAuth, async (req, res) => {
   try {
     const userId = req.user.userId;
     const { frequency } = req.body;
+    const parsed = Number(frequency);
     
-    // Validate frequency
+    // Validate frequency (accept numeric strings like "30")
     const validFrequencies = [5, 30, 60, 240, 480];
-    if (!validFrequencies.includes(frequency)) {
+    if (!Number.isFinite(parsed) || !validFrequencies.includes(parsed)) {
       return res.status(400).json({
         success: false,
         error: 'Invalid frequency. Must be one of: 5, 30, 60, 240, 480 (minutes)'
@@ -478,7 +479,7 @@ router.put('/settings/frequency', requireAuth, async (req, res) => {
     }
     
     // Update frequency
-    await updateNotificationFrequency(userId, frequency);
+    await updateNotificationFrequency(userId, parsed);
     
     await logNotificationEvent(userId, 'frequency_updated', `Notification frequency updated to ${frequency} minutes`, { 
       oldFrequency: userSubscription.notificationFrequency,
@@ -490,7 +491,7 @@ router.put('/settings/frequency', requireAuth, async (req, res) => {
     res.json({
       success: true,
       message: 'Notification frequency updated successfully',
-      frequency: frequency
+      frequency: parsed
     });
     
   } catch (error) {

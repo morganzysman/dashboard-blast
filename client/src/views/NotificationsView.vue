@@ -286,7 +286,7 @@ const subscribeToNotifications = async () => {
         body: JSON.stringify({
           subscription,
           userAgent: navigator.userAgent,
-          notificationFrequency: selectedFrequency.value
+          notificationFrequency: Number(selectedFrequency.value)
         })
       });
 
@@ -366,7 +366,7 @@ const updateNotificationFrequency = async () => {
         'X-Session-ID': authStore.sessionId,
       },
       body: JSON.stringify({
-        frequency: selectedFrequency.value
+        frequency: Number(selectedFrequency.value)
       })
     })
 
