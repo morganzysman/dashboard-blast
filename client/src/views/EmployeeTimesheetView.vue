@@ -6,10 +6,10 @@
         <div class="bg-green-50 border border-green-200 rounded p-3 text-green-800 text-sm">
           <div class="flex items-center justify-between">
             <div>
-              <p class="font-semibold">Thanks! Your {{ $route.query.type === 'in' ? 'clock-in' : 'clock-out' }} was registered.</p>
-              <p v-if="$route.query.late" class="text-green-900">You are {{ $route.query.late }} minutes late.</p>
+              <p class="font-semibold">{{ $t('employee.timesheet.thankYou') }} {{ $route.query.type === 'in' ? $t('employee.timesheet.clockIn') : $t('employee.timesheet.clockOut') }} {{ $t('employee.timesheet.wasRegistered') }}.</p>
+              <p v-if="$route.query.late" class="text-green-900">{{ $t('employee.timesheet.youAreLate', { minutes: $route.query.late }) }}.</p>
             </div>
-            <button class="btn-secondary btn-sm" @click="dismissGreeting">Dismiss</button>
+            <button class="btn-secondary btn-sm" @click="dismissGreeting">{{ $t('common.dismiss') }}</button>
           </div>
         </div>
       </div>
@@ -17,10 +17,10 @@
     <div class="card">
       <div class="card-body">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
-          <h3 class="text-md font-semibold">My Shifts (This Week)</h3>
+          <h3 class="text-md font-semibold">{{ $t('employee.timesheet.myShiftsThisWeek') }}</h3>
         </div>
         <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 text-xs">
-          <div class="text-gray-500 hidden lg:block" v-for="d in ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']" :key="d">{{ d }}</div>
+          <div class="text-gray-500 hidden lg:block" v-for="(d, index) in [$t('shifts.weekdays.0'), $t('shifts.weekdays.1'), $t('shifts.weekdays.2'), $t('shifts.weekdays.3'), $t('shifts.weekdays.4'), $t('shifts.weekdays.5'), $t('shifts.weekdays.6')]" :key="index">{{ d }}</div>
           <template v-for="(day, idx) in weekDays" :key="idx">
             <div class="border rounded p-2 min-h-[80px]">
               <!-- Mobile: show weekday label inside each cell -->
@@ -40,23 +40,23 @@
       <div class="card-body">
         <div class="flex items-start justify-between gap-2 flex-wrap">
           <div>
-            <h2 class="text-lg font-bold text-gray-900">My Timesheet</h2>
-            <p class="text-sm text-gray-600">Period: {{ periodLabel }}</p>
+            <h2 class="text-lg font-bold text-gray-900">{{ $t('employee.timesheet.title') }}</h2>
+            <p class="text-sm text-gray-600">{{ $t('payroll.payrollPeriod') }}: {{ periodLabel }}</p>
           </div>
           <div class="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
             <div class="inline-flex overflow-hidden rounded-md border border-gray-200">
               <button class="btn-secondary btn-sm flex items-center gap-1 rounded-none" @click="prevPeriod">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-                <span class="hidden xs:inline">Prev</span>
+                <span class="hidden xs:inline">{{ $t('common.previous') }}</span>
               </button>
               <button class="btn-secondary btn-sm flex items-center gap-1 border-l border-gray-200 rounded-none" @click="nextPeriod">
-                <span class="hidden xs:inline">Next</span>
+                <span class="hidden xs:inline">{{ $t('common.next') }}</span>
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
               </button>
             </div>
             <button class="btn-primary btn-sm flex items-center gap-1" @click="loadEntries" :disabled="loading">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/><path d="M22 2v6h-6"/></svg>
-              <span class="hidden sm:inline">{{ loading ? 'Loading…' : 'Refresh' }}</span>
+              <span class="hidden sm:inline">{{ loading ? $t('common.loading') : $t('common.refresh') }}</span>
             </button>
           </div>
         </div>
@@ -64,11 +64,11 @@
           <ResponsiveTable
             :items="entries"
             :columns="[
-              { key: 'account', label: 'Account', headerClass: 'whitespace-normal', cellClass: 'whitespace-normal break-words max-w-[180px]', skeletonWidth: 'w-40' },
-              { key: 'clock_in', label: 'Clock In', headerClass: 'whitespace-normal', cellClass: 'whitespace-normal', skeletonWidth: 'w-32' },
-              { key: 'clock_out', label: 'Clock Out', headerClass: 'whitespace-normal', cellClass: 'whitespace-normal', skeletonWidth: 'w-24' },
-              { key: 'duration', label: 'Duration', headerClass: 'whitespace-normal', cellClass: 'whitespace-normal', skeletonWidth: 'w-20' },
-              { key: 'status', label: 'Status', headerClass: 'whitespace-normal', cellClass: 'whitespace-normal', skeletonWidth: 'w-16' }
+              { key: 'account', label: $t('rentability.account'), headerClass: 'whitespace-normal', cellClass: 'whitespace-normal break-words max-w-[180px]', skeletonWidth: 'w-40' },
+              { key: 'clock_in', label: $t('employee.timesheet.clockInTime'), headerClass: 'whitespace-normal', cellClass: 'whitespace-normal', skeletonWidth: 'w-32' },
+              { key: 'clock_out', label: $t('employee.timesheet.clockOutTime'), headerClass: 'whitespace-normal', cellClass: 'whitespace-normal', skeletonWidth: 'w-24' },
+              { key: 'duration', label: $t('common.duration'), headerClass: 'whitespace-normal', cellClass: 'whitespace-normal', skeletonWidth: 'w-20' },
+              { key: 'status', label: $t('common.status'), headerClass: 'whitespace-normal', cellClass: 'whitespace-normal', skeletonWidth: 'w-16' }
             ]"
             :stickyHeader="true"
             :loading="loading"
@@ -81,36 +81,36 @@
             <template #cell-duration="{ item }">{{ formatDuration(secondsBetween(item.clock_in_at, item.clock_out_at)) }}</template>
             <template #cell-status="{ item }">
               <div class="flex items-center gap-1">
-                <span v-if="item.approved_by" class="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded" :title="`Approved by ${item.approved_by_name || 'Manager'}`">
-                  ✓ Approved
+                <span v-if="item.approved_by" class="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded" :title="$t('employee.timesheet.approvedBy') + ' ' + (item.approved_by_name || $t('payroll.manager'))">
+                  ✓ {{ $t('employee.timesheet.isApproved') }}
                 </span>
                 <span v-else-if="item.clock_out_at" class="inline-flex items-center px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded">
-                  ⏳ Pending
+                  ⏳ {{ $t('employee.timesheet.pendingApproval') }}
                 </span>
                 <span v-if="item.paid" class="inline-flex items-center px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded">
-                  $ Paid
+                  $ {{ $t('employee.timesheet.isPaid') }}
                 </span>
               </div>
             </template>
             <template #mobile-card="{ item }">
               <div class="font-medium text-gray-900 dark:text-gray-100 mb-1">{{ accountLabel(item.company_token) }}</div>
               <div class="text-xs text-gray-600 dark:text-gray-400">{{ formatDateTime(item.clock_in_at) }} → {{ item.clock_out_at ? formatDateTime(item.clock_out_at) : '—' }}</div>
-              <div class="text-xs text-gray-600 dark:text-gray-400 mb-2">Duration: {{ formatDuration(secondsBetween(item.clock_in_at, item.clock_out_at)) }}</div>
+              <div class="text-xs text-gray-600 dark:text-gray-400 mb-2">{{ $t('common.duration') }}: {{ formatDuration(secondsBetween(item.clock_in_at, item.clock_out_at)) }}</div>
               <div class="flex items-center gap-1">
-                <span v-if="item.approved_by" class="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded" :title="`Approved by ${item.approved_by_name || 'Manager'}`">
-                  ✓ Approved
+                <span v-if="item.approved_by" class="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded" :title="$t('employee.timesheet.approvedBy') + ' ' + (item.approved_by_name || $t('payroll.manager'))">
+                  ✓ {{ $t('employee.timesheet.isApproved') }}
                 </span>
                 <span v-else-if="item.clock_out_at" class="inline-flex items-center px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded">
-                  ⏳ Pending
+                  ⏳ {{ $t('employee.timesheet.pendingApproval') }}
                 </span>
                 <span v-if="item.paid" class="inline-flex items-center px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded">
-                  $ Paid
+                  $ {{ $t('employee.timesheet.isPaid') }}
                 </span>
               </div>
             </template>
           </ResponsiveTable>
           <div class="mt-4 text-right text-gray-800 font-medium space-y-1">
-            <div>Total time: {{ formatDuration(totalSeconds) }}</div>
+            <div>{{ $t('employee.timesheet.totalHours') }}: {{ formatDuration(totalSeconds) }}</div>
             <!-- <div>Total earned: {{ formatCurrency(totalAmount) }}</div> -->
           </div>
         </div>
@@ -122,6 +122,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../stores/auth'
 import api from '../utils/api'
 import ResponsiveTable from '../components/ui/ResponsiveTable.vue'
@@ -129,6 +130,7 @@ import ResponsiveTable from '../components/ui/ResponsiveTable.vue'
 const entries = ref([])
 const loading = ref(false)
 const auth = useAuthStore()
+const { t } = useI18n()
 const period = ref({ start: '', end: '' })
 
 const periodLabel = computed(() => `${period.value.start} → ${period.value.end}`)

@@ -7,6 +7,7 @@ export const useAuthStore = defineStore('auth', () => {
   const sessionId = ref(null)
   const isLoading = ref(false)
   const error = ref(null)
+  const currentCompany = ref(null)
 
   // Getters
   const isAuthenticated = computed(() => !!user.value && !!sessionId.value)
@@ -220,6 +221,7 @@ export const useAuthStore = defineStore('auth', () => {
     sessionId,
     isLoading,
     error,
+    currentCompany,
     
     // Getters
     isAuthenticated,

@@ -606,7 +606,7 @@ router.delete('/users/:userId/shifts/:shiftId', requireAuth, requireRole(['admin
 // Companies endpoints appended at end to avoid breaking existing imports
 router.get('/companies', requireAuth, requireRole(['super-admin']), async (req, res) => {
   try {
-    const companies = await pool.query(`SELECT id, name, created_at, updated_at FROM companies ORDER BY name`)
+    const companies = await pool.query(`SELECT id, name, timezone, currency, language, created_at, updated_at FROM companies ORDER BY name`)
     res.json({ success: true, data: companies.rows })
   } catch (e) {
     res.status(500).json({ success: false, error: 'Failed to fetch companies' })
@@ -615,16 +615,17 @@ router.get('/companies', requireAuth, requireRole(['super-admin']), async (req, 
 
 router.post('/companies', requireAuth, requireRole(['super-admin']), async (req, res) => {
   try {
-    const { name, timezone, currency, currency_symbol } = req.body
+    const { name, timezone, currency, currency_symbol, language } = req.body
     if (!name) return res.status(400).json({ success: false, error: 'name is required' })
-    // Defaults: Lima timezone and PEN
+    // Defaults: Lima timezone, PEN, and Portuguese
     const tz = timezone || 'America/Lima'
     const curr = currency || 'PEN'
     const currSym = currency_symbol || (curr === 'USD' ? '$' : curr === 'EUR' ? '€' : curr === 'GBP' ? '£' : curr === 'MXN' ? '$' : 'S/')
+    const lang = language || 'pt'
     const q = await pool.query(
-      `INSERT INTO companies(name, timezone, currency, currency_symbol) 
-       VALUES($1,$2,$3,$4) RETURNING id, name, timezone, currency, currency_symbol, created_at, updated_at`, 
-       [name, tz, curr, currSym]
+      `INSERT INTO companies(name, timezone, currency, currency_symbol, language) 
+       VALUES($1,$2,$3,$4,$5) RETURNING id, name, timezone, currency, currency_symbol, language, created_at, updated_at`, 
+       [name, tz, curr, currSym, lang]
     )
     res.json({ success: true, data: q.rows[0] })
   } catch (e) {
@@ -689,7 +690,7 @@ router.get('/companies/:companyId', requireAuth, requireRole(['super-admin', 'ad
       }
     }
     const q = await pool.query(
-      `SELECT id, name, timezone, currency, currency_symbol, created_at, updated_at
+      `SELECT id, name, timezone, currency, currency_symbol, language, created_at, updated_at
        FROM companies WHERE id = $1`,
       [companyId]
     )

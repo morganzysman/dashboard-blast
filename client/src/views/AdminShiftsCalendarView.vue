@@ -4,18 +4,18 @@
       <div class="card-body">
         <div class="flex flex-col sm:flex-row sm:items-end gap-3">
           <div class="flex-1">
-            <label class="text-xs text-gray-700">Account</label>
+            <label class="text-xs text-gray-700">{{ $t('rentability.account') }}</label>
             <select v-model="companyToken" class="form-input w-full" @change="loadCalendar">
-              <option value="" disabled>Select account</option>
+              <option value="" disabled>{{ $t('rentability.selectAccount') }}</option>
               <option v-for="acc in accounts" :key="acc.company_token" :value="acc.company_token">
                 {{ acc.account_name || acc.company_token }}
               </option>
             </select>
           </div>
           <div class="flex items-center gap-2">
-            <button class="btn-secondary btn-sm" @click="prevWeek">Prev Week</button>
-            <button class="btn-secondary btn-sm" @click="nextWeek">Next Week</button>
-            <button class="btn-primary btn-sm" @click="loadCalendar">Refresh</button>
+            <button class="btn-secondary btn-sm" @click="prevWeek">{{ $t('shifts.prevWeek') }}</button>
+            <button class="btn-secondary btn-sm" @click="nextWeek">{{ $t('shifts.nextWeek') }}</button>
+            <button class="btn-primary btn-sm" @click="loadCalendar">{{ $t('common.refresh') }}</button>
           </div>
         </div>
       </div>
@@ -24,11 +24,11 @@
     <div class="card">
       <div class="card-body">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
-          <h3 class="text-md font-semibold">Shifts Calendar</h3>
-          <div class="text-xs text-gray-500">Week of {{ weekStart }}</div>
+          <h3 class="text-md font-semibold">{{ $t('shifts.calendar') }}</h3>
+          <div class="text-xs text-gray-500">{{ $t('shifts.weekOf') }} {{ weekStart }}</div>
         </div>
         <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 text-xs">
-          <div class="text-gray-500 hidden lg:block" v-for="d in ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']" :key="d">{{ d }}</div>
+          <div class="text-gray-500 hidden lg:block" v-for="(d, index) in [$t('shifts.weekdays.0'), $t('shifts.weekdays.1'), $t('shifts.weekdays.2'), $t('shifts.weekdays.3'), $t('shifts.weekdays.4'), $t('shifts.weekdays.5'), $t('shifts.weekdays.6')]" :key="index">{{ d }}</div>
           <template v-for="day in weekDays" :key="day.date">
             <div class="border rounded p-2 min-h-[140px]">
               <div class="text-[10px] text-gray-500">{{ day.label }}</div>
@@ -55,10 +55,12 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../stores/auth'
 import api from '../utils/api'
 
 const auth = useAuthStore()
+const { t } = useI18n()
 const accounts = ref([])
 const companyToken = ref('')
 const weekStart = ref('')

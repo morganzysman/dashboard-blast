@@ -3,8 +3,8 @@
     <!-- Page Header -->
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900">💰 Rentability Management</h1>
-        <p class="text-sm text-gray-600 mt-1">Manage monthly utility costs and payment method fees for profitability analysis</p>
+        <h1 class="text-2xl font-bold text-gray-900">💰 {{ $t('rentability.title') }}</h1>
+        <p class="text-sm text-gray-600 mt-1">{{ $t('rentability.subtitle') }}</p>
       </div>
       <button 
         @click="showAddModal = true" 
@@ -13,7 +13,7 @@
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
         </svg>
-        <span>Manage Costs</span>
+        <span>{{ $t('rentability.manageCosts') }}</span>
       </button>
     </div>
 
@@ -21,7 +21,7 @@
     <div v-if="loading" class="card">
       <div class="card-body text-center py-12">
         <div class="loading-spinner mx-auto mb-4"></div>
-        <p class="text-gray-600">Loading utility costs...</p>
+        <p class="text-gray-600">{{ $t('rentability.loading') }}</p>
       </div>
     </div>
 
@@ -33,9 +33,9 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
           </svg>
         </div>
-        <h3 class="text-lg font-medium text-red-900 mb-2">Failed to Load Utility Costs</h3>
+        <h3 class="text-lg font-medium text-red-900 mb-2">{{ $t('rentability.failedToLoadUtility') }}</h3>
         <p class="text-red-700 mb-4">{{ error }}</p>
-        <button @click="fetchUtilityCosts" class="btn-primary">Try Again</button>
+        <button @click="fetchUtilityCosts" class="btn-primary">{{ $t('common.tryAgain') }}</button>
       </div>
     </div>
 
@@ -72,7 +72,7 @@
           <!-- Utility Cost Breakdown -->
           <div class="space-y-2 mb-4">
             <div class="flex items-center justify-between mb-3">
-              <h6 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">🏠 Utility Costs</h6>
+              <h6 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">🏠 {{ $t('rentability.utilityCosts') }}</h6>
               <div class="text-right">
                 <div class="text-sm font-medium text-blue-600">{{ formatCurrency(cost.total_monthly) }}/month</div>
                 <div class="text-xs text-green-600">{{ formatCurrency(cost.total_daily) }}/day</div>
@@ -91,7 +91,7 @@
 
           <!-- Payment Method Costs Breakdown -->
           <div v-if="getAccountPaymentCosts(cost.company_token).length > 0" class="space-y-2 pt-3 border-t border-gray-100">
-            <h6 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">💳 Payment Processing Costs</h6>
+            <h6 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">💳 {{ $t('rentability.paymentProcessingCosts') }}</h6>
             <template v-for="paymentCost in getAccountPaymentCosts(cost.company_token)" :key="paymentCost.payment_method_code">
               <div class="flex items-center justify-between text-sm">
                 <span class="text-gray-600 capitalize">{{ formatPaymentMethodName(paymentCost.payment_method_code) }}</span>
@@ -114,12 +114,12 @@
             </svg>
           </div>
           <h3 class="text-lg font-medium text-gray-900 mb-2">{{ account.account_name }}</h3>
-          <p class="text-gray-500 mb-4">No utility costs configured</p>
+          <p class="text-gray-500 mb-4">{{ $t('rentability.noUtilityCosts') }}</p>
           <button 
             @click="addCostForAccount(account)" 
             class="btn-secondary"
           >
-            Manage Costs
+            {{ $t('rentability.manageCosts') }}
           </button>
         </div>
       </div>
@@ -130,7 +130,7 @@
       <div class="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto" @click.stop>
         <div class="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 class="text-xl font-bold text-gray-900">
-            💰 {{ editingCost ? 'Edit' : 'Manage' }} Account Costs
+            💰 {{ editingCost ? $t('common.edit') : $t('common.manage') }} {{ $t('rentability.accountCosts') }}
           </h2>
           <button @click="closeModal" class="text-gray-400 hover:text-gray-500 transition-colors">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -151,7 +151,7 @@
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               ]"
             >
-              🏠 Utility Costs
+              🏠 {{ $t('rentability.utilityCosts') }}
             </button>
             <button
               @click="activeTab = 'payment'"
@@ -162,7 +162,7 @@
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               ]"
             >
-              💳 Payment Method Costs
+              💳 {{ $t('rentability.paymentMethodCosts') }}
             </button>
           </nav>
         </div>
@@ -170,21 +170,21 @@
         <div class="p-6">
           <!-- Account Selection (hide selector when opened from a specific account) -->
           <div class="mb-6" v-if="!selectedModalAccount">
-            <label class="block text-sm font-medium text-gray-700 mb-2">Account</label>
+            <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('rentability.account') }}</label>
             <select 
               v-model="selectedModalAccount" 
               @change="onModalAccountChange"
               class="form-select"
               required
             >
-              <option value="">Select an account</option>
+              <option value="">{{ $t('rentability.selectAccount') }}</option>
               <option v-for="account in accounts" :key="account.company_token" :value="account.company_token">
                 {{ account.account_name || account.company_token }}
               </option>
             </select>
           </div>
           <div class="mb-6" v-else>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Account</label>
+            <label class="block text-sm font-medium text-gray-700 mb-1">{{ $t('rentability.account') }}</label>
             <div class="px-3 py-2 bg-gray-50 border border-gray-200 rounded-md text-sm text-gray-700">
               {{ getSelectedAccountName() }}
             </div>
@@ -197,7 +197,7 @@
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div v-for="field in costFields" :key="field.key" class="mb-4">
                   <label class="block text-sm font-medium text-gray-700 mb-1">
-                    {{ field.label }} (Monthly)
+                    {{ $t(`rentability.costFields.${field.key}`) }} ({{ $t('common.monthly') }})
                   </label>
                   <div class="relative">
                     <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
@@ -220,23 +220,23 @@
                 <div class="grid grid-cols-2 gap-4 text-center">
                   <div>
                     <p class="text-lg font-bold text-blue-600">{{ formatCurrency(totalMonthlyCosts) }}</p>
-                    <p class="text-xs text-blue-500">Total Monthly</p>
+                    <p class="text-xs text-blue-500">{{ $t('rentability.totalMonthly') }}</p>
                   </div>
                   <div>
                     <p class="text-lg font-bold text-green-600">{{ formatCurrency(totalMonthlyCosts / 30) }}</p>
-                    <p class="text-xs text-green-500">Total Daily</p>
+                    <p class="text-xs text-green-500">{{ $t('rentability.totalDaily') }}</p>
                   </div>
                 </div>
               </div>
 
               <div class="flex justify-end space-x-3 pt-6 border-t border-gray-200">
-                <button type="button" @click="closeModal" class="btn-secondary">Cancel</button>
+                <button type="button" @click="closeModal" class="btn-secondary">{{ $t('common.cancel') }}</button>
                 <button type="submit" :disabled="saving || !selectedModalAccount" class="btn-primary">
                   <span v-if="saving" class="flex items-center">
                     <div class="loading-spinner-sm mr-2"></div>
-                    Saving...
+                    {{ $t('common.saving') }}
                   </span>
-                  <span v-else>{{ editingCost ? 'Update' : 'Save' }} Utility Costs</span>
+                  <span v-else>{{ editingCost ? $t('common.update') : $t('common.save') }} {{ $t('rentability.utilityCosts') }}</span>
                 </button>
               </div>
             </form>
@@ -247,7 +247,7 @@
             <div v-if="selectedModalAccount">
               <div class="flex items-center justify-between mb-4">
                 <h3 class="text-lg font-medium text-gray-900">
-                  Payment Processing Costs for {{ getSelectedAccountName() }}
+                  {{ $t('rentability.paymentProcessingCosts') }} {{ $t('common.for') }} {{ getSelectedAccountName() }}
                 </h3>
                 <button 
                   @click="addDefaultPaymentMethods" 
@@ -255,7 +255,7 @@
                   :disabled="accountPaymentCosts.length > 0"
                   :title="accountPaymentCosts.length > 0 ? 'Clear existing methods first to add defaults' : 'Add common payment methods with default costs'"
                 >
-                  Add Common Methods
+                  {{ $t('rentability.addCommonMethods') }}
                 </button>
               </div>
 
@@ -264,16 +264,16 @@
                   <thead class="bg-gray-50">
                     <tr>
                       <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Payment Method
+                        {{ $t('rentability.paymentMethod') }}
                       </th>
                       <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Percentage (%)
+                        {{ $t('rentability.percentage') }} (%)
                       </th>
                       <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Fixed Cost
+                        {{ $t('rentability.fixedCost') }}
                       </th>
                       <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Actions
+                        {{ $t('companies.actions') }}
                       </th>
                     </tr>
                   </thead>
@@ -285,7 +285,7 @@
                             {{ formatPaymentMethodName(cost.payment_method_code) }}
                           </span>
                           <span v-if="cost.isNew" class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
-                            New
+                            {{ $t('common.new') }}
                           </span>
                         </div>
                       </td>
@@ -327,8 +327,8 @@
                     </tr>
                     <tr v-if="accountPaymentCosts.length === 0">
                       <td colspan="4" class="px-6 py-8 text-center text-gray-500">
-                        No payment methods configured for this account.<br>
-                        <span class="text-sm">Use "Add Common Methods" or add individual methods below.</span>
+                        {{ $t('rentability.noPaymentMethods') }}<br>
+                        <span class="text-sm">{{ $t('rentability.useAddCommonMethods') }}</span>
                       </td>
                     </tr>
                   </tbody>
@@ -339,16 +339,16 @@
               <div class="border-t border-gray-200 pt-4">
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                   <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ $t('rentability.paymentMethod') }}</label>
                     <select v-model="newPaymentMethod.code" class="form-select">
-                      <option value="">Select method</option>
+                      <option value="">{{ $t('rentability.selectMethod') }}</option>
                       <option v-for="method in availablePaymentMethods" :key="method.code" :value="method.code">
                         {{ method.name }}
                       </option>
                     </select>
                   </div>
                   <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Percentage (%)</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ $t('rentability.percentage') }} (%)</label>
                     <input 
                       type="number" 
                       v-model.number="newPaymentMethod.percentage"
@@ -360,7 +360,7 @@
                     />
                   </div>
                   <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Fixed Cost</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ $t('rentability.fixedCost') }}</label>
                     <div class="relative">
                       <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
                         {{ currencySymbol }}
@@ -381,14 +381,14 @@
                       :disabled="!newPaymentMethod.code"
                       class="btn-primary w-full"
                     >
-                      Add
+                      {{ $t('common.add') }}
                     </button>
                   </div>
                 </div>
               </div>
 
               <div class="flex justify-end space-x-3 pt-6 border-t border-gray-200">
-                <button type="button" @click="closeModal" class="btn-secondary">Cancel</button>
+                <button type="button" @click="closeModal" class="btn-secondary">{{ $t('common.cancel') }}</button>
                 <button 
                   @click="saveAllPaymentMethodCosts" 
                   :disabled="!selectedModalAccount || savingPaymentCosts || !hasUnsavedChanges" 
@@ -397,10 +397,10 @@
                 >
                   <span v-if="savingPaymentCosts" class="flex items-center">
                     <div class="loading-spinner-sm mr-2"></div>
-                    Saving...
+                    {{ $t('common.saving') }}
                   </span>
                   <span v-else>
-                    Save Payment Costs
+                    {{ $t('rentability.savePaymentCosts') }}
                     <span v-if="hasUnsavedChanges" class="ml-1 text-xs">({{ unsavedCount }})</span>
                   </span>
                 </button>
@@ -408,7 +408,7 @@
             </div>
 
             <div v-else class="text-center py-8 text-gray-500">
-              Please select an account first
+              {{ $t('rentability.pleaseSelectAccount') }}
             </div>
           </div>
         </div>
@@ -421,11 +421,13 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../stores/auth'
 import api from '../utils/api'
 import { getCommonPaymentMethods, formatPaymentMethodName } from '../utils/paymentMethods'
 
 const authStore = useAuthStore()
+const { t } = useI18n()
 
 // Reactive data
 const utilityCosts = ref([])
@@ -713,7 +715,7 @@ const saveCosts = async () => {
       window.showNotification?.({
         type: 'success',
         title: 'Success',
-        message: 'Utility costs saved successfully'
+        message: t('rentability.utilityCostsSaved')
       })
     } else {
       throw new Error(data.error || 'Failed to save utility costs')
@@ -731,7 +733,7 @@ const saveCosts = async () => {
 }
 
 const deleteCost = async (cost) => {
-  if (!confirm(`Are you sure you want to delete utility costs for ${cost.account_name}?`)) {
+  if (!confirm(t('rentability.confirmDeleteUtility', { accountName: cost.account_name }))) {
     return
   }
 
@@ -747,7 +749,7 @@ const deleteCost = async (cost) => {
       window.showNotification?.({
         type: 'success',
         title: 'Success',
-        message: 'Utility costs deleted successfully'
+        message: t('rentability.utilityCostsDeleted')
       })
     } else {
       throw new Error(data.error || 'Failed to delete utility costs')
@@ -843,8 +845,8 @@ const addPaymentMethodCost = () => {
   if (existingCodes.includes(newPaymentMethod.value.code)) {
     window.showNotification?.({
       type: 'error',
-      title: 'Payment Method Exists',
-      message: 'This payment method is already configured for this account'
+      title: t('rentability.paymentMethodExistsTitle'),
+      message: t('rentability.paymentMethodExists')
     })
     return
   }
@@ -897,7 +899,7 @@ const removePaymentMethodCost = async (cost) => {
       window.showNotification?.({
         type: 'success',
         title: 'Payment Method Removed',
-        message: `${formatPaymentMethodName(cost.payment_method_code)} cost configuration deleted`
+        message: t('rentability.paymentMethodDeleted', { method: formatPaymentMethodName(cost.payment_method_code) })
       })
     } else {
       throw new Error(data.error || 'Failed to delete payment method cost')
@@ -931,8 +933,8 @@ const saveAllPaymentMethodCosts = async () => {
     if (costsToSave.length === 0) {
       window.showNotification?.({
         type: 'info',
-        title: 'No Changes',
-        message: 'No payment method costs to save'
+        title: t('rentability.noChangesTitle'),
+        message: t('rentability.noPaymentCostsToSave')
       })
       return
     }
@@ -956,8 +958,8 @@ const saveAllPaymentMethodCosts = async () => {
       
       window.showNotification?.({
         type: 'success',
-        title: 'Payment Costs Saved',
-        message: `${costsToSave.length} payment method cost(s) updated successfully`
+        title: t('rentability.paymentCostsSavedTitle'),
+        message: t('rentability.paymentCostsUpdated', { count: costsToSave.length })
       })
     } else {
       throw new Error(data.error || 'Failed to save payment method costs')

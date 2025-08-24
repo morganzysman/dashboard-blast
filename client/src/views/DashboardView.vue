@@ -78,9 +78,9 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
           </svg>
         </div>
-        <h3 class="text-lg font-medium text-red-900 mb-2">Failed to Load Analytics</h3>
+        <h3 class="text-lg font-medium text-red-900 mb-2">{{ $t('dashboard.failedToLoad') }}</h3>
         <p class="text-red-700 mb-4">{{ error }}</p>
-        <button @click="refreshData" class="btn-primary">Try Again</button>
+        <button @click="refreshData" class="btn-primary">{{ $t('common.tryAgain') }}</button>
       </div>
     </div>
 
@@ -92,9 +92,9 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
           </svg>
         </div>
-        <h3 class="text-lg font-medium text-gray-900 mb-2">No Analytics Data</h3>
-        <p class="text-gray-600 mb-4">No accounts are assigned to your user or no data is available for the selected period.</p>
-        <button @click="refreshData" class="btn-secondary">Refresh Data</button>
+        <h3 class="text-lg font-medium text-gray-900 mb-2">{{ $t('dashboard.noData') }}</h3>
+        <p class="text-gray-600 mb-4">{{ $t('dashboard.noDataDescription') }}</p>
+        <button @click="refreshData" class="btn-secondary">{{ $t('common.refresh') }}</button>
       </div>
     </div>
   </div>

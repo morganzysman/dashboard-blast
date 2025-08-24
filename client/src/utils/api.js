@@ -211,7 +211,7 @@ export const api = {
   ,
   // Companies (admin)
   listCompanies: () => apiRequest('/api/admin/companies', { method: 'GET' }),
-  createCompany: (name, timezone, currency, currency_symbol) => apiRequest('/api/admin/companies', { method: 'POST', body: JSON.stringify({ name, timezone, currency, currency_symbol }) }),
+  createCompany: (name, timezone, currency, language) => apiRequest('/api/admin/companies', { method: 'POST', body: JSON.stringify({ name, timezone, currency, language }) }),
   listCompanyAccounts: (companyId) => apiRequest(`/api/admin/companies/${companyId}/accounts`, { method: 'GET' }),
   upsertCompanyAccount: (companyId, payload) => apiRequest(`/api/admin/companies/${companyId}/accounts`, { method: 'POST', body: JSON.stringify(payload) }),
   deleteCompanyAccount: (companyId, companyToken) => apiRequest(`/api/admin/companies/${companyId}/accounts/${companyToken}`, { method: 'DELETE' }),

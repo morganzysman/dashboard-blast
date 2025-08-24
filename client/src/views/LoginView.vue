@@ -8,7 +8,7 @@
             <img class="h-12 w-12" src="/icons/icon-192x192.png" alt="OlaClick">
           </div>
           <h1 class="text-3xl font-bold text-gray-900 mb-2">OlaClick Analytics</h1>
-          <p class="text-gray-600 text-sm">Sign in to access your dashboard</p>
+          <p class="text-gray-600 text-sm">{{ $t('auth.loginTitle') }}</p>
         </div>
 
         <!-- Error message -->
@@ -24,14 +24,14 @@
         <!-- Login form -->
         <form @submit.prevent="handleLogin" class="mt-8 space-y-6">
           <div>
-            <label for="email" class="form-label">Email address</label>
-            <Input id="email" v-model="form.email" type="email" required autocomplete="email" placeholder="Enter your email" :class="{ 'border-error-300': emailError }" />
+            <label for="email" class="form-label">{{ $t('auth.email') }}</label>
+            <Input id="email" v-model="form.email" type="email" required autocomplete="email" :placeholder="$t('auth.email')" :class="{ 'border-error-300': emailError }" />
             <p v-if="emailError" class="form-error">{{ emailError }}</p>
           </div>
 
           <div>
-            <label for="password" class="form-label">Password</label>
-            <Input id="password" v-model="form.password" type="password" required autocomplete="current-password" placeholder="Enter your password" :class="{ 'border-error-300': passwordError }" />
+            <label for="password" class="form-label">{{ $t('auth.password') }}</label>
+            <Input id="password" v-model="form.password" type="password" required autocomplete="current-password" :placeholder="$t('auth.password')" :class="{ 'border-error-300': passwordError }" />
             <p v-if="passwordError" class="form-error">{{ passwordError }}</p>
           </div>
 
@@ -39,9 +39,9 @@
             <Button type="submit" :disabled="authStore.isLoading" variant="primary" size="lg" class="w-full">
               <div v-if="authStore.isLoading" class="flex items-center justify-center">
                 <div class="loading-spinner mr-2"></div>
-                Signing in...
+                {{ $t('common.loading') }}
               </div>
-              <span v-else>Sign in</span>
+              <span v-else>{{ $t('auth.loginButton') }}</span>
             </Button>
           </div>
           <span class="text-sm text-gray-600 text-center">v1.0.3</span>

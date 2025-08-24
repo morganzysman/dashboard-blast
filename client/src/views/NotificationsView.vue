@@ -5,7 +5,7 @@
     <!-- Notification Status Card -->
     <div class="card">
       <div class="card-header">
-        <h3 class="text-lg font-medium text-gray-900">Notification Status</h3>
+        <h3 class="text-lg font-medium text-gray-900">{{ $t('notifications.title') }}</h3>
       </div>
       <div class="card-body">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -19,32 +19,32 @@
                 </div>
               </div>
               <div class="ml-4">
-                <h4 class="text-lg font-medium text-gray-900">Push Notifications</h4>
-                <p class="text-sm text-gray-600">{{ isAdmin ? 'Get notified about sales reports and updates' : 'Receive important notifications from your company (shifts, payroll, updates)' }}</p>
+                <h4 class="text-lg font-medium text-gray-900">{{ $t('notifications.pushNotifications') }}</h4>
+                <p class="text-sm text-gray-600">{{ isAdmin ? $t('notifications.adminDescription') : $t('notifications.employeeDescription') }}</p>
               </div>
             </div>
             
             <div class="space-y-4">
               <div class="flex items-center justify-between">
-                <span class="text-sm font-medium text-gray-700">Status</span>
+                <span class="text-sm font-medium text-gray-700">{{ $t('common.status') }}</span>
                 <span class="badge" :class="notificationStatus.isSubscribed ? 'badge-success' : 'badge-gray'">
-                  {{ notificationStatus.isSubscribed ? 'Active' : 'Inactive' }}
+                  {{ notificationStatus.isSubscribed ? $t('common.active') : $t('common.inactive') }}
                 </span>
               </div>
               
               <div v-if="notificationStatus.isSubscribed && notificationStatus.deviceCount" class="flex items-center justify-between">
-                <span class="text-sm font-medium text-gray-700">Connected Devices</span>
-                <span class="text-sm text-gray-600">{{ notificationStatus.deviceCount }} device{{ notificationStatus.deviceCount !== 1 ? 's' : '' }}</span>
+                <span class="text-sm font-medium text-gray-700">{{ $t('notifications.connectedDevices') }}</span>
+                <span class="text-sm text-gray-600">{{ $t('notifications.deviceCount', { count: notificationStatus.deviceCount }) }}</span>
               </div>
               
               <div v-if="notificationStatus.subscribedAt" class="flex items-center justify-between">
-                <span class="text-sm font-medium text-gray-700">Latest Subscription</span>
+                <span class="text-sm font-medium text-gray-700">{{ $t('notifications.latestSubscription') }}</span>
                 <span class="text-sm text-gray-600">{{ formatDate(notificationStatus.subscribedAt) }}</span>
               </div>
               
               <!-- Device List -->
               <div v-if="notificationStatus.devices && notificationStatus.devices.length > 1" class="border-t pt-4">
-                <span class="text-sm font-medium text-gray-700 mb-2 block">All Devices:</span>
+                <span class="text-sm font-medium text-gray-700 mb-2 block">{{ $t('notifications.allDevices') }}:</span>
                 <div class="space-y-2">
                   <div v-for="(device, index) in notificationStatus.devices" :key="index" 
                        class="flex items-center justify-between p-2 bg-gray-50 rounded">
@@ -60,7 +60,7 @@
               </div>
               
               <div v-else-if="notificationStatus.userAgent" class="flex items-center justify-between">
-                <span class="text-sm font-medium text-gray-700">Current Device</span>
+                <span class="text-sm font-medium text-gray-700">{{ $t('notifications.currentDevice') }}</span>
                 <span class="text-sm text-gray-600">{{ getDeviceInfo(notificationStatus.userAgent) }}</span>
               </div>
             </div>
@@ -81,7 +81,7 @@
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5v-5zm-5-6h5l-5 5v-5zm-5-6h5l-5 5v-5z"></path>
                 </svg>
-                Enable Notifications
+                {{ $t('notifications.enable') }}
               </Button>
               
               <Button
@@ -93,7 +93,7 @@
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636m12.728 12.728L18.364 5.636M5.636 18.364l12.728-12.728"></path>
                 </svg>
-                Disable Notifications
+                {{ $t('notifications.disable') }}
               </Button>
               
               <!-- <button
@@ -116,33 +116,33 @@
     <!-- Notification Settings Card (admins only: frequency) -->
     <div v-if="notificationStatus.isSubscribed" class="card">
       <div class="card-header">
-        <h3 class="text-lg font-medium text-gray-900">Notification Settings</h3>
+        <h3 class="text-lg font-medium text-gray-900">{{ $t('notifications.settings') }}</h3>
       </div>
       <div class="card-body">
         <div class="space-y-4">
           <div v-if="isAdmin">
-            <label class="form-label">Notification Frequency</label>
-            <p class="text-sm text-gray-600 mb-2">Choose how often you want to receive sales reports</p>
+            <label class="form-label">{{ $t('notifications.frequency') }}</label>
+            <p class="text-sm text-gray-600 mb-2">{{ $t('notifications.frequencyDescription') }}</p>
             <select 
               v-model="selectedFrequency" 
               @change="updateNotificationFrequency"
               :disabled="loading"
               class="form-input"
             >
-              <option value="30">Every 30 minutes</option>
-              <option value="60">Every 1 hour</option>
-              <option value="240">Every 4 hours</option>
-              <option value="480">Every 8 hours</option>
+              <option value="30">{{ $t('notifications.every30Minutes') }}</option>
+              <option value="60">{{ $t('notifications.every1Hour') }}</option>
+              <option value="240">{{ $t('notifications.every4Hours') }}</option>
+              <option value="480">{{ $t('notifications.every8Hours') }}</option>
             </select>
           </div>
           
           <div v-if="isAdmin && notificationSettings.lastNotificationTime" class="bg-gray-50 rounded-lg p-3">
             <div class="flex items-center justify-between text-sm">
-              <span class="font-medium text-gray-700">Last Notification:</span>
+              <span class="font-medium text-gray-700">{{ $t('notifications.lastNotification') }}:</span>
               <span class="text-gray-600">{{ formatDate(notificationSettings.lastNotificationTime) }}</span>
             </div>
             <div class="flex items-center justify-between text-sm mt-1">
-              <span class="font-medium text-gray-700">Next Notification:</span>
+              <span class="font-medium text-gray-700">{{ $t('notifications.nextNotification') }}:</span>
               <span class="text-gray-600">{{ getNextNotificationTime() }}</span>
             </div>
           </div>
@@ -153,10 +153,9 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
               </svg>
               <div>
-                <p class="text-sm font-medium text-blue-800">Multi-Device Support</p>
+                <p class="text-sm font-medium text-blue-800">{{ $t('notifications.multiDeviceSupport') }}</p>
                 <p class="text-sm text-blue-700 mt-1">
-                  You can enable notifications on multiple devices (phone, tablet, computer).
-                  Admins receive sales reports based on frequency settings. Employees receive shift updates and pay notifications.
+                  {{ $t('notifications.multiDeviceDescription') }}
                 </p>
               </div>
             </div>
@@ -169,11 +168,13 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import Button from '../components/ui/Button.vue'
 import { useAuthStore } from '../stores/auth'
 import api from '../utils/api'
 
 const authStore = useAuthStore()
+const { t } = useI18n()
 const isAdmin = computed(() => authStore.user?.role === 'admin' || authStore.user?.role === 'super-admin')
 
 const loading = ref(false)
@@ -203,7 +204,7 @@ const statusColor = computed(() => {
 })
 
 const statusText = computed(() => {
-  return notificationStatus.value.isSubscribed ? 'Notifications Active' : 'Notifications Disabled'
+  return notificationStatus.value.isSubscribed ? t('notifications.active') : t('notifications.disabled')
 })
 
 const checkBrowserSupport = () => {
@@ -249,19 +250,19 @@ const subscribeToNotifications = async () => {
   try {
     // Check if notifications are supported
     if (!('Notification' in window)) {
-      throw new Error('This browser does not support notifications');
+      throw new Error(t('notifications.browserNotSupported'));
     }
 
     // Check existing permission first
     if (Notification.permission === 'denied') {
-      throw new Error('Notifications are blocked. Please enable them in your browser settings.');
+      throw new Error(t('notifications.notificationsBlocked'));
     }
 
     // If permission is default (not asked yet), request it
     if (Notification.permission === 'default') {
       const permission = await Notification.requestPermission();
       if (permission !== 'granted') {
-        throw new Error('Please allow notifications to receive updates.');
+        throw new Error(t('notifications.pleaseAllowNotifications'));
       }
     }
 
@@ -289,7 +290,7 @@ const subscribeToNotifications = async () => {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to save notification subscription');
+        throw new Error(t('notifications.failedToSave'));
       }
 
       // Update local status
@@ -303,8 +304,8 @@ const subscribeToNotifications = async () => {
       // Show success message
       window.showNotification?.({
         type: 'success',
-        title: 'Notifications Enabled',
-        message: isAdmin.value ? `You will now receive sales reports every ${getFrequencyLabel(selectedFrequency.value)}` : 'You will now receive important notifications from your company.'
+        title: t('notifications.enabled'),
+        message: isAdmin.value ? t('notifications.salesReportsEnabled', { frequency: getFrequencyLabel(selectedFrequency.value) }) : t('notifications.importantNotificationsEnabled')
       });
     }
   } catch (error) {
@@ -313,8 +314,8 @@ const subscribeToNotifications = async () => {
     // Show error message to user with instructions
     window.showNotification?.({
       type: 'error',
-      title: 'Notification Setup Failed',
-      message: error.message || 'Failed to enable notifications. Please try again.'
+      title: t('notifications.setupFailed'),
+      message: error.message || t('notifications.enableFailed')
     });
   } finally {
     loading.value = false;
@@ -332,8 +333,8 @@ const unsubscribeFromNotifications = async () => {
     
     window.showNotification?.({
       type: 'success',
-      title: 'Notifications Disabled',
-      message: 'You will no longer receive push notifications'
+      title: t('notifications.disabled'),
+      message: t('notifications.noLongerReceive')
     })
   } catch (error) {
     console.error('Unsubscribe error:', error)
@@ -342,7 +343,7 @@ const unsubscribeFromNotifications = async () => {
     if (error.status !== 401) {
       window.showNotification?.({
         type: 'error',
-        title: 'Unsubscribe Failed',
+        title: t('notifications.unsubscribeFailed'),
         message: error.message
       })
     }
@@ -373,8 +374,8 @@ const updateNotificationFrequency = async () => {
       
       window.showNotification?.({
         type: 'success',
-        title: 'Settings Updated',
-        message: `Notification frequency set to ${getFrequencyLabel(selectedFrequency.value)}`
+        title: t('notifications.settingsUpdated'),
+        message: t('notifications.frequencySet', { frequency: getFrequencyLabel(selectedFrequency.value) })
       })
     } else {
       throw new Error('Failed to update notification frequency')
@@ -383,7 +384,7 @@ const updateNotificationFrequency = async () => {
     console.error('Update frequency error:', error)
     window.showNotification?.({
       type: 'error',
-      title: 'Update Failed',
+      title: t('notifications.updateFailed'),
       message: error.message
     })
   } finally {
@@ -405,8 +406,8 @@ const sendTestNotification = async () => {
     if (response.ok) {
       window.showNotification?.({
         type: 'success',
-        title: 'Test Sent',
-        message: 'Test notification sent successfully'
+        title: t('notifications.testSent'),
+        message: t('notifications.testSentSuccessfully')
       })
     } else {
       throw new Error('Failed to send test notification')
@@ -415,7 +416,7 @@ const sendTestNotification = async () => {
     console.error('Test notification error:', error)
     window.showNotification?.({
       type: 'error',
-      title: 'Test Failed',
+      title: t('notifications.testFailed'),
       message: error.message
     })
   } finally {
@@ -430,7 +431,7 @@ const getVapidPublicKey = async () => {
 }
 
 const formatDate = (dateString) => {
-  if (!dateString) return 'Never'
+  if (!dateString) return t('notifications.never')
   return new Date(dateString).toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
@@ -440,24 +441,24 @@ const formatDate = (dateString) => {
 }
 
 const getDeviceInfo = (userAgent) => {
-  if (!userAgent) return 'Unknown'
-  if (userAgent.includes('Mobile')) return 'Mobile'
-  if (userAgent.includes('iPad')) return 'iPad'
-  if (userAgent.includes('iPhone')) return 'iPhone'
-  if (userAgent.includes('Android')) return 'Android'
-  if (userAgent.includes('Chrome')) return 'Chrome'
-  if (userAgent.includes('Firefox')) return 'Firefox'
-  if (userAgent.includes('Safari')) return 'Safari'
-  return 'Desktop'
+  if (!userAgent) return t('notifications.unknown')
+  if (userAgent.includes('Mobile')) return t('notifications.devices.mobile')
+  if (userAgent.includes('iPad')) return t('notifications.devices.ipad')
+  if (userAgent.includes('iPhone')) return t('notifications.devices.iphone')
+  if (userAgent.includes('Android')) return t('notifications.devices.android')
+  if (userAgent.includes('Chrome')) return t('notifications.devices.chrome')
+  if (userAgent.includes('Firefox')) return t('notifications.devices.firefox')
+  if (userAgent.includes('Safari')) return t('notifications.devices.safari')
+  return t('notifications.devices.desktop')
 }
 
 const getFrequencyLabel = (frequency) => {
   switch(frequency) {
-    case 30: return '30 minutes'
-    case 60: return '1 hour'
-    case 240: return '4 hours'
-    case 480: return '8 hours'
-    default: return '30 minutes'
+    case 30: return t('notifications.30minutes')
+    case 60: return t('notifications.1hour')
+    case 240: return t('notifications.4hours')
+    case 480: return t('notifications.8hours')
+    default: return t('notifications.30minutes')
   }
 }
 
@@ -469,7 +470,7 @@ const getNextNotificationTime = () => {
   const now = new Date()
   
   if (nextTime <= now) {
-    return 'Within next check'
+    return t('notifications.withinNextCheck')
   }
   
   return nextTime.toLocaleDateString('en-US', {

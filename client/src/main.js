@@ -24,6 +24,10 @@ import CompaniesView from './views/CompaniesView.vue'
 // Import stores
 import { useAuthStore } from './stores/auth'
 
+// Import i18n
+import i18n from './i18n'
+import { useI18n } from './composables/useI18n'
+
 // Create Pinia instance first
 const pinia = createPinia()
 
@@ -183,13 +187,22 @@ router.beforeEach(async (to, from, next) => {
 // Create app
 const app = createApp(App)
 
-// Use plugins (Pinia first, then router)
+// Use plugins (Pinia first, then i18n, then router)
 app.use(pinia)
+app.use(i18n)
 app.use(router)
 
 // Initialize auth store to restore session from localStorage
 const authStore = useAuthStore()
 authStore.initialize()
+
+// Initialize i18n locale based on user's company after app is mounted
+router.isReady().then(() => {
+  const { initializeLocale } = useI18n()
+  if (authStore.isAuthenticated) {
+    initializeLocale()
+  }
+})
 
 // Mount app
 app.mount('#app')

@@ -2,16 +2,16 @@
   <div class="space-y-6">
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900">Companies</h1>
-        <p class="text-sm text-gray-600 mt-1">Manage companies and their OlaClick accounts</p>
+        <h1 class="text-2xl font-bold text-gray-900">{{ $t('companies.title') }}</h1>
+        <p class="text-sm text-gray-600 mt-1">{{ $t('companies.subtitle') }}</p>
       </div>
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-2 items-end">
+      <div class="grid grid-cols-1 md:grid-cols-5 gap-2 items-end">
         <div>
-          <label class="form-label">Company Name</label>
-          <input v-model.trim="newCompanyName" class="form-input" placeholder="New company name" />
+          <label class="form-label">{{ $t('companies.companyName') }}</label>
+          <input v-model.trim="newCompanyName" class="form-input" :placeholder="$t('companies.newCompanyName')" />
         </div>
         <div>
-          <label class="form-label">Timezone</label>
+          <label class="form-label">{{ $t('companies.timezone') }}</label>
           <select v-model="newCompanyTimezone" class="form-input">
             <option value="America/Lima">🇵🇪 Lima (UTC-5)</option>
             <option value="America/Mexico_City">🇲🇽 Mexico City (UTC-6)</option>
@@ -22,7 +22,7 @@
           </select>
         </div>
         <div>
-          <label class="form-label">Currency</label>
+          <label class="form-label">{{ $t('companies.currency') }}</label>
           <select v-model="newCompanyCurrency" class="form-input">
             <option value="PEN">🇵🇪 PEN</option>
             <option value="MXN">🇲🇽 MXN</option>
@@ -32,7 +32,16 @@
           </select>
         </div>
         <div>
-          <button class="btn-primary w-full" :disabled="!canCreate" @click="createNewCompany">Create</button>
+          <label class="form-label">{{ $t('companies.language') }}</label>
+          <select v-model="newCompanyLanguage" class="form-input">
+            <option value="pt">🇧🇷 Português</option>
+            <option value="es">🇪🇸 Español</option>
+            <option value="en">🇺🇸 English</option>
+            <option value="fr">🇫🇷 Français</option>
+          </select>
+        </div>
+        <div>
+          <button class="btn-primary w-full" :disabled="!canCreate" @click="createNewCompany">{{ $t('common.create') }}</button>
         </div>
       </div>
     </div>
@@ -44,28 +53,28 @@
             <div>
               <div class="text-lg font-semibold">{{ c.name }}</div>
               <div class="text-xs text-gray-500">{{ c.id }}</div>
-              <div class="text-xs text-gray-500 mt-1">Timezone: {{ c.timezone || 'America/Lima' }} • Currency: {{ c.currency || 'PEN' }}</div>
+              <div class="text-xs text-gray-500 mt-1">Timezone: {{ c.timezone || 'America/Lima' }} • Currency: {{ c.currency || 'PEN' }} • Language: {{ getLanguageName(c.language) }}</div>
             </div>
             <div class="flex items-center space-x-2">
-              <button class="btn-danger" @click="deleteCompany(c.id)" title="Delete Company">Delete</button>
-              <input v-model="accountForm[c.id].company_token" class="form-input" placeholder="Company token" />
-              <input v-model="accountForm[c.id].account_name" class="form-input" placeholder="Account name" />
-              <input v-model="accountForm[c.id].api_token" class="form-input" placeholder="API token" />
-              <button class="btn-secondary" @click="saveAccount(c.id)">Add/Update Account</button>
+              <button class="btn-danger" @click="deleteCompany(c.id)" :title="$t('common.delete')">{{ $t('common.delete') }}</button>
+              <input v-model="accountForm[c.id].company_token" class="form-input" :placeholder="$t('companies.companyToken')" />
+              <input v-model="accountForm[c.id].account_name" class="form-input" :placeholder="$t('companies.accountName')" />
+              <input v-model="accountForm[c.id].api_token" class="form-input" :placeholder="$t('companies.apiToken')" />
+              <button class="btn-secondary" @click="saveAccount(c.id)">{{ $t('companies.addUpdateAccount') }}</button>
             </div>
           </div>
           <div class="mt-4">
             <Table :stickyHeader="true">
               <template #head>
-                <th class="py-2">Account Name</th>
-                <th class="py-2">Company Token</th>
-                <th class="py-2">API Token</th>
-                <th class="py-2 text-right">Actions</th>
+                <th class="py-2">{{ $t('companies.accountName') }}</th>
+                <th class="py-2">{{ $t('companies.companyToken') }}</th>
+                <th class="py-2">{{ $t('companies.apiToken') }}</th>
+                <th class="py-2 text-right">{{ $t('companies.actions') }}</th>
               </template>
               <tr v-for="a in accounts[c.id] || []" :key="a.company_token" class="border-t hover:bg-gray-50 odd:bg-white even:bg-gray-50 dark:odd:bg-gray-900 dark:even:bg-gray-800 dark:hover:bg-gray-700">
                   <td>
                     <div v-if="isEditing(c.id, a.company_token)">
-                      <input v-model.trim="editForm[c.id][a.company_token].account_name" class="form-input w-full" placeholder="Account name" />
+                      <input v-model.trim="editForm[c.id][a.company_token].account_name" class="form-input w-full" :placeholder="$t('companies.accountName')" />
                     </div>
                     <div v-else>
                       {{ a.account_name || a.company_token }}
@@ -74,8 +83,8 @@
                   <td class="font-mono text-xs">{{ a.company_token }}</td>
                   <td>
                     <div v-if="isEditing(c.id, a.company_token)" class="flex items-center gap-2">
-                      <input :type="showToken[c.id]?.[a.company_token] ? 'text' : 'password'" v-model.trim="editForm[c.id][a.company_token].api_token" class="form-input w-full" placeholder="API token" />
-                      <button class="btn-secondary btn-xs" @click="toggleShowToken(c.id, a.company_token)">{{ showToken[c.id]?.[a.company_token] ? 'Hide' : 'Show' }}</button>
+                      <input :type="showToken[c.id]?.[a.company_token] ? 'text' : 'password'" v-model.trim="editForm[c.id][a.company_token].api_token" class="form-input w-full" :placeholder="$t('companies.apiToken')" />
+                      <button class="btn-secondary btn-xs" @click="toggleShowToken(c.id, a.company_token)">{{ showToken[c.id]?.[a.company_token] ? $t('common.hide') : $t('common.show') }}</button>
                     </div>
                     <div v-else>
                       <span v-if="a.api_token" class="text-gray-500">{{ a.api_token.substring(0,8) }}…</span>
@@ -84,12 +93,12 @@
                   </td>
                   <td class="text-right">
                     <div v-if="isEditing(c.id, a.company_token)" class="flex justify-end gap-2">
-                      <button class="btn-secondary btn-xs" @click="cancelEdit(c.id)">Cancel</button>
-                      <button class="btn-primary btn-xs" @click="saveEdit(c.id, a.company_token)">Save</button>
+                      <button class="btn-secondary btn-xs" @click="cancelEdit(c.id)">{{ $t('common.cancel') }}</button>
+                      <button class="btn-primary btn-xs" @click="saveEdit(c.id, a.company_token)">{{ $t('common.save') }}</button>
                     </div>
                     <div v-else class="flex justify-end gap-2">
-                      <button class="btn-secondary btn-xs" @click="startEdit(c.id, a)">Edit</button>
-                      <button class="btn-danger btn-xs" @click="removeAccount(c.id, a.company_token)">Delete</button>
+                      <button class="btn-secondary btn-xs" @click="startEdit(c.id, a)">{{ $t('common.edit') }}</button>
+                      <button class="btn-danger btn-xs" @click="removeAccount(c.id, a.company_token)">{{ $t('common.delete') }}</button>
                     </div>
                   </td>
                 </tr>
@@ -105,7 +114,10 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import api from '../utils/api'
 import { useAuthStore } from '../stores/auth'
+import { useI18n } from 'vue-i18n'
 import Table from '../components/ui/Table.vue'
+
+const { t } = useI18n()
 
 const auth = useAuthStore()
 const companies = ref([])
@@ -118,6 +130,7 @@ const newCompanyName = ref('')
 const canCreate = computed(() => newCompanyName.value && newCompanyName.value.length >= 3)
 const newCompanyTimezone = ref('America/Lima')
 const newCompanyCurrency = ref('PEN')
+const newCompanyLanguage = ref('pt')
 
 const load = async () => {
   const res = await api.listCompanies()
@@ -136,13 +149,24 @@ const load = async () => {
 
 const createNewCompany = async () => {
   if (!canCreate.value) return
-  const res = await api.createCompany(newCompanyName.value, newCompanyTimezone.value, newCompanyCurrency.value)
+  const res = await api.createCompany(newCompanyName.value, newCompanyTimezone.value, newCompanyCurrency.value, newCompanyLanguage.value)
   if (res.success) {
     newCompanyName.value = ''
     newCompanyTimezone.value = 'America/Lima'
     newCompanyCurrency.value = 'PEN'
+    newCompanyLanguage.value = 'pt'
     await load()
   }
+}
+
+const getLanguageName = (languageCode) => {
+  const languages = {
+    'pt': 'Português',
+    'es': 'Español',
+    'en': 'English',
+    'fr': 'Français'
+  }
+  return languages[languageCode] || 'Português'
 }
 
 const saveAccount = async (companyId) => {
@@ -191,7 +215,7 @@ const saveEdit = async (companyId, token) => {
 }
 
 const deleteCompany = async (companyId) => {
-  if (!confirm('Delete this company? This action cannot be undone.')) return
+  if (!confirm(t('companies.deleteConfirm'))) return
   const res = await api.delete(`/api/admin/companies/${companyId}`)
   if (res.success) {
     companies.value = companies.value.filter(c => c.id !== companyId)

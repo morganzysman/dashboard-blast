@@ -3,14 +3,14 @@
     <!-- Header -->
     <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
       <div>
-        <h2 class="text-xl sm:text-2xl font-bold text-gray-900">User Management</h2>
-        <p class="text-sm sm:text-base text-gray-600">Manage system users and their account access</p>
+        <h2 class="text-xl sm:text-2xl font-bold text-gray-900">{{ $t('admin.title') }}</h2>
+        <p class="text-sm sm:text-base text-gray-600">{{ $t('admin.subtitle') }}</p>
       </div>
       <button @click="openCreateUserModal" class="btn-primary text-sm sm:text-base">
         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
         </svg>
-        Create User
+        {{ $t('admin.createUser') }}
       </button>
     </div>
 
@@ -27,7 +27,7 @@
               </div>
             </div>
             <div class="ml-3 min-w-0 flex-1">
-              <p class="text-xs sm:text-sm font-medium text-gray-500">Total Users</p>
+              <p class="text-xs sm:text-sm font-medium text-gray-500">{{ $t('admin.totalUsers') }}</p>
               <p class="text-xl sm:text-2xl font-bold text-gray-900">{{ users.length }}</p>
             </div>
           </div>
@@ -45,7 +45,7 @@
               </div>
             </div>
             <div class="ml-3 min-w-0 flex-1">
-              <p class="text-xs sm:text-sm font-medium text-gray-500">Active Users</p>
+              <p class="text-xs sm:text-sm font-medium text-gray-500">{{ $t('admin.activeUsers') }}</p>
               <p class="text-xl sm:text-2xl font-bold text-gray-900">{{ activeUsers }}</p>
             </div>
           </div>
@@ -63,7 +63,7 @@
               </div>
             </div>
             <div class="ml-3 min-w-0 flex-1">
-              <p class="text-xs sm:text-sm font-medium text-gray-500">Admins</p>
+              <p class="text-xs sm:text-sm font-medium text-gray-500">{{ $t('admin.admins') }}</p>
               <p class="text-xl sm:text-2xl font-bold text-gray-900">{{ adminUsers }}</p>
             </div>
           </div>
@@ -81,7 +81,7 @@
               </div>
             </div>
             <div class="ml-3 min-w-0 flex-1">
-              <p class="text-xs sm:text-sm font-medium text-gray-500">Total Accounts</p>
+              <p class="text-xs sm:text-sm font-medium text-gray-500">{{ $t('admin.totalAccounts') }}</p>
               <p class="text-xl sm:text-2xl font-bold text-gray-900">{{ totalAccounts }}</p>
             </div>
           </div>
@@ -97,21 +97,21 @@
             <input
               v-model="searchQuery"
               type="text"
-              placeholder="Search users..."
+              :placeholder="$t('admin.searchUsers')"
               class="form-input w-full text-sm"
             />
           </div>
           <div class="flex flex-col sm:flex-row gap-2 sm:gap-4">
             <select v-model="roleFilter" class="form-input w-full sm:w-auto text-sm">
-              <option value="">All Roles</option>
-              <option value="super-admin">Super Admin</option>
-              <option value="admin">Admin</option>
-              <option value="employee">Employee</option>
+              <option value="">{{ $t('admin.allRoles') }}</option>
+              <option value="super-admin">{{ $t('admin.superAdmin') }}</option>
+              <option value="admin">{{ $t('admin.admin') }}</option>
+              <option value="employee">{{ $t('admin.employee') }}</option>
             </select>
             <select v-model="statusFilter" class="form-input w-full sm:w-auto text-sm">
-              <option value="">All Status</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
+              <option value="">{{ $t('admin.allStatus') }}</option>
+              <option value="active">{{ $t('common.active') }}</option>
+              <option value="inactive">{{ $t('common.inactive') }}</option>
             </select>
           </div>
         </div>
@@ -139,7 +139,7 @@
                 </div>
               </div>
               <span class="badge" :class="user.is_active ? 'badge-success' : 'badge-gray'">
-                {{ user.is_active ? 'Active' : 'Inactive' }}
+                {{ user.is_active ? $t('common.active') : $t('common.inactive') }}
               </span>
             </div>
             
@@ -147,15 +147,15 @@
               <span class="badge text-xs" :class="getRoleBadgeClass(user.role)">
                 {{ user.role?.replace('-', ' ') }}
               </span>
-              <span class="text-xs text-gray-500">Company: {{ user.company?.name || '—' }}</span>
+              <span class="text-xs text-gray-500">{{ $t('admin.company') }}: {{ user.company?.name || '—' }}</span>
             </div>
             
             <div class="grid grid-cols-2 gap-2 mt-2">
-              <button @click="editUser(user)" class="btn-sm btn-secondary text-xs">Edit</button>
-              <button @click="toggleUserStatus(user)" :class="user.is_active ? 'btn-sm btn-warning text-xs' : 'btn-sm btn-success text-xs'">{{ user.is_active ? 'Deactivate' : 'Activate' }}</button>
-              <button v-if="!isSuperAdmin" @click="manageShifts(user)" class="btn-sm btn-secondary text-xs col-span-2">Shifts</button>
-              <button @click="resetPassword(user)" class="btn-sm btn-warning text-xs col-span-2">Reset Password</button>
-              <button v-if="isSuperAdmin" @click="confirmDeleteUser(user)" class="btn-sm btn-danger text-xs col-span-2">Delete</button>
+              <button @click="editUser(user)" class="btn-sm btn-secondary text-xs">{{ $t('common.edit') }}</button>
+              <button @click="toggleUserStatus(user)" :class="user.is_active ? 'btn-sm btn-warning text-xs' : 'btn-sm btn-success text-xs'">{{ user.is_active ? $t('common.deactivate') : $t('common.activate') }}</button>
+              <button v-if="!isSuperAdmin" @click="manageShifts(user)" class="btn-sm btn-secondary text-xs col-span-2">{{ $t('navigation.shifts') }}</button>
+              <button @click="resetPassword(user)" class="btn-sm btn-warning text-xs col-span-2">{{ $t('admin.resetPassword') }}</button>
+              <button v-if="isSuperAdmin" @click="confirmDeleteUser(user)" class="btn-sm btn-danger text-xs col-span-2">{{ $t('common.delete') }}</button>
             </div>
           </div>
         </div>
@@ -165,13 +165,13 @@
           <table class="table">
             <thead class="table-header">
               <tr>
-                <th>User</th>
-                <th>Role</th>
-                <th>Status</th>
-                 <th>Company</th>
-                <th>Hourly Rate</th>
-                <th>Last Login</th>
-                <th>Actions</th>
+                <th>{{ $t('admin.user') }}</th>
+                <th>{{ $t('admin.role') }}</th>
+                <th>{{ $t('common.status') }}</th>
+                 <th>{{ $t('admin.company') }}</th>
+                <th>{{ $t('admin.hourlyRate') }}</th>
+                <th>{{ $t('admin.lastLogin') }}</th>
+                <th>{{ $t('companies.actions') }}</th>
               </tr>
             </thead>
             <tbody class="table-body">

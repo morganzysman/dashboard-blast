@@ -105,6 +105,9 @@ const loading = ref(false)
 const error = ref(null)
 const evolutionData = ref(null)
 const chartKey = ref(0)
+// Request de-duplication and debouncing
+let debounceTimer = null
+const lastRequestKey = ref('')
 
 // Helper: parse labels like DD-MM-YYYY into a sortable timestamp
 const parseDateLabelToTs = (label) => {
@@ -261,6 +264,14 @@ const fetchEvolutionData = async () => {
   try {
     const startDate = props.currentDateRange.start
     const endDate = props.currentDateRange.end
+    const requestKey = `${startDate}|${endDate}|${props.timezone}`
+    // Skip duplicate requests for the same params
+    if (requestKey === lastRequestKey.value && evolutionData.value) {
+      console.log('⏭️ Skipping duplicate order-evolution fetch for', requestKey)
+      loading.value = false
+      return
+    }
+    lastRequestKey.value = requestKey
     
     // Use our server-side route instead of direct API call
     const url = new URL('/api/analytics/order-evolution', window.location.origin)
@@ -283,6 +294,11 @@ const fetchEvolutionData = async () => {
       throw new Error(response.error || 'Failed to fetch order evolution data')
     }
     
+    // Ignore stale responses (if params changed mid-flight)
+    if (lastRequestKey.value !== requestKey) {
+      console.log('🗑️ Ignoring stale order-evolution response for', requestKey)
+      return
+    }
     evolutionData.value = response
 
     console.log('📊 Order evolution data received:', response)
@@ -297,19 +313,17 @@ const fetchEvolutionData = async () => {
 
 // No chart library watchers required
 
-// Watch for date range changes
-watch(() => props.currentDateRange, () => {
-  fetchEvolutionData()
-}, { deep: true })
+// Single watcher keyed by the inputs that affect the request
+const triggerFetch = () => {
+  if (debounceTimer) clearTimeout(debounceTimer)
+  debounceTimer = setTimeout(() => {
+    fetchEvolutionData()
+  }, 150)
+}
 
-// Watch for accounts changes
-watch(() => props.accounts, () => {
-  fetchEvolutionData()
-}, { deep: true })
-
-onMounted(() => {
-  fetchEvolutionData()
-})
+watch(() => [props.currentDateRange?.start, props.currentDateRange?.end, props.timezone], () => {
+  triggerFetch()
+}, { immediate: true })
 </script>
 
 <style scoped>

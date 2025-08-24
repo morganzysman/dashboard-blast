@@ -6,28 +6,28 @@
         <!-- Header and Date Range on same line -->
         <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-4">
           <div class="min-w-0">
-            <h2 class="text-lg sm:text-xl font-bold text-gray-900">📊 Performance Overview</h2>
-            <p class="text-xs sm:text-sm text-gray-600">Real-time analytics from your OlaClick accounts</p>
+            <h2 class="text-lg sm:text-xl font-bold text-gray-900">📊 {{ $t('dashboard.overview') }}</h2>
+            <p class="text-xs sm:text-sm text-gray-600">{{ $t('dashboard.realtimeAnalytics') }}</p>
           </div>
           
           <!-- Date Range Picker -->
           <div class="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-2 flex-shrink-0">
-            <label class="text-xs sm:text-sm font-medium text-gray-700">📅 Date Range:</label>
+            <label class="text-xs sm:text-sm font-medium text-gray-700">📅 {{ $t('common.dateRange') }}:</label>
             <select 
               :value="selectedDateRange" 
               @input="$emit('update:selectedDateRange', $event.target.value)"
               @change="onDateRangeChange" 
               class="form-input w-full sm:w-auto text-xs sm:text-sm"
             >
-              <option value="today">Today</option>
-              <option value="yesterday">Yesterday</option>
-              <option value="last7days">Last 7 Days</option>
-              <option value="last30days">Last 30 Days</option>
-              <option value="thisweek">This Week</option>
-              <option value="lastweek">Last Week</option>
-              <option value="thismonth">This Month</option>
-              <option value="lastmonth">Last Month</option>
-              <option value="custom">Custom Range</option>
+              <option value="today">{{ $t('common.today') }}</option>
+              <option value="yesterday">{{ $t('common.yesterday') }}</option>
+              <option value="last7days">{{ $t('dashboard.last7Days') }}</option>
+              <option value="last30days">{{ $t('dashboard.last30Days') }}</option>
+              <option value="thisweek">{{ $t('common.thisWeek') }}</option>
+              <option value="lastweek">{{ $t('common.lastWeek') }}</option>
+              <option value="thismonth">{{ $t('common.thisMonth') }}</option>
+              <option value="lastmonth">{{ $t('common.lastMonth') }}</option>
+              <option value="custom">{{ $t('common.customRange') }}</option>
             </select>
           </div>
           <!-- Close header flex and title container -->
@@ -40,7 +40,7 @@
           <!-- Custom Date Inputs -->
           <div v-if="selectedDateRange === 'custom'" class="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
             <div class="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-1">
-              <label class="text-xs sm:text-sm text-gray-600">From:</label>
+              <label class="text-xs sm:text-sm text-gray-600">{{ $t('common.from') }}:</label>
               <input 
                 type="date" 
                 :value="customStartDate"
@@ -51,7 +51,7 @@
               />
             </div>
             <div class="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-1">
-              <label class="text-xs sm:text-sm text-gray-600">To:</label>
+              <label class="text-xs sm:text-sm text-gray-600">{{ $t('common.to') }}:</label>
               <input 
                 type="date" 
                 :value="customEndDate"
@@ -79,7 +79,7 @@
             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
             </svg>
-            {{ loading ? 'Loading...' : 'Refresh' }}
+            {{ loading ? $t('common.loading') : $t('common.refresh') }}
           </button>
 
           <!-- Apply Button (for custom range) -->
@@ -89,7 +89,7 @@
             class="btn-primary btn-sm w-full sm:w-auto"
             :disabled="loading"
           >
-            Apply Range
+            {{ $t('dashboard.applyRange') }}
           </button>
           </div>
           <!-- Close card-body and card for header block -->
@@ -399,50 +399,102 @@ const formatGainPeriodLabel = () => {
 
 // Per-account gain is now provided by server; for overview aggregated card we rely on company.operatingProfit
 
-// Aggregated gain across all accounts - sum of account gains for reactivity
+// Aggregated gain across all accounts - REACTIVE SUM of per-account gains
+// Uses hybrid logic: prefer client revenue with server-side cost configs; falls back to server-only when needed
 const aggregatedDailyGain = computed(() => {
   const trigger = forceRecompute.value
   const profitabilityData = props.profitabilityData
   const analyticsData = props.analyticsData
-  const selectedDateRange = props.selectedDateRange
   const currentDateRange = props.currentDateRange
 
-  // If server provides per-account operatingProfit, sum them for the period
-  let sumFromAccounts = 0
-  if (Array.isArray(profitabilityData?.accounts) && profitabilityData.accounts.length > 0) {
-    sumFromAccounts = profitabilityData.accounts.reduce((sum, acc) => sum + (acc.operatingProfit || 0), 0)
+  // If we don't have account analytics, try server in-sync value as a last resort
+  if (!analyticsData?.accounts || analyticsData.accounts.length === 0) {
+    const pdStart = profitabilityData?.period?.start
+    const pdEnd = profitabilityData?.period?.end
+    const curStart = currentDateRange?.start
+    const curEnd = currentDateRange?.end
+    const profitabilityInSync = !!(pdStart && pdEnd && curStart && curEnd && pdStart === curStart && pdEnd === curEnd)
+    if (profitabilityInSync) {
+      const fromAccounts = Array.isArray(profitabilityData?.accounts)
+        ? profitabilityData.accounts.reduce((sum, acc) => sum + (acc.operatingProfit || 0), 0)
+        : 0
+      return fromAccounts || (profitabilityData?.company?.operatingProfit || 0)
+    }
+    return 0
   }
 
-  const serverCompanyProfit = profitabilityData?.company?.operatingProfit || 0
-  const analyticsGross = analyticsData?.aggregated?.totalAmount || 0
+  const currentDays = calculateDaysInPeriod()
+  let totalGain = 0
 
-  console.log('💰 aggregatedDailyGain computed:', {
-    profitabilityPeriod: profitabilityData?.period,
-    sumFromAccounts,
-    serverCompanyProfit,
-    analyticsGross,
-    hasAccountData: Array.isArray(profitabilityData?.accounts) && profitabilityData.accounts.length > 0,
-    selectedDateRange,
+  analyticsData.accounts.forEach(account => {
+    const serverAcc = profitabilityData?.accounts?.find(a => a.accountKey === account.accountKey)
+
+    // 1) Build client-side revenue and fees using server cost configs per payment method
+    let clientSideRevenue = 0
+    let clientSidePaymentMethods = []
+    if (account.success && account.data?.data) {
+      const serverPaymentCosts = new Map()
+      if (serverAcc?.paymentMethodBreakdown) {
+        serverAcc.paymentMethodBreakdown.forEach(pm => {
+          serverPaymentCosts.set(pm.method, pm.costConfig || { cost_percentage: 0, fixed_cost: 0 })
+        })
+      }
+      clientSidePaymentMethods = (account.data.data || []).map(pm => {
+        const methodName = pm.name?.toLowerCase() || 'other'
+        const revenue = pm.sum || 0
+        const transactionCount = pm.count || 0
+        const costConfig = serverPaymentCosts.get(methodName) || { cost_percentage: 0, fixed_cost: 0 }
+        const percentageFee = revenue * (costConfig.cost_percentage / 100)
+        const fixedFee = transactionCount * (costConfig.fixed_cost || 0)
+        const fees = percentageFee + fixedFee
+        return { method: methodName, revenue, fees, transactionCount, costConfig }
+      })
+      clientSideRevenue = clientSidePaymentMethods.reduce((s, m) => s + (m.revenue || 0), 0)
+    }
+
+    // 2) Hybrid preference when server costs available
+    if (serverAcc) {
+      if (clientSideRevenue > 0) {
+        const serverDays = serverAcc?.daysInPeriod || currentDays
+        const serverUtilTotal = serverAcc?.utilityCosts || 0
+        const utilityPerDay = serverDays > 0 ? (serverUtilTotal / serverDays) : serverUtilTotal
+        const utilityCostsForPeriod = utilityPerDay * currentDays
+        const paymentFees = clientSidePaymentMethods.reduce((sum, method) => sum + (method.fees || 0), 0)
+        const netRevenue = clientSideRevenue - paymentFees
+        const foodCosts = netRevenue * 0.3
+        const totalCosts = paymentFees + foodCosts + utilityCostsForPeriod + (serverAcc.payrollCosts || 0)
+        totalGain += clientSideRevenue - totalCosts
+        return
+      } else {
+        // Server-only fallback (scale utilities/entries to period)
+        const serverDays = serverAcc?.daysInPeriod || currentDays
+        const serverUtilTotal = serverAcc?.utilityCosts || 0
+        const utilityPerDay = serverDays > 0 ? (serverUtilTotal / serverDays) : serverUtilTotal
+        const utilityCostsForPeriod = utilityPerDay * currentDays
+        const finalGain = (serverAcc.grossSales || 0) - ((serverAcc.paymentFees || 0) + (serverAcc.foodCosts || 0) + utilityCostsForPeriod + (serverAcc.payrollCosts || 0))
+        totalGain += finalGain
+        return
+      }
+    }
+
+    // 3) Pure client-side fallback when no server account is available
+    if (clientSideRevenue > 0) {
+      const paymentFees = clientSidePaymentMethods.reduce((sum, method) => sum + (method.fees || 0), 0)
+      const netRevenue = clientSideRevenue - paymentFees
+      const foodCosts = netRevenue * 0.3
+      const finalGain = clientSideRevenue - (paymentFees + foodCosts)
+      totalGain += finalGain
+    }
+  })
+
+  console.log('💰 aggregatedDailyGain (reactive sum) computed:', {
+    totalGain,
+    accounts: analyticsData.accounts.length,
     currentDateRange,
     forceRecomputeTrigger: trigger
   })
 
-  // Priority: sum of account gains (most reactive to per-account changes)
-  if (sumFromAccounts !== 0 || (Array.isArray(profitabilityData?.accounts) && profitabilityData.accounts.length > 0)) {
-    return sumFromAccounts
-  }
-
-  // Next: company aggregate from server
-  if (profitabilityData?.company) {
-    return serverCompanyProfit
-  }
-
-  // Fallback: approximate from analytics totals
-  if (analyticsGross <= 0) return 0
-  const food = analyticsGross * 0.3
-  const fallbackProfit = analyticsGross - food
-  console.log('📊 Using fallback calculation:', { analyticsGross, foodCosts: food, fallbackProfit })
-  return fallbackProfit
+  return totalGain
 })
 
 const getAggregatedGainClass = () => {
