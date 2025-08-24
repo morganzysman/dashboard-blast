@@ -113,17 +113,7 @@
   "app": {
     "name": "OlaClick"
   },
-  "monthly": "Monthly",
-    "for": "for",
-    "load": "Load",
-    "new": "New",
-    "saving": "Saving...",
-    "deleting": "Deleting...",
-    "tryAgain": "Try Again",
-    "unknownError": "Unknown error",
-    "failed": "Failed",
-    "dismiss": "Dismiss"
-  },
+  
   "navigation": {
     "dashboard": "Dashboard",
     "admin": "Admin",
