@@ -551,4 +551,27 @@
   "login": {
     "appTitle": "OlaClick Analytics"
   }
+  ,
+  "account": {
+    "avgTicket": "Ticket Méd.",
+    "tips": "Gorjetas",
+    "kitchenPerf": "Rend. Cozinha",
+    "viewBreakdown": "Ver detalhamento",
+    "gainBreakdown": "Detalhamento da Margem",
+    "revenueByMethod": "Receita por Método de Pagamento",
+    "totalRevenue": "Receita Total",
+    "costs": "Custos",
+    "paymentFees": "Taxas de Pagamento",
+    "foodCosts": "Custos de Alimentos (30%)",
+    "utilityCosts": "Utilidades ({days} dias)",
+    "payroll": "Folha ({entries} lançamentos)",
+    "totalCosts": "Custos Totais",
+    "finalGain": "Resultado Final",
+    "noPaymentData": "Sem dados de pagamento",
+    "paymentMethods": "Métodos de Pagamento",
+    "transactions": "transações",
+    "serviceMetrics": "Métricas de Serviço",
+    "serviceMetricsInfo": "As métricas de serviço estão disponíveis apenas para períodos predefinidos (Hoje, Ontem, etc.)",
+    "noAccountData": "Sem dados de conta para este período."
+  }
 }

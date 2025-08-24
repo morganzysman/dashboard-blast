@@ -67,7 +67,7 @@
 
               <div class="bg-emerald-50 rounded-lg p-3 text-center">
                 <p class="text-sm sm:text-lg font-bold text-emerald-600 truncate">{{ formatKitchenPerformance(getAccountKitchenPerformance(account)) }}</p>
-                <p class="text-xs text-emerald-500">Kitchen Perf.</p>
+                <p class="text-xs text-emerald-500">{{ $t('account.kitchenPerf') }}</p>
               </div>
 
               <!-- Daily Gain KPI -->
@@ -83,12 +83,12 @@
                     <span class="text-xs text-purple-600 hover:text-purple-800 underline">{{ $t('dashboard.viewBreakdown') }}</span>
                   </template>
                   <template #title>
-                    <h4 class="font-bold text-purple-300 text-sm">💰 Gain Breakdown ({{ formatGainPeriodLabel() }})</h4>
+                    <h4 class="font-bold text-purple-300 text-sm">💰 {{ $t('account.gainBreakdown') }} ({{ formatGainPeriodLabel() }})</h4>
                   </template>
                   <div v-if="account.success && account.data?.data" class="space-y-4">
                     <!-- Revenue by Payment Method -->
                     <div>
-                      <h5 class="font-semibold text-blue-300 mb-3 text-sm">📊 Revenue by Payment Method:</h5>
+                      <h5 class="font-semibold text-blue-300 mb-3 text-sm">📊 {{ $t('account.revenueByMethod') }}:</h5>
                       <div v-for="method in accountBreakdowns.get(account.accountKey)?.paymentMethodBreakdown || []" :key="method.method" class="mb-2">
                         <div class="flex justify-between items-center mb-1">
                           <span class="capitalize text-sm font-medium">{{ method.method }}:</span>
@@ -102,7 +102,7 @@
                       <!-- Total Revenue -->
                       <div class="border-t border-blue-700 pt-2 mt-3">
                         <div class="flex justify-between items-center">
-                          <span class="text-sm font-bold text-blue-300">Total Revenue:</span>
+                          <span class="text-sm font-bold text-blue-300">{{ $t('account.totalRevenue') }}:</span>
                           <span class="text-blue-300 font-bold">{{ formatCurrency(accountBreakdowns.get(account.accountKey)?.totalRevenue || 0) }}</span>
                         </div>
                       </div>
@@ -110,29 +110,29 @@
                     
                     <!-- Cost Breakdown -->
                     <div class="border-t border-gray-700 pt-3">
-                      <h5 class="font-semibold text-red-300 mb-3 text-sm">📉 Costs:</h5>
+                      <h5 class="font-semibold text-red-300 mb-3 text-sm">📉 {{ $t('account.costs') }}:</h5>
                       <div class="space-y-2">
                         <div class="flex justify-between items-center">
-                          <span class="text-sm">Payment Fees:</span>
+                          <span class="text-sm">{{ $t('account.paymentFees') }}:</span>
                           <span class="text-red-300 font-bold">-{{ formatCurrency(accountBreakdowns.get(account.accountKey)?.paymentFees || 0) }}</span>
                         </div>
                         <div class="flex justify-between items-center">
-                          <span class="text-sm">Food Costs (30%):</span>
+                          <span class="text-sm">{{ $t('account.foodCosts') }}:</span>
                           <span class="text-red-300 font-bold">-{{ formatCurrency(accountBreakdowns.get(account.accountKey)?.foodCosts || 0) }}</span>
                         </div>
                         <div class="flex justify-between items-center">
-                          <span class="text-sm">Utility Costs ({{ accountBreakdowns.get(account.accountKey)?.daysInPeriod || 1 }} days):</span>
+                          <span class="text-sm">{{ $t('account.utilityCosts', { days: accountBreakdowns.get(account.accountKey)?.daysInPeriod || 1 }) }}:</span>
                           <span class="text-red-300 font-bold">-{{ formatCurrency(accountBreakdowns.get(account.accountKey)?.utilityCosts || 0) }}</span>
                         </div>
                         <div class="flex justify-between items-center">
-                          <span class="text-sm">Payroll ({{ accountBreakdowns.get(account.accountKey)?.payrollEntries || 0 }} entries):</span>
+                          <span class="text-sm">{{ $t('account.payroll', { entries: accountBreakdowns.get(account.accountKey)?.payrollEntries || 0 }) }}:</span>
                           <span class="text-red-300 font-bold">-{{ formatCurrency(accountBreakdowns.get(account.accountKey)?.payrollCosts || 0) }}</span>
                         </div>
                       </div>
                       <!-- Total Costs -->
                       <div class="border-t border-red-700 pt-2 mt-3">
                         <div class="flex justify-between items-center">
-                          <span class="text-sm font-bold text-red-300">Total Costs:</span>
+                          <span class="text-sm font-bold text-red-300">{{ $t('account.totalCosts') }}:</span>
                           <span class="text-red-300 font-bold">-{{ formatCurrency(accountBreakdowns.get(account.accountKey)?.totalCosts || 0) }}</span>
                         </div>
                       </div>
@@ -141,7 +141,7 @@
                     <!-- Final Result -->
                     <div class="border-t-2 border-gray-600 pt-3 mt-3">
                       <div class="flex justify-between items-center">
-                        <span class="text-lg font-bold">Final Gain:</span>
+                        <span class="text-lg font-bold">{{ $t('account.finalGain') }}:</span>
                         <span class="text-lg font-bold" :class="(accountDailyGains.get(account.accountKey) || 0) > 0 ? 'text-green-300' : 'text-red-300'">
                           {{ formatCurrency(accountBreakdowns.get(account.accountKey)?.finalGain || 0) }}
                         </span>
@@ -150,7 +150,7 @@
                   </div>
                   
                   <div v-else class="text-gray-400 text-center">
-                    No payment data available
+                    {{ $t('account.noPaymentData') }}
                   </div>
                 </Popover>
               </div>
@@ -166,7 +166,7 @@
                 <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
                 </svg>
-                Payment Methods
+                {{ $t('account.paymentMethods') }}
               </h5>
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div v-for="method in getAccountPaymentMethods(account)" :key="method.name" 
@@ -178,7 +178,7 @@
                   <div class="space-y-0.5">
                     <p class="font-bold text-gray-900 text-xs">{{ formatCurrency(method.sum) }}</p>
                     <div class="flex items-center justify-between text-xs text-gray-500">
-                      <span>{{ method.count }} transactions</span>
+                      <span>{{ method.count }} {{ $t('account.transactions') }}</span>
                       <span>{{ method.percent.toFixed(1) }}%</span>
                     </div>
                   </div>
@@ -193,7 +193,7 @@
                   <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
                   </svg>
-                  Service Metrics
+                  {{ $t('account.serviceMetrics') }}
                 </h5>
                 <button 
                   @click="toggleServiceMetricsCollapse(account.accountKey)" 
@@ -230,7 +230,7 @@
                       <span class="font-bold text-gray-900">{{ formatCurrency(account.serviceMetrics[type]?.sales?.current_period ?? 0) }}</span>
                     </div>
                     <div class="flex items-center justify-between text-xs text-gray-500">
-                      <span>Avg. Ticket</span>
+                      <span>{{ $t('account.avgTicket') }}</span>
                       <span class="font-bold text-gray-900">{{ formatCurrency(account.serviceMetrics[type]?.average_ticket?.current_period ?? 0) }}</span>
                     </div>
                   </div>
@@ -245,11 +245,11 @@
                   <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
                   </svg>
-                  Service Metrics
+                  {{ $t('account.serviceMetrics') }}
                 </h5>
               </div>
               <div class="text-center py-4">
-                <p class="text-xs sm:text-sm text-gray-500">Service metrics are only available for predefined periods (Today, Yesterday, etc.)</p>
+                <p class="text-xs sm:text-sm text-gray-500">{{ $t('account.serviceMetricsInfo') }}</p>
                 <p class="text-xs sm:text-sm text-gray-400 mt-1">{{ $t('dashboard.switchDateRangeMessage') }}</p>
               </div>
             </div>
@@ -265,7 +265,7 @@
 
     <!-- Empty state -->
     <div v-else class="card">
-      <div class="card-body text-center text-sm text-gray-600">No account data for this period.</div>
+      <div class="card-body text-center text-sm text-gray-600">{{ $t('account.noAccountData') }}</div>
     </div>
   </div>
 </template>

@@ -823,4 +823,27 @@
   "login": {
     "appTitle": "OlaClick Analytics"
   }
+  ,
+  "account": {
+    "avgTicket": "Avg Ticket",
+    "tips": "Tips",
+    "kitchenPerf": "Kitchen Perf.",
+    "viewBreakdown": "View breakdown",
+    "gainBreakdown": "Gain Breakdown",
+    "revenueByMethod": "Revenue by Payment Method",
+    "totalRevenue": "Total Revenue",
+    "costs": "Costs",
+    "paymentFees": "Payment Fees",
+    "foodCosts": "Food Costs (30%)",
+    "utilityCosts": "Utility Costs ({days} days)",
+    "payroll": "Payroll ({entries} entries)",
+    "totalCosts": "Total Costs",
+    "finalGain": "Final Gain",
+    "noPaymentData": "No payment data available",
+    "paymentMethods": "Payment Methods",
+    "transactions": "transactions",
+    "serviceMetrics": "Service Metrics",
+    "serviceMetricsInfo": "Service metrics are only available for predefined periods (Today, Yesterday, etc.)",
+    "noAccountData": "No account data for this period."
+  }
 }

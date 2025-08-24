@@ -548,4 +548,27 @@
   "login": {
     "appTitle": "OlaClick Analytics"
   }
+  ,
+  "account": {
+    "avgTicket": "Ticket Prom.",
+    "tips": "Propinas",
+    "kitchenPerf": "Rend. Cocina",
+    "viewBreakdown": "Ver desglose",
+    "gainBreakdown": "Desglose de Ganancia",
+    "revenueByMethod": "Ingresos por Método de Pago",
+    "totalRevenue": "Ingresos Totales",
+    "costs": "Costos",
+    "paymentFees": "Comisiones de Pago",
+    "foodCosts": "Costos de Comida (30%)",
+    "utilityCosts": "Servicios ({days} días)",
+    "payroll": "Nómina ({entries} registros)",
+    "totalCosts": "Costos Totales",
+    "finalGain": "Ganancia Final",
+    "noPaymentData": "No hay datos de pago",
+    "paymentMethods": "Métodos de Pago",
+    "transactions": "transacciones",
+    "serviceMetrics": "Métricas de Servicio",
+    "serviceMetricsInfo": "Las métricas de servicio solo están disponibles para periodos predefinidos (Hoy, Ayer, etc.)",
+    "noAccountData": "No hay datos de cuenta para este período."
+  }
 }

@@ -551,4 +551,27 @@
   "login": {
     "appTitle": "OlaClick Analytics"
   }
+  ,
+  "account": {
+    "avgTicket": "Ticket Moy.",
+    "tips": "Pourboires",
+    "kitchenPerf": "Perf. Cuisine",
+    "viewBreakdown": "Voir le détail",
+    "gainBreakdown": "Détail du Gain",
+    "revenueByMethod": "Chiffre par Méthode de Paiement",
+    "totalRevenue": "Chiffre d'affaires Total",
+    "costs": "Coûts",
+    "paymentFees": "Frais de Paiement",
+    "foodCosts": "Coûts Alimentaires (30%)",
+    "utilityCosts": "Charges ({days} jours)",
+    "payroll": "Paie ({entries} enregistrements)",
+    "totalCosts": "Coûts Totaux",
+    "finalGain": "Gain Final",
+    "noPaymentData": "Aucune donnée de paiement",
+    "paymentMethods": "Méthodes de Paiement",
+    "transactions": "transactions",
+    "serviceMetrics": "Métriques de Service",
+    "serviceMetricsInfo": "Les métriques de service sont disponibles uniquement pour des périodes prédéfinies (Aujourd'hui, Hier, etc.)",
+    "noAccountData": "Aucune donnée de compte pour cette période."
+  }
 }
