@@ -168,6 +168,12 @@
                     <div class="flex justify-between items-center gap-x-1">
                       <span class="truncate">{{ userName(e.user_id) }}</span>
                       <div class="flex items-center gap-1">
+                        <!-- Review warning icon for complex entries -->
+                        <div v-if="isComplexEntry(e) && !e.approved_by && e.clock_out_at && !e.paid"
+                             class="w-4 h-4 rounded-full bg-yellow-500 flex items-center justify-center"
+                             title="Review recommended">
+                          <span class="text-white text-[8px] font-bold">!</span>
+                        </div>
                         <!-- Approval status icon - larger and more prominent -->
                                 <div v-if="e.approved_by"
               class="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center"
