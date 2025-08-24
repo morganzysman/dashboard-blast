@@ -1337,24 +1337,24 @@ const getWorkDuration = (entry) => {
 
 // Get human-readable reason for smart detection
 const getSmartDetectionReason = (entry) => {
-  if (!entry.shift_start || !entry.clock_in_at || !entry.clock_out_at) {
-    return "Missing shift or time data"
-  }
-  
   const reasons = []
   
-  // Check if very late
-  const lateDuration = getLateDuration(entry)
-  if (lateDuration > 30) {
-    reasons.push(`${lateDuration} minutes late`)
+  // Check work duration whenever we have both times
+  if (entry.clock_in_at && entry.clock_out_at) {
+    const workDuration = getWorkDuration(entry)
+    if (workDuration > 12) {
+      reasons.push(`Long shift (${workDuration.toFixed(1)} hours)`)
+    } else if (workDuration < 0.5) {
+      reasons.push(`Very short shift (${(workDuration * 60).toFixed(0)} minutes)`)
+    }
   }
   
-  // Check work duration
-  const workDuration = getWorkDuration(entry)
-  if (workDuration > 12) {
-    reasons.push(`Long shift (${workDuration.toFixed(1)} hours)`)
-  } else if (workDuration < 0.5) {
-    reasons.push(`Very short shift (${(workDuration * 60).toFixed(0)} minutes)`)
+  // Check lateness only if we have a scheduled shift start
+  if (entry.shift_start && entry.clock_in_at) {
+    const lateDuration = getLateDuration(entry)
+    if (lateDuration > 30) {
+      reasons.push(`${lateDuration} minutes late`)
+    }
   }
   
   // Check if amount seems wrong or missing
@@ -1362,33 +1362,35 @@ const getSmartDetectionReason = (entry) => {
     reasons.push("Missing or invalid amount")
   }
   
+  // If no specific reasons could be determined but shift data is missing, indicate it
+  if (reasons.length === 0 && (!entry.shift_start || !entry.clock_in_at || !entry.clock_out_at)) {
+    reasons.push("Missing shift or time data")
+  }
+  
   return reasons.join(", ")
 }
 
 // Check if entry needs review before approval (complex cases)
 const isComplexEntry = (entry) => {
-  // Consider an entry complex if:
-  // 1. It's very late (more than 30 minutes)
-  // 2. It has unusual hours (more than 12 hours)
-  // 3. It's missing amount calculation
+  // Consider an entry complex if any of the following:
+  // - Unusual hours (more than 12h or less than 30m) when both times exist
+  // - Very late (more than 30 minutes) when shift start exists
+  // - Missing or invalid amount
   
-  if (!entry.shift_start || !entry.clock_in_at || !entry.clock_out_at) {
-    return false // Can't determine complexity without full data
+  if (entry.clock_in_at && entry.clock_out_at) {
+    const workDuration = getWorkDuration(entry)
+    if (workDuration > 12 || workDuration < 0.5) {
+      return true
+    }
   }
   
-  // Very late (more than 30 minutes)
-  const lateDuration = getLateDuration(entry)
-  if (lateDuration > 30) {
-    return true
+  if (entry.shift_start && entry.clock_in_at) {
+    const lateDuration = getLateDuration(entry)
+    if (lateDuration > 30) {
+      return true
+    }
   }
   
-  // Check work duration
-  const workDuration = getWorkDuration(entry)
-  if (workDuration > 12 || workDuration < 0.5) {
-    return true
-  }
-  
-  // Check if amount seems wrong or missing
   if (!entry.amount || entry.amount <= 0) {
     return true
   }
