@@ -27,39 +27,38 @@ export function configureWebPush() {
 export function scheduleDailyReports() {
   // Run every 5 minutes to check for users who need notifications
   cron.schedule('*/5 * * * *', async () => {
-    console.log('🔔 Checking for users ready for notifications...');
+    const startTs = new Date().toISOString()
+    console.log(`🔔 sales_report_check start=${startTs}`)
     
     try {
-      // Get all active subscriptions
-      const subscriptions = await getAllActivePushSubscriptions();
-        
+      const subscriptions = await getAllActivePushSubscriptions()
       if (subscriptions.length === 0) {
-        console.log('📊 No active subscriptions found');
-        return;
+        console.log('📊 sales_report_check no_active_subscriptions')
+        return
       }
-      
-      // Group subscriptions by user to avoid duplicate notifications
-      const userSubscriptionsMap = new Map();
+      const userSubscriptionsMap = new Map()
       subscriptions.forEach(sub => {
         if (!userSubscriptionsMap.has(sub.userId)) {
-          userSubscriptionsMap.set(sub.userId, {
-            user: sub.user,
-            devices: []
-          });
+          userSubscriptionsMap.set(sub.userId, { user: sub.user, devices: [] })
         }
-        userSubscriptionsMap.get(sub.userId).devices.push(sub);
-      });
-      
-      console.log(`📊 Found ${userSubscriptionsMap.size} unique users with ${subscriptions.length} total devices`);
+        userSubscriptionsMap.get(sub.userId).devices.push(sub)
+      })
+      console.log(`📊 sales_report_check users=${userSubscriptionsMap.size} devices=${subscriptions.length}`)
           
       for (const [userId, {user, devices}] of userSubscriptionsMap) {
         // Only admins and super-admins receive sales reports
-        if (!user || (user.role !== 'admin' && user.role !== 'super-admin')) {
-          continue;
+        if (!user || (user.role !== 'admin' && user.role !== 'super-admin')) continue
+
+        // Ensure accounts are present: hydrate from company accounts when needed
+        if (!user.accounts || user.accounts.length === 0) {
+          if (user.companyId) {
+            const q = await pool.query('SELECT company_token, api_token, account_name FROM company_accounts WHERE company_id = $1', [user.companyId]).catch(() => null)
+            user.accounts = q?.rows?.map(r => ({ company_token: r.company_token, api_token: r.api_token, account_name: r.account_name })) || []
+          }
         }
         if (!user.accounts || user.accounts.length === 0) {
-          console.log(`📊 Skipping user ${user.email} - no accounts assigned`);
-          continue;
+          console.log(`⏭️  sales_report_skip reason=no_accounts email=${user.email}`)
+          continue
         }
         
         // Use the most recent device's notification frequency and timing
@@ -73,7 +72,7 @@ export function scheduleDailyReports() {
         
         // If no last notification or enough time has passed
         if (!lastNotification || (now.getTime() - lastNotification.getTime()) >= frequencyMs) {
-          console.log(`📊 User ${user.email} ready for ${notificationFrequency}-minute notification (${devices.length} devices)`);
+          console.log(`📊 sales_report_generate email=${user.email} freq=${notificationFrequency}m devices=${devices.length} accounts=${user.accounts.length}`)
             
           try {
             // Generate report for this user
@@ -91,10 +90,9 @@ export function scheduleDailyReports() {
                     JSON.stringify(report)
                   );
                   successCount++;
-                  console.log(`📨 Sent to ${user.email} (${deviceSub.deviceName || 'Unknown Device'})`);
                 } catch (deviceError) {
                   errorCount++;
-                  console.error(`❌ Failed to send to device ${deviceSub.deviceName}: ${deviceError.message}`);
+                  // Do not spam logs per device; track aggregate below
                   
                   // Track error for this specific device
                   await trackNotificationError(userId, `Device ${deviceSub.deviceName}: ${deviceError.message}`);
@@ -102,7 +100,6 @@ export function scheduleDailyReports() {
                   // Remove invalid subscription (410 = Gone)
                   if (deviceError.statusCode === 410) {
                     await removeSpecificPushSubscription(deviceSub.endpoint);
-                    console.log(`🗑️ Removed invalid device subscription: ${deviceSub.deviceName}`);
                   }
                 }
               }
@@ -110,24 +107,24 @@ export function scheduleDailyReports() {
               // Track notification sent for the user (if at least one device succeeded)
               if (successCount > 0) {
                 await trackNotificationSent(userId);
-                console.log(`✅ Report sent to ${successCount}/${devices.length} devices for: ${user.email}`);
+                console.log(`✅ sales_report_sent email=${user.email} sent=${successCount} failed=${errorCount}`)
               }
             }
             
           } catch (error) {
-            console.error(`❌ Error generating report for ${user.email}:`, error);
+            console.error(`❌ sales_report_error email=${user.email} msg=${error.message}`)
             await trackNotificationError(userId, error.message);
           }
         } else {
           // Calculate time remaining until next notification
           const timeRemaining = frequencyMs - (now.getTime() - lastNotification.getTime());
           const minutesRemaining = Math.ceil(timeRemaining / (60 * 1000));
-          console.log(`⏰ User ${user.email} not ready yet (${minutesRemaining} minutes remaining, ${devices.length} devices)`);
+          console.log(`⏰ sales_report_wait email=${user.email} remaining=${minutesRemaining}m devices=${devices.length}`)
         }
       }
       
     } catch (error) {
-      console.error('❌ Error in frequency-based notifications check:', error);
+      console.error('❌ sales_report_check_error', error.message);
       
       await logNotificationEvent(
         '00000000-0000-0000-0000-000000000000',
