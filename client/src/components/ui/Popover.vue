@@ -20,7 +20,7 @@
       >
         <div class="flex justify-between items-start gap-2 mb-2">
           <slot name="title" />
-          <button class="text-gray-400 hover:text-white focus:ring-2 focus:ring-primary-500 rounded" @click="close" aria-label="Close">
+          <button class="text-gray-400 hover:text-white focus:ring-2 focus:ring-primary-500 rounded" @click="close" :aria-label="$t('common.close')">
             ✕
           </button>
         </div>

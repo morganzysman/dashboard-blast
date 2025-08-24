@@ -438,7 +438,8 @@
       "tokenCopied": "Token copiado al portapapeles",
       "confirmRevoke": "¿Está seguro de que desea revocar este token? Esta acción no se puede deshacer.",
       "tokenRevoked": "Token revocado exitosamente",
-      "tokenGenerated": "Nuevo token generado exitosamente"
+      "tokenGenerated": "Nuevo token generado exitosamente",
+      "testConnection": "Probar Conexión"
     },
     "shiftManager": {
       "title": "Gestionar Turno",
@@ -472,5 +473,18 @@
     "noDataFound": "No se encontraron datos.",
     "tryAgain": "Por favor intente nuevamente.",
     "contactSupport": "Si el problema persiste, por favor contacte soporte."
+  },
+  "pwa": {
+    "installApp": "Instalar Aplicación",
+    "preparing": "Preparando…",
+    "installDescription": "Instalar para una experiencia más rápida en pantalla completa.",
+    "howToInstall": "Cómo instalar",
+    "iosInstructions": "iPhone / iPad (Safari)",
+    "step1": "1. Toca el botón Compartir en Safari (cuadrado con flecha hacia arriba).",
+    "step2": "2. Desplázate y elige Agregar a Pantalla de Inicio.",
+    "step3": "3. Toca Agregar en la esquina superior derecha.",
+    "tip": "Consejo: Si no ves la opción, desplázate hacia arriba para ver más acciones.",
+    "desktopTitle": "Escritorio/Otros navegadores:",
+    "desktopInstructions": "Si ves un icono de instalación en la barra de direcciones o menú, haz clic para agregar la aplicación."
   }
 }

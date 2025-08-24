@@ -4,7 +4,7 @@
       <div class="modal-content">
         <div class="modal-panel w-full sm:max-w-lg">
           <div class="modal-header">
-            <h3 class="text-lg font-semibold text-gray-900">Manage Account Tokens</h3>
+            <h3 class="text-lg font-semibold text-gray-900">{{ $t('modals.accountTokens.title') }}</h3>
           </div>
           <div class="modal-body">
           <div class="sm:flex sm:items-start">
@@ -15,27 +15,27 @@
                   <!-- Account Name -->
                   <div class="mb-3">
                     <label class="block text-sm font-medium text-gray-700 mb-1">
-                      Account Name
+                      {{ $t('companies.accountName') }}
                     </label>
                     <input
                       type="text"
                       v-model="account.account_name"
                       class="form-input w-full"
-                      placeholder="Enter account name"
+                      :placeholder="$t('companies.accountName')"
                     />
                   </div>
 
                   <!-- Company Token -->
                   <div class="mb-3">
                     <label class="block text-sm font-medium text-gray-700 mb-1">
-                      Company Token
+                      {{ $t('companies.companyToken') }}
                     </label>
                     <div class="flex space-x-2">
                       <input
                         type="text"
                         v-model="account.company_token"
                         class="form-input flex-1"
-                        placeholder="Enter company token"
+                        :placeholder="$t('companies.companyToken')"
                       />
                     </div>
                   </div>
@@ -43,14 +43,14 @@
                   <!-- API Token -->
                   <div class="mb-3">
                     <label class="block text-sm font-medium text-gray-700 mb-1">
-                      API Token
+                      {{ $t('companies.apiToken') }}
                     </label>
                     <div class="flex space-x-2">
                       <input
                         :type="account.showToken ? 'text' : 'password'"
                         v-model="account.api_token"
                         class="form-input flex-1"
-                        :placeholder="account.api_token ? '••••••••' : 'Enter API token'"
+                        :placeholder="account.api_token ? '••••••••' : $t('companies.apiToken')"
                       />
                       <button
                         @click="toggleTokenVisibility(account)"
@@ -75,7 +75,7 @@
                           v-model="account.is_active"
                           class="form-checkbox h-4 w-4 text-primary-600"
                         />
-                        <span class="ml-2 text-sm text-gray-700">Active</span>
+                        <span class="ml-2 text-sm text-gray-700">{{ $t('common.active') }}</span>
                       </label>
                     </div>
                     <button
@@ -83,7 +83,7 @@
                       class="btn-sm btn-secondary"
                       :disabled="!account.api_token || !account.company_token"
                     >
-                      Test Connection
+                      {{ $t('modals.accountTokens.testConnection') }}
                     </button>
                   </div>
 
@@ -99,8 +99,8 @@
           </div>
           </div>
           <div class="modal-footer flex justify-end gap-2">
-            <button type="button" class="btn-secondary" @click="close">Cancel</button>
-            <button type="button" class="btn-primary" @click="saveChanges">Save Changes</button>
+            <button type="button" class="btn-secondary" @click="close">{{ $t('common.cancel') }}</button>
+            <button type="button" class="btn-primary" @click="saveChanges">{{ $t('common.save') }}</button>
           </div>
         </div>
       </div>
@@ -149,13 +149,13 @@ const toggleTokenVisibility = (account) => {
 }
 
 const getAccountStatus = (account) => {
-  if (!account.account_name) return 'Account name required'
-  if (!account.company_token) return 'Company token required'
-  if (!account.api_token) return 'API token required'
+  if (!account.account_name) return 'Account name required' // TODO: Add to i18n
+  if (!account.company_token) return 'Company token required' // TODO: Add to i18n
+  if (!account.api_token) return 'API token required' // TODO: Add to i18n
   if (account.api_token !== account.originalToken ||
       account.company_token !== account.originalCompanyToken ||
-      account.account_name !== account.originalName) return 'Changes pending'
-  return 'Account configured'
+      account.account_name !== account.originalName) return 'Changes pending' // TODO: Add to i18n
+  return 'Account configured' // TODO: Add to i18n
 }
 
 const getAccountStatusClass = (account) => {
@@ -183,8 +183,8 @@ const testAccount = async (account) => {
     if (response.ok) {
       window.showNotification?.({
         type: 'success',
-        title: 'Connection Valid',
-        message: 'Account credentials tested successfully'
+        title: 'Connection Valid', // TODO: Add to i18n
+        message: 'Account credentials tested successfully' // TODO: Add to i18n
       })
     } else {
       throw new Error('Account test failed')
@@ -192,8 +192,8 @@ const testAccount = async (account) => {
   } catch (error) {
     window.showNotification?.({
       type: 'error',
-      title: 'Connection Test Failed',
-      message: 'Failed to validate account credentials'
+      title: 'Connection Test Failed', // TODO: Add to i18n
+      message: 'Failed to validate account credentials' // TODO: Add to i18n
     })
   }
 }
@@ -214,8 +214,8 @@ const saveChanges = async () => {
     if (response.ok) {
       window.showNotification?.({
         type: 'success',
-        title: 'Changes Saved',
-        message: 'Account settings have been updated'
+        title: 'Changes Saved', // TODO: Add to i18n
+        message: 'Account settings have been updated' // TODO: Add to i18n
       })
       emit('update', accounts.value)
       emit('close')
@@ -225,8 +225,8 @@ const saveChanges = async () => {
   } catch (error) {
     window.showNotification?.({
       type: 'error',
-      title: 'Save Failed',
-      message: 'Failed to update account settings'
+      title: 'Save Failed', // TODO: Add to i18n
+      message: 'Failed to update account settings' // TODO: Add to i18n
     })
   }
 }

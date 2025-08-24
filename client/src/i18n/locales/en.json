@@ -554,7 +554,8 @@
       "tokenCopied": "Token copied to clipboard",
       "confirmRevoke": "Are you sure you want to revoke this token? This action cannot be undone.",
       "tokenRevoked": "Token revoked successfully",
-      "tokenGenerated": "New token generated successfully"
+      "tokenGenerated": "New token generated successfully",
+      "testConnection": "Test Connection"
     },
     "shiftManager": {
       "title": "Manage Shift",
@@ -744,5 +745,18 @@
     "noDataFound": "No data found.",
     "tryAgain": "Please try again.",
     "contactSupport": "If the problem persists, please contact support."
+  },
+  "pwa": {
+    "installApp": "Install App",
+    "preparing": "Preparing…",
+    "installDescription": "Install for a faster, fullscreen experience.",
+    "howToInstall": "How to install",
+    "iosInstructions": "iPhone / iPad (Safari)",
+    "step1": "1. Tap the Share button in Safari (square with an up arrow).",
+    "step2": "2. Scroll and choose Add to Home Screen.",
+    "step3": "3. Tap Add in the top‑right corner.",
+    "tip": "Tip: If you don't see the option, scroll the sheet up to reveal more actions.",
+    "desktopTitle": "Desktop/Other browsers:",
+    "desktopInstructions": "If you see an install icon in the address bar or menu, click it to add the app."
   }
 }

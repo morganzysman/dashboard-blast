@@ -3,7 +3,7 @@
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md mx-4">
       <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
         <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">
-          Change Password
+          {{ $t('modals.changePassword.title') }}
         </h3>
       </div>
       
@@ -11,7 +11,7 @@
         <!-- Current Password -->
         <div>
           <label for="currentPassword" class="form-label">
-            Current Password
+            {{ $t('modals.changePassword.currentPassword') }}
           </label>
           <input
             id="currentPassword"
@@ -19,7 +19,7 @@
             type="password"
             class="form-input"
             :class="{ 'border-red-500': errors.currentPassword }"
-            placeholder="Enter your current password"
+            :placeholder="$t('auth.currentPassword')"
             required
           />
           <p v-if="errors.currentPassword" class="mt-1 text-sm text-red-600">
@@ -30,7 +30,7 @@
         <!-- New Password -->
         <div>
           <label for="newPassword" class="form-label">
-            New Password
+            {{ $t('modals.changePassword.newPassword') }}
           </label>
           <input
             id="newPassword"
@@ -38,7 +38,7 @@
             type="password"
             class="form-input"
             :class="{ 'border-red-500': errors.newPassword }"
-            placeholder="Enter your new password"
+            :placeholder="$t('auth.newPassword')"
             required
             minlength="6"
           />
@@ -46,14 +46,14 @@
             {{ errors.newPassword }}
           </p>
           <p class="mt-1 text-xs text-gray-500">
-            Password must be at least 6 characters long
+            {{ $t('modals.changePassword.minLength') }}
           </p>
         </div>
 
         <!-- Confirm New Password -->
         <div>
           <label for="confirmPassword" class="form-label">
-            Confirm New Password
+            {{ $t('modals.changePassword.confirmNewPassword') }}
           </label>
           <input
             id="confirmPassword"
@@ -61,7 +61,7 @@
             type="password"
             class="form-input"
             :class="{ 'border-red-500': errors.confirmPassword }"
-            placeholder="Confirm your new password"
+            :placeholder="$t('auth.confirmPassword')"
             required
           />
           <p v-if="errors.confirmPassword" class="mt-1 text-sm text-red-600">
@@ -87,7 +87,7 @@
           class="btn-secondary"
           :disabled="isLoading"
         >
-          Cancel
+          {{ $t('common.cancel') }}
         </button>
         <button
           type="submit"
@@ -100,9 +100,9 @@
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 100 16 8 8 0 01-8-8z"></path>
             </svg>
-            Changing...
+            {{ $t('common.loading') }}
           </div>
-          <span v-else>Change Password</span>
+          <span v-else>{{ $t('auth.changePassword') }}</span>
         </button>
       </div>
     </div>
@@ -157,28 +157,28 @@ const validateForm = () => {
   let isValid = true
 
   if (!form.value.currentPassword) {
-    errors.value.currentPassword = 'Current password is required'
+    errors.value.currentPassword = 'Current password is required' // TODO: Add to i18n
     isValid = false
   }
 
   if (!form.value.newPassword) {
-    errors.value.newPassword = 'New password is required'
+    errors.value.newPassword = 'New password is required' // TODO: Add to i18n
     isValid = false
   } else if (form.value.newPassword.length < 6) {
-    errors.value.newPassword = 'Password must be at least 6 characters long'
+    errors.value.newPassword = 'Password must be at least 6 characters long' // TODO: Add to i18n
     isValid = false
   }
 
   if (!form.value.confirmPassword) {
-    errors.value.confirmPassword = 'Please confirm your new password'
+    errors.value.confirmPassword = 'Please confirm your new password' // TODO: Add to i18n
     isValid = false
   } else if (form.value.newPassword !== form.value.confirmPassword) {
-    errors.value.confirmPassword = 'Passwords do not match'
+    errors.value.confirmPassword = 'Passwords do not match' // TODO: Add to i18n
     isValid = false
   }
 
   if (form.value.currentPassword === form.value.newPassword) {
-    errors.value.newPassword = 'New password must be different from current password'
+    errors.value.newPassword = 'New password must be different from current password' // TODO: Add to i18n
     isValid = false
   }
 
@@ -201,7 +201,7 @@ const handleSubmit = async () => {
     )
 
     if (result.success) {
-      success.value = 'Password changed successfully!'
+      success.value = 'Password changed successfully!' // TODO: Add to i18n
       form.value = {
         currentPassword: '',
         newPassword: '',
@@ -213,10 +213,10 @@ const handleSubmit = async () => {
         emit('close')
       }, 1500)
     } else {
-      error.value = result.error || 'Failed to change password'
+      error.value = result.error || 'Failed to change password' // TODO: Add to i18n
     }
   } catch (err) {
-    error.value = 'An unexpected error occurred'
+    error.value = 'An unexpected error occurred' // TODO: Add to i18n
     console.error('Password change error:', err)
   } finally {
     isLoading.value = false

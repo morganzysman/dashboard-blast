@@ -441,7 +441,8 @@
       "tokenCopied": "Jeton copié dans le presse-papiers",
       "confirmRevoke": "Êtes-vous sûr de vouloir révoquer ce jeton ? Cette action ne peut pas être annulée.",
       "tokenRevoked": "Jeton révoqué avec succès",
-      "tokenGenerated": "Nouveau jeton généré avec succès"
+      "tokenGenerated": "Nouveau jeton généré avec succès",
+      "testConnection": "Tester la Connexion"
     },
     "shiftManager": {
       "title": "Gérer l'équipe",
@@ -475,5 +476,18 @@
     "noDataFound": "Aucune donnée trouvée.",
     "tryAgain": "Veuillez réessayer.",
     "contactSupport": "Si le problème persiste, veuillez contacter le support."
+  },
+  "pwa": {
+    "installApp": "Installer l'Application",
+    "preparing": "Préparation…",
+    "installDescription": "Installez pour une expérience plus rapide en plein écran.",
+    "howToInstall": "Comment installer",
+    "iosInstructions": "iPhone / iPad (Safari)",
+    "step1": "1. Appuyez sur le bouton Partager dans Safari (carré avec une flèche vers le haut).",
+    "step2": "2. Faites défiler et choisissez Ajouter à l'écran d'accueil.",
+    "step3": "3. Appuyez sur Ajouter dans le coin supérieur droit.",
+    "tip": "Astuce : Si vous ne voyez pas l'option, faites défiler la feuille vers le haut pour révéler plus d'actions.",
+    "desktopTitle": "Bureau/Autres navigateurs :",
+    "desktopInstructions": "Si vous voyez une icône d'installation dans la barre d'adresse ou le menu, cliquez dessus pour ajouter l'application."
   }
 }

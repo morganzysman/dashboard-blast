@@ -50,33 +50,33 @@
         <!-- PWA Install Section -->
         <div class="mt-6 border-t pt-6">
           <div class="text-center">
-            <h3 class="text-sm font-semibold text-gray-900 mb-2">Install this app</h3>
+            <h3 class="text-sm font-semibold text-gray-900 mb-2">{{ $t('pwa.installApp') }}</h3>
             <div v-if="canInstallPwa">
-              <Button variant="secondary" @click="installPwa" :disabled="installing">{{ installing ? 'Preparing…' : 'Install App' }}</Button>
-              <p class="text-xs text-gray-500 mt-2">Install for a faster, fullscreen experience.</p>
+              <Button variant="secondary" @click="installPwa" :disabled="installing">{{ installing ? $t('pwa.preparing') : $t('pwa.installApp') }}</Button>
+              <p class="text-xs text-gray-500 mt-2">{{ $t('pwa.installDescription') }}</p>
             </div>
             <div v-else>
               <details class="text-left inline-block max-w-sm">
-                <summary class="cursor-pointer text-xs text-gray-600">How to install</summary>
+                <summary class="cursor-pointer text-xs text-gray-600">{{ $t('pwa.howToInstall') }}</summary>
                 <div class="mt-3 text-xs text-gray-700 space-y-2" v-if="isIos">
-                  <p class="font-semibold">iPhone / iPad (Safari)</p>
+                  <p class="font-semibold">{{ $t('pwa.iosInstructions') }}</p>
                   <div class="flex items-start gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 flex-shrink-0 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/><path d="M7 7h10v10H7z"/></svg>
-                    <p>1. Tap the <strong>Share</strong> button in Safari (square with an up arrow).</p>
+                    <p>{{ $t('pwa.step1') }}</p>
                   </div>
                   <div class="flex items-start gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 flex-shrink-0 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
-                    <p>2. Scroll and choose <strong>Add to Home Screen</strong>.</p>
+                    <p>{{ $t('pwa.step2') }}</p>
                   </div>
                   <div class="flex items-start gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 flex-shrink-0 text-purple-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
-                    <p>3. Tap <strong>Add</strong> in the top‑right corner.</p>
+                    <p>{{ $t('pwa.step3') }}</p>
                   </div>
-                  <p class="text-[11px] text-gray-500">Tip: If you don't see the option, scroll the sheet up to reveal more actions.</p>
+                  <p class="text-[11px] text-gray-500">{{ $t('pwa.tip') }}</p>
                 </div>
                 <div class="mt-2 text-xs text-gray-600 space-y-1" v-else>
-                  <p><strong>Desktop/Other browsers:</strong></p>
-                  <p>If you see an install icon in the address bar or menu, click it to add the app.</p>
+                  <p><strong>{{ $t('pwa.desktopTitle') }}</strong></p>
+                  <p>{{ $t('pwa.desktopInstructions') }}</p>
                 </div>
               </details>
             </div>
@@ -110,22 +110,22 @@ const validateForm = () => {
   passwordError.value = ''
 
   if (!form.value.email) {
-    emailError.value = 'Email is required'
+    emailError.value = 'Email is required' // TODO: Add to i18n
     return false
   }
 
   if (!form.value.email.includes('@')) {
-    emailError.value = 'Please enter a valid email address'
+    emailError.value = 'Please enter a valid email address' // TODO: Add to i18n
     return false
   }
 
   if (!form.value.password) {
-    passwordError.value = 'Password is required'
+    passwordError.value = 'Password is required' // TODO: Add to i18n
     return false
   }
 
   if (form.value.password.length < 6) {
-    passwordError.value = 'Password must be at least 6 characters'
+    passwordError.value = 'Password must be at least 6 characters' // TODO: Add to i18n
     return false
   }
 
