@@ -7,7 +7,7 @@
           <div class="flex justify-center mb-6">
             <img class="h-12 w-12" src="/icons/icon-192x192.png" alt="OlaClick">
           </div>
-          <h1 class="text-3xl font-bold text-gray-900 mb-2">OlaClick Analytics</h1>
+          <h1 class="text-3xl font-bold text-gray-900 mb-2">{{ $t('login.appTitle') }}</h1>
           <p class="text-gray-600 text-sm">{{ $t('auth.loginTitle') }}</p>
         </div>
 
@@ -93,9 +93,11 @@ import Input from '../components/ui/Input.vue'
 import Button from '../components/ui/Button.vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import { useI18n } from 'vue-i18n'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const { t } = useI18n()
 
 const form = ref({
   email: '',
@@ -110,22 +112,22 @@ const validateForm = () => {
   passwordError.value = ''
 
   if (!form.value.email) {
-    emailError.value = 'Email is required' // TODO: Add to i18n
+    emailError.value = t('auth.validation.emailRequired')
     return false
   }
 
   if (!form.value.email.includes('@')) {
-    emailError.value = 'Please enter a valid email address' // TODO: Add to i18n
+    emailError.value = t('auth.validation.emailInvalid')
     return false
   }
 
   if (!form.value.password) {
-    passwordError.value = 'Password is required' // TODO: Add to i18n
+    passwordError.value = t('auth.validation.passwordRequired')
     return false
   }
 
   if (form.value.password.length < 6) {
-    passwordError.value = 'Password must be at least 6 characters' // TODO: Add to i18n
+    passwordError.value = t('auth.validation.passwordTooShort')
     return false
   }
 

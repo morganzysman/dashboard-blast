@@ -253,7 +253,7 @@
                   @click="addDefaultPaymentMethods" 
                   class="btn-secondary-sm"
                   :disabled="accountPaymentCosts.length > 0"
-                  :title="accountPaymentCosts.length > 0 ? 'Clear existing methods first to add defaults' : 'Add common payment methods with default costs'"
+                  :title="accountPaymentCosts.length > 0 ? $t('rentability.clearExistingFirst') : $t('rentability.addDefaultMethodsTooltip')"
                 >
                   {{ $t('rentability.addCommonMethods') }}
                 </button>
@@ -317,7 +317,7 @@
                         <button 
                           @click="removePaymentMethodCost(cost)" 
                           class="btn-danger-sm"
-                          :title="cost.isNew ? 'Remove from list' : 'Delete from database'"
+                          :title="cost.isNew ? $t('rentability.removeFromList') : $t('rentability.deleteFromDatabase')"
                         >
                           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
@@ -470,16 +470,16 @@ const formData = ref({
 
 // Cost field definitions
 const costFields = [
-  { key: 'rent_monthly', label: 'Rent', placeholder: '0.00' },
-  { key: 'electricity_monthly', label: 'Electricity', placeholder: '0.00' },
-  { key: 'water_monthly', label: 'Water', placeholder: '0.00' },
-  { key: 'internet_monthly', label: 'Internet', placeholder: '0.00' },
-  { key: 'gas_monthly', label: 'Gas', placeholder: '0.00' },
-  { key: 'insurance_monthly', label: 'Insurance', placeholder: '0.00' },
-  { key: 'maintenance_monthly', label: 'Maintenance', placeholder: '0.00' },
-  { key: 'staff_monthly', label: 'Staff/Payroll', placeholder: '0.00' },
-  { key: 'marketing_monthly', label: 'Marketing', placeholder: '0.00' },
-  { key: 'other_monthly', label: 'Other Costs', placeholder: '0.00' }
+  { key: 'rent_monthly', label: t('rentability.costFields.rent_monthly'), placeholder: '0.00' },
+  { key: 'electricity_monthly', label: t('rentability.costFields.electricity_monthly'), placeholder: '0.00' },
+  { key: 'water_monthly', label: t('rentability.costFields.water_monthly'), placeholder: '0.00' },
+  { key: 'internet_monthly', label: t('rentability.costFields.internet_monthly'), placeholder: '0.00' },
+  { key: 'gas_monthly', label: t('rentability.costFields.gas_monthly'), placeholder: '0.00' },
+  { key: 'insurance_monthly', label: t('rentability.costFields.insurance_monthly'), placeholder: '0.00' },
+  { key: 'maintenance_monthly', label: t('rentability.costFields.maintenance_monthly'), placeholder: '0.00' },
+  { key: 'staff_monthly', label: t('rentability.costFields.staff_monthly'), placeholder: '0.00' },
+  { key: 'marketing_monthly', label: t('rentability.costFields.marketing_monthly'), placeholder: '0.00' },
+  { key: 'other_monthly', label: t('rentability.costFields.other_monthly'), placeholder: '0.00' }
 ]
 
 // Computed properties
@@ -714,7 +714,7 @@ const saveCosts = async () => {
       
       window.showNotification?.({
         type: 'success',
-        title: 'Success',
+        title: t('common.success'),
         message: t('rentability.utilityCostsSaved')
       })
     } else {
@@ -724,7 +724,7 @@ const saveCosts = async () => {
     console.error('❌ Save utility costs error:', err)
     window.showNotification?.({
       type: 'error',
-      title: 'Error',
+      title: t('common.error'),
       message: err.message
     })
   } finally {
@@ -748,7 +748,7 @@ const deleteCost = async (cost) => {
       
       window.showNotification?.({
         type: 'success',
-        title: 'Success',
+        title: t('common.success'),
         message: t('rentability.utilityCostsDeleted')
       })
     } else {
@@ -758,7 +758,7 @@ const deleteCost = async (cost) => {
     console.error('❌ Delete utility costs error:', err)
     window.showNotification?.({
       type: 'error',
-      title: 'Error',
+      title: t('common.error'),
       message: err.message
     })
   }
@@ -898,7 +898,7 @@ const removePaymentMethodCost = async (cost) => {
       
       window.showNotification?.({
         type: 'success',
-        title: 'Payment Method Removed',
+        title: t('rentability.paymentMethodRemoved'),
         message: t('rentability.paymentMethodDeleted', { method: formatPaymentMethodName(cost.payment_method_code) })
       })
     } else {
@@ -908,7 +908,7 @@ const removePaymentMethodCost = async (cost) => {
     console.error('❌ Error removing payment method cost:', err)
     window.showNotification?.({
       type: 'error',
-      title: 'Delete Failed',
+      title: t('common.deleteFailed'),
       message: err.message
     })
   }
@@ -968,7 +968,7 @@ const saveAllPaymentMethodCosts = async () => {
     console.error('❌ Error saving payment method costs:', err)
     window.showNotification?.({
       type: 'error',
-      title: 'Save Failed',
+      title: t('common.saveFailed'),
       message: err.message
     })
   } finally {

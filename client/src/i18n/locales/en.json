@@ -95,7 +95,25 @@
     "months": "Months",
     "years": "Years",
     "optional": "Optional",
-    "monthly": "Monthly",
+    "unknownError": "Unknown error",
+    "success": "Success",
+    "deleteFailed": "Delete Failed",
+    "saveFailed": "Save Failed",
+    "emptyState": {
+      "title": "Nothing here yet",
+      "subtitle": "Try changing filters or come back later."
+    },
+    "user": "User",
+    "showDetails": "Show Details",
+    "hideDetails": "Hide Details",
+    "unableToFetchData": "Unable to fetch data",
+    "daily": "Daily",
+    "period": "Period"
+  },
+  "app": {
+    "name": "OlaClick"
+  },
+  "monthly": "Monthly",
     "for": "for",
     "load": "Load",
     "new": "New",
@@ -117,7 +135,9 @@
     "timesheet": "Timesheet",
     "warnings": "Warnings",
     "clock": "Clock",
-    "toggleDarkMode": "Toggle dark mode"
+    "toggleDarkMode": "Toggle dark mode",
+    "shiftsCalendar": "Shifts Calendar",
+    "userManagement": "User Management"
   },
   "auth": {
     "email": "Email",
@@ -130,7 +150,13 @@
     "changePassword": "Change Password",
     "currentPassword": "Current Password",
     "newPassword": "New Password",
-    "confirmPassword": "Confirm Password"
+    "confirmPassword": "Confirm Password",
+    "validation": {
+      "emailRequired": "Email is required",
+      "emailInvalid": "Please enter a valid email address",
+      "passwordRequired": "Password is required",
+      "passwordTooShort": "Password must be at least 6 characters"
+    }
   },
   "companies": {
     "title": "Companies",
@@ -444,7 +470,12 @@
       "staff_monthly": "Staff/Payroll",
       "marketing_monthly": "Marketing",
       "other_monthly": "Other Costs"
-    }
+    },
+    "clearExistingFirst": "Clear existing methods first to add defaults",
+    "addDefaultMethodsTooltip": "Add common payment methods with default costs",
+    "removeFromList": "Remove from list",
+    "deleteFromDatabase": "Delete from database",
+    "paymentMethodRemoved": "Payment Method Removed"
   },
   "notifications": {
     "title": "Notification Status",
@@ -456,6 +487,7 @@
     "delete": "Delete",
     "deleteAll": "Delete All",
     "noNotifications": "No notifications",
+    "defaultTitle": "Notification",
     "pushSettings": "Push Notification Settings",
     "enable": "Enable Notifications",
     "disable": "Disable Notifications",
@@ -555,7 +587,10 @@
       "passwordMismatch": "Passwords do not match",
       "passwordTooShort": "Password must be at least 6 characters",
       "adminCanEdit": "As an admin, you can edit this user's email address.",
-      "fullName": "Full Name"
+      "fullName": "Full Name",
+      "warning": {
+        "descriptionPlaceholder": "Provide additional details about the incident, circumstances, or any relevant context..."
+      }
     },
     "changePassword": {
       "title": "Change Password",
@@ -664,6 +699,8 @@
     "approved": "Approved",
     "approving": "Approving...",
     "approveEntry": "Approve",
+    "quickApprove": "Quick approve",
+    "quickApproveEntry": "Quick approve this entry",
     "review": "Review",
     "editEntries": "Edit Entries",
     "addEntry": "Add Entry",
@@ -698,7 +735,9 @@
     "minutesLate": "{minutes} minutes late",
     "longShift": "Long shift ({hours} hours)",
     "veryShortShift": "Very short shift ({minutes} minutes)",
-    "missingOrInvalidAmount": "Missing or invalid amount"
+    "missingOrInvalidAmount": "Missing or invalid amount",
+    "futureShift": "Future shift",
+    "manager": "Manager"
   },
   "employee": {
     "timesheet": {
@@ -790,5 +829,8 @@
     "tip": "Tip: If you don't see the option, scroll the sheet up to reveal more actions.",
     "desktopTitle": "Desktop/Other browsers:",
     "desktopInstructions": "If you see an install icon in the address bar or menu, click it to add the app."
+  },
+  "login": {
+    "appTitle": "OlaClick Analytics"
   }
 }

@@ -70,7 +70,9 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 
+const { t } = useI18n()
 const notifications = ref([])
 let notificationId = 0
 
@@ -79,7 +81,7 @@ const addNotification = (notification) => {
   const newNotification = {
     id,
     type: notification.type || 'info',
-    title: notification.title || 'Notification',
+    title: notification.title || t('notifications.defaultTitle'),
     message: notification.message || '',
     duration: notification.duration || 5000
   }

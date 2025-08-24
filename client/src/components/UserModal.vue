@@ -181,7 +181,7 @@
                   <textarea v-model="warningForm.description" 
                            class="w-full max-w-2xl rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm focus:border-red-500 focus:ring-red-500 dark:focus:border-red-400 dark:focus:ring-red-400" 
                            rows="3" 
-                           placeholder="Provide additional details about the incident, circumstances, or any relevant context..."></textarea>
+                           :placeholder="$t('modals.userModal.warning.descriptionPlaceholder')"></textarea>
                 </div>
                 
                 <div class="flex justify-center">

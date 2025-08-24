@@ -94,7 +94,24 @@
     "weeks": "Semaines",
     "months": "Mois",
     "years": "Années",
-    "optional": "Optionnel"
+    "optional": "Optionnel",
+    "unknownError": "Erreur inconnue",
+    "success": "Succès",
+    "deleteFailed": "Échec de la suppression",
+    "saveFailed": "Échec de l'enregistrement",
+    "emptyState": {
+      "title": "Rien ici encore",
+      "subtitle": "Essayez de changer les filtres ou revenez plus tard."
+    },
+    "user": "Utilisateur",
+    "showDetails": "Afficher les détails",
+    "hideDetails": "Masquer les détails",
+    "unableToFetchData": "Impossible de récupérer les données",
+    "daily": "Quotidien",
+    "period": "Période"
+  },
+  "app": {
+    "name": "OlaClick"
   },
   "navigation": {
     "dashboard": "Tableau de bord",
@@ -120,7 +137,13 @@
     "changePassword": "Modifier le mot de passe",
     "currentPassword": "Mot de passe actuel",
     "newPassword": "Nouveau mot de passe",
-    "confirmPassword": "Confirmer le mot de passe"
+    "confirmPassword": "Confirmer le mot de passe",
+    "validation": {
+      "emailRequired": "L'e-mail est requis",
+      "emailInvalid": "Veuillez saisir une adresse e-mail valide",
+      "passwordRequired": "Le mot de passe est requis",
+      "passwordTooShort": "Le mot de passe doit contenir au moins 6 caractères"
+    }
   },
   "companies": {
     "title": "Entreprises",
@@ -316,7 +339,9 @@
     "editEntry": "Modifier la saisie",
     "reviewAndApprove": "Examiner et approuver",
     "editEntryTimesAndAmount": "Modifier les heures et le montant de la saisie",
-    "reviewAndApproveEntry": "Examiner et approuver cette saisie"
+    "reviewAndApproveEntry": "Examiner et approuver cette saisie",
+    "futureShift": "Équipe future",
+    "manager": "Gestionnaire"
   },
   "shifts": {
     "title": "Gestion des équipes",
@@ -386,7 +411,8 @@
     "allAccounts": "Tous les comptes",
     "noData": "Aucune donnée disponible pour la période sélectionnée",
     "loading": "Chargement de l'analyse...",
-    "error": "Erreur lors du chargement des données de rentabilité"
+    "error": "Erreur lors du chargement des données de rentabilité",
+    "paymentMethodRemoved": "Méthode de Paiement Supprimée"
   },
   "notifications": {
     "title": "Notifications",
@@ -521,5 +547,8 @@
     "tip": "Astuce : Si vous ne voyez pas l'option, faites défiler la feuille vers le haut pour révéler plus d'actions.",
     "desktopTitle": "Bureau/Autres navigateurs :",
     "desktopInstructions": "Si vous voyez une icône d'installation dans la barre d'adresse ou le menu, cliquez dessus pour ajouter l'application."
+  },
+  "login": {
+    "appTitle": "OlaClick Analytics"
   }
 }

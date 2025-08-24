@@ -94,7 +94,24 @@
     "weeks": "Semanas",
     "months": "Meses",
     "years": "Años",
-    "optional": "Opcional"
+    "optional": "Opcional",
+    "unknownError": "Error desconocido",
+    "success": "Éxito",
+    "deleteFailed": "Eliminación Fallida",
+    "saveFailed": "Guardado Fallido",
+    "emptyState": {
+      "title": "Nada aquí todavía",
+      "subtitle": "Intenta cambiar filtros o vuelve más tarde."
+    },
+    "user": "Usuario",
+    "showDetails": "Mostrar Detalles",
+    "hideDetails": "Ocultar Detalles",
+    "unableToFetchData": "No se pudieron obtener datos",
+    "daily": "Diario",
+    "period": "Período"
+  },
+  "app": {
+    "name": "OlaClick"
   },
   "navigation": {
     "dashboard": "Panel de Control",
@@ -119,7 +136,13 @@
     "changePassword": "Cambiar Contraseña",
     "currentPassword": "Contraseña Actual",
     "newPassword": "Nueva Contraseña",
-    "confirmPassword": "Confirmar Contraseña"
+    "confirmPassword": "Confirmar Contraseña",
+    "validation": {
+      "emailRequired": "El email es requerido",
+      "emailInvalid": "Por favor ingrese una dirección de email válida",
+      "passwordRequired": "La contraseña es requerida",
+      "passwordTooShort": "La contraseña debe tener al menos 6 caracteres"
+    }
   },
   "companies": {
     "title": "Empresas",
@@ -315,7 +338,9 @@
     "editEntry": "Editar registro",
     "reviewAndApprove": "Revisar y aprobar",
     "editEntryTimesAndAmount": "Editar horarios y cantidad del registro",
-    "reviewAndApproveEntry": "Revisar y aprobar este registro"
+    "reviewAndApproveEntry": "Revisar y aprobar este registro",
+    "futureShift": "Turno futuro",
+    "manager": "Gerente"
   },
   "shifts": {
     "title": "Gestión de Turnos",
@@ -385,7 +410,8 @@
     "allAccounts": "Todas las Cuentas",
     "noData": "No hay datos disponibles para el período seleccionado",
     "loading": "Cargando análisis...",
-    "error": "Error al cargar datos de rentabilidad"
+    "error": "Error al cargar datos de rentabilidad",
+    "paymentMethodRemoved": "Método de Pago Eliminado"
   },
   "notifications": {
     "title": "Notificaciones",
@@ -518,5 +544,8 @@
     "tip": "Consejo: Si no ves la opción, desplázate hacia arriba para ver más acciones.",
     "desktopTitle": "Escritorio/Otros navegadores:",
     "desktopInstructions": "Si ves un icono de instalación en la barra de direcciones o menú, haz clic para agregar la aplicación."
+  },
+  "login": {
+    "appTitle": "OlaClick Analytics"
   }
 }

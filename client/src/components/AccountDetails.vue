@@ -208,7 +208,7 @@
                   >
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                   </svg>
-                  <span>{{ isServiceMetricsCollapsed(account.accountKey) ? 'Show Details' : 'Hide Details' }}</span>
+                  <span>{{ isServiceMetricsCollapsed(account.accountKey) ? $t('common.showDetails') : $t('common.hideDetails') }}</span>
                 </button>
               </div>
               <div v-show="!isServiceMetricsCollapsed(account.accountKey)" class="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -257,7 +257,7 @@
           </div>
 
           <div v-else class="text-center py-4">
-            <p class="text-xs sm:text-sm text-gray-500">{{ account.error || 'Unable to fetch data' }}</p>
+            <p class="text-xs sm:text-sm text-gray-500">{{ account.error || $t('common.unableToFetchData') }}</p>
           </div>
         </div>
       </div>

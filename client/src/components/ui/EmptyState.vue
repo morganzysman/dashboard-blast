@@ -18,7 +18,13 @@
 </template>
 
 <script setup>
-defineProps({ title: { type: String, default: 'Nothing here yet' }, subtitle: { type: String, default: 'Try changing filters or come back later.' } })
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
+defineProps({ 
+  title: { type: String, default: () => t('common.emptyState.title') }, 
+  subtitle: { type: String, default: () => t('common.emptyState.subtitle') } 
+})
 </script>
 
 <style scoped>

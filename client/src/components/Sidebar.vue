@@ -10,7 +10,7 @@
           <div class="flex-shrink-0">
           </div>
           <div class="ml-3">
-            <h1 class="text-xl font-bold text-gray-900 dark:text-gray-100">OlaClick</h1>
+            <h1 class="text-xl font-bold text-gray-900 dark:text-gray-100">{{ $t('app.name') }}</h1>
             <p class="text-sm text-gray-500 dark:text-gray-400">{{ $t('dashboard.analytics') }}</p>
           </div>
         </div>
@@ -95,7 +95,7 @@
         <svg class="sidebar-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5v-5zm-5-6h5l-5 5v-5zm-5-6h5l-5 5v-5z"></path>
         </svg>
-        Notifications
+        {{ $t('navigation.notifications') }}
       </router-link>
 
       <!-- Employee: Warnings - Temporarily hidden -->
@@ -125,7 +125,7 @@
         <svg class="sidebar-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h10M7 20h10M7 5h10" />
         </svg>
-        Payroll
+        {{ $t('navigation.payroll') }}
       </router-link>
 
       <!-- Admin only: Shifts Calendar -->
@@ -139,7 +139,7 @@
         <svg class="sidebar-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3M5 11h14M5 19h14M5 7h14M7 15h10" />
         </svg>
-        Shifts Calendar
+        {{ $t('navigation.shiftsCalendar') }}
       </router-link>
 
       <!-- Admin and Super Admin - User Management -->
@@ -153,7 +153,7 @@
         <svg class="sidebar-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z"></path>
         </svg>
-        User Management
+        {{ $t('navigation.userManagement') }}
       </router-link>
 
       <!-- Super Admin - Companies -->
@@ -167,7 +167,7 @@
         <svg class="sidebar-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h10M7 20h10M7 5h10" />
         </svg>
-        Companies
+        {{ $t('navigation.companies') }}
       </router-link>
     </nav>
   </nav>

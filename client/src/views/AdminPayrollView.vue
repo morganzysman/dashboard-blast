@@ -145,7 +145,7 @@
               </div>
             </div>
             <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 lg:gap-3 text-xs">
-              <div class="text-gray-500 hidden lg:block" v-for="d in ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']" :key="d">{{ d }}</div>
+              <div class="text-gray-500 hidden lg:block" v-for="d in [t('shifts.weekdays.0'), t('shifts.weekdays.1'), t('shifts.weekdays.2'), t('shifts.weekdays.3'), t('shifts.weekdays.4'), t('shifts.weekdays.5'), t('shifts.weekdays.6')]" :key="d">{{ d }}</div>
               <div 
                 v-for="day in calendarGrid" 
                 :key="day.date || `empty-${day.index}`"
@@ -177,7 +177,7 @@
                         <!-- Approval status icon - larger and more prominent -->
                                 <div v-if="e.approved_by"
               class="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center"
-              :title="`Approved by ${e.approved_by_name || 'Manager'}`">
+              :title="`${t('payroll.approvedBy')} ${e.approved_by_name || t('payroll.manager')}`">
           <span class="text-white text-[8px] font-bold">✓</span>
         </div>
         <div v-else-if="e.clock_out_at && !e.paid"
@@ -219,7 +219,7 @@
                         @click.stop="quickApproveEntry(e.id)"
                         :disabled="approvingEntry === e.id"
                         class="btn-success btn-sm flex-1 disabled:opacity-50 !px-1 !py-0.5"
-                        :aria-label="approvingEntry === e.id ? 'Approving' : 'Quick approve'"
+                        :aria-label="approvingEntry === e.id ? $t('payroll.approving') : $t('payroll.quickApprove')"
                       >
                         {{ approvingEntry === e.id ? '⏳' : '✓' }}
                       </button>
@@ -265,7 +265,7 @@
                         @click="quickApproveEntry(e.id)"
                         :disabled="approvingEntry === e.id"
                         class="btn-success btn-sm inline-flex items-center disabled:opacity-50"
-                        :aria-label="approvingEntry === e.id ? 'Approving' : 'Quick approve this entry'"
+                        :aria-label="approvingEntry === e.id ? $t('payroll.approving') : $t('payroll.quickApproveEntry')"
                       >
                         <span class="mr-0.5">{{ approvingEntry === e.id ? '⏳' : '✓' }}</span>
                         {{ approvingEntry === e.id ? $t('payroll.approving') : $t('payroll.approveEntry') }}
@@ -647,7 +647,7 @@ const getEntryTooltip = (entry) => {
   
   // If entry is in the future
   if (clockInDate > today) {
-    return 'Future shift'
+    return t('payroll.futureShift')
   }
   
   // For past entries, check punctuality if shift_start exists
@@ -683,7 +683,7 @@ const getEntryTooltip = (entry) => {
   }
   
   // Default for entries without shift data
-  return 'No shift data'
+  return t('payroll.noShiftData')
 }
 
 // Calendar days within period with entry cards
@@ -1012,7 +1012,7 @@ const markPaid = async () => {
     paying.value = true
   const res = await api.markPaid(companyToken.value)
     if (res.success) {
-      window.showNotification?.({ type: 'success', title: 'Payroll', message: 'Period marked as paid. Entries locked.' })
+      window.showNotification?.({ type: 'success', title: t('navigation.payroll'), message: t('payroll.periodMarkedAsPaid') })
       loadEntries()
     }
   } finally {
@@ -1081,14 +1081,14 @@ const saveEdit = async () => {
       
       window.showNotification?.({ 
         type: 'success', 
-        title: 'Success', 
+        title: t('common.success'), 
         message: `Entry saved and approved successfully` 
       })
     } else {
       window.showNotification?.({ 
         type: 'success', 
-        title: 'Success', 
-        message: 'Entry saved successfully' 
+        title: t('common.success'), 
+        message: t('payroll.entrySavedSuccessfully') 
       })
     }
     
@@ -1096,8 +1096,8 @@ const saveEdit = async () => {
     console.error('❌ Failed to save/approve entry:', error)
     window.showNotification?.({ 
       type: 'error', 
-      title: 'Error', 
-      message: 'Failed to save entry' 
+      title: t('common.error'), 
+      message: t('payroll.failedToSaveEntry') 
     })
   }
   
@@ -1155,11 +1155,11 @@ const editableSum = computed(() => (editEntry.value?.list || []).filter(e => !e.
         loadEntries()
       } else {
         console.error('❌ Failed to delete entry:', result.error)
-        alert('Failed to delete entry: ' + (result.error || 'Unknown error'))
+        window.showNotification?.({ type: 'error', title: t('common.error'), message: t('payroll.failedToDeleteEntry') + ': ' + (result.error || t('common.unknownError')) })
       }
     } catch (error) {
       console.error('❌ Delete entry error:', error)
-      alert('Failed to delete entry: ' + error.message)
+      window.showNotification?.({ type: 'error', title: t('common.error'), message: t('payroll.failedToDeleteEntry') + ': ' + error.message })
     } finally {
       deleting.value = false
     }
@@ -1221,7 +1221,7 @@ const downloadQr = async () => {
     a.remove()
     URL.revokeObjectURL(url)
   } catch (e) {
-    window.showNotification?.({ type: 'error', title: 'QR Download', message: e.message || 'Failed to download QR' })
+    window.showNotification?.({ type: 'error', title: t('payroll.qrDownload'), message: e.message || t('payroll.failedToDownloadQR') })
   }
 }
 
@@ -1229,14 +1229,14 @@ const downloadQr = async () => {
 const showEntryTooltip = (entry, event) => {
   const timezone = auth.user?.timezone || 'America/Lima'
   const clockInTime = formatTime(entry.clock_in_at)
-  const clockOutTime = entry.clock_out_at ? formatTime(entry.clock_out_at) : 'Still working'
-  const duration = entry.clock_out_at ? formatDurationHours(entry.clock_in_at, entry.clock_out_at) : 'In progress'
+  const clockOutTime = entry.clock_out_at ? formatTime(entry.clock_out_at) : t('payroll.stillWorking')
+  const duration = entry.clock_out_at ? formatDurationHours(entry.clock_in_at, entry.clock_out_at) : t('payroll.inProgress')
   
   let statusText = ''
   if (entry.paid) {
     statusText = '✅ Paid'
   } else if (entry.approved_by) {
-    statusText = `✅ Approved by ${entry.approved_by_name || 'Manager'}`
+    statusText = `✅ ${t('payroll.approvedBy')} ${entry.approved_by_name || t('payroll.manager')}`
   } else if (entry.clock_out_at) {
             statusText = '⋯ Pending approval'
   } else {
@@ -1295,7 +1295,7 @@ const quickApproveEntry = async (entryId) => {
       
       window.showNotification?.({ 
         type: 'success', 
-        title: 'Success', 
+        title: t('common.success'), 
         message: 'Entry approved successfully' 
       })
       
@@ -1306,7 +1306,7 @@ const quickApproveEntry = async (entryId) => {
     console.error('❌ Failed to approve entry:', e)
     window.showNotification?.({ 
       type: 'error', 
-      title: 'Error', 
+      title: t('common.error'), 
       message: 'Failed to approve entry' 
     })
   } finally {
@@ -1365,12 +1365,12 @@ const getSmartDetectionReason = (entry) => {
   
   // Check if amount seems wrong or missing
   if (!entry.amount || entry.amount <= 0) {
-    reasons.push("Missing or invalid amount") // TODO: Add to i18n
+    reasons.push(t('payroll.missingOrInvalidAmount'))
   }
   
   // If no specific reasons could be determined but shift data is missing, indicate it
   if (reasons.length === 0 && (!entry.shift_start || !entry.clock_in_at || !entry.clock_out_at)) {
-    reasons.push("Missing shift or time data") // TODO: Add to i18n
+    reasons.push(t('payroll.missingShiftOrTimeData'))
   }
   
   return reasons.join(", ")
@@ -1431,7 +1431,7 @@ const approveEntry = async (entryId) => {
       pendingApprovals.value = pendingApprovals.value.filter(entry => entry.id !== entryId)
       window.showNotification?.({ 
         type: 'success', 
-        title: 'Success', 
+        title: t('common.success'), 
         message: 'Entry approved successfully' 
       })
     }
@@ -1439,7 +1439,7 @@ const approveEntry = async (entryId) => {
     console.error('❌ Failed to approve entry:', e)
     window.showNotification?.({ 
       type: 'error', 
-      title: 'Error', 
+      title: t('common.error'), 
       message: 'Failed to approve entry' 
     })
   } finally {

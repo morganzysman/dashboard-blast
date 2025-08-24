@@ -94,7 +94,24 @@
     "weeks": "Semanas",
     "months": "Meses",
     "years": "Anos",
-    "optional": "Opcional"
+    "optional": "Opcional",
+    "unknownError": "Erro desconhecido",
+    "success": "Sucesso",
+    "deleteFailed": "Exclusão Falhou",
+    "saveFailed": "Salvamento Falhou",
+    "emptyState": {
+      "title": "Nada aqui ainda",
+      "subtitle": "Tente alterar filtros ou volte mais tarde."
+    },
+    "user": "Usuário",
+    "showDetails": "Mostrar Detalhes",
+    "hideDetails": "Ocultar Detalhes",
+    "unableToFetchData": "Não foi possível buscar dados",
+    "daily": "Diário",
+    "period": "Período"
+  },
+  "app": {
+    "name": "OlaClick"
   },
   "navigation": {
     "dashboard": "Painel",
@@ -120,7 +137,13 @@
     "changePassword": "Alterar Senha",
     "currentPassword": "Senha Atual",
     "newPassword": "Nova Senha",
-    "confirmPassword": "Confirmar Senha"
+    "confirmPassword": "Confirmar Senha",
+    "validation": {
+      "emailRequired": "Email é obrigatório",
+      "emailInvalid": "Por favor insira um endereço de email válido",
+      "passwordRequired": "Senha é obrigatória",
+      "passwordTooShort": "Senha deve ter pelo menos 6 caracteres"
+    }
   },
   "companies": {
     "title": "Empresas",
@@ -316,7 +339,9 @@
     "editEntry": "Editar registro",
     "reviewAndApprove": "Revisar e aprovar",
     "editEntryTimesAndAmount": "Editar horários e valor do registro",
-    "reviewAndApproveEntry": "Revisar e aprovar este registro"
+    "reviewAndApproveEntry": "Revisar e aprovar este registro",
+    "futureShift": "Turno futuro",
+    "manager": "Gerente"
   },
   "shifts": {
     "title": "Gestão de Turnos",
@@ -386,7 +411,8 @@
     "allAccounts": "Todas as Contas",
     "noData": "Nenhum dado disponível para o período selecionado",
     "loading": "Carregando análise...",
-    "error": "Erro ao carregar dados de rentabilidade"
+    "error": "Erro ao carregar dados de rentabilidade",
+    "paymentMethodRemoved": "Método de Pagamento Removido"
   },
   "notifications": {
     "title": "Notificações",
@@ -521,5 +547,8 @@
     "tip": "Dica: Se não vir a opção, role a folha para cima para revelar mais ações.",
     "desktopTitle": "Desktop/Outros navegadores:",
     "desktopInstructions": "Se vir um ícone de instalação na barra de endereços ou menu, clique nele para adicionar o aplicativo."
+  },
+  "login": {
+    "appTitle": "OlaClick Analytics"
   }
 }

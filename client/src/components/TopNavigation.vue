@@ -65,7 +65,7 @@
                     'badge-gray': authStore.isViewer
                   }"
                 >
-                  {{ authStore.user?.role?.replace('-', ' ') || 'User' }}
+                  {{ authStore.user?.role?.replace('-', ' ') || $t('common.user') }}
                 </span>
               </div>
               <p class="text-xs text-gray-500 hidden md:block">
