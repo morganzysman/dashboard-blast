@@ -107,6 +107,7 @@
     "showDetails": "Afficher les détails",
     "hideDetails": "Masquer les détails",
     "unableToFetchData": "Impossible de récupérer les données",
+    "never": "Jamais",
     "daily": "Quotidien",
     "monthly": "Mensuel",
     "saving": "Enregistrement...",

@@ -198,7 +198,7 @@
                 </td>
                 <td>
                   <span class="badge" :class="user.is_active ? 'badge-success' : 'badge-gray'">
-                    {{ user.is_active ? 'Active' : 'Inactive' }}
+                    {{ user.is_active ? $t('common.active') : $t('common.inactive') }}
                   </span>
                 </td>
                 <td>
@@ -211,7 +211,7 @@
                 </td>
                 <td>
                   <div class="text-sm text-gray-900">
-                    {{ user.last_login ? formatDate(user.last_login) : 'Never' }}
+                    {{ user.last_login ? formatDate(user.last_login) : $t('common.never') }}
                   </div>
                 </td>
                 <td>
@@ -220,33 +220,33 @@
                       @click="editUser(user)"
                       class="btn-sm btn-secondary"
                     >
-                      Edit
+                      {{ $t('common.edit') }}
                     </button>
                     <button
                       v-if="!isSuperAdmin"
                       @click="manageShifts(user)"
                       class="btn-sm btn-secondary"
                     >
-                      Shifts
+                      {{ $t('navigation.shifts') }}
                     </button>
                     <button
                       @click="resetPassword(user)"
                       class="btn-sm btn-warning"
                     >
-                      Reset Password
+                      {{ $t('admin.resetPassword') }}
                     </button>
                     <button
                       @click="toggleUserStatus(user)"
                       :class="user.is_active ? 'btn-sm btn-warning' : 'btn-sm btn-success'"
                     >
-                      {{ user.is_active ? 'Deactivate' : 'Activate' }}
+                      {{ user.is_active ? $t('common.deactivate') : $t('common.activate') }}
                     </button>
                     <button
                       v-if="isSuperAdmin"
                       @click="confirmDeleteUser(user)"
                       class="btn-sm btn-danger"
                     >
-                      Delete
+                      {{ $t('common.delete') }}
                     </button>
                     
                   </div>

@@ -107,6 +107,7 @@
     "showDetails": "Mostrar Detalles",
     "hideDetails": "Ocultar Detalles",
     "unableToFetchData": "No se pudieron obtener datos",
+    "never": "Nunca",
     "daily": "Diario",
     "monthly": "Mensual",
     "saving": "Guardando...",
