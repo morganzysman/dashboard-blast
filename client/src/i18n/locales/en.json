@@ -108,6 +108,11 @@
     "hideDetails": "Hide Details",
     "unableToFetchData": "Unable to fetch data",
     "daily": "Daily",
+    "monthly": "Monthly",
+    "saving": "Saving...",
+    "for": "for",
+    "new": "New",
+    "load": "Load",
     "period": "Period"
   },
   "app": {

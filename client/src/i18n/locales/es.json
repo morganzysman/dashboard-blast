@@ -108,6 +108,11 @@
     "hideDetails": "Ocultar Detalles",
     "unableToFetchData": "No se pudieron obtener datos",
     "daily": "Diario",
+    "monthly": "Mensual",
+    "saving": "Guardando...",
+    "for": "para",
+    "new": "Nuevo",
+    "load": "Cargar",
     "period": "Período"
   },
   "app": {
