@@ -111,6 +111,7 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../stores/auth'
 
 const props = defineProps({
@@ -123,6 +124,7 @@ const props = defineProps({
 const emit = defineEmits(['close'])
 
 const authStore = useAuthStore()
+const { t } = useI18n()
 
 const form = ref({
   currentPassword: '',
@@ -157,28 +159,28 @@ const validateForm = () => {
   let isValid = true
 
   if (!form.value.currentPassword) {
-    errors.value.currentPassword = 'Current password is required' // TODO: Add to i18n
+    errors.value.currentPassword = t('modals.changePassword.errors.currentRequired')
     isValid = false
   }
 
   if (!form.value.newPassword) {
-    errors.value.newPassword = 'New password is required' // TODO: Add to i18n
+    errors.value.newPassword = t('modals.changePassword.errors.newRequired')
     isValid = false
   } else if (form.value.newPassword.length < 6) {
-    errors.value.newPassword = 'Password must be at least 6 characters long' // TODO: Add to i18n
+    errors.value.newPassword = t('modals.changePassword.errors.minLength6')
     isValid = false
   }
 
   if (!form.value.confirmPassword) {
-    errors.value.confirmPassword = 'Please confirm your new password' // TODO: Add to i18n
+    errors.value.confirmPassword = t('modals.changePassword.errors.confirmRequired')
     isValid = false
   } else if (form.value.newPassword !== form.value.confirmPassword) {
-    errors.value.confirmPassword = 'Passwords do not match' // TODO: Add to i18n
+    errors.value.confirmPassword = t('modals.changePassword.errors.mismatch')
     isValid = false
   }
 
   if (form.value.currentPassword === form.value.newPassword) {
-    errors.value.newPassword = 'New password must be different from current password' // TODO: Add to i18n
+    errors.value.newPassword = t('modals.changePassword.errors.newDifferent')
     isValid = false
   }
 
@@ -201,7 +203,7 @@ const handleSubmit = async () => {
     )
 
     if (result.success) {
-      success.value = 'Password changed successfully!' // TODO: Add to i18n
+      success.value = t('modals.changePassword.passwordChanged')
       form.value = {
         currentPassword: '',
         newPassword: '',
@@ -213,10 +215,10 @@ const handleSubmit = async () => {
         emit('close')
       }, 1500)
     } else {
-      error.value = result.error || 'Failed to change password' // TODO: Add to i18n
+      error.value = result.error || t('modals.changePassword.passwordError')
     }
   } catch (err) {
-    error.value = 'An unexpected error occurred' // TODO: Add to i18n
+    error.value = t('modals.changePassword.errors.unexpected')
     console.error('Password change error:', err)
   } finally {
     isLoading.value = false

@@ -552,7 +552,16 @@
       "special": "Pelo menos um caractere especial",
       "passwordChanged": "Senha alterada com sucesso",
       "passwordError": "Falha ao alterar senha",
-      "currentPasswordIncorrect": "Senha atual está incorreta"
+      "currentPasswordIncorrect": "Senha atual está incorreta",
+      "errors": {
+        "currentRequired": "A senha atual é obrigatória",
+        "newRequired": "A nova senha é obrigatória",
+        "confirmRequired": "Confirme sua nova senha",
+        "minLength6": "A senha deve ter pelo menos 6 caracteres",
+        "mismatch": "As senhas não coincidem",
+        "newDifferent": "A nova senha deve ser diferente da senha atual",
+        "unexpected": "Ocorreu um erro inesperado"
+      }
     },
     "accountTokens": {
       "title": "Tokens da Conta",
@@ -569,7 +578,20 @@
       "confirmRevoke": "Você tem certeza que deseja revogar este token? Esta ação não pode ser desfeita.",
       "tokenRevoked": "Token revogado com sucesso",
       "tokenGenerated": "Novo token gerado com sucesso",
-      "testConnection": "Testar Conexão"
+      "testConnection": "Testar Conexão",
+      "accountNameRequired": "Nome da conta obrigatório",
+      "companyTokenRequired": "Token da empresa obrigatório",
+      "apiTokenRequired": "Token da API obrigatório",
+      "changesPending": "Alterações pendentes",
+      "accountConfigured": "Conta configurada",
+      "connectionValidTitle": "Conexão Válida",
+      "connectionValidMsg": "Credenciais da conta testadas com sucesso",
+      "connectionTestFailedTitle": "Falha no Teste de Conexão",
+      "connectionTestFailedMsg": "Falha ao validar credenciais da conta",
+      "changesSavedTitle": "Alterações Salvas",
+      "changesSavedMsg": "Configurações da conta foram atualizadas",
+      "saveFailedTitle": "Falha ao Salvar",
+      "saveFailedMsg": "Falha ao atualizar configurações da conta"
     },
     "shiftManager": {
       "title": "Gerenciar Turno",

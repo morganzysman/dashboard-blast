@@ -599,7 +599,16 @@
       "special": "At least one special character",
       "passwordChanged": "Password changed successfully",
       "passwordError": "Failed to change password",
-      "currentPasswordIncorrect": "Current password is incorrect"
+      "currentPasswordIncorrect": "Current password is incorrect",
+      "errors": {
+        "currentRequired": "Current password is required",
+        "newRequired": "New password is required",
+        "confirmRequired": "Please confirm your new password",
+        "minLength6": "Password must be at least 6 characters long",
+        "mismatch": "Passwords do not match",
+        "newDifferent": "New password must be different from current password",
+        "unexpected": "An unexpected error occurred"
+      }
     },
     "accountTokens": {
       "title": "Account Tokens",
@@ -616,7 +625,20 @@
       "confirmRevoke": "Are you sure you want to revoke this token? This action cannot be undone.",
       "tokenRevoked": "Token revoked successfully",
       "tokenGenerated": "New token generated successfully",
-      "testConnection": "Test Connection"
+      "testConnection": "Test Connection",
+      "accountNameRequired": "Account name required",
+      "companyTokenRequired": "Company token required",
+      "apiTokenRequired": "API token required",
+      "changesPending": "Changes pending",
+      "accountConfigured": "Account configured",
+      "connectionValidTitle": "Connection Valid",
+      "connectionValidMsg": "Account credentials tested successfully",
+      "connectionTestFailedTitle": "Connection Test Failed",
+      "connectionTestFailedMsg": "Failed to validate account credentials",
+      "changesSavedTitle": "Changes Saved",
+      "changesSavedMsg": "Account settings have been updated",
+      "saveFailedTitle": "Save Failed",
+      "saveFailedMsg": "Failed to update account settings"
     },
     "shiftManager": {
       "title": "Manage Shift",

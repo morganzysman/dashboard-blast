@@ -552,7 +552,16 @@
       "special": "Au moins un caractère spécial",
       "passwordChanged": "Mot de passe modifié avec succès",
       "passwordError": "Échec de la modification du mot de passe",
-      "currentPasswordIncorrect": "Le mot de passe actuel est incorrect"
+      "currentPasswordIncorrect": "Le mot de passe actuel est incorrect",
+      "errors": {
+        "currentRequired": "Le mot de passe actuel est requis",
+        "newRequired": "Le nouveau mot de passe est requis",
+        "confirmRequired": "Veuillez confirmer votre nouveau mot de passe",
+        "minLength6": "Le mot de passe doit contenir au moins 6 caractères",
+        "mismatch": "Les mots de passe ne correspondent pas",
+        "newDifferent": "Le nouveau mot de passe doit être différent de l'actuel",
+        "unexpected": "Une erreur inattendue s'est produite"
+      }
     },
     "accountTokens": {
       "title": "Jetons de compte",
@@ -569,7 +578,20 @@
       "confirmRevoke": "Êtes-vous sûr de vouloir révoquer ce jeton ? Cette action ne peut pas être annulée.",
       "tokenRevoked": "Jeton révoqué avec succès",
       "tokenGenerated": "Nouveau jeton généré avec succès",
-      "testConnection": "Tester la Connexion"
+      "testConnection": "Tester la Connexion",
+      "accountNameRequired": "Nom du compte requis",
+      "companyTokenRequired": "Jeton d'entreprise requis",
+      "apiTokenRequired": "Jeton API requis",
+      "changesPending": "Modifications en attente",
+      "accountConfigured": "Compte configuré",
+      "connectionValidTitle": "Connexion valide",
+      "connectionValidMsg": "Identifiants du compte testés avec succès",
+      "connectionTestFailedTitle": "Échec du test de connexion",
+      "connectionTestFailedMsg": "Échec de la validation des identifiants du compte",
+      "changesSavedTitle": "Modifications enregistrées",
+      "changesSavedMsg": "Les paramètres du compte ont été mis à jour",
+      "saveFailedTitle": "Échec de l'enregistrement",
+      "saveFailedMsg": "Échec de la mise à jour des paramètres du compte"
     },
     "shiftManager": {
       "title": "Gérer l'équipe",

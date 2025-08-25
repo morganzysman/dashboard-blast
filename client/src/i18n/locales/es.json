@@ -549,7 +549,16 @@
       "special": "Al menos un carácter especial",
       "passwordChanged": "Contraseña cambiada exitosamente",
       "passwordError": "Error al cambiar la contraseña",
-      "currentPasswordIncorrect": "La contraseña actual es incorrecta"
+      "currentPasswordIncorrect": "La contraseña actual es incorrecta",
+      "errors": {
+        "currentRequired": "La contraseña actual es obligatoria",
+        "newRequired": "La nueva contraseña es obligatoria",
+        "confirmRequired": "Confirme su nueva contraseña",
+        "minLength6": "La contraseña debe tener al menos 6 caracteres",
+        "mismatch": "Las contraseñas no coinciden",
+        "newDifferent": "La nueva contraseña debe ser diferente de la actual",
+        "unexpected": "Ocurrió un error inesperado"
+      }
     },
     "accountTokens": {
       "title": "Tokens de Cuenta",
@@ -566,7 +575,20 @@
       "confirmRevoke": "¿Está seguro de que desea revocar este token? Esta acción no se puede deshacer.",
       "tokenRevoked": "Token revocado exitosamente",
       "tokenGenerated": "Nuevo token generado exitosamente",
-      "testConnection": "Probar Conexión"
+      "testConnection": "Probar Conexión",
+      "accountNameRequired": "Se requiere nombre de cuenta",
+      "companyTokenRequired": "Se requiere token de empresa",
+      "apiTokenRequired": "Se requiere token API",
+      "changesPending": "Cambios pendientes",
+      "accountConfigured": "Cuenta configurada",
+      "connectionValidTitle": "Conexión Válida",
+      "connectionValidMsg": "Credenciales de la cuenta validadas correctamente",
+      "connectionTestFailedTitle": "Prueba de Conexión Fallida",
+      "connectionTestFailedMsg": "No se pudieron validar las credenciales de la cuenta",
+      "changesSavedTitle": "Cambios Guardados",
+      "changesSavedMsg": "La configuración de la cuenta ha sido actualizada",
+      "saveFailedTitle": "Error al Guardar",
+      "saveFailedMsg": "No se pudo actualizar la configuración de la cuenta"
     },
     "shiftManager": {
       "title": "Gestionar Turno",
