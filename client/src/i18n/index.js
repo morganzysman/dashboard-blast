@@ -15,8 +15,8 @@ const messages = {
 
 const i18n = createI18n({
   legacy: false,
-  locale: 'pt', // default fallback
-  fallbackLocale: 'pt',
+  locale: 'pt', // default UI language; can be changed at runtime
+  fallbackLocale: 'en', // ensure missing keys fall back to English, not raw keys
   messages
 })
 

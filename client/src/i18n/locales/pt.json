@@ -114,7 +114,13 @@
     "for": "para",
     "new": "Novo",
     "load": "Carregar",
-    "period": "Período"
+    "period": "Período",
+    "failed": "Falhou",
+    "dismiss": "Dispensar",
+    "deleting": "Excluindo...",
+    "tryAgain": "Tente novamente.",
+    "dateRange": "Intervalo de Datas",
+    "customRange": "Intervalo Personalizado"
   },
   "app": {
     "name": "OlaClick"
@@ -251,7 +257,12 @@
     "adminCreateRestriction": "Administradores só podem criar administradores e funcionários para sua empresa.",
     "superAdminCompanyNote": "Como super-administrador, defina a empresa inquilina. Administradores padrão para sua própria empresa.",
     "searchUsers": "Pesquisar usuários...",
-    "allStatus": "Todos os status"
+    "allStatus": "Todos os status",
+    "totalUsers": "Total de Usuários",
+    "activeUsers": "Usuários Ativos",
+    "admins": "Administradores",
+    "totalAccounts": "Total de Contas",
+    "user": "Usuário"
   },
   "employee": {
     "clock": {
@@ -270,7 +281,21 @@
       "clockSuccess": "Ponto registrado com sucesso: {action}",
       "clockError": "Falha ao registrar ponto: {action}",
       "in": "entrada",
-      "out": "saída"
+      "out": "saída",
+      "scanner": "Scanner",
+      "cameraAccessDenied": "Acesso à câmera negado. Habilite nas configurações do navegador.",
+      "resetCameraPermission": "Redefinir permissão da câmera",
+      "cameraPermissionReset": "Permissão da câmera redefinida. Você pode tentar o scanner novamente.",
+      "noCameraFound": "Nenhuma câmera encontrada neste dispositivo.",
+      "unableToAccessCamera": "Não foi possível acessar a câmera. Tente novamente.",
+      "scannerNotSupported": "Scanner não suportado neste dispositivo/navegador.",
+      "clockingIn": "Registrando entrada...",
+      "clockingOut": "Registrando saída...",
+      "clockInSuccess": "Entrada registrada com sucesso",
+      "clockOutSuccess": "Saída registrada com sucesso",
+      "employeesOnly": "Esta página é reservada a funcionários. Faça login com uma conta de funcionário.",
+      "goToLogin": "Ir para Login",
+      "defaultGreeting": "olá"
     },
     "timesheet": {
       "title": "Minha Folha de Ponto",
@@ -292,7 +317,12 @@
       "previousWeek": "Semana Anterior",
       "prevWeek": "Semana Anterior",
       "nextWeek": "Próxima Semana",
-      "exportTimesheet": "Exportar Folha de Ponto"
+      "exportTimesheet": "Exportar Folha de Ponto",
+      "thankYou": "Obrigado! Seu",
+      "wasRegistered": "foi registrado",
+      "clockIn": "entrada",
+      "clockOut": "saída",
+      "myShiftsThisWeek": "Meus Turnos (Esta Semana)"
     },
     "warnings": {
       "title": "Advertências do Funcionário",
@@ -315,7 +345,17 @@
       "category": "Categoria da Advertência",
       "selectCategory": "Selecionar categoria",
       "specificMotive": "Motivo Específico",
-      "warningHistory": "Histórico de Advertências"
+      "warningHistory": "Histórico de Advertências",
+      "allWarnings": "Todas as advertências",
+      "categoriesDescription": "Entender as categorias de advertências ajuda a manter padrões de trabalho e comportamento profissional.",
+      "failedToAcknowledge": "Falha ao reconhecer a advertência",
+      "failedToLoad": "Falha ao carregar advertências",
+      "keepUpGoodWork": "Mantenha o excelente desempenho e comportamento profissional.",
+      "pendingAcknowledgment": "Reconhecimento pendente",
+      "thankYouForAcknowledging": "Obrigado por reconhecer esta advertência.",
+      "totalWarnings": "Total de Advertências",
+      "warningAcknowledged": "Advertência reconhecida",
+      "warningCategories": "Categorias de Advertência"
     }
   },
   "payroll": {
@@ -355,6 +395,10 @@
     "reviewAndApproveEntry": "Revisar e aprovar este registro",
     "futureShift": "Turno futuro",
     "manager": "Gerente",
+    "employee": "Funcionário",
+    "lateCount": "Atrasos",
+    "marking": "Marcando...",
+    "missingOrInvalidAmount": "Valor ausente ou inválido",
     "downloadQR": "Baixar QR",
     "employeeSummary": "Resumo de Funcionários",
     "missingApprovals": "Faltando {count} aprovações",
@@ -436,6 +480,9 @@
     "weekView": "Visualização Semanal",
     "monthView": "Visualização Mensal",
     "dayView": "Visualização Diária",
+    "weekOf": "Semana de",
+    "prevWeek": "Semana Anterior",
+    "nextWeek": "Próxima Semana",
     "defineWeeklyShifts": "Definir turnos semanais por conta. Horários são locais (HH:MM, 24h).",
     "showsCurrentSelections": "Mostra as seleções atuais por dia da semana",
     "previewThisWeek": "Pré-visualização (Esta semana)"
@@ -568,7 +615,42 @@
       "shifts": "Turnos",
       "users": "Usuários",
       "company": "Empresa"
-    }
+    },
+    "defaultTitle": "Notificação",
+    "browserNotSupported": "Este navegador não suporta notificações",
+    "notificationsBlocked": "As notificações estão bloqueadas. Habilite-as nas configurações do navegador.",
+    "pleaseAllowNotifications": "Permita notificações para receber atualizações.",
+    "failedToSave": "Falha ao salvar a inscrição de notificação",
+    "enabled": "Notificações habilitadas",
+    "importantNotificationsEnabled": "Agora você receberá notificações importantes da sua empresa.",
+    "disabled": "Notificações desabilitadas",
+    "noLongerReceive": "Você não receberá mais notificações push",
+    "enableFailed": "Falha ao habilitar notificações. Tente novamente.",
+    "settingsUpdated": "Configurações atualizadas",
+    "setupFailed": "Falha na configuração de notificações",
+    "testSent": "Teste enviado",
+    "testSentSuccessfully": "Notificação de teste enviada com sucesso",
+    "testFailed": "Falha no teste",
+    "never": "Nunca",
+    "unknown": "Desconhecido",
+    "unsubscribeFailed": "Falha ao cancelar inscrição",
+    "updateFailed": "Falha ao atualizar",
+    "withinNextCheck": "Na próxima verificação",
+    "devices": {
+      "android": "Android",
+      "chrome": "Chrome",
+      "desktop": "Desktop",
+      "firefox": "Firefox",
+      "ipad": "iPad",
+      "iphone": "iPhone",
+      "mobile": "Mobile",
+      "safari": "Safari"
+    },
+    "1hour": "1 hora",
+    "30minutes": "30 minutos",
+    "4hours": "4 horas",
+    "8hours": "8 horas",
+    "active": "Ativa"
   },
   "modals": {
     "userModal": {
@@ -594,7 +676,10 @@
       "required": "Este campo é obrigatório",
       "emailInvalid": "Por favor, digite um endereço de email válido",
       "passwordMismatch": "As senhas não coincidem",
-      "passwordTooShort": "A senha deve ter pelo menos 6 caracteres"
+      "passwordTooShort": "A senha deve ter pelo menos 6 caracteres",
+      "warning": {
+        "descriptionPlaceholder": "Descreva o motivo específico"
+      }
     },
     "changePassword": {
       "title": "Alterar Senha",

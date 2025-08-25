@@ -149,13 +149,13 @@ const toggleTokenVisibility = (account) => {
 }
 
 const getAccountStatus = (account) => {
-  if (!account.account_name) return 'Account name required' // TODO: Add to i18n
-  if (!account.company_token) return 'Company token required' // TODO: Add to i18n
-  if (!account.api_token) return 'API token required' // TODO: Add to i18n
+  if (!account.account_name) return $t('modals.accountTokens.accountNameRequired')
+  if (!account.company_token) return $t('modals.accountTokens.companyTokenRequired')
+  if (!account.api_token) return $t('modals.accountTokens.apiTokenRequired')
   if (account.api_token !== account.originalToken ||
       account.company_token !== account.originalCompanyToken ||
-      account.account_name !== account.originalName) return 'Changes pending' // TODO: Add to i18n
-  return 'Account configured' // TODO: Add to i18n
+      account.account_name !== account.originalName) return $t('modals.accountTokens.changesPending')
+  return $t('modals.accountTokens.accountConfigured')
 }
 
 const getAccountStatusClass = (account) => {
@@ -183,8 +183,8 @@ const testAccount = async (account) => {
     if (response.ok) {
       window.showNotification?.({
         type: 'success',
-        title: 'Connection Valid', // TODO: Add to i18n
-        message: 'Account credentials tested successfully' // TODO: Add to i18n
+        title: $t('modals.accountTokens.connectionValidTitle'),
+        message: $t('modals.accountTokens.connectionValidMsg')
       })
     } else {
       throw new Error('Account test failed')
@@ -192,8 +192,8 @@ const testAccount = async (account) => {
   } catch (error) {
     window.showNotification?.({
       type: 'error',
-      title: 'Connection Test Failed', // TODO: Add to i18n
-      message: 'Failed to validate account credentials' // TODO: Add to i18n
+      title: $t('modals.accountTokens.connectionTestFailedTitle'),
+      message: $t('modals.accountTokens.connectionTestFailedMsg')
     })
   }
 }
@@ -214,8 +214,8 @@ const saveChanges = async () => {
     if (response.ok) {
       window.showNotification?.({
         type: 'success',
-        title: 'Changes Saved', // TODO: Add to i18n
-        message: 'Account settings have been updated' // TODO: Add to i18n
+        title: $t('modals.accountTokens.changesSavedTitle'),
+        message: $t('modals.accountTokens.changesSavedMsg')
       })
       emit('update', accounts.value)
       emit('close')
@@ -225,8 +225,8 @@ const saveChanges = async () => {
   } catch (error) {
     window.showNotification?.({
       type: 'error',
-      title: 'Save Failed', // TODO: Add to i18n
-      message: 'Failed to update account settings' // TODO: Add to i18n
+      title: $t('modals.accountTokens.saveFailedTitle'),
+      message: $t('modals.accountTokens.saveFailedMsg')
     })
   }
 }

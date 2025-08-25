@@ -111,6 +111,12 @@
     "daily": "Quotidien",
     "monthly": "Mensuel",
     "saving": "Enregistrement...",
+    "failed": "Échec",
+    "dismiss": "Ignorer",
+    "deleting": "Suppression...",
+    "tryAgain": "Veuillez réessayer.",
+    "dateRange": "Plage de dates",
+    "customRange": "Plage personnalisée",
     "for": "pour",
     "new": "Nouveau",
     "load": "Charger",
@@ -251,7 +257,12 @@
     "adminCreateRestriction": "Les administrateurs ne peuvent créer que des administrateurs et des employés pour leur entreprise.",
     "superAdminCompanyNote": "En tant que super-administrateur, définissez l'entreprise locataire. Les administrateurs par défaut à leur propre entreprise.",
     "searchUsers": "Rechercher des utilisateurs...",
-    "allStatus": "Tous les statuts"
+    "allStatus": "Tous les statuts",
+    "totalUsers": "Nombre total d'utilisateurs",
+    "activeUsers": "Utilisateurs actifs",
+    "admins": "Administrateurs",
+    "totalAccounts": "Nombre total de comptes",
+    "user": "Utilisateur"
   },
   "employee": {
     "clock": {
@@ -270,7 +281,21 @@
       "clockSuccess": "Pointage {action} réussi",
       "clockError": "Échec du pointage {action}",
       "in": "à l'arrivée",
-      "out": "au départ"
+      "out": "au départ",
+      "scanner": "Scanner",
+      "cameraAccessDenied": "Accès à la caméra refusé. Veuillez l'activer dans les paramètres du navigateur.",
+      "resetCameraPermission": "Réinitialiser l'autorisation caméra",
+      "cameraPermissionReset": "Autorisation caméra réinitialisée. Vous pouvez réessayer le scanner.",
+      "noCameraFound": "Aucune caméra trouvée sur cet appareil.",
+      "unableToAccessCamera": "Impossible d'accéder à la caméra. Veuillez réessayer.",
+      "scannerNotSupported": "Scanner non pris en charge sur cet appareil/navigateur.",
+      "clockingIn": "Enregistrement d'entrée...",
+      "clockingOut": "Enregistrement de sortie...",
+      "clockInSuccess": "Entrée enregistrée avec succès",
+      "clockOutSuccess": "Sortie enregistrée avec succès",
+      "employeesOnly": "Cette page est réservée aux employés. Connectez‑vous avec un compte employé.",
+      "goToLogin": "Aller à la connexion",
+      "defaultGreeting": "bonjour"
     },
     "timesheet": {
       "title": "Ma feuille de temps",
@@ -291,7 +316,12 @@
       "pendingApproval": "En attente d'approbation",
       "previousWeek": "Semaine précédente",
       "nextWeek": "Semaine suivante",
-      "exportTimesheet": "Exporter la feuille de temps"
+      "exportTimesheet": "Exporter la feuille de temps",
+      "thankYou": "Merci ! Votre",
+      "wasRegistered": "a été enregistré",
+      "clockIn": "entrée",
+      "clockOut": "sortie",
+      "myShiftsThisWeek": "Mes équipes (cette semaine)"
     },
     "warnings": {
       "title": "Avertissements des employés",
@@ -314,7 +344,17 @@
       "category": "Catégorie d'Avertissement",
       "selectCategory": "Sélectionner une catégorie",
       "specificMotive": "Motif Spécifique",
-      "warningHistory": "Historique des Avertissements"
+      "warningHistory": "Historique des Avertissements",
+      "allWarnings": "Tous les avertissements",
+      "categoriesDescription": "Comprendre les catégories d'avertissement aide à maintenir les normes et un comportement professionnel.",
+      "failedToAcknowledge": "Échec de la reconnaissance de l'avertissement",
+      "failedToLoad": "Échec du chargement des avertissements",
+      "keepUpGoodWork": "Maintenez cet excellent niveau de performance et de professionnalisme.",
+      "pendingAcknowledgment": "En attente d'accusé de réception",
+      "thankYouForAcknowledging": "Merci d'avoir reconnu cet avertissement.",
+      "totalWarnings": "Nombre total d'avertissements",
+      "warningAcknowledged": "Avertissement reconnu",
+      "warningCategories": "Catégories d'avertissement"
     }
   },
   "payroll": {
@@ -354,6 +394,10 @@
     "reviewAndApproveEntry": "Examiner et approuver cette saisie",
     "futureShift": "Équipe future",
     "manager": "Gestionnaire",
+    "employee": "Employé",
+    "lateCount": "Retards",
+    "marking": "Marquage...",
+    "missingOrInvalidAmount": "Montant manquant ou invalide",
     "downloadQR": "Télécharger le QR",
     "employeeSummary": "Résumé des employés",
     "missingApprovals": "{count} approbations manquantes",
@@ -435,6 +479,9 @@
     "weekView": "Vue hebdomadaire",
     "monthView": "Vue mensuelle",
     "dayView": "Vue journalière",
+    "weekOf": "Semaine du",
+    "prevWeek": "Semaine précédente",
+    "nextWeek": "Semaine suivante",
     "defineWeeklyShifts": "Définir les équipes hebdomadaires par compte. Les heures sont locales (HH:MM, 24h).",
     "showsCurrentSelections": "Affiche les sélections actuelles par jour de la semaine",
     "previewThisWeek": "Aperçu (Cette semaine)"
@@ -567,7 +614,42 @@
       "shifts": "Équipes",
       "users": "Utilisateurs",
       "company": "Entreprise"
-    }
+    },
+    "defaultTitle": "Notification",
+    "browserNotSupported": "Ce navigateur ne prend pas en charge les notifications",
+    "notificationsBlocked": "Les notifications sont bloquées. Veuillez les activer dans les paramètres du navigateur.",
+    "pleaseAllowNotifications": "Veuillez autoriser les notifications pour recevoir des mises à jour.",
+    "failedToSave": "Échec de l'enregistrement de l'abonnement aux notifications",
+    "enabled": "Notifications activées",
+    "importantNotificationsEnabled": "Vous recevrez désormais des notifications importantes de votre entreprise.",
+    "disabled": "Notifications désactivées",
+    "noLongerReceive": "Vous ne recevrez plus de notifications push",
+    "enableFailed": "Échec de l'activation des notifications. Veuillez réessayer.",
+    "settingsUpdated": "Paramètres mis à jour",
+    "setupFailed": "Échec de la configuration des notifications",
+    "testSent": "Test envoyé",
+    "testSentSuccessfully": "Notification de test envoyée avec succès",
+    "testFailed": "Échec du test",
+    "never": "Jamais",
+    "unknown": "Inconnu",
+    "unsubscribeFailed": "Échec de la désinscription",
+    "updateFailed": "Échec de la mise à jour",
+    "withinNextCheck": "Lors de la prochaine vérification",
+    "devices": {
+      "android": "Android",
+      "chrome": "Chrome",
+      "desktop": "Bureau",
+      "firefox": "Firefox",
+      "ipad": "iPad",
+      "iphone": "iPhone",
+      "mobile": "Mobile",
+      "safari": "Safari"
+    },
+    "1hour": "1 heure",
+    "30minutes": "30 minutes",
+    "4hours": "4 heures",
+    "8hours": "8 heures",
+    "active": "Actives"
   },
   "modals": {
     "userModal": {
@@ -593,7 +675,10 @@
       "required": "Ce champ est requis",
       "emailInvalid": "Veuillez saisir une adresse e-mail valide",
       "passwordMismatch": "Les mots de passe ne correspondent pas",
-      "passwordTooShort": "Le mot de passe doit contenir au moins 6 caractères"
+      "passwordTooShort": "Le mot de passe doit contenir au moins 6 caractères",
+      "warning": {
+        "descriptionPlaceholder": "Décrivez le motif spécifique"
+      }
     },
     "changePassword": {
       "title": "Modifier le mot de passe",

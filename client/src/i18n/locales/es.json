@@ -114,7 +114,13 @@
     "for": "para",
     "new": "Nuevo",
     "load": "Cargar",
-    "period": "Período"
+    "period": "Período",
+    "failed": "Falló",
+    "dismiss": "Descartar",
+    "deleting": "Eliminando...",
+    "tryAgain": "Por favor intente nuevamente.",
+    "dateRange": "Rango de Fechas",
+    "customRange": "Rango Personalizado"
   },
   "app": {
     "name": "OlaClick"
@@ -135,7 +141,8 @@
     "shiftsCalendar": "Calendario de Turnos",
     "userManagement": "Gestión de Usuarios",
     "searchUsers": "Buscar usuarios...",
-    "allStatus": "Todos los estados"
+    "allStatus": "Todos los estados",
+    "toggleDarkMode": "Alternar modo oscuro"
   },
   "auth": {
     "email": "Correo Electrónico",
@@ -250,7 +257,14 @@
     "activeSessions": "Sesiones Activas",
     "pushSubscription": "Notificaciones Push",
     "adminCreateRestriction": "Los administradores solo pueden crear administradores y empleados para su empresa.",
-    "superAdminCompanyNote": "Como super-administrador, establezca la empresa inquilina. Los administradores por defecto a su propia empresa."
+    "superAdminCompanyNote": "Como super-administrador, establezca la empresa inquilina. Los administradores por defecto a su propia empresa.",
+    "totalUsers": "Usuarios Totales",
+    "activeUsers": "Usuarios Activos",
+    "admins": "Administradores",
+    "totalAccounts": "Cuentas Totales",
+    "user": "Usuario",
+    "searchUsers": "Buscar usuarios...",
+    "allStatus": "Todos los estados"
   },
   "employee": {
     "clock": {
@@ -269,7 +283,21 @@
       "clockSuccess": "Registro de {action} exitoso",
       "clockError": "Error al registrar {action}",
       "in": "entrada",
-      "out": "salida"
+      "out": "salida",
+      "scanner": "Escáner",
+      "cameraAccessDenied": "El acceso a la cámara está denegado. Habilítelo en la configuración del navegador.",
+      "resetCameraPermission": "Restablecer permiso de cámara",
+      "cameraPermissionReset": "Permiso de cámara restablecido. Ahora puede intentar el escáner nuevamente.",
+      "noCameraFound": "No se encontró cámara en este dispositivo.",
+      "unableToAccessCamera": "No se puede acceder a la cámara. Intente nuevamente.",
+      "scannerNotSupported": "El escáner no es compatible en este dispositivo/navegador.",
+      "clockingIn": "Registrando entrada...",
+      "clockingOut": "Registrando salida...",
+      "clockInSuccess": "Entrada registrada correctamente",
+      "clockOutSuccess": "Salida registrada correctamente",
+      "employeesOnly": "Esta página está reservada para empleados. Inicie sesión con una cuenta de empleado.",
+      "goToLogin": "Ir al inicio de sesión",
+      "defaultGreeting": "allí"
     },
     "timesheet": {
       "title": "Mi Registro de Tiempo",
@@ -291,7 +319,12 @@
       "previousWeek": "Semana Anterior",
       "prevWeek": "Semana Anterior",
       "nextWeek": "Siguiente Semana",
-      "exportTimesheet": "Exportar Registro de Tiempo"
+      "exportTimesheet": "Exportar Registro de Tiempo",
+      "thankYou": "¡Gracias! Su",
+      "wasRegistered": "fue registrado",
+      "clockIn": "entrada",
+      "clockOut": "salida",
+      "myShiftsThisWeek": "Mis Turnos (Esta Semana)"
     },
     "warnings": {
       "title": "Advertencias del Empleado",
@@ -314,12 +347,26 @@
       "category": "Categoría de Advertencia",
       "selectCategory": "Seleccionar categoría",
       "specificMotive": "Motivo Específico",
-      "warningHistory": "Historial de Advertencias"
+      "warningHistory": "Historial de Advertencias",
+      "allWarnings": "Todas las advertencias",
+      "categoriesDescription": "Comprender las categorías de advertencias ayuda a mantener estándares laborales y comportamiento profesional.",
+      "failedToAcknowledge": "Error al reconocer la advertencia",
+      "failedToLoad": "Error al cargar advertencias",
+      "keepUpGoodWork": "Continúe con el excelente desempeño y comportamiento profesional.",
+      "pendingAcknowledgment": "Reconocimiento pendiente",
+      "thankYouForAcknowledging": "Gracias por reconocer esta advertencia.",
+      "totalWarnings": "Advertencias Totales",
+      "warningAcknowledged": "Advertencia reconocida",
+      "warningCategories": "Categorías de Advertencia"
     }
   },
   "payroll": {
     "title": "Gestión de Nómina",
     "subtitle": "Gestionar registros de tiempo y pagos de empleados",
+    "employee": "Empleado",
+    "lateCount": "Conteo de atrasos",
+    "marking": "Marcando...",
+    "missingOrInvalidAmount": "Monto faltante o inválido",
     "entries": "Registros de Tiempo",
     "pendingApproval": "Pendiente de Aprobación",
     "pendingPayment": "Pendiente de Pago",
@@ -407,6 +454,9 @@
     "title": "Gestión de Turnos",
     "subtitle": "Gestionar horarios de trabajo de empleados",
     "calendar": "Calendario de Turnos",
+    "weekOf": "Semana de",
+    "prevWeek": "Semana Anterior",
+    "nextWeek": "Siguiente Semana",
     "schedule": "Horario",
     "employee": "Empleado",
     "shift": "Turno",
@@ -554,6 +604,40 @@
     "multiDeviceDescription": "Puedes habilitar notificaciones en varios dispositivos (teléfono, tablet, computadora). Los administradores reciben reportes de ventas según la frecuencia configurada. Los empleados reciben actualizaciones de turnos y pagos.",
     "every5Minutes": "Cada 5 minutos",
     "5minutes": "5 minutos",
+    "defaultTitle": "Notificación",
+    "browserNotSupported": "Este navegador no admite notificaciones",
+    "notificationsBlocked": "Las notificaciones están bloqueadas. Habilítelas en la configuración del navegador.",
+    "pleaseAllowNotifications": "Permita las notificaciones para recibir actualizaciones.",
+    "failedToSave": "Error al guardar la suscripción de notificaciones",
+    "enabled": "Notificaciones habilitadas",
+    "importantNotificationsEnabled": "Ahora recibirá notificaciones importantes de su empresa.",
+    "disabled": "Notificaciones deshabilitadas",
+    "noLongerReceive": "Ya no recibirá notificaciones push",
+    "enableFailed": "No se pudieron habilitar las notificaciones. Inténtelo de nuevo.",
+    "settingsUpdated": "Configuración actualizada",
+    "setupFailed": "Falló la configuración de notificaciones",
+    "testSent": "Prueba enviada",
+    "testSentSuccessfully": "Notificación de prueba enviada correctamente",
+    "testFailed": "Error en la prueba",
+    "never": "Nunca",
+    "unknown": "Desconocido",
+    "unsubscribeFailed": "No se pudo cancelar la suscripción",
+    "updateFailed": "Error al actualizar",
+    "withinNextCheck": "Dentro de la próxima verificación",
+    "devices": {
+      "android": "Android",
+      "chrome": "Chrome",
+      "desktop": "Escritorio",
+      "firefox": "Firefox",
+      "ipad": "iPad",
+      "iphone": "iPhone",
+      "mobile": "Móvil",
+      "safari": "Safari"
+    },
+    "1hour": "1 hora",
+    "30minutes": "30 minutos",
+    "4hours": "4 horas",
+    "8hours": "8 horas",
     "types": {
       "info": "Información",
       "warning": "Advertencia",
@@ -567,7 +651,8 @@
       "shifts": "Turnos",
       "users": "Usuarios",
       "company": "Empresa"
-    }
+    },
+    "active": "Activa"
   },
   "modals": {
     "userModal": {
@@ -591,7 +676,12 @@
       "required": "Este campo es requerido",
       "emailInvalid": "Por favor ingrese una dirección de correo electrónico válida",
       "passwordMismatch": "Las contraseñas no coinciden",
-      "passwordTooShort": "La contraseña debe tener al menos 6 caracteres"
+      "passwordTooShort": "La contraseña debe tener al menos 6 caracteres",
+      "adminCanEdit": "El administrador puede editar",
+      "fullName": "Nombre completo",
+      "warning": {
+        "descriptionPlaceholder": "Describa el motivo específico"
+      }
     },
     "changePassword": {
       "title": "Cambiar Contraseña",
