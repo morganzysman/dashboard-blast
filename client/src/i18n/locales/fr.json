@@ -282,6 +282,11 @@
       "clockError": "Échec du pointage {action}",
       "in": "à l'arrivée",
       "out": "au départ",
+      "pleaseWait": "Veuillez patienter...",
+      "disableClockOut": {
+        "noQrContext": "Scannez le QR et sélectionnez le compte pour pointer la sortie",
+        "noOpenEntry": "Aucune entrée ouverte aujourd'hui à clôturer"
+      },
       "scanner": "Scanner",
       "cameraAccessDenied": "Accès à la caméra refusé. Veuillez l'activer dans les paramètres du navigateur.",
       "resetCameraPermission": "Réinitialiser l'autorisation caméra",

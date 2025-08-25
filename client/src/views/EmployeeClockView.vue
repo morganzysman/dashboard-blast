@@ -32,9 +32,20 @@
               <button v-else class="btn-primary w-full" :disabled="submitting || !canClockIn" @click="submitClock('in')">
                 {{ submitting && action==='in' ? $t('employee.clock.clockingIn') : $t('employee.clock.clockIn') }}
               </button>
-              <button class="btn-danger w-full" :disabled="submitting || !canClockOut" @click="submitClock('out')">
+              <button 
+                class="btn-danger w-full" 
+                :disabled="submitting || !canClockOut" 
+                :title="(submitting || !canClockOut) ? clockOutDisabledReason : ''"
+                @click="submitClock('out')"
+              >
                 {{ submitting && action==='out' ? $t('employee.clock.clockingOut') : $t('employee.clock.clockOut') }}
               </button>
+              <p 
+                v-if="!submitting && !canClockOut && hasQrContext" 
+                class="text-xs text-gray-500 text-center mt-1"
+              >
+                {{ clockOutDisabledReason }}
+              </p>
               </div>
             </template>
             <template v-else>
@@ -136,6 +147,12 @@ const refreshOpenState = async () => {
 
 const canClockIn = computed(() => !!qrSecret.value && !!companyToken.value && !hasOpenToday.value)
 const canClockOut = computed(() => !!qrSecret.value && !!companyToken.value && hasOpenToday.value)
+const clockOutDisabledReason = computed(() => {
+  if (submitting.value) return t('employee.clock.pleaseWait')
+  if (!qrSecret.value || !companyToken.value) return t('employee.clock.disableClockOut.noQrContext')
+  if (!hasOpenToday.value) return t('employee.clock.disableClockOut.noOpenEntry')
+  return ''
+})
 const hasQrContext = computed(() => !!qrSecret.value && !!companyToken.value)
 
 // Check camera permissions

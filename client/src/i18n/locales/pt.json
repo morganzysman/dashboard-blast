@@ -282,6 +282,11 @@
       "clockError": "Falha ao registrar ponto: {action}",
       "in": "entrada",
       "out": "saída",
+      "pleaseWait": "Por favor, aguarde...",
+      "disableClockOut": {
+        "noQrContext": "Escaneie o QR e selecione a conta para registrar saída",
+        "noOpenEntry": "Não há registro aberto hoje para saída"
+      },
       "scanner": "Scanner",
       "cameraAccessDenied": "Acesso à câmera negado. Habilite nas configurações do navegador.",
       "resetCameraPermission": "Redefinir permissão da câmera",

@@ -283,7 +283,12 @@
       "clockSuccess": "Successfully clocked {action}",
       "clockError": "Failed to clock {action}",
       "in": "in",
-      "out": "out"
+      "out": "out",
+      "pleaseWait": "Please wait...",
+      "disableClockOut": {
+        "noQrContext": "Scan the QR and select account to clock out",
+        "noOpenEntry": "No open entry today to clock out"
+      }
     },
     "timesheet": {
       "title": "My Timesheet",

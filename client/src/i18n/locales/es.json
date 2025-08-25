@@ -284,6 +284,11 @@
       "clockError": "Error al registrar {action}",
       "in": "entrada",
       "out": "salida",
+      "pleaseWait": "Por favor espere...",
+      "disableClockOut": {
+        "noQrContext": "Escanee el QR y seleccione la cuenta para cerrar turno",
+        "noOpenEntry": "No hay entrada abierta hoy para cerrar"
+      },
       "scanner": "Escáner",
       "cameraAccessDenied": "El acceso a la cámara está denegado. Habilítelo en la configuración del navegador.",
       "resetCameraPermission": "Restablecer permiso de cámara",
