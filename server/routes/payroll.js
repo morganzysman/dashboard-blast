@@ -553,7 +553,23 @@ router.get('/admin/:companyToken/entries', requireAuth, async (req, res) => {
     
     // Get company timezone for proper period calculation
     const companyTimezone = await getCompanyTimezone(companyId3)
-    const { start, end } = getBiweeklyPeriod(new Date(), companyTimezone)
+    // Optional date range override (?start=YYYY-MM-DD&end=YYYY-MM-DD)
+    const qsStart = (req.query.start || '').toString().slice(0, 10)
+    const qsEnd = (req.query.end || '').toString().slice(0, 10)
+    const isoRe = /^\d{4}-\d{2}-\d{2}$/
+    let start
+    let end
+    if (isoRe.test(qsStart) && isoRe.test(qsEnd)) {
+      start = qsStart
+      end = qsEnd
+      if (new Date(start) > new Date(end)) {
+        const tmp = start; start = end; end = tmp
+      }
+    } else {
+      const p = getBiweeklyPeriod(new Date(), companyTimezone)
+      start = p.start
+      end = p.end
+    }
     const isAdminOrSuper = req.user.role === 'admin' || req.user.role === 'super-admin'
     if (!isAdminOrSuper) return res.status(403).json({ success: false, error: 'Access denied' })
     const belongs = !!(req.user.companyId && companyId3 && req.user.companyId === companyId3)

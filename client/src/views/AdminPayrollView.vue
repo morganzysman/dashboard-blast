@@ -40,6 +40,14 @@
             </select>
             <button class="btn-secondary btn-sm" @click="loadEntries">{{ $t('common.load') }}</button>
             <button v-if="companyToken" class="btn-secondary btn-sm" @click="downloadQr">{{ $t('payroll.downloadQR') }}</button>
+            <div class="flex items-center gap-2">
+              <label class="text-xs text-gray-700">{{ $t('common.from') }}</label>
+              <input type="date" v-model="manualStart" class="form-input" />
+              <label class="text-xs text-gray-700">{{ $t('common.to') }}</label>
+              <input type="date" v-model="manualEnd" class="form-input" />
+              <button class="btn-secondary btn-sm" @click="applyManualRange" :disabled="!manualStart || !manualEnd">{{ $t('common.apply') }}</button>
+              <button class="btn-secondary btn-sm" @click="resetToCurrentPeriod">{{ $t('common.reset') }}</button>
+            </div>
           </div>
           
           <!-- Employee Summary Table -->
@@ -442,6 +450,10 @@ const selectedCompanyId = ref(auth.user?.company_id || '')
 const companyToken = ref('')
 const entries = ref([])
 const period = ref({ start: '', end: '' })
+const selectedStart = ref(null)
+const selectedEnd = ref(null)
+const manualStart = ref('')
+const manualEnd = ref('')
 const paying = ref(false)
 const editEntry = ref(null)
 const deleteConfirmation = ref(null)
@@ -464,10 +476,14 @@ const loadEntries = async () => {
   if (!companyToken.value) return
   loading.value = true
   try {
-    const res = await api.getAdminEntries(companyToken.value)
+    const res = await api.getAdminEntries(companyToken.value, selectedStart.value, selectedEnd.value)
     if (res.success) {
       entries.value = res.data
       period.value = res.period
+      if (!selectedStart.value || !selectedEnd.value) {
+        selectedStart.value = res.period?.start || null
+        selectedEnd.value = res.period?.end || null
+      }
       console.log('📥 Loaded entries:', {
         count: res.data.length,
         period: res.period,
@@ -1003,8 +1019,69 @@ const formatCurrency = (n) => {
 
 // Removed variationLabel and variationClass functions - replaced with late count logic
 
-const prevPeriod = () => loadEntries()
-const nextPeriod = () => loadEntries()
+function parseIsoDate(d) { const [y, m, day] = (d || '').split('-').map(Number); return { y, m, day } }
+function endOfMonth(year, monthIndex1Based) { return new Date(year, monthIndex1Based, 0).getDate() }
+function getPrevBiweeklyRange(startStr, endStr) {
+  const { y, m, day } = parseIsoDate(startStr)
+  if (!y || !m || !day) return { start: startStr, end: endStr }
+  if (day >= 16) {
+    return { start: `${y}-${String(m).padStart(2,'0')}-01`, end: `${y}-${String(m).padStart(2,'0')}-15` }
+  } else {
+    const prevMonth = m === 1 ? 12 : m - 1
+    const prevYear = m === 1 ? y - 1 : y
+    const eomPrev = endOfMonth(prevYear, prevMonth)
+    return { start: `${prevYear}-${String(prevMonth).padStart(2,'0')}-16`, end: `${prevYear}-${String(prevMonth).padStart(2,'0')}-${String(eomPrev).padStart(2,'0')}` }
+  }
+}
+function getNextBiweeklyRange(startStr, endStr) {
+  const { y, m, day } = parseIsoDate(startStr)
+  if (!y || !m || !day) return { start: startStr, end: endStr }
+  const eom = endOfMonth(y, m)
+  if (day <= 15) {
+    return { start: `${y}-${String(m).padStart(2,'0')}-16`, end: `${y}-${String(m).padStart(2,'0')}-${String(eom).padStart(2,'0')}` }
+  } else {
+    const nextMonth = m === 12 ? 1 : m + 1
+    const nextYear = m === 12 ? y + 1 : y
+    return { start: `${nextYear}-${String(nextMonth).padStart(2,'0')}-01`, end: `${nextYear}-${String(nextMonth).padStart(2,'0')}-15` }
+  }
+}
+const prevPeriod = async () => {
+  if (!selectedStart.value) { selectedStart.value = period.value.start; selectedEnd.value = period.value.end }
+  const r = getPrevBiweeklyRange(selectedStart.value, selectedEnd.value)
+  selectedStart.value = r.start
+  selectedEnd.value = r.end
+  manualStart.value = r.start
+  manualEnd.value = r.end
+  await loadEntries()
+}
+const nextPeriod = async () => {
+  if (!selectedStart.value) { selectedStart.value = period.value.start; selectedEnd.value = period.value.end }
+  const r = getNextBiweeklyRange(selectedStart.value, selectedEnd.value)
+  selectedStart.value = r.start
+  selectedEnd.value = r.end
+  manualStart.value = r.start
+  manualEnd.value = r.end
+  await loadEntries()
+}
+
+const applyManualRange = async () => {
+  if (!manualStart.value || !manualEnd.value) return
+  const a = new Date(manualStart.value)
+  const b = new Date(manualEnd.value)
+  const start = a <= b ? manualStart.value : manualEnd.value
+  const end = a <= b ? manualEnd.value : manualStart.value
+  selectedStart.value = start
+  selectedEnd.value = end
+  await loadEntries()
+}
+
+const resetToCurrentPeriod = async () => {
+  selectedStart.value = null
+  selectedEnd.value = null
+  manualStart.value = ''
+  manualEnd.value = ''
+  await loadEntries()
+}
 
 const markPaid = async () => {
   if (!companyToken.value) return

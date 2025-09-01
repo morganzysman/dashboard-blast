@@ -180,7 +180,14 @@ export const api = {
     const qs = params.toString()
     return apiRequest(`/api/payroll/me/entries${qs ? `?${qs}` : ''}`, { method: 'GET' })
   },
-  getAdminEntries: (companyToken) => apiRequest(`/api/payroll/admin/${companyToken}/entries`, { method: 'GET' }),
+  getAdminEntries: (companyToken, start = null, end = null, userId = null) => {
+    const params = new URLSearchParams()
+    if (start) params.set('start', start)
+    if (end) params.set('end', end)
+    if (userId) params.set('userId', userId)
+    const qs = params.toString()
+    return apiRequest(`/api/payroll/admin/${companyToken}/entries${qs ? `?${qs}` : ''}`, { method: 'GET' })
+  },
   clock: (companyToken, qrSecret) => apiRequest('/api/payroll/clock', { method: 'POST', body: JSON.stringify({ company_token: companyToken, qr_secret: qrSecret }) }),
   markPaid: (companyToken) => apiRequest(`/api/payroll/admin/${companyToken}/pay`, { method: 'POST' }),
   notifyPaid: (companyToken) => apiRequest(`/api/payroll/admin/${companyToken}/notify-paid`, { method: 'POST' }),
