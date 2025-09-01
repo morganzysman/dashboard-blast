@@ -40,14 +40,6 @@
             </select>
             <button class="btn-secondary btn-sm" @click="loadEntries">{{ $t('common.load') }}</button>
             <button v-if="companyToken" class="btn-secondary btn-sm" @click="downloadQr">{{ $t('payroll.downloadQR') }}</button>
-            <div class="flex items-center gap-2">
-              <label class="text-xs text-gray-700">{{ $t('common.from') }}</label>
-              <input type="date" v-model="manualStart" class="form-input" />
-              <label class="text-xs text-gray-700">{{ $t('common.to') }}</label>
-              <input type="date" v-model="manualEnd" class="form-input" />
-              <button class="btn-secondary btn-sm" @click="applyManualRange" :disabled="!manualStart || !manualEnd">{{ $t('common.apply') }}</button>
-              <button class="btn-secondary btn-sm" @click="resetToCurrentPeriod">{{ $t('common.reset') }}</button>
-            </div>
           </div>
           
           <!-- Employee Summary Table -->
@@ -452,8 +444,6 @@ const entries = ref([])
 const period = ref({ start: '', end: '' })
 const selectedStart = ref(null)
 const selectedEnd = ref(null)
-const manualStart = ref('')
-const manualEnd = ref('')
 const paying = ref(false)
 const editEntry = ref(null)
 const deleteConfirmation = ref(null)
@@ -1050,8 +1040,6 @@ const prevPeriod = async () => {
   const r = getPrevBiweeklyRange(selectedStart.value, selectedEnd.value)
   selectedStart.value = r.start
   selectedEnd.value = r.end
-  manualStart.value = r.start
-  manualEnd.value = r.end
   await loadEntries()
 }
 const nextPeriod = async () => {
@@ -1059,27 +1047,6 @@ const nextPeriod = async () => {
   const r = getNextBiweeklyRange(selectedStart.value, selectedEnd.value)
   selectedStart.value = r.start
   selectedEnd.value = r.end
-  manualStart.value = r.start
-  manualEnd.value = r.end
-  await loadEntries()
-}
-
-const applyManualRange = async () => {
-  if (!manualStart.value || !manualEnd.value) return
-  const a = new Date(manualStart.value)
-  const b = new Date(manualEnd.value)
-  const start = a <= b ? manualStart.value : manualEnd.value
-  const end = a <= b ? manualEnd.value : manualStart.value
-  selectedStart.value = start
-  selectedEnd.value = end
-  await loadEntries()
-}
-
-const resetToCurrentPeriod = async () => {
-  selectedStart.value = null
-  selectedEnd.value = null
-  manualStart.value = ''
-  manualEnd.value = ''
   await loadEntries()
 }
 
