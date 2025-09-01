@@ -191,95 +191,68 @@ const getDateInTimezone = (date, timezone) => {
 
 const getDateRange = (rangeType) => {
   const timezone = authStore.user?.timezone || 'America/Lima'
-  const today = new Date()
-  
   console.log(`🔍 getDateRange called with rangeType: ${rangeType}, timezone: ${timezone}`)
-  
+
+  // Base "today" as a calendar date in the user's timezone
+  const todayStr = getCurrentDateInTimezone()
+  const [ty, tm, td] = todayStr.split('-').map(Number)
+  const base = new Date(ty, tm - 1, td) // local Date representing the timezone's current date
+
+  const fmt = (d) => getDateInTimezone(d, timezone)
+  const shift = (d, days) => { const nd = new Date(d); nd.setDate(nd.getDate() + days); return nd }
+
   switch (rangeType) {
     case 'today':
-      return { 
-        start: getCurrentDateInTimezone(), 
-        end: getCurrentDateInTimezone() 
-      }
-    
-    case 'yesterday':
-      const yesterday = new Date(today)
-      yesterday.setDate(yesterday.getDate() - 1)
-      return { 
-        start: getDateInTimezone(yesterday, timezone), 
-        end: getDateInTimezone(yesterday, timezone) 
-      }
-    
-    case 'last7days':
-      const week = new Date(today)
-      week.setDate(week.getDate() - 6)
-      return { 
-        start: getDateInTimezone(week, timezone), 
-        end: getCurrentDateInTimezone() 
-      }
-    
-    case 'last30days':
-      const month = new Date(today)
-      month.setDate(month.getDate() - 29)
-      return { 
-        start: getDateInTimezone(month, timezone), 
-        end: getCurrentDateInTimezone() 
-      }
-    
-    case 'thisweek':
-      const startOfWeek = new Date(today)
-      const day = startOfWeek.getDay()
-      const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1) // adjust when day is Sunday
-      startOfWeek.setDate(diff)
-      return { 
-        start: getDateInTimezone(startOfWeek, timezone), 
-        end: getCurrentDateInTimezone() 
-      }
-    
-    case 'lastweek':
-      // Determine the start of the current week (Monday) in the user's timezone
-      const nowTz = new Date(new Date().toLocaleString('en-US', { timeZone: timezone }))
-      const currentWeekStart = new Date(nowTz)
-      const dow = nowTz.getDay() // 0=Sun..6=Sat
-      currentWeekStart.setDate(nowTz.getDate() - dow + (dow === 0 ? -6 : 1)) // Monday of current week
+      return { start: todayStr, end: todayStr }
 
-      // Previous week runs Monday..Sunday before the current week
-      const lastWeekStart = new Date(currentWeekStart)
-      lastWeekStart.setDate(currentWeekStart.getDate() - 7)
-      const lastWeekEnd = new Date(lastWeekStart)
-      lastWeekEnd.setDate(lastWeekStart.getDate() + 6)
+    case 'yesterday': {
+      const y = shift(base, -1)
+      return { start: fmt(y), end: fmt(y) }
+    }
 
-      return {
-        start: getDateInTimezone(lastWeekStart, timezone),
-        end: getDateInTimezone(lastWeekEnd, timezone)
-      }
-    
-    case 'thismonth':
-      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1)
-      return { 
-        start: getDateInTimezone(startOfMonth, timezone), 
-        end: getCurrentDateInTimezone() 
-      }
-    
-    case 'lastmonth':
-      const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1)
-      const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0)
-      return { 
-        start: getDateInTimezone(lastMonth, timezone), 
-        end: getDateInTimezone(lastMonthEnd, timezone) 
-      }
-    
+    case 'last7days': {
+      const start = shift(base, -6)
+      return { start: fmt(start), end: todayStr }
+    }
+
+    case 'last30days': {
+      const start = shift(base, -29)
+      return { start: fmt(start), end: todayStr }
+    }
+
+    case 'thisweek': {
+      // Monday=0 offset from base date
+      const dow = base.getDay() // 0=Sun..6=Sat
+      const offsetToMonday = dow === 0 ? 6 : dow - 1
+      const start = shift(base, -offsetToMonday)
+      return { start: fmt(start), end: todayStr }
+    }
+
+    case 'lastweek': {
+      const dow = base.getDay()
+      const offsetToMonday = dow === 0 ? 6 : dow - 1
+      const currentWeekStart = shift(base, -offsetToMonday)
+      const lastWeekStart = shift(currentWeekStart, -7)
+      const lastWeekEnd = shift(lastWeekStart, 6)
+      return { start: fmt(lastWeekStart), end: fmt(lastWeekEnd) }
+    }
+
+    case 'thismonth': {
+      const startOfMonth = new Date(ty, tm - 1, 1)
+      return { start: fmt(startOfMonth), end: todayStr }
+    }
+
+    case 'lastmonth': {
+      const startPrev = new Date(ty, tm - 2, 1)
+      const endPrev = new Date(ty, tm - 1, 0)
+      return { start: fmt(startPrev), end: fmt(endPrev) }
+    }
+
     case 'custom':
-      return { 
-        start: customStartDate.value, 
-        end: customEndDate.value 
-      }
-    
+      return { start: customStartDate.value, end: customEndDate.value }
+
     default:
-      return { 
-        start: getCurrentDateInTimezone(), 
-        end: getCurrentDateInTimezone() 
-      }
+      return { start: todayStr, end: todayStr }
   }
 }
 
