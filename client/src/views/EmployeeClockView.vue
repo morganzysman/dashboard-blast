@@ -24,27 +24,9 @@
                 <span>{{ accountLabel }}</span>
               </div>
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <div v-if="openEntry" class="space-y-2">
+              <div v-if="openEntry">
                 <div class="px-3 py-2 rounded bg-green-50 border border-green-200 text-green-700 text-sm text-center">
                   {{ $t('employee.clock.clockedIn') }} {{ formatTime(openEntry.clock_in_at) }}
-                </div>
-                <div class="rounded border border-gray-200 p-3 text-xs sm:text-sm bg-gray-50 text-gray-700">
-                  <div class="flex items-center justify-between">
-                    <span class="text-gray-600">Elapsed</span>
-                    <span class="font-semibold">{{ elapsedLabel }}</span>
-                  </div>
-                  <div class="flex items-center justify-between mt-1">
-                    <span class="text-gray-600">Date</span>
-                    <span>{{ formatDate(openEntry.clock_in_at) }}</span>
-                  </div>
-                  <div v-if="shiftLabel" class="flex items-center justify-between mt-1">
-                    <span class="text-gray-600">Shift</span>
-                    <span class="font-medium">{{ shiftLabel }}</span>
-                  </div>
-                  <div v-if="punctualityLabel" class="flex items-center justify-between mt-1">
-                    <span class="text-gray-600">Punctuality</span>
-                    <span :class="punctualityType==='late' ? 'text-red-600' : (punctualityType==='early' ? 'text-amber-600' : 'text-green-600')" class="font-medium">{{ punctualityLabel }}</span>
-                  </div>
                 </div>
               </div>
               <button v-else class="btn-primary w-full" :disabled="submitting || !canClockIn" @click="submitClock('in')">
@@ -437,65 +419,7 @@ const formatTime = (iso) => {
   })
 }
 
-const formatDate = (iso) => {
-  const timezone = authStore.user?.timezone || 'America/Lima'
-  return new Date(iso).toLocaleDateString('en-US', {
-    timeZone: timezone,
-    year: 'numeric', month: 'short', day: '2-digit'
-  })
-}
-
-const elapsedLabel = computed(() => {
-  if (!openEntry.value?.clock_in_at) return '—'
-  const start = new Date(openEntry.value.clock_in_at).getTime()
-  const diff = Math.max(0, nowTick.value - start)
-  const totalSec = Math.floor(diff / 1000)
-  const h = Math.floor(totalSec / 3600).toString().padStart(2,'0')
-  const m = Math.floor((totalSec % 3600) / 60).toString().padStart(2,'0')
-  const s = Math.floor(totalSec % 60).toString().padStart(2,'0')
-  return `${h}:${m}:${s}`
-})
-
-const shiftLabel = computed(() => {
-  const s = openEntry.value?.shift_start
-  const e = openEntry.value?.shift_end
-  if (!s && !e) return ''
-  // shift times are TIME strings HH:MM:SS; display HH:MM
-  const fmt = (t) => (t || '').slice(0,5)
-  return `${fmt(s)} – ${fmt(e)}`
-})
-
-const punctualityType = computed(() => {
-  const s = openEntry.value?.shift_start
-  const ci = openEntry.value?.clock_in_at
-  if (!s || !ci) return 'on_time'
-  try {
-    const tz = authStore.user?.timezone || 'America/Lima'
-    const cin = new Date(ci)
-    const dateLocal = cin.toLocaleDateString('sv-SE', { timeZone: tz })
-    const scheduled = new Date(`${dateLocal}T${s}`)
-    const diffMin = Math.round((cin.getTime() - scheduled.getTime()) / 60000)
-    if (diffMin > 5) return 'late'
-    if (diffMin < -5) return 'early'
-    return 'on_time'
-  } catch { return 'on_time' }
-})
-
-const punctualityLabel = computed(() => {
-  const s = openEntry.value?.shift_start
-  const ci = openEntry.value?.clock_in_at
-  if (!s || !ci) return ''
-  try {
-    const tz = authStore.user?.timezone || 'America/Lima'
-    const cin = new Date(ci)
-    const dateLocal = cin.toLocaleDateString('sv-SE', { timeZone: tz })
-    const scheduled = new Date(`${dateLocal}T${s}`)
-    const diffMin = Math.round((cin.getTime() - scheduled.getTime()) / 60000)
-    if (diffMin > 5) return `${diffMin} min late`
-    if (diffMin < -5) return `${Math.abs(diffMin)} min early`
-    return 'on time'
-  } catch { return '' }
-})
+// Removed extra context: only show clock-in time per request
 </script>
 
 <style scoped>
