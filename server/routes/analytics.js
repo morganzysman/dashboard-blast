@@ -9,7 +9,7 @@ const router = Router()
 // Aggregates profitability metrics across user's accounts for a given date range
 router.get('/profitability', requireAuth, async (req, res) => {
   try {
-    // Normalize filter params like other routes
+    // Normalize filter params like other routes (support nested objects and flat keys)
     let currentParams = {}
     Object.keys(req.query).forEach(key => {
       if (key.startsWith('filter[') && key.endsWith(']')) {
@@ -19,16 +19,22 @@ router.get('/profitability', requireAuth, async (req, res) => {
         currentParams[key] = req.query[key]
       }
     })
+    // Also merge nested filter object if present (e.g., ?filter[start_date]=... parsed as req.query.filter.start_date)
+    if (req.query.filter && typeof req.query.filter === 'object') {
+      for (const [k, v] of Object.entries(req.query.filter)) {
+        currentParams[`filter[${k}]`] = v
+      }
+    }
 
-    // Fetch company timezone (accept both filter[timezone] and timezone)
-    let timezone = currentParams['filter[timezone]'] || req.query.timezone
+    // Fetch company timezone (accept filter[timezone], filter.timezone, or timezone)
+    let timezone = currentParams['filter[timezone]'] || req.query?.filter?.timezone || req.query.timezone
     if (!timezone) {
       const tzQ = await pool.query('SELECT timezone FROM companies WHERE id = $1', [req.user.companyId])
       timezone = tzQ.rows[0]?.timezone || 'America/Lima'
     }
-    // Accept both filter[start_date]/filter[end_date] and start_date/end_date
-    let startDate = currentParams['filter[start_date]'] || req.query.start_date
-    let endDate = currentParams['filter[end_date]'] || req.query.end_date
+    // Accept filter[start_date]/filter[end_date], nested filter object, and flat keys
+    let startDate = currentParams['filter[start_date]'] || req.query?.filter?.start_date || req.query.start_date
+    let endDate = currentParams['filter[end_date]'] || req.query?.filter?.end_date || req.query.end_date
 
     // If either missing, default to today in company timezone
     if (!startDate || !endDate) {
@@ -40,6 +46,9 @@ router.get('/profitability', requireAuth, async (req, res) => {
     // Only coerce format; do not replace values with "today"
     startDate = getTimezoneAwareDate(startDate, timezone)
     endDate = getTimezoneAwareDate(endDate, timezone)
+
+    // Debug logging for parsed period (safe, concise)
+    console.log('📊 Profitability period parsed:', { startDate, endDate, timezone, rawQuery: req.query })
 
     // Calculate days in period
     const startObj = new Date(startDate)
