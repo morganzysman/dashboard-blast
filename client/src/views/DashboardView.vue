@@ -237,13 +237,21 @@ const getDateRange = (rangeType) => {
       }
     
     case 'lastweek':
-      const lastWeekEnd = new Date(today)
-      lastWeekEnd.setDate(lastWeekEnd.getDate() - 7)
-      const lastWeekStart = new Date(lastWeekEnd)
-      lastWeekStart.setDate(lastWeekStart.getDate() - 6)
-      return { 
-        start: getDateInTimezone(lastWeekStart, timezone), 
-        end: getDateInTimezone(lastWeekEnd, timezone) 
+      // Determine the start of the current week (Monday) in the user's timezone
+      const nowTz = new Date(new Date().toLocaleString('en-US', { timeZone: timezone }))
+      const currentWeekStart = new Date(nowTz)
+      const dow = nowTz.getDay() // 0=Sun..6=Sat
+      currentWeekStart.setDate(nowTz.getDate() - dow + (dow === 0 ? -6 : 1)) // Monday of current week
+
+      // Previous week runs Monday..Sunday before the current week
+      const lastWeekStart = new Date(currentWeekStart)
+      lastWeekStart.setDate(currentWeekStart.getDate() - 7)
+      const lastWeekEnd = new Date(lastWeekStart)
+      lastWeekEnd.setDate(lastWeekStart.getDate() + 6)
+
+      return {
+        start: getDateInTimezone(lastWeekStart, timezone),
+        end: getDateInTimezone(lastWeekEnd, timezone)
       }
     
     case 'thismonth':
