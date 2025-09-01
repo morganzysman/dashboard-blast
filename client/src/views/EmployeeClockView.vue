@@ -78,6 +78,33 @@
         </div>
       </div>
     </div>
+
+    <!-- Day recap modal after clock-out -->
+    <div v-if="showRecap" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-lg w-full max-w-md p-4">
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="text-md font-semibold">{{ recap.date }}</h3>
+          <button class="btn-secondary btn-xs" @click="showRecap=false">Close</button>
+        </div>
+        <div class="space-y-2 max-h-[50vh] overflow-auto">
+          <div v-if="recap.entries.length===0" class="text-sm text-gray-600 text-center">No entries today</div>
+          <div v-for="e in recap.entries" :key="e.id || e.clock_in_at" class="flex items-center justify-between text-sm border-b pb-1">
+            <div>
+              <div class="text-gray-900">{{ formatTime(e.clock_in_at) }} → {{ e.clock_out_at ? formatTime(e.clock_out_at) : '…' }}</div>
+              <div class="text-gray-500 text-xs">{{ formatDurationHms(e.seconds) }}</div>
+            </div>
+            <div class="font-medium">{{ formatCurrency(e.amount || 0) }}</div>
+          </div>
+        </div>
+        <div class="mt-3 flex items-center justify-between text-sm">
+          <div class="text-gray-600">Total</div>
+          <div class="font-semibold">{{ formatDurationHms(recap.totalSeconds) }} · {{ formatCurrency(recap.totalAmount) }}</div>
+        </div>
+        <div class="mt-3 text-right">
+          <button class="btn-primary btn-sm" @click="showRecap=false">Close</button>
+        </div>
+      </div>
+    </div>
   </div>
   
 </template>
@@ -110,6 +137,10 @@ let frameHandle = null
 let barcodeDetector = null
 let zxingReader = null
 let zxingControls = null
+
+// Recap modal
+const showRecap = ref(false)
+const recap = ref({ date: '', entries: [], totalSeconds: 0, totalAmount: 0 })
 
 // Derived: account label for display
 const accountLabel = computed(() => {
@@ -159,22 +190,16 @@ const hasQrContext = computed(() => !!qrSecret.value && !!companyToken.value)
 // Check camera permissions
 const checkCameraPermission = async () => {
   try {
-    // Check if Permissions API is available
     if ('permissions' in navigator) {
       const permission = await navigator.permissions.query({ name: 'camera' })
       cameraPermission.value = permission.state
-      
-      // Listen for permission changes
       permission.addEventListener('change', () => {
         cameraPermission.value = permission.state
         localStorage.setItem('cameraPermission', permission.state)
       })
-      
-      // Store permission state
       localStorage.setItem('cameraPermission', permission.state)
       return permission.state
     } else {
-      // Fallback: check localStorage for previous user choice
       const stored = localStorage.getItem('cameraPermission')
       if (stored) {
         cameraPermission.value = stored
@@ -184,7 +209,6 @@ const checkCameraPermission = async () => {
       return 'prompt'
     }
   } catch (error) {
-    console.log('Permission check not supported:', error)
     cameraPermission.value = 'prompt'
     return 'prompt'
   }
@@ -197,29 +221,22 @@ onMounted(async () => {
   const secret = params.get('qr_secret')
   if (token) companyToken.value = token
   if (secret) qrSecret.value = secret
-  
-  // Check camera permission first
   const permission = await checkCameraPermission()
-  
   if (!token || !secret) {
-    // Only auto-start scanner if we have permission or haven't asked yet
     if (permission === 'granted' || permission === 'prompt') {
       await startScanner().catch(() => {})
     }
   }
   refreshOpenState()
-  // Start tick for elapsed timer
   tickHandle = window.setInterval(() => { nowTick.value = Date.now() }, 1000)
 })
 
 watch(companyToken, () => refreshOpenState())
 
 const resetCameraPermission = () => {
-  // Clear stored permission and reset to unknown
   localStorage.removeItem('cameraPermission')
   cameraPermission.value = 'unknown'
   message.value = t('employee.clock.cameraPermissionReset')
-  // Automatically try to start scanner again
   startScanner().catch(() => {})
 }
 
@@ -231,43 +248,31 @@ const toggleScanner = async () => {
 const startScanner = async () => {
   try {
     message.value = ''
-    
-    // Check permission first if we haven't already
     if (cameraPermission.value === 'unknown') {
       await checkCameraPermission()
     }
-    
-    // If permission is denied, don't try to access camera
     if (cameraPermission.value === 'denied') {
       message.value = t('employee.clock.cameraAccessDenied')
       return
     }
-    
     scannerOpen.value = true
-    
-    // Prefer native BarcodeDetector if available
     if ('BarcodeDetector' in window) {
       try { barcodeDetector = new window.BarcodeDetector({ formats: ['qr_code'] }) } catch {}
     }
-    
     if (barcodeDetector) {
       try {
         mediaStream = await navigator.mediaDevices.getUserMedia({ 
           video: { facingMode: { ideal: 'environment' } }, 
           audio: false 
         })
-        
-        // Update permission state on successful access
         cameraPermission.value = 'granted'
         localStorage.setItem('cameraPermission', 'granted')
-        
         if (videoEl.value) {
           videoEl.value.srcObject = mediaStream
           await videoEl.value.play()
         }
         scanWithDetector()
       } catch (permissionError) {
-        // Handle permission denied
         cameraPermission.value = 'denied'
         localStorage.setItem('cameraPermission', 'denied')
         throw permissionError
@@ -277,7 +282,6 @@ const startScanner = async () => {
     }
   } catch (e) {
     scannerOpen.value = false
-    
     if (e.name === 'NotAllowedError') {
       cameraPermission.value = 'denied'
       localStorage.setItem('cameraPermission', 'denied')
@@ -331,10 +335,7 @@ onBeforeUnmount(() => { stopScanner(); if (tickHandle) window.clearInterval(tick
 
 let tickHandle = null
 
-watch(openEntry, (val) => {
-  // Reset tick to force refresh when a new entry appears
-  nowTick.value = Date.now()
-})
+watch(openEntry, () => { nowTick.value = Date.now() })
 
 // ZXing fallback
 const startZxing = async () => {
@@ -378,22 +379,11 @@ const submitClock = async (dir) => {
       message.value = action === 'clock_out' ? t('employee.clock.clockOutSuccess') : (late ? `${late}` : t('employee.clock.clockInSuccess'))
       qrSecret.value = ''
       await refreshOpenState()
-      // Immediate redirect to /timesheet with greeting modal data
-      try {
-        const entry = res.data?.entry || null
-        const clockAtIso = entry?.clock_in_at || entry?.clock_out_at || new Date().toISOString()
-        let lateMinutes = 0
-        if (action === 'clock_in' && entry?.shift_start) {
-          const diffMs = new Date(clockAtIso).getTime() - new Date(entry.shift_start).getTime()
-          if (diffMs > 0) lateMinutes = Math.floor(diffMs / 60000)
-        }
-        router.push({ path: '/timesheet', query: {
-          greeted: '1',
-          type: action === 'clock_in' ? 'in' : 'out',
-          late: lateMinutes >= 10 ? String(lateMinutes) : undefined,
-          clockAt: clockAtIso
-        } })
-      } catch {}
+      // After clock-out, show a day recap modal instead of redirecting
+      if (action === 'clock_out') {
+        try { await loadDayRecap() } catch {}
+        showRecap.value = true
+      }
     } else {
       message.value = res.error || t('common.failed')
     }
@@ -417,6 +407,43 @@ const formatTime = (iso) => {
     minute: '2-digit',
     hour12: false
   })
+}
+
+// Fetch today's entries for recap
+const loadDayRecap = async () => {
+  const tzDate = new Date()
+  const today = tzDate.toISOString().slice(0,10)
+  const data = await api.getMyEntries(today, today)
+  const items = Array.isArray(data?.data) ? data.data : []
+  let totalSeconds = 0
+  let totalAmount = 0
+  const entries = items.map(e => {
+    const start = e.clock_in_at ? new Date(e.clock_in_at) : null
+    const end = e.clock_out_at ? new Date(e.clock_out_at) : null
+    const secs = (start && end) ? Math.max(0, Math.floor((end - start) / 1000)) : 0
+    totalSeconds += secs
+    totalAmount += Number(e.amount || 0)
+    return {
+      id: e.id,
+      clock_in_at: e.clock_in_at,
+      clock_out_at: e.clock_out_at,
+      amount: e.amount || 0,
+      seconds: secs
+    }
+  })
+  recap.value = { date: today, entries, totalSeconds, totalAmount }
+}
+
+const formatDurationHms = (secs) => {
+  const h = Math.floor(secs / 3600).toString().padStart(2,'0')
+  const m = Math.floor((secs % 3600) / 60).toString().padStart(2,'0')
+  const s = Math.floor(secs % 60).toString().padStart(2,'0')
+  return `${h}:${m}:${s}`
+}
+
+const formatCurrency = (n) => {
+  const symbol = auth.user?.currencySymbol || 'S/'
+  return `${symbol} ${(Number(n)||0).toFixed(2)}`
 }
 
 // Removed extra context: only show clock-in time per request
