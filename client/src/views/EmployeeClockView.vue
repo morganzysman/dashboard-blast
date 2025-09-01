@@ -400,7 +400,7 @@ const todayLabel = computed(() => new Date().toLocaleDateString(undefined, {
 }))
 
 const formatTime = (iso) => {
-  const timezone = authStore.user?.timezone || 'America/Lima'
+  const timezone = auth.user?.timezone || 'America/Lima'
   return new Date(iso).toLocaleTimeString('en-US', { 
     timeZone: timezone,
     hour: '2-digit', 
