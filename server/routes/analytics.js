@@ -20,20 +20,26 @@ router.get('/profitability', requireAuth, async (req, res) => {
       }
     })
 
-    // Fetch company timezone
-    let timezone = currentParams['filter[timezone]']
+    // Fetch company timezone (accept both filter[timezone] and timezone)
+    let timezone = currentParams['filter[timezone]'] || req.query.timezone
     if (!timezone) {
       const tzQ = await pool.query('SELECT timezone FROM companies WHERE id = $1', [req.user.companyId])
       timezone = tzQ.rows[0]?.timezone || 'America/Lima'
     }
-    let startDate = currentParams['filter[start_date]']
-    let endDate = currentParams['filter[end_date]']
+    // Accept both filter[start_date]/filter[end_date] and start_date/end_date
+    let startDate = currentParams['filter[start_date]'] || req.query.start_date
+    let endDate = currentParams['filter[end_date]'] || req.query.end_date
 
+    // If either missing, default to today in company timezone
     if (!startDate || !endDate) {
       const today = getTimezoneAwareDate(null, timezone)
       startDate = today
       endDate = today
     }
+    // Normalize provided dates to YYYY-MM-DD without shifting timezone
+    // Only coerce format; do not replace values with "today"
+    startDate = getTimezoneAwareDate(startDate, timezone)
+    endDate = getTimezoneAwareDate(endDate, timezone)
 
     // Calculate days in period
     const startObj = new Date(startDate)
