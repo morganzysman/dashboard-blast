@@ -557,15 +557,42 @@ router.post('/users/:userId/shifts', requireAuth, requireRole(['admin', 'super-a
       const aq = await pool.query('SELECT company_id FROM company_accounts WHERE company_token = $1', [company_token])
       if ((aq.rows[0]?.company_id || null) !== req.user.companyId) return res.status(403).json({ success: false, error: 'Forbidden' })
     }
-    const ins = await pool.query(
-      `INSERT INTO employee_shifts(user_id, company_token, weekday, start_time, end_time)
-       VALUES ($1,$2,$3,$4,$5)
-       ON CONFLICT (user_id, company_token, weekday)
-       DO UPDATE SET start_time = EXCLUDED.start_time, end_time = EXCLUDED.end_time, updated_at = NOW()
-       RETURNING *`,
-      [userId, company_token, weekday, start_time, end_time]
+    
+    // Check if a shift already exists for this user/weekday combination
+    const existing = await pool.query(
+      'SELECT id, company_token FROM employee_shifts WHERE user_id = $1 AND weekday = $2',
+      [userId, weekday]
     )
-    res.json({ success: true, data: ins.rows[0] })
+    
+    if (existing.rowCount > 0) {
+      // Shift exists - prevent changing company_token
+      const existingCompanyToken = existing.rows[0].company_token
+      if (existingCompanyToken !== company_token) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Cannot change company_token for existing shift. Delete the shift first if needed.' 
+        })
+      }
+      
+      // Update only time fields, keeping the same company_token
+      const upd = await pool.query(
+        `UPDATE employee_shifts 
+         SET start_time = $3, end_time = $4, updated_at = NOW()
+         WHERE user_id = $1 AND weekday = $2
+         RETURNING *`,
+        [userId, weekday, start_time, end_time]
+      )
+      res.json({ success: true, data: upd.rows[0] })
+    } else {
+      // No existing shift - create new one
+      const ins = await pool.query(
+        `INSERT INTO employee_shifts(user_id, company_token, weekday, start_time, end_time)
+         VALUES ($1,$2,$3,$4,$5)
+         RETURNING *`,
+        [userId, company_token, weekday, start_time, end_time]
+      )
+      res.json({ success: true, data: ins.rows[0] })
+    }
   } catch (e) {
     res.status(500).json({ success: false, error: 'Failed to upsert shift' })
   }
