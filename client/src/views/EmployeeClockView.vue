@@ -52,9 +52,25 @@
               <!-- Camera Scanner -->
               <div v-if="cameraPermission !== 'denied'" class="flex items-center justify-center">
                 <div class="mt-2 rounded overflow-hidden border border-gray-200 relative w-full max-w-xl">
-                  <video ref="videoEl" class="w-full h-64 object-cover" playsinline></video>
+                  <video 
+                    ref="videoEl" 
+                    class="w-full h-64 object-cover" 
+                    playsinline 
+                    autoplay 
+                    muted
+                    :style="{ backgroundColor: scannerOpen ? 'transparent' : '#f3f4f6' }"
+                  ></video>
                   <div class="absolute inset-0 pointer-events-none border-2 border-green-500 m-8 rounded"></div>
-                  <div class="absolute bottom-1 right-2 bg-black bg-opacity-50 text-white text-[10px] px-1 rounded">{{ $t('employee.clock.scanner') }}</div>
+                  <div class="absolute bottom-1 right-2 bg-black bg-opacity-50 text-white text-[10px] px-1 rounded">
+                    {{ scannerOpen ? $t('employee.clock.scanner') : $t('employee.clock.starting') }}
+                  </div>
+                  <!-- Loading indicator for camera initialization -->
+                  <div v-if="!scannerOpen && cameraPermission !== 'denied'" class="absolute inset-0 flex items-center justify-center bg-gray-100 bg-opacity-75">
+                    <div class="flex flex-col items-center space-y-2">
+                      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                      <div class="text-sm text-gray-600">{{ $t('employee.clock.initializingCamera') }}</div>
+                    </div>
+                  </div>
                 </div>
               </div>
               
@@ -187,21 +203,39 @@ const clockOutDisabledReason = computed(() => {
 })
 const hasQrContext = computed(() => !!qrSecret.value && !!companyToken.value)
 
-// Check camera permissions
+// Check camera permissions with better PWA support
 const checkCameraPermission = async () => {
   try {
+    // First check if we have stored permission state to avoid unnecessary prompts
+    const stored = localStorage.getItem('cameraPermission')
+    const lastCheck = localStorage.getItem('cameraPermissionCheck')
+    const now = Date.now()
+    
+    // If we checked recently (within 5 minutes) and got a result, use it
+    if (stored && lastCheck && (now - parseInt(lastCheck)) < 300000) {
+      cameraPermission.value = stored
+      return stored
+    }
+    
     if ('permissions' in navigator) {
       const permission = await navigator.permissions.query({ name: 'camera' })
       cameraPermission.value = permission.state
-      permission.addEventListener('change', () => {
-        cameraPermission.value = permission.state
-        localStorage.setItem('cameraPermission', permission.state)
-      })
       localStorage.setItem('cameraPermission', permission.state)
+      localStorage.setItem('cameraPermissionCheck', now.toString())
+      
+      // Only add listener if not already added
+      if (!permission._listenerAdded) {
+        permission.addEventListener('change', () => {
+          cameraPermission.value = permission.state
+          localStorage.setItem('cameraPermission', permission.state)
+          localStorage.setItem('cameraPermissionCheck', Date.now().toString())
+        })
+        permission._listenerAdded = true
+      }
       return permission.state
     } else {
-      const stored = localStorage.getItem('cameraPermission')
-      if (stored) {
+      // Fallback for browsers without permissions API
+      if (stored && ['granted', 'denied'].includes(stored)) {
         cameraPermission.value = stored
         return stored
       }
@@ -209,6 +243,7 @@ const checkCameraPermission = async () => {
       return 'prompt'
     }
   } catch (error) {
+    console.warn('Camera permission check failed:', error)
     cameraPermission.value = 'prompt'
     return 'prompt'
   }
@@ -233,11 +268,27 @@ onMounted(async () => {
 
 watch(companyToken, () => refreshOpenState())
 
-const resetCameraPermission = () => {
+const resetCameraPermission = async () => {
+  // Clear all camera-related storage
   localStorage.removeItem('cameraPermission')
+  localStorage.removeItem('cameraPermissionCheck')
+  
+  // Stop any existing scanner
+  stopScanner()
+  
+  // Reset state
   cameraPermission.value = 'unknown'
   message.value = t('employee.clock.cameraPermissionReset')
-  startScanner().catch(() => {})
+  
+  // Wait a moment for cleanup
+  await new Promise(resolve => setTimeout(resolve, 500))
+  
+  // Try to start scanner again
+  try {
+    await startScanner()
+  } catch (e) {
+    console.warn('Scanner restart failed after permission reset:', e)
+  }
 }
 
 const toggleScanner = async () => {
@@ -248,6 +299,13 @@ const toggleScanner = async () => {
 const startScanner = async () => {
   try {
     message.value = ''
+    
+    // Clean up any existing stream first
+    if (mediaStream) {
+      stopScanner()
+      await new Promise(resolve => setTimeout(resolve, 100)) // Small delay for cleanup
+    }
+    
     if (cameraPermission.value === 'unknown') {
       await checkCameraPermission()
     }
@@ -255,41 +313,94 @@ const startScanner = async () => {
       message.value = t('employee.clock.cameraAccessDenied')
       return
     }
+    
     scannerOpen.value = true
+    
+    // Try modern BarcodeDetector first (better for PWA)
     if ('BarcodeDetector' in window) {
-      try { barcodeDetector = new window.BarcodeDetector({ formats: ['qr_code'] }) } catch {}
+      try { 
+        barcodeDetector = new window.BarcodeDetector({ formats: ['qr_code'] }) 
+      } catch (e) {
+        console.warn('BarcodeDetector creation failed:', e)
+        barcodeDetector = null
+      }
     }
+    
     if (barcodeDetector) {
       try {
-        mediaStream = await navigator.mediaDevices.getUserMedia({ 
-          video: { facingMode: { ideal: 'environment' } }, 
-          audio: false 
-        })
+        // Enhanced video constraints for better PWA compatibility
+        const constraints = {
+          video: {
+            facingMode: { ideal: 'environment' },
+            width: { ideal: 1280, max: 1920 },
+            height: { ideal: 720, max: 1080 },
+            aspectRatio: { ideal: 16/9 }
+          },
+          audio: false
+        }
+        
+        mediaStream = await navigator.mediaDevices.getUserMedia(constraints)
         cameraPermission.value = 'granted'
         localStorage.setItem('cameraPermission', 'granted')
+        localStorage.setItem('cameraPermissionCheck', Date.now().toString())
+        
         if (videoEl.value) {
           videoEl.value.srcObject = mediaStream
-          await videoEl.value.play()
+          
+          // Enhanced video setup for PWA
+          videoEl.value.setAttribute('autoplay', '')
+          videoEl.value.setAttribute('muted', '')
+          videoEl.value.setAttribute('playsinline', '')
+          
+          // Handle video load and play events
+          const playPromise = videoEl.value.play()
+          if (playPromise !== undefined) {
+            await playPromise
+          }
+          
+          // Wait for video to actually start
+          await new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => reject(new Error('Video timeout')), 5000)
+            const checkVideo = () => {
+              if (videoEl.value && videoEl.value.videoWidth > 0) {
+                clearTimeout(timeout)
+                resolve()
+              } else {
+                setTimeout(checkVideo, 100)
+              }
+            }
+            checkVideo()
+          })
         }
+        
         scanWithDetector()
       } catch (permissionError) {
+        console.error('Camera access error:', permissionError)
         cameraPermission.value = 'denied'
         localStorage.setItem('cameraPermission', 'denied')
+        localStorage.setItem('cameraPermissionCheck', Date.now().toString())
         throw permissionError
       }
     } else {
+      // Fallback to ZXing
       await startZxing()
     }
   } catch (e) {
+    console.error('Scanner start error:', e)
     scannerOpen.value = false
-    if (e.name === 'NotAllowedError') {
+    
+    if (e.name === 'NotAllowedError' || e.name === 'PermissionDeniedError') {
       cameraPermission.value = 'denied'
       localStorage.setItem('cameraPermission', 'denied')
+      localStorage.setItem('cameraPermissionCheck', Date.now().toString())
       message.value = t('employee.clock.cameraAccessDenied')
-    } else if (e.name === 'NotFoundError') {
+    } else if (e.name === 'NotFoundError' || e.name === 'DevicesNotFoundError') {
       message.value = t('employee.clock.noCameraFound')
+    } else if (e.message === 'Video timeout') {
+      message.value = t('employee.clock.cameraTimeout')
     } else {
       message.value = t('employee.clock.unableToAccessCamera')
+      console.error('Detailed camera error:', e)
     }
   }
 }
@@ -318,17 +429,45 @@ const scanWithDetector = async () => {
 
 const stopScanner = () => {
   scannerOpen.value = false
-  if (frameHandle) cancelAnimationFrame(frameHandle)
-  frameHandle = null
-  try { if (videoEl.value) videoEl.value.pause() } catch {}
-  if (mediaStream) {
-    for (const t of mediaStream.getTracks()) t.stop()
+  
+  // Cancel animation frame
+  if (frameHandle) {
+    cancelAnimationFrame(frameHandle)
+    frameHandle = null
   }
-  mediaStream = null
+  
+  // Stop video element
+  try {
+    if (videoEl.value) {
+      videoEl.value.pause()
+      videoEl.value.srcObject = null
+    }
+  } catch (e) {
+    console.warn('Error stopping video:', e)
+  }
+  
+  // Stop media stream tracks
+  if (mediaStream) {
+    try {
+      for (const track of mediaStream.getTracks()) {
+        track.stop()
+      }
+    } catch (e) {
+      console.warn('Error stopping media tracks:', e)
+    }
+    mediaStream = null
+  }
+  
+  // Stop ZXing reader
   if (zxingControls && typeof zxingControls.stop === 'function') {
-    try { zxingControls.stop() } catch {}
+    try {
+      zxingControls.stop()
+    } catch (e) {
+      console.warn('Error stopping ZXing:', e)
+    }
   }
   zxingControls = null
+  barcodeDetector = null
 }
 
 onBeforeUnmount(() => { stopScanner(); if (tickHandle) window.clearInterval(tickHandle) })
@@ -337,31 +476,67 @@ let tickHandle = null
 
 watch(openEntry, () => { nowTick.value = Date.now() })
 
-// ZXing fallback
+// ZXing fallback with enhanced PWA support
 const startZxing = async () => {
   try {
     const mod = await import('@zxing/browser')
     const { BrowserMultiFormatReader } = mod
     zxingReader = new BrowserMultiFormatReader()
     const video = videoEl.value
-    if (!video) return
-    zxingControls = await zxingReader.decodeFromVideoDevice(undefined, video, (result, err) => {
-      if (!result) return
-      const raw = result.getText()
-      try {
-        const url = new URL(raw)
-        const token = url.searchParams.get('company_token')
-        const secret = url.searchParams.get('qr_secret')
-        if (token && secret) {
-          companyToken.value = token
-          qrSecret.value = secret
-          stopScanner()
+    if (!video) {
+      throw new Error('Video element not available')
+    }
+    
+    // Configure ZXing with better settings for PWA
+    const hints = new Map()
+    hints.set(2, true) // TRY_HARDER
+    hints.set(3, [1]) // POSSIBLE_FORMATS: QR_CODE
+    
+    // Start ZXing with enhanced error handling
+    zxingControls = await zxingReader.decodeFromVideoDevice(
+      undefined, 
+      video, 
+      (result, err) => {
+        if (!result) {
+          // Only log errors that might be important
+          if (err && !err.message?.includes('No MultiFormat Readers')) {
+            console.debug('ZXing scan attempt:', err.message)
+          }
+          return
         }
-      } catch {}
-    })
+        
+        const raw = result.getText()
+        try {
+          const url = new URL(raw)
+          const token = url.searchParams.get('company_token')
+          const secret = url.searchParams.get('qr_secret')
+          if (token && secret) {
+            companyToken.value = token
+            qrSecret.value = secret
+            stopScanner()
+          }
+        } catch (e) {
+          console.debug('QR parsing failed:', e)
+        }
+      },
+      hints
+    )
+    
+    // Mark as successfully started
+    cameraPermission.value = 'granted'
+    localStorage.setItem('cameraPermission', 'granted')
+    localStorage.setItem('cameraPermissionCheck', Date.now().toString())
     scannerOpen.value = true
+    
   } catch (e) {
-    message.value = t('employee.clock.scannerNotSupported')
+    console.error('ZXing fallback failed:', e)
+    if (e.name === 'NotAllowedError') {
+      cameraPermission.value = 'denied'
+      localStorage.setItem('cameraPermission', 'denied')
+      message.value = t('employee.clock.cameraAccessDenied')
+    } else {
+      message.value = t('employee.clock.scannerNotSupported')
+    }
   }
 }
 

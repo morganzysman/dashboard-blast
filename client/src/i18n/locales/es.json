@@ -290,10 +290,13 @@
         "noOpenEntry": "No hay entrada abierta hoy para cerrar"
       },
       "scanner": "Escáner",
+      "starting": "Iniciando...",
+      "initializingCamera": "Inicializando cámara...",
       "cameraAccessDenied": "El acceso a la cámara está denegado. Habilítelo en la configuración del navegador.",
       "resetCameraPermission": "Restablecer permiso de cámara",
       "cameraPermissionReset": "Permiso de cámara restablecido. Ahora puede intentar el escáner nuevamente.",
       "noCameraFound": "No se encontró cámara en este dispositivo.",
+      "cameraTimeout": "La cámara no se pudo inicializar. Intente de nuevo o actualice la página.",
       "unableToAccessCamera": "No se puede acceder a la cámara. Intente nuevamente.",
       "scannerNotSupported": "El escáner no es compatible en este dispositivo/navegador.",
       "clockingIn": "Registrando entrada...",

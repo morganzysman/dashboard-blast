@@ -92,5 +92,8 @@
       "label": "OlaClick Analytics Dashboard - Mobile View"
     }
   ],
-  "prefer_related_applications": false
+  "prefer_related_applications": false,
+  "permissions": [
+    "camera"
+  ]
 } 
