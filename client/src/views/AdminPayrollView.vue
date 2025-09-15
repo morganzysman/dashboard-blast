@@ -329,7 +329,7 @@
               <label class="text-xs text-gray-700">{{ $t('payroll.clockIn') }}</label>
               <input 
                 :value="toLocalDateTime(e.clock_in_at)" 
-                @input="e.clock_in_at = fromLocalDateTime($event.target.value)" 
+                @input="e.clock_in_at = fromLocalDateTime($event.target.value); updateEntryAmount(e, editEntry.user_id)" 
                 type="datetime-local" 
                 class="form-input w-full" 
                 :disabled="e.paid || e.approved_by" 
@@ -339,7 +339,7 @@
               <label class="text-xs text-gray-700">{{ $t('payroll.clockOut') }}</label>
               <input 
                 :value="toLocalDateTime(e.clock_out_at)" 
-                @input="e.clock_out_at = fromLocalDateTime($event.target.value)" 
+                @input="e.clock_out_at = fromLocalDateTime($event.target.value); updateEntryAmount(e, editEntry.user_id)" 
                 type="datetime-local" 
                 class="form-input w-full" 
                 :disabled="e.paid || e.approved_by" 
@@ -862,16 +862,23 @@ const calendarGrid = computed(() => {
   return grid
 })
 
-// Map user id to name
+// Map user id to name and hourly rate
 const userIdToName = ref(new Map())
+const userIdToHourlyRate = ref(new Map())
 const userName = (id) => userIdToName.value.get(id) || id
+const getUserHourlyRate = (id) => userIdToHourlyRate.value.get(id) || 0
 
 ;(async () => {
   try {
     const res = await api.get('/api/admin/users?roles=employee')
-    const m = new Map()
-    for (const u of res.users || []) { m.set(u.id, u.name) }
-    userIdToName.value = m
+    const nameMap = new Map()
+    const rateMap = new Map()
+    for (const u of res.users || []) { 
+      nameMap.set(u.id, u.name)
+      rateMap.set(u.id, Number(u.hourly_rate || 0))
+    }
+    userIdToName.value = nameMap
+    userIdToHourlyRate.value = rateMap
   } catch {}
 })()
 
@@ -1007,6 +1014,50 @@ const formatCurrency = (n) => {
   return `${symbol} ${(Number(n)||0).toFixed(2)}`
 }
 
+// Calculate amount based on hours worked and hourly rate
+const calculateAmount = (clockInAt, clockOutAt, userId) => {
+  if (!clockInAt || !clockOutAt || !userId) return 0
+  
+  try {
+    const clockIn = new Date(clockInAt)
+    const clockOut = new Date(clockOutAt)
+    
+    if (clockOut <= clockIn) return 0
+    
+    // Calculate hours worked (in decimal hours)
+    const hoursWorked = (clockOut.getTime() - clockIn.getTime()) / (1000 * 60 * 60)
+    
+    // Get user's hourly rate
+    const hourlyRate = getUserHourlyRate(userId)
+    
+    // Calculate amount (round to 2 decimal places)
+    const amount = Math.round(hoursWorked * hourlyRate * 100) / 100
+    
+    console.log(`💰 Calculated amount for ${userName(userId)}:`, {
+      clockIn: clockIn.toISOString(),
+      clockOut: clockOut.toISOString(),
+      hoursWorked: hoursWorked.toFixed(2),
+      hourlyRate,
+      amount
+    })
+    
+    return amount
+  } catch (error) {
+    console.error('❌ Error calculating amount:', error)
+    return 0
+  }
+}
+
+// Auto-calculate amount when times change
+const updateEntryAmount = (entry, userId) => {
+  if (!entry || entry.paid || entry.approved_by) return // Don't auto-calculate for paid/approved entries
+  
+  const newAmount = calculateAmount(entry.clock_in_at, entry.clock_out_at, userId)
+  if (newAmount > 0) {
+    entry.amount = newAmount
+  }
+}
+
 // Removed variationLabel and variationClass functions - replaced with late count logic
 
 function parseIsoDate(d) { const [y, m, day] = (d || '').split('-').map(Number); return { y, m, day } }
@@ -1071,16 +1122,25 @@ const openEdit = (row) => {
   // Even if there are no entries, open the modal so admin can add manual ones
   editEntry.value = {
     user_id: row.user_id,
-    list: list.map(e => ({ 
-      id: e.id, 
-      clock_in_at: e.clock_in_at, // Keep full ISO string for timezone conversion
-      clock_out_at: e.clock_out_at, // Keep full ISO string for timezone conversion  
-      amount: e.amount, 
-      paid: !!e.paid,
-      approved_by: e.approved_by, // Track approval status for UI logic
-      shift_start: e.shift_start, // Required for smart detection
-      shift_end: e.shift_end // Required for smart detection
-    }))
+    list: list.map(e => { 
+      const entry = { 
+        id: e.id, 
+        clock_in_at: e.clock_in_at, // Keep full ISO string for timezone conversion
+        clock_out_at: e.clock_out_at, // Keep full ISO string for timezone conversion  
+        amount: e.amount, 
+        paid: !!e.paid,
+        approved_by: e.approved_by, // Track approval status for UI logic
+        shift_start: e.shift_start, // Required for smart detection
+        shift_end: e.shift_end // Required for smart detection
+      }
+      
+      // Auto-calculate amount if it's missing or zero (and not paid/approved)
+      if ((!entry.amount || entry.amount <= 0) && !entry.paid && !entry.approved_by) {
+        updateEntryAmount(entry, row.user_id)
+      }
+      
+      return entry
+    })
   }
 }
 
@@ -1450,18 +1510,25 @@ const isComplexEntry = (entry) => {
 
 // Open edit modal with approval context
 const editBeforeApprove = (entry) => {
+  const editableEntry = {
+    id: entry.id,
+    clock_in_at: entry.clock_in_at,
+    clock_out_at: entry.clock_out_at,
+    amount: entry.amount,
+    paid: entry.paid || false,
+    approved_by: entry.approved_by,
+    shift_start: entry.shift_start, // Required for smart detection
+    shift_end: entry.shift_end // Required for smart detection
+  }
+  
+  // Auto-calculate amount if it's missing or zero (and not paid/approved)
+  if ((!editableEntry.amount || editableEntry.amount <= 0) && !editableEntry.paid && !editableEntry.approved_by) {
+    updateEntryAmount(editableEntry, entry.user_id)
+  }
+  
   editEntry.value = {
     user_id: entry.user_id,
-    list: [{
-      id: entry.id,
-      clock_in_at: entry.clock_in_at,
-      clock_out_at: entry.clock_out_at,
-      amount: entry.amount,
-      paid: entry.paid || false,
-      approved_by: entry.approved_by,
-      shift_start: entry.shift_start, // Required for smart detection
-      shift_end: entry.shift_end // Required for smart detection
-    }],
+    list: [editableEntry],
     approveAfterSave: true // Flag to approve after saving
   }
 }
@@ -1493,18 +1560,25 @@ const approveEntry = async (entryId) => {
 
 const openEditEntry = (entry) => {
   // Open the same edit modal but for a single entry in approval context
+  const editableEntry = {
+    id: entry.id,
+    clock_in_at: entry.clock_in_at,
+    clock_out_at: entry.clock_out_at,
+    amount: entry.amount,
+    paid: entry.paid || false,
+    approved_by: entry.approved_by,
+    shift_start: entry.shift_start, // Required for smart detection
+    shift_end: entry.shift_end // Required for smart detection
+  }
+  
+  // Auto-calculate amount if it's missing or zero (and not paid/approved)
+  if ((!editableEntry.amount || editableEntry.amount <= 0) && !editableEntry.paid && !editableEntry.approved_by) {
+    updateEntryAmount(editableEntry, entry.user_id)
+  }
+  
   editEntry.value = {
     user_id: entry.user_id,
-    list: [{
-      id: entry.id,
-      clock_in_at: entry.clock_in_at,
-      clock_out_at: entry.clock_out_at,
-      amount: entry.amount,
-      paid: entry.paid || false,
-      approved_by: entry.approved_by,
-      shift_start: entry.shift_start, // Required for smart detection
-      shift_end: entry.shift_end // Required for smart detection
-    }]
+    list: [editableEntry]
   }
 }
 
