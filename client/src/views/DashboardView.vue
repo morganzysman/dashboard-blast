@@ -32,6 +32,7 @@
       :current-date-range="currentDateRange"
       :timezone="authStore.user?.timezone || 'America/Lima'"
       :accounts="analyticsDataWithServiceMetrics?.accounts || []"
+      :profitability-data="profitabilityData"
     />
 
     <!-- Loading State -->

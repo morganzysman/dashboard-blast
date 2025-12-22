@@ -46,8 +46,23 @@
 
           <!-- Lines and points -->
           <g v-for="ds in svgChart.datasets" :key="ds.label">
-            <polyline :points="ds.points" fill="none" :stroke="ds.color" stroke-width="2" />
-            <circle v-for="(pt, idx) in ds.circles" :key="`${ds.label}-${idx}`" :cx="pt.cx" :cy="pt.cy" r="2.5" :fill="ds.color" />
+            <polyline
+              :points="ds.points"
+              fill="none"
+              :stroke="ds.color"
+              :stroke-opacity="ds.opacity || 1"
+              stroke-width="2"
+              :stroke-dasharray="ds.isBreakEven ? '4 4' : '0'"
+            />
+            <circle
+              v-for="(pt, idx) in ds.circles"
+              :key="`${ds.label}-${idx}`"
+              :cx="pt.cx"
+              :cy="pt.cy"
+              r="2.5"
+              :fill="ds.color"
+              :fill-opacity="ds.opacity || 1"
+            />
           </g>
 
           <!-- X labels: first/middle/last -->
@@ -61,7 +76,10 @@
         <!-- Legend -->
         <div class="mt-3 flex flex-wrap gap-3 justify-center">
           <div v-for="dataset in svgChart.datasets" :key="dataset.label" class="flex items-center space-x-1">
-            <div class="w-2 h-2 rounded-full" :style="{ backgroundColor: dataset.color }"></div>
+            <div
+              class="w-2 h-2 rounded-full"
+              :style="{ backgroundColor: dataset.color, opacity: dataset.opacity || 1 }"
+            ></div>
             <span class="text-xs text-gray-600">{{ dataset.label }}</span>
           </div>
         </div>
@@ -81,8 +99,9 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, computed } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { useAuthStore } from '../stores/auth'
+import { useI18n } from 'vue-i18n'
 import { apiRequest } from '../utils/api'
 
 const props = defineProps({
@@ -97,10 +116,16 @@ const props = defineProps({
   accounts: {
     type: Array,
     default: () => []
+  },
+  // Used to compute per-account daily break-even (utility + payroll) for 🏠 line
+  profitabilityData: {
+    type: Object,
+    default: null
   }
 })
 
 const authStore = useAuthStore()
+const { t } = useI18n()
 const loading = ref(false)
 const error = ref(null)
 const evolutionData = ref(null)
@@ -184,10 +209,19 @@ const chartData = computed(() => {
     ]
     const color = colors[index % colors.length]
     
-    // Create data points for this account, filling in missing dates with 0
+    // Create data points for this account, filling in missing dates with 0.
+    // Prefer revenue amount over order count.
     const accountData = sortedDates.map(date => {
       const dataPoint = account.data.find(item => item.label === date)
-      return dataPoint ? (dataPoint.qty_total || 0) : 0
+      if (!dataPoint) return 0
+      // OlaClick evolution_chart usually provides both qty_total (orders) and amount_total (revenue).
+      // We want \"how much we charged\" per location, so prioritize amount_total / sales fields.
+      const value =
+        (dataPoint.amount_total != null ? dataPoint.amount_total : undefined) ??
+        (dataPoint.sales_total != null ? dataPoint.sales_total : undefined) ??
+        (dataPoint.sum != null ? dataPoint.sum : undefined) ??
+        (dataPoint.qty_total != null ? dataPoint.qty_total : 0)
+      return Number(value) || 0
     })
     
     return {
@@ -217,6 +251,31 @@ const chartData = computed(() => {
   }
 })
 
+// Map of account label -> daily break-even (utility + payroll) from profitability data
+const breakEvenByLabel = computed(() => {
+  const map = new Map()
+  const prof = props.profitabilityData
+  const evo = evolutionData.value
+  if (!prof?.accounts || !evo?.accounts) return map
+
+  const profByKey = new Map(prof.accounts.map(a => [a.accountKey, a]))
+
+  evo.accounts.forEach(acc => {
+    const p = profByKey.get(acc.accountKey)
+    if (!p) return
+    const days = Number(p.daysInPeriod || prof.period?.days || 0)
+    if (!days || !Number.isFinite(days)) return
+    const dailyCost =
+      (Number(p.utilityCosts || 0) + Number(p.payrollCosts || 0)) / days
+    if (dailyCost > 0) {
+      // Use account label from evolution API to match chart datasets
+      map.set(acc.account, dailyCost)
+    }
+  })
+
+  return map
+})
+
 // SVG chart builder
 const svgChart = computed(() => {
   if (!chartData.value || !chartData.value.datasets?.length) return null
@@ -226,7 +285,14 @@ const svgChart = computed(() => {
   const labels = chartData.value.labels
   const plotWidth = width - padding * 2
   const plotHeight = height - padding * 2
-  const allVals = chartData.value.datasets.flatMap(ds => ds.data)
+  const beMap = breakEvenByLabel.value
+
+  // Include both revenue series and break-even values in Y scaling
+  const allVals = [
+    ...chartData.value.datasets.flatMap(ds => ds.data),
+    ...Array.from(beMap.values())
+  ].filter(v => Number.isFinite(v))
+
   const maxY = Math.max(1, ...allVals)
   // Build nice ticks (5 steps)
   const steps = 5
@@ -242,10 +308,42 @@ const svgChart = computed(() => {
     const ratio = val / maxY
     return height - padding - ratio * plotHeight
   }
-  const datasets = chartData.value.datasets.map(ds => {
-    const pointsArr = labels.map((_, i) => ({ cx: xAt(i), cy: yAt(ds.data[i] || 0) }))
+  const datasets = []
+
+  chartData.value.datasets.forEach(ds => {
+    // Revenue line for this account
+    const pointsArr = labels.map((_, i) => ({
+      cx: xAt(i),
+      cy: yAt(ds.data[i] || 0)
+    }))
     const points = pointsArr.map(p => `${p.cx},${p.cy}`).join(' ')
-    return { label: ds.label, color: ds.borderColor || '#3B82F6', circles: pointsArr, points }
+    datasets.push({
+      label: ds.label,
+      color: ds.borderColor || '#3B82F6',
+      opacity: 1,
+      circles: pointsArr,
+      points,
+      isBreakEven: false
+    })
+
+    // Break-even line (🏠 Custos Operacionais diário) for this account, if available
+    const beVal = beMap.get(ds.label)
+    if (beVal && Number.isFinite(beVal)) {
+      const bePointsArr = labels.map((_, i) => ({
+        cx: xAt(i),
+        cy: yAt(beVal)
+      }))
+      const bePoints = bePointsArr.map(p => `${p.cx},${p.cy}`).join(' ')
+      datasets.push({
+        // Use house emoji + account name to differentiate in legend
+        label: `🏠 ${ds.label}`,
+        color: ds.borderColor || '#3B82F6',
+        opacity: 0.35,
+        circles: [], // no points for break-even line
+        points: bePoints,
+        isBreakEven: true
+      })
+    }
   })
   const ticks = tickValues.map(v => ({ value: v, y: yAt(v) }))
   return { width, height, padding, labels, plotHeight, datasets, xAt, ticks }
