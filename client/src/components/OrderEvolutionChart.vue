@@ -4,12 +4,35 @@
       <div class="flex items-center justify-between mb-4">
         <div class="min-w-0 flex-1">
           <h3 class="text-lg font-semibold text-gray-900">{{ $t('dashboard.orderEvolution') }}</h3>
-          <p class="text-sm text-gray-500">{{ $t('dashboard.dailyOrderTrends') }}</p>
+          <p class="text-sm text-gray-500">{{ viewMode === 'qty' ? $t('dashboard.dailyOrderTrends') : $t('dashboard.dailyRevenueTrends') }}</p>
         </div>
-        <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-          <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-          </svg>
+        <div class="flex items-center gap-3">
+          <!-- View Mode Toggle -->
+          <div class="flex rounded-lg border border-gray-200 overflow-hidden">
+            <button
+              @click="viewMode = 'qty'"
+              :class="[
+                'px-3 py-1.5 text-xs font-medium transition-colors',
+                viewMode === 'qty' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'
+              ]"
+            >
+              {{ $t('dashboard.quantity') }}
+            </button>
+            <button
+              @click="viewMode = 'value'"
+              :class="[
+                'px-3 py-1.5 text-xs font-medium transition-colors',
+                viewMode === 'value' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'
+              ]"
+            >
+              {{ $t('dashboard.value') }}
+            </button>
+          </div>
+          <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+            </svg>
+          </div>
         </div>
       </div>
 
@@ -51,7 +74,7 @@
               fill="none"
               :stroke="ds.color"
               :stroke-opacity="ds.opacity || 1"
-              stroke-width="2"
+              :stroke-width="ds.strokeWidth || 2"
               :stroke-dasharray="ds.isBreakEven ? '4 4' : '0'"
             />
             <circle
@@ -130,6 +153,8 @@ const loading = ref(false)
 const error = ref(null)
 const evolutionData = ref(null)
 const chartKey = ref(0)
+// View mode: 'qty' for order count, 'value' for revenue
+const viewMode = ref('value')
 // Request de-duplication and debouncing
 let debounceTimer = null
 const lastRequestKey = ref('')
@@ -184,7 +209,7 @@ const chartData = computed(() => {
 
   const accounts = evolutionData.value.accounts
   const successfulAccounts = accounts.filter(acc => acc.success && acc.data && acc.data.length > 0)
-  
+
   if (successfulAccounts.length === 0) return null
 
   // Build full per-day labels from the selected date range
@@ -193,37 +218,42 @@ const chartData = computed(() => {
     evolutionData.value?.period?.end || props.currentDateRange?.end,
     props.timezone
   )
-  
+
+  // Colors for accounts
+  const colors = [
+    '#3B82F6', // Blue
+    '#10B981', // Green
+    '#F59E0B', // Yellow
+    '#EF4444', // Red
+    '#8B5CF6', // Purple
+    '#06B6D4', // Cyan
+    '#F97316', // Orange
+    '#84CC16'  // Lime
+  ]
+
   // Create a dataset for each successful account
   const accountDatasets = successfulAccounts.map((account, index) => {
-    // Generate a color for this account
-    const colors = [
-      '#3B82F6', // Blue
-      '#10B981', // Green
-      '#F59E0B', // Yellow
-      '#EF4444', // Red
-      '#8B5CF6', // Purple
-      '#06B6D4', // Cyan
-      '#F97316', // Orange
-      '#84CC16'  // Lime
-    ]
     const color = colors[index % colors.length]
-    
+
     // Create data points for this account, filling in missing dates with 0.
-    // Prefer revenue amount over order count.
     const accountData = sortedDates.map(date => {
       const dataPoint = account.data.find(item => item.label === date)
       if (!dataPoint) return 0
-      // OlaClick evolution_chart usually provides both qty_total (orders) and amount_total (revenue).
-      // We want \"how much we charged\" per location, so prioritize amount_total / sales fields.
-      const value =
-        (dataPoint.amount_total != null ? dataPoint.amount_total : undefined) ??
-        (dataPoint.sales_total != null ? dataPoint.sales_total : undefined) ??
-        (dataPoint.sum != null ? dataPoint.sum : undefined) ??
-        (dataPoint.qty_total != null ? dataPoint.qty_total : 0)
-      return Number(value) || 0
+
+      // Based on viewMode, return either qty or value
+      if (viewMode.value === 'qty') {
+        return Number(dataPoint.qty_total) || 0
+      } else {
+        // For value mode, prioritize amount_total / sales fields
+        const value =
+          (dataPoint.amount_total != null ? dataPoint.amount_total : undefined) ??
+          (dataPoint.sales_total != null ? dataPoint.sales_total : undefined) ??
+          (dataPoint.sum != null ? dataPoint.sum : undefined) ??
+          0
+        return Number(value) || 0
+      }
     })
-    
+
     return {
       label: account.account,
       data: accountData,
@@ -235,19 +265,37 @@ const chartData = computed(() => {
     }
   })
 
+  // Create total dataset (sum of all accounts per date)
+  const totalData = sortedDates.map((_, dateIndex) => {
+    return accountDatasets.reduce((sum, ds) => sum + (ds.data[dateIndex] || 0), 0)
+  })
+
+  const totalDataset = {
+    label: t('dashboard.total'),
+    data: totalData,
+    borderColor: '#1F2937', // Dark gray for total
+    backgroundColor: '#1F293720',
+    borderWidth: 3,
+    fill: false,
+    tension: 0.4,
+    isTotal: true
+  }
+
   console.log('📊 Chart data computed:', {
+    viewMode: viewMode.value,
     accountCount: successfulAccounts.length,
     dateCount: sortedDates.length,
     datasets: accountDatasets.map(ds => ({
       label: ds.label,
       dataPoints: ds.data.length,
       color: ds.borderColor
-    }))
+    })),
+    totalSum: totalData.reduce((a, b) => a + b, 0)
   })
 
   return {
     labels: sortedDates,
-    datasets: accountDatasets
+    datasets: [...accountDatasets, totalDataset]
   }
 })
 
@@ -311,7 +359,7 @@ const svgChart = computed(() => {
   const datasets = []
 
   chartData.value.datasets.forEach(ds => {
-    // Revenue line for this account
+    // Line for this account (or total)
     const pointsArr = labels.map((_, i) => ({
       cx: xAt(i),
       cy: yAt(ds.data[i] || 0)
@@ -323,7 +371,9 @@ const svgChart = computed(() => {
       opacity: 1,
       circles: pointsArr,
       points,
-      isBreakEven: false
+      isBreakEven: false,
+      isTotal: ds.isTotal || false,
+      strokeWidth: ds.isTotal ? 3 : 2
     })
 
     // Break-even line (🏠 Custos Operacionais diário) for this account, if available
