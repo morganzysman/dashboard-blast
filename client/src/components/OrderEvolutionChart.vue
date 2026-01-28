@@ -299,31 +299,6 @@ const chartData = computed(() => {
   }
 })
 
-// Map of account label -> daily break-even (utility + payroll) from profitability data
-const breakEvenByLabel = computed(() => {
-  const map = new Map()
-  const prof = props.profitabilityData
-  const evo = evolutionData.value
-  if (!prof?.accounts || !evo?.accounts) return map
-
-  const profByKey = new Map(prof.accounts.map(a => [a.accountKey, a]))
-
-  evo.accounts.forEach(acc => {
-    const p = profByKey.get(acc.accountKey)
-    if (!p) return
-    const days = Number(p.daysInPeriod || prof.period?.days || 0)
-    if (!days || !Number.isFinite(days)) return
-    const dailyCost =
-      (Number(p.utilityCosts || 0) + Number(p.payrollCosts || 0)) / days
-    if (dailyCost > 0) {
-      // Use account label from evolution API to match chart datasets
-      map.set(acc.account, dailyCost)
-    }
-  })
-
-  return map
-})
-
 // SVG chart builder
 const svgChart = computed(() => {
   if (!chartData.value || !chartData.value.datasets?.length) return null
@@ -333,15 +308,11 @@ const svgChart = computed(() => {
   const labels = chartData.value.labels
   const plotWidth = width - padding * 2
   const plotHeight = height - padding * 2
-  const beMap = breakEvenByLabel.value
 
-  // Include both revenue series and break-even values in Y scaling
-  const allVals = [
-    ...chartData.value.datasets.flatMap(ds => ds.data),
-    ...Array.from(beMap.values())
-  ].filter(v => Number.isFinite(v))
-
+  // Scale Y-axis based only on actual data values
+  const allVals = chartData.value.datasets.flatMap(ds => ds.data).filter(v => Number.isFinite(v))
   const maxY = Math.max(1, ...allVals)
+
   // Build nice ticks (5 steps)
   const steps = 5
   const rawStep = Math.max(1, Math.ceil(maxY / steps))
@@ -349,8 +320,8 @@ const svgChart = computed(() => {
   const tickValues = Array.from({ length: steps + 1 }, (_, i) => i * step)
   const xAt = (idx) => {
     if (labels.length <= 1) return padding + plotWidth / 2
-    const step = plotWidth / (labels.length - 1)
-    return padding + idx * step
+    const stepX = plotWidth / (labels.length - 1)
+    return padding + idx * stepX
   }
   const yAt = (val) => {
     const ratio = val / maxY
@@ -375,25 +346,6 @@ const svgChart = computed(() => {
       isTotal: ds.isTotal || false,
       strokeWidth: ds.isTotal ? 3 : 2
     })
-
-    // Break-even line (🏠 Custos Operacionais diário) for this account, if available
-    const beVal = beMap.get(ds.label)
-    if (beVal && Number.isFinite(beVal)) {
-      const bePointsArr = labels.map((_, i) => ({
-        cx: xAt(i),
-        cy: yAt(beVal)
-      }))
-      const bePoints = bePointsArr.map(p => `${p.cx},${p.cy}`).join(' ')
-      datasets.push({
-        // Use house emoji + account name to differentiate in legend
-        label: `🏠 ${ds.label}`,
-        color: ds.borderColor || '#3B82F6',
-        opacity: 0.35,
-        circles: [], // no points for break-even line
-        points: bePoints,
-        isBreakEven: true
-      })
-    }
   })
   const ticks = tickValues.map(v => ({ value: v, y: yAt(v) }))
   return { width, height, padding, labels, plotHeight, datasets, xAt, ticks }
