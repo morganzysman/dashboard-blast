@@ -263,7 +263,7 @@ router.post('/clock', requireAuth, async (req, res) => {
                CEIL(EXTRACT(EPOCH FROM (NOW() - te.clock_in_at)) / 60)::numeric / 60
              ) * COALESCE((SELECT hourly_rate FROM users u WHERE u.id = te.user_id), 0), 2),
              updated_at = NOW()
-         WHERE te.id = $1 AND paid = FALSE
+         WHERE te.id = $1
          RETURNING *`,
         [id]
       )
@@ -594,7 +594,7 @@ router.get('/admin/:companyToken/entries', requireAuth, async (req, res) => {
   }
 })
 
-// Admin: edit a time entry (only if not paid)
+// Admin: edit a time entry (always allowed for admins)
 router.put('/admin/entries/:id', requireAuth, async (req, res) => {
   try {
     if (req.user.role !== 'admin' && req.user.role !== 'super-admin') return res.status(403).json({ success: false, error: 'Access denied' })
@@ -606,10 +606,13 @@ router.put('/admin/entries/:id', requireAuth, async (req, res) => {
          clock_out_at = COALESCE($2, clock_out_at),
          amount = COALESCE($3::numeric, amount),
          updated_at = NOW()
-       WHERE id = $4 AND paid = FALSE AND approved_by IS NULL
-       RETURNING *`, [clock_in_at, clock_out_at, amount, id]
+       WHERE id = $4
+       RETURNING *`,
+      [clock_in_at, clock_out_at, amount, id]
     )
-    if (upd.rowCount === 0) return res.status(404).json({ success: false, error: 'Entry not found or locked' })
+    if (upd.rowCount === 0) {
+      return res.status(404).json({ success: false, error: 'Entry not found' })
+    }
     res.json({ success: true, data: upd.rows[0] })
   } catch (e) {
     res.status(500).json({ success: false, error: e.message })

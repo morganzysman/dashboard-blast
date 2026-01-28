@@ -203,9 +203,8 @@
                     
                     <!-- Mobile action buttons (always visible on mobile) -->
                     <div v-if="e.clock_out_at" class="flex gap-1 mt-1 lg:hidden">
-                      <!-- Edit button for non-approved and non-paid entries -->
-                      <button 
-                        v-if="!e.approved_by && !e.paid"
+                      <!-- Edit button -->
+                      <button
                         @click.stop="openEditEntry(e)"
                         class="btn-secondary btn-sm flex-1 !px-1 !py-0.5"
                         :aria-label="$t('payroll.editEntry')"
@@ -249,9 +248,8 @@
                       class="absolute inset-0 bg-black bg-opacity-80 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-1 hidden lg:flex"
                       @click.stop
                     >
-                      <!-- Edit button for non-approved and non-paid entries -->
-                      <button 
-                        v-if="!e.approved_by && !e.paid"
+                      <!-- Edit button -->
+                      <button
                         @click="openEditEntry(e)"
                         class="btn-secondary btn-sm inline-flex items-center"
                         :aria-label="$t('payroll.editEntryTimesAndAmount')"
@@ -316,7 +314,12 @@
         </div>
         <p class="text-xs text-gray-500 mb-3">{{ $t('payroll.payrollPeriod') }}: {{ periodLabel }} • {{ $t('payroll.timesShownIn') }} {{ auth.user?.timezone || 'America/Lima' }}</p>
         <div class="max-h-[60vh] overflow-auto space-y-3 pr-1">
-          <div v-for="(e, idx) in editEntry.list" :key="e.id || `new-${idx}`" class="relative grid grid-cols-1 sm:grid-cols-3 gap-2 items-end rounded p-2" :class="e.paid ? 'bg-gray-50 opacity-70' : e.approved_by ? 'bg-green-50 opacity-70' : isComplexEntry(e) ? 'bg-yellow-50' : 'bg-white'">
+          <div
+            v-for="(e, idx) in editEntry.list"
+            :key="e.id || `new-${idx}`"
+            class="relative grid grid-cols-1 sm:grid-cols-3 gap-2 items-end rounded p-2"
+            :class="e.approved_by ? 'bg-green-50 opacity-70' : isComplexEntry(e) ? 'bg-yellow-50' : e.paid ? 'bg-gray-50' : 'bg-white'"
+          >
             <!-- AI Smart Detection Warning -->
             <div v-if="!e.paid && !e.approved_by && isComplexEntry(e)" class="col-span-full mb-2 p-2 bg-yellow-50 border border-yellow-200 rounded-md">
               <div class="flex items-center gap-2 text-xs text-yellow-800">
@@ -327,27 +330,25 @@
             </div>
             <div>
               <label class="text-xs text-gray-700">{{ $t('payroll.clockIn') }}</label>
-              <input 
-                :value="toLocalDateTime(e.clock_in_at)" 
-                @input="e.clock_in_at = fromLocalDateTime($event.target.value); updateEntryAmount(e, editEntry.user_id)" 
-                type="datetime-local" 
-                class="form-input w-full" 
-                :disabled="e.paid || e.approved_by" 
+              <input
+                :value="toLocalDateTime(e.clock_in_at)"
+                @input="e.clock_in_at = fromLocalDateTime($event.target.value); updateEntryAmount(e, editEntry.user_id)"
+                type="datetime-local"
+                class="form-input w-full"
               />
             </div>
             <div>
               <label class="text-xs text-gray-700">{{ $t('payroll.clockOut') }}</label>
-              <input 
-                :value="toLocalDateTime(e.clock_out_at)" 
-                @input="e.clock_out_at = fromLocalDateTime($event.target.value); updateEntryAmount(e, editEntry.user_id)" 
-                type="datetime-local" 
-                class="form-input w-full" 
-                :disabled="e.paid || e.approved_by" 
+              <input
+                :value="toLocalDateTime(e.clock_out_at)"
+                @input="e.clock_out_at = fromLocalDateTime($event.target.value); updateEntryAmount(e, editEntry.user_id)"
+                type="datetime-local"
+                class="form-input w-full"
               />
             </div>
             <div>
               <label class="text-xs text-gray-700">{{ $t('common.amount') }}</label>
-              <input v-model="e.amount" type="number" inputmode="decimal" min="0" step="any" class="form-input w-full" :disabled="e.paid || e.approved_by" />
+              <input v-model="e.amount" type="number" inputmode="decimal" min="0" step="any" class="form-input w-full" />
             </div>
             <div class="sm:col-span-3 flex justify-end gap-2">
               <button v-if="!e.id" class="btn-danger btn-xs" @click="removeNewEntry(idx)">{{ $t('common.remove') }}</button>
@@ -1050,8 +1051,8 @@ const calculateAmount = (clockInAt, clockOutAt, userId) => {
 
 // Auto-calculate amount when times change
 const updateEntryAmount = (entry, userId) => {
-  if (!entry || entry.paid || entry.approved_by) return // Don't auto-calculate for paid/approved entries
-  
+  if (!entry) return
+
   const newAmount = calculateAmount(entry.clock_in_at, entry.clock_out_at, userId)
   if (newAmount > 0) {
     entry.amount = newAmount
@@ -1134,8 +1135,8 @@ const openEdit = (row) => {
         shift_end: e.shift_end // Required for smart detection
       }
       
-      // Auto-calculate amount if it's missing or zero (and not paid/approved)
-      if ((!entry.amount || entry.amount <= 0) && !entry.paid && !entry.approved_by) {
+      // Auto-calculate amount if it's missing or zero (and not approved)
+      if ((!entry.amount || entry.amount <= 0) && !entry.approved_by) {
         updateEntryAmount(entry, row.user_id)
       }
       
@@ -1151,7 +1152,7 @@ const saveEdit = async () => {
   
   try {
     for (const e of list) {
-      if (e.paid || e.approved_by) continue // Skip paid or approved entries
+      if (e.approved_by) continue // Skip approved entries
       const body = {
         clock_in_at: e.clock_in_at ? new Date(e.clock_in_at).toISOString() : null,
         clock_out_at: e.clock_out_at ? new Date(e.clock_out_at).toISOString() : null,
@@ -1209,8 +1210,8 @@ const saveEdit = async () => {
   await loadEntries()
 }
 
-const editableCount = computed(() => (editEntry.value?.list || []).filter(e => !e.paid && !e.approved_by).length)
-const editableSum = computed(() => (editEntry.value?.list || []).filter(e => !e.paid && !e.approved_by).reduce((s,e)=> s + Number(e.amount||0), 0))
+const editableCount = computed(() => (editEntry.value?.list || []).filter(e => !e.approved_by).length)
+const editableSum = computed(() => (editEntry.value?.list || []).filter(e => !e.approved_by).reduce((s,e)=> s + Number(e.amount||0), 0))
 
   const addNewEntry = () => {
     if (!editEntry.value) return
@@ -1521,8 +1522,8 @@ const editBeforeApprove = (entry) => {
     shift_end: entry.shift_end // Required for smart detection
   }
   
-  // Auto-calculate amount if it's missing or zero (and not paid/approved)
-  if ((!editableEntry.amount || editableEntry.amount <= 0) && !editableEntry.paid && !editableEntry.approved_by) {
+  // Auto-calculate amount if it's missing or zero (and not approved)
+  if ((!editableEntry.amount || editableEntry.amount <= 0) && !editableEntry.approved_by) {
     updateEntryAmount(editableEntry, entry.user_id)
   }
   
@@ -1571,8 +1572,8 @@ const openEditEntry = (entry) => {
     shift_end: entry.shift_end // Required for smart detection
   }
   
-  // Auto-calculate amount if it's missing or zero (and not paid/approved)
-  if ((!editableEntry.amount || editableEntry.amount <= 0) && !editableEntry.paid && !editableEntry.approved_by) {
+  // Auto-calculate amount if it's missing or zero (and not approved)
+  if ((!editableEntry.amount || editableEntry.amount <= 0) && !editableEntry.approved_by) {
     updateEntryAmount(editableEntry, entry.user_id)
   }
   
