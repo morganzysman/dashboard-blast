@@ -231,6 +231,11 @@ const chartData = computed(() => {
     '#84CC16'  // Lime
   ]
 
+  // Log first data point to see available fields
+  if (successfulAccounts[0]?.data?.[0]) {
+    console.log('📊 Sample data point fields:', Object.keys(successfulAccounts[0].data[0]), successfulAccounts[0].data[0])
+  }
+
   // Create a dataset for each successful account
   const accountDatasets = successfulAccounts.map((account, index) => {
     const color = colors[index % colors.length]
@@ -244,11 +249,15 @@ const chartData = computed(() => {
       if (viewMode.value === 'qty') {
         return Number(dataPoint.qty_total) || 0
       } else {
-        // For value mode, prioritize amount_total / sales fields
+        // For value mode, try multiple possible field names
         const value =
-          (dataPoint.amount_total != null ? dataPoint.amount_total : undefined) ??
-          (dataPoint.sales_total != null ? dataPoint.sales_total : undefined) ??
-          (dataPoint.sum != null ? dataPoint.sum : undefined) ??
+          dataPoint.amount_total ??
+          dataPoint.sales_total ??
+          dataPoint.total ??
+          dataPoint.sum ??
+          dataPoint.revenue ??
+          dataPoint.value ??
+          dataPoint.amount ??
           0
         return Number(value) || 0
       }
