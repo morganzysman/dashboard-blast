@@ -4,35 +4,12 @@
       <div class="flex items-center justify-between mb-4">
         <div class="min-w-0 flex-1">
           <h3 class="text-lg font-semibold text-gray-900">{{ $t('dashboard.orderEvolution') }}</h3>
-          <p class="text-sm text-gray-500">{{ viewMode === 'qty' ? $t('dashboard.dailyOrderTrends') : $t('dashboard.dailyRevenueTrends') }}</p>
+          <p class="text-sm text-gray-500">{{ $t('dashboard.dailyOrderTrends') }}</p>
         </div>
-        <div class="flex items-center gap-3">
-          <!-- View Mode Toggle -->
-          <div class="flex rounded-lg border border-gray-200 overflow-hidden">
-            <button
-              @click="viewMode = 'qty'"
-              :class="[
-                'px-3 py-1.5 text-xs font-medium transition-colors',
-                viewMode === 'qty' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'
-              ]"
-            >
-              {{ $t('dashboard.quantity') }}
-            </button>
-            <button
-              @click="viewMode = 'value'"
-              :class="[
-                'px-3 py-1.5 text-xs font-medium transition-colors',
-                viewMode === 'value' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'
-              ]"
-            >
-              {{ $t('dashboard.value') }}
-            </button>
-          </div>
-          <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-            </svg>
-          </div>
+        <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+          <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+          </svg>
         </div>
       </div>
 
@@ -153,8 +130,6 @@ const loading = ref(false)
 const error = ref(null)
 const evolutionData = ref(null)
 const chartKey = ref(0)
-// View mode: 'qty' for order count, 'value' for revenue
-const viewMode = ref('value')
 // Request de-duplication and debouncing
 let debounceTimer = null
 const lastRequestKey = ref('')
@@ -231,11 +206,6 @@ const chartData = computed(() => {
     '#84CC16'  // Lime
   ]
 
-  // Log first data point to see available fields
-  if (successfulAccounts[0]?.data?.[0]) {
-    console.log('📊 Sample data point fields:', Object.keys(successfulAccounts[0].data[0]), successfulAccounts[0].data[0])
-  }
-
   // Create a dataset for each successful account
   const accountDatasets = successfulAccounts.map((account, index) => {
     const color = colors[index % colors.length]
@@ -244,23 +214,7 @@ const chartData = computed(() => {
     const accountData = sortedDates.map(date => {
       const dataPoint = account.data.find(item => item.label === date)
       if (!dataPoint) return 0
-
-      // Based on viewMode, return either qty or value
-      if (viewMode.value === 'qty') {
-        return Number(dataPoint.qty_total) || 0
-      } else {
-        // For value mode, try multiple possible field names
-        const value =
-          dataPoint.amount_total ??
-          dataPoint.sales_total ??
-          dataPoint.total ??
-          dataPoint.sum ??
-          dataPoint.revenue ??
-          dataPoint.value ??
-          dataPoint.amount ??
-          0
-        return Number(value) || 0
-      }
+      return Number(dataPoint.qty_total) || 0
     })
 
     return {
@@ -291,7 +245,6 @@ const chartData = computed(() => {
   }
 
   console.log('📊 Chart data computed:', {
-    viewMode: viewMode.value,
     accountCount: successfulAccounts.length,
     dateCount: sortedDates.length,
     datasets: accountDatasets.map(ds => ({
