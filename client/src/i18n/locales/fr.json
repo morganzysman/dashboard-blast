@@ -196,6 +196,7 @@
     "last30Days": "30 Derniers Jours",
     "applyRange": "Appliquer la Plage",
     "orderEvolution": "Évolution des Commandes",
+    "revenueEvolution": "Évolution des Revenus",
     "dailyOrderTrends": "Tendances quotidiennes des commandes sur la période sélectionnée (lignes séparées pour chaque compte)",
     "dailyRevenueTrends": "Tendances quotidiennes des revenus sur la période sélectionnée (lignes séparées pour chaque compte)",
     "loadingOrderData": "Chargement des données d'évolution des commandes...",

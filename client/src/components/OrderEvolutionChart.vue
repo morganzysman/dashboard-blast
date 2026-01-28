@@ -3,8 +3,8 @@
     <div class="card-body p-4">
       <div class="flex items-center justify-between mb-4">
         <div class="min-w-0 flex-1">
-          <h3 class="text-lg font-semibold text-gray-900">{{ $t('dashboard.orderEvolution') }}</h3>
-          <p class="text-sm text-gray-500">{{ $t('dashboard.dailyOrderTrends') }}</p>
+          <h3 class="text-lg font-semibold text-gray-900">{{ $t('dashboard.revenueEvolution') }}</h3>
+          <p class="text-sm text-gray-500">{{ $t('dashboard.dailyRevenueTrends') }}</p>
         </div>
         <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
           <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -214,7 +214,7 @@ const chartData = computed(() => {
     const accountData = sortedDates.map(date => {
       const dataPoint = account.data.find(item => item.label === date)
       if (!dataPoint) return 0
-      return Number(dataPoint.qty_total) || 0
+      return Number(dataPoint.revenue) || 0
     })
 
     return {

@@ -197,6 +197,7 @@
     "last30Days": "Last 30 Days",
     "applyRange": "Apply Range",
     "orderEvolution": "Order Evolution",
+    "revenueEvolution": "Revenue Evolution",
     "dailyOrderTrends": "Daily order trends over the selected period (separate lines for each account)",
     "dailyRevenueTrends": "Daily revenue trends over the selected period (separate lines for each account)",
     "loadingOrderData": "Loading order evolution data...",

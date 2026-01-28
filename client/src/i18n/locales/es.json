@@ -198,6 +198,7 @@
     "last30Days": "Últimos 30 Días",
     "applyRange": "Aplicar Rango",
     "orderEvolution": "Evolución de Pedidos",
+    "revenueEvolution": "Evolución de Ingresos",
     "dailyOrderTrends": "Tendencias diarias de pedidos durante el período seleccionado (líneas separadas para cada cuenta)",
     "dailyRevenueTrends": "Tendencias diarias de ingresos durante el período seleccionado (líneas separadas para cada cuenta)",
     "loadingOrderData": "Cargando datos de evolución de pedidos...",
