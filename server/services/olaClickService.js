@@ -319,7 +319,15 @@ export async function fetchOlaClickData(account, queryParams = {}) {
     // Debug logging for API responses
     console.log(`📊 API Response for ${account.company_token}:`);
     console.log(`   Status: ${response.status}`);
-    
+
+    // Normalize API response: map sum_total to sum for backward compatibility
+    if (response.data && response.data.data && Array.isArray(response.data.data)) {
+      response.data.data = response.data.data.map(method => ({
+        ...method,
+        sum: method.sum_total ?? method.sum ?? 0
+      }));
+    }
+
     // Calculate totals for this response
     let totalPayments = 0;
     let totalAmount = 0;
