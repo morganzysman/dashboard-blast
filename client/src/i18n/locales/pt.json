@@ -139,6 +139,7 @@
     "toggleDarkMode": "Alternar modo escuro",
     "managementSuite": "Suite de Gestão",
     "workforce": "Equipe",
+    "holidays": "Férias",
     "shiftsCalendar": "Calendário de Turnos",
     "userManagement": "Gerenciamento de Usuários"
   },
@@ -795,6 +796,31 @@
     "appTitle": "OlaClick Analytics"
   }
   ,
+  "holidays": {
+    "title": "Gestão de Férias",
+    "subtitle": "Acompanhe o acúmulo e uso de férias dos funcionários",
+    "hiredAt": "Data de Contratação",
+    "monthsOfService": "Meses",
+    "accrued": "Acumulado",
+    "taken": "Utilizado",
+    "balance": "Saldo",
+    "avgBalance": "Saldo Médio",
+    "registerHoliday": "Registrar Férias",
+    "viewHistory": "Ver Histórico",
+    "startDate": "Data Início",
+    "endDate": "Data Fim",
+    "days": "Dias",
+    "currentBalance": "Saldo Atual",
+    "noHiredDate": "Sem data de contratação",
+    "holidayRegistered": "Férias registradas com sucesso",
+    "holidayDeleted": "Registro de férias excluído",
+    "confirmDelete": "Tem certeza de que deseja excluir este registro de férias?",
+    "insufficientBalance": "Saldo de férias insuficiente para os dias solicitados",
+    "invalidDateRange": "A data de início deve ser anterior ou igual à data de fim",
+    "invalidDays": "Os dias devem ser maior que 0",
+    "employeeHistory": "Histórico de Férias",
+    "noHolidays": "Nenhum registro de férias encontrado"
+  },
   "account": {
     "avgTicket": "Ticket Méd.",
     "tips": "Gorjetas",

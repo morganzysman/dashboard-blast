@@ -264,7 +264,16 @@ export const api = {
 
   // Approval workflow
   getPendingApprovals: (companyToken) => apiRequest(`/api/payroll/admin/${companyToken}/pending-approvals`, { method: 'GET' }),
-  approveEntry: (id) => apiRequest(`/api/payroll/admin/entries/${id}/approve`, { method: 'POST' })
+  approveEntry: (id) => apiRequest(`/api/payroll/admin/entries/${id}/approve`, { method: 'POST' }),
+
+  // Holidays
+  getHolidaySummary: (companyId) => apiRequest(`/api/holidays/summary${companyId ? `?companyId=${companyId}` : ''}`, { method: 'GET' }),
+  getEmployeeHolidays: (employeeId, companyId) => apiRequest(`/api/holidays/employees/${employeeId}${companyId ? `?companyId=${companyId}` : ''}`, { method: 'GET' }),
+  createHolidayRequest: (payload) => apiRequest('/api/holidays/requests', { method: 'POST', body: JSON.stringify(payload) }),
+  deleteHolidayRequest: (id, companyId) => apiRequest(`/api/holidays/requests/${id}${companyId ? `?companyId=${companyId}` : ''}`, { method: 'DELETE' }),
+
+  // User hired_at
+  updateUserHiredAt: (userId, hiredAt) => apiRequest(`/api/admin/users/${userId}/hired-at`, { method: 'PUT', body: JSON.stringify({ hired_at: hiredAt }) })
 }
 
 export default api 

@@ -139,6 +139,7 @@
     "toggleDarkMode": "Basculer le mode sombre",
     "managementSuite": "Suite de Gestion",
     "workforce": "Équipe",
+    "holidays": "Congés",
     "shiftsCalendar": "Calendrier des équipes",
     "userManagement": "Gestion des utilisateurs"
   },
@@ -794,6 +795,31 @@
     "appTitle": "OlaClick Analytics"
   }
   ,
+  "holidays": {
+    "title": "Gestion des Congés",
+    "subtitle": "Suivre l'accumulation et l'utilisation des congés des employés",
+    "hiredAt": "Date d'embauche",
+    "monthsOfService": "Mois",
+    "accrued": "Accumulé",
+    "taken": "Pris",
+    "balance": "Solde",
+    "avgBalance": "Solde Moyen",
+    "registerHoliday": "Enregistrer un Congé",
+    "viewHistory": "Voir l'Historique",
+    "startDate": "Date de Début",
+    "endDate": "Date de Fin",
+    "days": "Jours",
+    "currentBalance": "Solde Actuel",
+    "noHiredDate": "Pas de date d'embauche",
+    "holidayRegistered": "Congé enregistré avec succès",
+    "holidayDeleted": "Enregistrement de congé supprimé",
+    "confirmDelete": "Êtes-vous sûr de vouloir supprimer cet enregistrement de congé ?",
+    "insufficientBalance": "Solde de congés insuffisant pour les jours demandés",
+    "invalidDateRange": "La date de début doit être antérieure ou égale à la date de fin",
+    "invalidDays": "Les jours doivent être supérieurs à 0",
+    "employeeHistory": "Historique des Congés",
+    "noHolidays": "Aucun enregistrement de congé trouvé"
+  },
   "account": {
     "avgTicket": "Ticket Moy.",
     "tips": "Pourboires",

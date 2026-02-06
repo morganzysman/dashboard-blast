@@ -20,6 +20,7 @@ import EmployeeWarningsView from './views/EmployeeWarningsView.vue'
 import AdminPayrollView from './views/AdminPayrollView.vue'
 import AdminShiftsCalendarView from './views/AdminShiftsCalendarView.vue'
 import CompaniesView from './views/CompaniesView.vue'
+import AdminHolidayView from './views/AdminHolidayView.vue'
 
 // Import stores
 import { useAuthStore } from './stores/auth'
@@ -61,6 +62,12 @@ const routes = [
     path: '/admin/shifts',
     name: 'AdminShiftsCalendar',
     component: AdminShiftsCalendarView,
+    meta: { requiresAuth: true, requiresRole: ['admin', 'super-admin'] }
+  },
+  {
+    path: '/admin/holidays',
+    name: 'AdminHolidays',
+    component: AdminHolidayView,
     meta: { requiresAuth: true, requiresRole: ['admin', 'super-admin'] }
   },
   {

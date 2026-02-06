@@ -463,6 +463,22 @@ const updateUser = async (userId, userData) => {
       throw new Error(error.error || 'Failed to update hourly rate')
     }
   }
+
+  // Update hired_at if provided and role is employee
+  if (userData.hired_at && (userData.role === 'employee' || selectedUser.value?.role === 'employee')) {
+    const response = await fetch(`/api/admin/users/${userId}/hired-at`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Session-ID': authStore.sessionId,
+      },
+      body: JSON.stringify({ hired_at: userData.hired_at })
+    })
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}))
+      throw new Error(error.error || 'Failed to update hired date')
+    }
+  }
 }
 
 const toggleUserStatus = async (user) => {

@@ -68,7 +68,7 @@
           <p class="text-xs text-gray-500 mt-1" v-if="!isSuperAdmin">{{ $t('admin.adminCreateRestriction') }}</p>
         </div>
 
-        <!-- Hourly Rate (for employees) -->
+        <!-- Hourly Rate & Hired At (for employees) -->
         <div v-if="form.role === 'employee'" class="grid grid-cols-2 gap-2">
           <div>
             <label class="form-label">{{ $t('admin.hourlyRate') }}</label>
@@ -79,6 +79,14 @@
               step="0.01"
               class="form-input"
               placeholder="0.00"
+            />
+          </div>
+          <div>
+            <label class="form-label">{{ $t('holidays.hiredAt') }}</label>
+            <input
+              v-model="form.hired_at"
+              type="date"
+              class="form-input"
             />
           </div>
         </div>
@@ -328,7 +336,8 @@ const form = reactive({
   password: '',
   role: '',
   company_id: '',
-  hourly_rate: null
+  hourly_rate: null,
+  hired_at: ''
 })
 
 // Companies list for dropdown (super-admin only)
@@ -357,6 +366,7 @@ watch(() => props.user, (user) => {
     form.role = user.role || ''
     form.company_id = (user.company && user.company.id) || user.company_id || ''
     form.hourly_rate = user.hourly_rate ?? null
+    form.hired_at = user.hired_at || ''
   }
 }, { immediate: true })
 
@@ -370,7 +380,8 @@ const handleSubmit = () => {
     email: form.email,
     role: form.role,
     company_id: form.company_id || undefined,
-    hourly_rate: form.hourly_rate != null ? Number(form.hourly_rate) : undefined
+    hourly_rate: form.hourly_rate != null ? Number(form.hourly_rate) : undefined,
+    hired_at: form.hired_at || undefined
   }
 
   if (!props.isEdit) {

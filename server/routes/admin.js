@@ -82,6 +82,7 @@ router.get('/users', requireAuth, requireRole(['admin', 'super-admin']), async (
       name: user.name,
       role: user.role,
       hourly_rate: user.hourly_rate != null ? Number(Number(user.hourly_rate).toFixed(2)) : null,
+      hired_at: user.hired_at || null,
       is_active: user.is_active,
       created_at: user.created_at,
       updated_at: user.updated_at,
@@ -311,6 +312,39 @@ router.put('/users/:userId/hourly-rate', requireAuth, requireRole(['admin', 'sup
     res.json({ success: true, user: upd.rows[0] })
   } catch (e) {
     res.status(500).json({ success: false, error: 'Failed to update hourly rate' })
+  }
+})
+
+// Update user hired_at date
+router.put('/users/:userId/hired-at', requireAuth, requireRole(['admin', 'super-admin']), async (req, res) => {
+  try {
+    const { userId } = req.params
+    const { hired_at } = req.body
+
+    // Validate date format if provided
+    if (hired_at && isNaN(new Date(hired_at).getTime())) {
+      return res.status(400).json({ success: false, error: 'Invalid date format for hired_at' })
+    }
+
+    // Admins can only update within their company
+    if (req.user.role === 'admin') {
+      const q = await pool.query('SELECT company_id FROM users WHERE id = $1', [userId])
+      if (q.rowCount === 0) return res.status(404).json({ success: false, error: 'User not found' })
+      const cid = q.rows[0].company_id || null
+      if (!cid || cid !== req.user.companyId) {
+        return res.status(403).json({ success: false, error: 'Forbidden' })
+      }
+    }
+
+    const upd = await pool.query(
+      'UPDATE users SET hired_at = $2, updated_at = NOW() WHERE id = $1 RETURNING id, email, name, role, hired_at, company_id',
+      [userId, hired_at || null]
+    )
+    if (upd.rowCount === 0) return res.status(404).json({ success: false, error: 'User not found' })
+    res.json({ success: true, user: upd.rows[0] })
+  } catch (e) {
+    console.error('Error updating hired_at:', e)
+    res.status(500).json({ success: false, error: 'Failed to update hired date' })
   }
 })
 
