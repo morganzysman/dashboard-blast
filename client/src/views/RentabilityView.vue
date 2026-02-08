@@ -122,9 +122,9 @@
     </div>
 
     <!-- Unified Costs Management Modal -->
-    <div v-if="showAddModal || editingCost" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div class="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto" @click.stop>
-        <div class="flex items-center justify-between p-6 border-b border-gray-200">
+    <div v-if="showAddModal || editingCost" class="fixed inset-0 flex items-center justify-center z-50 p-4" style="background: rgba(15,23,42,0.4); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);">
+      <div class="max-w-6xl w-full max-h-[90vh] overflow-y-auto rounded-2xl" style="background: rgba(255,255,255,0.85); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid rgba(255,255,255,0.4); box-shadow: 0 25px 60px rgba(0,0,0,0.12);" @click.stop>
+        <div class="flex items-center justify-between p-6 border-b" style="border-color: rgba(229,231,235,0.4);">
           <h2 class="text-xl font-bold text-gray-900">
             💰 {{ editingCost ? $t('common.edit') : $t('common.manage') }} {{ $t('rentability.accountCosts') }}
           </h2>
@@ -136,7 +136,7 @@
         </div>
 
         <!-- Tab Navigation -->
-        <div class="border-b border-gray-200">
+        <div class="border-b" style="border-color: rgba(229,231,235,0.4);">
           <nav class="-mb-px flex space-x-8 px-6" aria-label="Tabs">
             <button
               @click="activeTab = 'utility'"
@@ -181,7 +181,7 @@
           </div>
           <div class="mb-6" v-else>
             <label class="block text-sm font-medium text-gray-700 mb-1">{{ $t('rentability.account') }}</label>
-            <div class="px-3 py-2 bg-gray-50 border border-gray-200 rounded-md text-sm text-gray-700">
+            <div class="px-3 py-2 rounded-xl text-sm text-gray-700" style="background: rgba(249,250,251,0.5); border: 1px solid rgba(229,231,235,0.4);">
               {{ getSelectedAccountName() }}
             </div>
           </div>
@@ -212,7 +212,7 @@
               </div>
 
               <!-- Total Preview -->
-              <div class="bg-blue-50 rounded-lg p-4 mb-6">
+              <div class="rounded-xl p-4 mb-6" style="background: rgba(219,234,254,0.5);">
                 <div class="grid grid-cols-2 gap-4 text-center">
                   <div>
                     <p class="text-lg font-bold text-blue-600">{{ formatCurrency(totalMonthlyCosts) }}</p>
@@ -257,7 +257,7 @@
 
               <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200">
-                  <thead class="bg-gray-50">
+                  <thead style="background: rgba(249,250,251,0.5);">
                     <tr>
                       <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         {{ $t('rentability.paymentMethod') }}
@@ -273,7 +273,7 @@
                       </th>
                     </tr>
                   </thead>
-                  <tbody class="bg-white divide-y divide-gray-200">
+                  <tbody class="divide-y divide-gray-200/40">
                     <tr v-for="cost in accountPaymentCosts" :key="cost.payment_method_code" :class="{ 'bg-yellow-50': cost.isNew }">
                       <td class="px-6 py-4 whitespace-nowrap">
                         <div class="flex items-center">
@@ -1004,21 +1004,36 @@ onMounted(() => {
   @apply inline-block w-4 h-4 border-2 border-gray-300 border-t-white rounded-full animate-spin;
 }
 
-
-
 .form-select {
-  @apply w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500;
+  @apply w-full px-3 py-2 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500;
+  background: rgba(255,255,255,0.60);
+  border: 1px solid rgba(209,213,219,0.6);
 }
 
 .form-input {
-  @apply w-full pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500;
+  @apply w-full pr-3 py-2 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500;
+  background: rgba(255,255,255,0.60);
+  border: 1px solid rgba(209,213,219,0.6);
 }
 
 .btn-secondary-sm {
-  @apply px-2 py-1 text-sm text-gray-700 bg-gray-100 border border-gray-300 rounded hover:bg-gray-200 transition-colors;
+  @apply px-2 py-1 text-sm text-gray-700 rounded-xl transition-all duration-200;
+  background: rgba(255,255,255,0.5);
+  border: 1px solid rgba(209,213,219,0.4);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.btn-secondary-sm:hover {
+  background: rgba(255,255,255,0.7);
+  box-shadow: 0 2px 16px rgba(0,0,0,0.04);
 }
 
 .btn-danger-sm {
-  @apply px-2 py-1 text-sm text-red-700 bg-red-100 border border-red-300 rounded hover:bg-red-200 transition-colors;
+  @apply px-2 py-1 text-sm text-red-700 rounded-xl transition-all duration-200;
+  background: rgba(254,226,226,0.6);
+  border: 1px solid rgba(252,165,165,0.4);
+}
+.btn-danger-sm:hover {
+  background: rgba(254,226,226,0.8);
 }
 </style>

@@ -107,8 +107,8 @@
     </div>
 
     <!-- Register Holiday Modal -->
-    <div v-if="registerModal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
-      <div class="bg-white rounded-lg p-5 w-full max-w-md">
+    <div v-if="registerModal" class="fixed inset-0 flex items-center justify-center z-50 p-4" style="background: rgba(15,23,42,0.4); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);">
+      <div class="rounded-2xl p-5 w-full max-w-md" style="background: rgba(255,255,255,0.85); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid rgba(255,255,255,0.5); box-shadow: 0 25px 60px rgba(0,0,0,0.12);">
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-lg font-semibold">{{ $t('holidays.registerHoliday') }}</h3>
           <button @click="registerModal = null" class="text-gray-400 hover:text-gray-600">
@@ -159,8 +159,8 @@
     </div>
 
     <!-- Employee History Modal -->
-    <div v-if="historyModal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
-      <div class="bg-white rounded-lg p-5 w-full max-w-2xl max-h-[80vh] overflow-y-auto">
+    <div v-if="historyModal" class="fixed inset-0 flex items-center justify-center z-50 p-4" style="background: rgba(15,23,42,0.4); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);">
+      <div class="rounded-2xl p-5 w-full max-w-2xl max-h-[80vh] overflow-y-auto" style="background: rgba(255,255,255,0.85); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid rgba(255,255,255,0.5); box-shadow: 0 25px 60px rgba(0,0,0,0.12);">
         <div class="flex items-center justify-between mb-4">
           <div>
             <h3 class="text-lg font-semibold">{{ historyModal.employee.name }}</h3>

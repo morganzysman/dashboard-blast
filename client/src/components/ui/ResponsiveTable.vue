@@ -3,9 +3,9 @@
   <div class="hidden md:block">
     <div class="overflow-x-auto">
       <table class="min-w-full w-full text-sm">
-        <thead :class="stickyHeader ? 'sticky top-0 bg-white z-10 dark:bg-gray-800' : ''">
+        <thead :class="stickyHeader ? 'sticky top-0 z-10' : ''" style="background: rgba(249,250,251,0.6); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);">
           <tr class="text-left text-gray-600 dark:text-gray-300">
-            <th v-for="col in columns" :key="col.key" class="py-2" :class="col.headerClass">{{ col.label }}</th>
+            <th v-for="col in columns" :key="col.key" class="py-3 px-2" :class="col.headerClass">{{ col.label }}</th>
           </tr>
         </thead>
         <tbody>
@@ -17,7 +17,7 @@
             </tr>
           </template>
           <template v-else>
-            <tr v-for="item in items" :key="rowKey(item)" class="border-t hover:bg-gray-50 odd:bg-white even:bg-gray-50 dark:odd:bg-gray-900 dark:even:bg-gray-800 dark:hover:bg-gray-700">
+            <tr v-for="item in items" :key="rowKey(item)" class="border-t border-gray-200/40 transition-colors duration-150 hover:bg-white/60 even:bg-gray-50/30 dark:odd:bg-gray-900/50 dark:even:bg-gray-800/50 dark:hover:bg-gray-700/50">
               <td v-for="col in columns" :key="col.key" class="py-2" :class="col.cellClass">
                 <slot :name="`cell-${col.key}`" :item="item">{{ formatDefaultCell(item, col.key) }}</slot>
               </td>
@@ -31,7 +31,7 @@
   <!-- Mobile card list -->
   <div class="md:hidden space-y-2">
     <template v-if="loading">
-      <div v-for="n in skeletonCount" :key="`skm-${n}`" class="border rounded p-3 bg-white dark:bg-gray-900 animate-pulse">
+      <div v-for="n in skeletonCount" :key="`skm-${n}`" class="rounded-xl p-3 animate-pulse" style="background: rgba(255,255,255,0.5); border: 1px solid rgba(255,255,255,0.4);">
         <div class="h-4 bg-gray-200 rounded w-32 mb-2"></div>
         <div class="space-y-2">
           <div v-for="m in 3" :key="m" class="h-3 bg-gray-200 rounded"></div>
@@ -39,7 +39,7 @@
       </div>
     </template>
     <template v-else>
-      <div v-for="item in items" :key="rowKey(item)" class="border rounded p-3 bg-white dark:bg-gray-900">
+      <div v-for="item in items" :key="rowKey(item)" class="rounded-xl p-3 transition-all duration-200" style="background: rgba(255,255,255,0.6); border: 1px solid rgba(255,255,255,0.4); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);">
         <slot name="mobile-card" :item="item">
           <div class="font-medium text-gray-900 dark:text-gray-100 mb-2">{{ mobileTitle(item) }}</div>
           <div class="space-y-1 text-xs">

@@ -25,7 +25,7 @@ const sizeClasses = {
   lg: 'px-4 py-3 text-base'
 }
 
-const base = 'inline-flex items-center justify-center border border-transparent font-medium rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200'
+const base = 'inline-flex items-center justify-center border border-transparent font-medium rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-glass-sm'
 const classes = `${base} ${variantClasses[props.variant] || variantClasses.primary} ${sizeClasses[props.size] || sizeClasses.md}`
 </script>
 

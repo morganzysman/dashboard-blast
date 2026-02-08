@@ -22,7 +22,7 @@
         <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 text-xs">
           <div class="text-gray-500 hidden lg:block" v-for="(d, index) in [$t('shifts.weekdays.0'), $t('shifts.weekdays.1'), $t('shifts.weekdays.2'), $t('shifts.weekdays.3'), $t('shifts.weekdays.4'), $t('shifts.weekdays.5'), $t('shifts.weekdays.6')]" :key="index">{{ d }}</div>
           <template v-for="(day, idx) in weekDays" :key="idx">
-            <div class="border rounded p-2 min-h-[80px]">
+            <div class="rounded-xl p-2 min-h-[80px]" style="background: rgba(255,255,255,0.5); border: 1px solid rgba(229,231,235,0.4);">
               <!-- Mobile: show weekday label inside each cell -->
               <div class="text-[10px] text-gray-400 text-center lg:hidden">{{ day.wdLabel }}</div>
               <div class="text-[10px] text-gray-500 text-center">{{ day.label }}</div>

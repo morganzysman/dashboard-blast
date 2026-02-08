@@ -1,8 +1,8 @@
 <template>
-  <div id="app" class="min-h-screen bg-gray-50">
+  <div id="app" class="min-h-screen">
     <!-- Global loading overlay -->
-    <div v-if="authStore.isLoading" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
-      <div class="bg-white rounded-lg p-8 shadow-xl">
+    <div v-if="authStore.isLoading" class="fixed inset-0 flex items-center justify-center z-50" style="background: rgba(15, 23, 42, 0.3); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);">
+      <div class="rounded-2xl p-8" style="background: rgba(255,255,255,0.80); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid rgba(255,255,255,0.5); box-shadow: 0 16px 48px rgba(0,0,0,0.1);">
         <div class="flex items-center space-x-4">
           <div class="loading-spinner"></div>
           <span class="text-gray-700">{{ $t('common.loading') }}</span>

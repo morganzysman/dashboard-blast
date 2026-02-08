@@ -5,43 +5,49 @@
 /* Custom base styles */
 @layer base {
   body {
-    @apply bg-gray-50 text-gray-900 font-sans;
+    @apply text-gray-900 font-sans;
+    background: linear-gradient(135deg, rgba(241, 245, 249, 1) 0%, rgba(219, 234, 254, 0.4) 50%, rgba(224, 231, 255, 0.3) 100%);
+    background-attachment: fixed;
     /* Prevent horizontal scrolling */
     overflow-x: hidden;
     max-width: 100vw;
   }
-  
+
   html {
     @apply h-full;
     /* Prevent horizontal scrolling */
     overflow-x: hidden;
     max-width: 100vw;
   }
-  
+
   #app {
     @apply h-full;
     /* Prevent horizontal scrolling */
     overflow-x: hidden;
     max-width: 100vw;
   }
-  
+
   /* Improve touch targets on mobile */
   @media (max-width: 640px) {
     button, .btn, input, select, textarea {
       @apply min-h-[44px]; /* iOS recommended minimum touch target */
     }
-    
+
     .btn-sm {
       @apply min-h-[40px] px-3 py-2 text-sm;
     }
   }
 }
 
-/* Custom component styles */
+/* Custom component styles — Glassmorphism Design System */
 @layer components {
-  /* Sidebar styles with responsive behavior */
+  /* ─── Sidebar ─── */
   .sidebar {
-    @apply fixed left-0 top-0 z-40 h-screen bg-white border-r border-gray-200 shadow-sm;
+    @apply fixed left-0 top-0 z-40 h-screen border-r shadow-glass;
+    background: rgba(255, 255, 255, 0.80);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-color: rgba(209, 213, 219, 0.5);
     /* Mobile: Hidden by default, shown with overlay */
     @apply w-64 -translate-x-full transition-transform duration-300 ease-in-out;
     /* Tablet and up: Always visible */
@@ -49,93 +55,104 @@
     /* Desktop: Full width sidebar */
     @apply lg:w-64;
   }
-  
+
   .sidebar.mobile-open {
     @apply translate-x-0;
   }
-  
+
   .sidebar-overlay {
-    @apply fixed inset-0 bg-gray-600 bg-opacity-50 z-30 md:hidden;
+    @apply fixed inset-0 z-30 md:hidden;
+    background: rgba(15, 23, 42, 0.4);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
   }
-  
+
   .sidebar-header {
-    @apply px-4 py-3 border-b border-gray-200;
+    @apply px-4 py-4 border-b;
+    border-color: rgba(229, 231, 235, 0.5);
     /* Tablet and up: More padding */
-    @apply md:px-6 md:py-4;
+    @apply md:px-6 md:py-5;
   }
-  
+
   .sidebar-nav {
-    @apply flex-1 px-2 py-3 space-y-1 overflow-y-auto;
+    @apply flex-1 px-3 py-4 space-y-1 overflow-y-auto;
     /* Tablet and up: More padding */
-    @apply md:px-3 md:py-4;
+    @apply md:px-4 md:py-5;
   }
-  
+
   .sidebar-nav-item {
-    @apply flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors duration-200;
-    @apply text-gray-700 hover:bg-gray-50 hover:text-gray-900;
+    @apply flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200;
+    @apply text-gray-600 hover:bg-white/60 hover:text-gray-900 hover:shadow-glass-sm;
     /* Tablet and up: More padding */
-    @apply md:px-3;
+    @apply md:px-4;
     /* Mobile: Larger touch targets */
     @apply min-h-[44px];
   }
-  
+
   .sidebar-nav-item.active {
-    @apply bg-primary-50 text-primary-700;
-    /* Desktop: Add border indicator */
-    @apply lg:border-r-2 lg:border-primary-600;
+    @apply bg-primary-50/80 text-primary-700 shadow-glass-sm;
   }
-  
+
   .sidebar-nav-icon {
-    @apply mr-2 h-5 w-5 flex-shrink-0;
+    @apply mr-2.5 h-5 w-5 flex-shrink-0;
     /* Tablet and up: More margin */
     @apply md:mr-3;
   }
-  
-  /* Main content area responsive layout */
+
+  /* ─── Main Content ─── */
   .main-content {
     @apply flex-1 overflow-auto;
     /* Mobile: Full width */
     @apply w-full;
   }
-  
+
   /* Apply sidebar margin on pages with sidebar */
   .flex .main-content {
     @apply md:ml-64;
   }
-  
-  /* Page header styles with responsive behavior */
+
+  /* ─── Page Header ─── */
   .page-header {
-    @apply bg-white border-b border-gray-200 px-4 py-3;
+    @apply px-4 py-4 border-b;
+    background: rgba(255, 255, 255, 0.60);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-color: rgba(229, 231, 235, 0.3);
     /* Tablet and up: More padding */
-    @apply md:px-6 md:py-4;
+    @apply md:px-6 md:py-5;
   }
-  
+
   .page-title {
     @apply text-xl font-bold text-gray-900;
     /* Tablet and up: Larger text */
     @apply md:text-2xl;
   }
-  
+
   .page-subtitle {
     @apply mt-1 text-xs text-gray-500;
     /* Tablet and up: Larger text */
     @apply md:text-sm;
   }
-  
-  /* Mobile menu button */
+
+  /* ─── Mobile Menu ─── */
   .mobile-menu-button {
-    @apply inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100;
-    @apply focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500;
-    @apply md:hidden; /* Hide on tablet and up */
+    @apply inline-flex items-center justify-center p-2 rounded-xl text-gray-400 hover:text-gray-500 hover:bg-white/60;
+    @apply focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500/30;
+    @apply md:hidden;
   }
-  
-  /* Dropdown styles with responsive positioning */
+
+  /* ─── Dropdown ─── */
   .dropdown {
     @apply relative;
   }
-  
+
   .dropdown-menu {
-    @apply absolute right-0 mt-2 bg-white rounded-md shadow-lg border border-gray-200 py-1 z-50;
+    @apply absolute right-0 mt-2 rounded-xl py-1 z-50;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(229, 231, 235, 0.5);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
     /* Mobile: Full width dropdown */
     @apply w-full min-w-[200px];
     /* Tablet and up: Fixed width */
@@ -143,101 +160,132 @@
     /* Desktop: Better positioning */
     @apply lg:right-0;
   }
-  
+
   .dropdown-item {
-    @apply flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200;
+    @apply flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-white/60 transition-all duration-200 rounded-lg mx-1;
     /* Mobile: Larger touch targets */
     @apply min-h-[44px];
     /* Tablet and up: Standard padding */
     @apply md:px-4 md:min-h-[auto];
   }
 
-  /* Button styles with responsive sizing */
+  /* ─── Buttons ─── */
   .btn {
-    @apply inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm;
-    @apply focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200;
+    @apply inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-xl;
+    @apply focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply transition-all duration-200;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
     /* Mobile: Larger touch targets */
     @apply min-h-[44px];
     /* Tablet and up: Standard sizing */
     @apply md:px-4 md:min-h-[auto];
   }
-  
+
+  .btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  }
+
   .btn-primary {
-    @apply btn bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500;
+    @apply btn bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500/40;
   }
-  
+
   .btn-secondary {
-    @apply btn bg-gray-200 text-gray-900 hover:bg-gray-300 focus:ring-gray-500;
+    @apply btn text-gray-700 hover:text-gray-900 focus:ring-gray-500/30;
+    background: rgba(255, 255, 255, 0.60);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(229, 231, 235, 0.6);
   }
-  
+
   .btn-danger {
-    @apply btn bg-error-600 text-white hover:bg-error-700 focus:ring-error-500;
+    @apply btn bg-error-600 text-white hover:bg-error-700 focus:ring-error-500/40;
   }
-  
+
   .btn-success {
-    @apply btn bg-success-600 text-white hover:bg-success-700 focus:ring-success-500;
+    @apply btn bg-success-600 text-white hover:bg-success-700 focus:ring-success-500/40;
   }
-  
+
   .btn-warning {
-    @apply btn bg-warning-600 text-white hover:bg-warning-700 focus:ring-warning-500;
+    @apply btn bg-warning-600 text-white hover:bg-warning-700 focus:ring-warning-500/40;
   }
-  
+
   .btn-sm {
-    @apply px-2 py-1 text-xs;
+    @apply px-3 py-1.5 text-xs;
     /* Mobile: Maintain minimum touch target */
     @apply min-h-[40px];
     /* Tablet and up: Smaller sizing */
     @apply md:px-3 md:py-1.5 md:min-h-[auto];
   }
-  
+
   .btn-lg {
-    @apply px-4 py-3 text-base;
+    @apply px-5 py-3 text-base;
     /* Tablet and up: Larger sizing */
     @apply md:px-6;
   }
-  
-  /* Card styles with responsive padding */
+
+  /* ─── Cards ─── */
   .card {
-    @apply bg-white rounded-lg shadow-sm border border-gray-200;
+    @apply rounded-2xl transition-all duration-200;
+    background: rgba(255, 255, 255, 0.70);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
   }
-  
+
+  .card:hover {
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
+  }
+
   .card-header {
-    @apply px-3 py-2 border-b border-gray-200;
+    @apply px-4 py-3 border-b;
+    border-color: rgba(229, 231, 235, 0.4);
     /* Tablet and up: More padding */
-    @apply sm:px-4 sm:py-3;
-    @apply md:px-6 md:py-4;
+    @apply sm:px-5 sm:py-4;
+    @apply md:px-6 md:py-5;
   }
-  
+
   .card-body {
-    @apply p-3;
+    @apply p-4;
     /* Tablet and up: More padding */
-    @apply sm:p-4;
+    @apply sm:p-5;
     @apply md:p-6;
   }
-  
+
   .card-footer {
-    @apply px-3 py-2 border-t border-gray-200 bg-gray-50;
+    @apply px-4 py-3 border-t;
+    border-color: rgba(229, 231, 235, 0.4);
+    background: rgba(249, 250, 251, 0.5);
     /* Tablet and up: More padding */
-    @apply sm:px-4 sm:py-3;
-    @apply md:px-6 md:py-4;
+    @apply sm:px-5 sm:py-4;
+    @apply md:px-6 md:py-5;
   }
-  
-  /* Form styles with responsive sizing */
+
+  /* ─── Forms ─── */
   .form-label {
-    @apply block text-sm font-medium text-gray-700 mb-1;
+    @apply block text-sm font-medium text-gray-700 mb-1.5;
     /* Desktop: Slightly larger text */
     @apply lg:text-base;
   }
-  
+
   .form-input {
-    @apply block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm;
-    @apply focus:outline-none focus:ring-primary-500 focus:border-primary-500 transition-colors duration-200;
+    @apply block w-full px-3.5 py-2.5 rounded-xl transition-all duration-200;
+    background: rgba(255, 255, 255, 0.60);
+    border: 1px solid rgba(209, 213, 219, 0.6);
+    @apply focus:outline-none focus:border-primary-500/50;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
     /* Mobile: Larger touch targets */
     @apply min-h-[44px];
     /* Tablet and up: Standard sizing */
     @apply md:min-h-[auto];
   }
-  
+
+  .form-input:focus {
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+    background: rgba(255, 255, 255, 0.80);
+  }
+
   .form-textarea {
     @apply form-input resize-none;
     /* Mobile: Minimum height for usability */
@@ -245,114 +293,143 @@
     /* Tablet and up: More height */
     @apply md:min-h-[120px];
   }
-  
+
   .form-error {
     @apply mt-1 text-xs text-error-600;
     /* Tablet and up: Slightly larger text */
     @apply md:text-sm;
   }
-  
-  /* Table styles with responsive behavior */
+
+  /* ─── Tables ─── */
   .table {
-    @apply min-w-full divide-y divide-gray-200;
+    @apply min-w-full;
   }
-  
+
   .table-header {
-    @apply bg-gray-50;
+    background: rgba(249, 250, 251, 0.5);
   }
-  
+
   .table-header th {
-    @apply px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider;
+    @apply px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider;
     /* Tablet and up: More padding */
-    @apply sm:px-4 sm:py-3;
+    @apply sm:px-5 sm:py-3.5;
     @apply md:px-6;
   }
-  
+
   .table-body {
-    @apply bg-white divide-y divide-gray-200;
+    @apply divide-y;
+    divide-color: rgba(229, 231, 235, 0.4);
   }
-  
+
   .table-body td {
-    @apply px-3 py-2 text-sm;
+    @apply px-4 py-3 text-sm;
     /* Tablet and up: More padding */
-    @apply sm:px-4 sm:py-3;
+    @apply sm:px-5 sm:py-3.5;
     @apply md:px-6 md:py-4 md:whitespace-nowrap;
   }
-  
-  /* Mobile table cards (alternative to table on small screens) */
-  .table-card {
-    @apply md:hidden bg-white border border-gray-200 rounded-lg p-4 mb-4;
+
+  .table-body tr:hover {
+    background: rgba(255, 255, 255, 0.60);
   }
-  
+
+  .table-body tr:nth-child(even) {
+    background: rgba(249, 250, 251, 0.3);
+  }
+
+  /* Mobile table cards */
+  .table-card {
+    @apply md:hidden rounded-xl p-4 mb-4;
+    background: rgba(255, 255, 255, 0.60);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+  }
+
   .table-card-header {
     @apply flex items-center justify-between mb-3;
   }
-  
+
   .table-card-body {
     @apply space-y-2;
   }
-  
+
   .table-card-row {
     @apply flex justify-between text-sm;
   }
-  
+
   .table-card-label {
     @apply font-medium text-gray-500;
   }
-  
+
   .table-card-value {
     @apply text-gray-900;
   }
-  
-  /* Badge styles */
+
+  /* ─── Badges ─── */
   .badge {
-    @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium;
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
     /* Tablet and up: Slightly larger */
-    @apply md:px-2.5;
+    @apply md:px-3;
   }
-  
+
   .badge-primary {
-    @apply bg-primary-100 text-primary-800;
+    background: rgba(219, 234, 254, 0.7);
+    @apply text-primary-800;
   }
-  
+
   .badge-secondary {
-    @apply bg-gray-100 text-gray-800;
+    background: rgba(241, 245, 249, 0.7);
+    @apply text-gray-800;
   }
-  
+
   .badge-success {
-    @apply bg-success-100 text-success-800;
+    background: rgba(220, 252, 231, 0.7);
+    @apply text-success-800;
   }
-  
+
   .badge-warning {
-    @apply bg-warning-100 text-warning-800;
+    background: rgba(254, 243, 199, 0.7);
+    @apply text-warning-800;
   }
-  
+
   .badge-error {
-    @apply bg-error-100 text-error-800;
+    background: rgba(254, 226, 226, 0.7);
+    @apply text-error-800;
   }
-  
+
   .badge-gray {
-    @apply bg-gray-100 text-gray-800;
+    background: rgba(241, 245, 249, 0.7);
+    @apply text-gray-800;
   }
-  
-  /* Modal styles with responsive sizing */
+
+  /* ─── Modals ─── */
   .modal-overlay {
-    @apply fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity z-50;
+    @apply fixed inset-0 transition-opacity z-50;
+    background: rgba(15, 23, 42, 0.4);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
   }
-  
+
   .modal-container {
     @apply fixed inset-0 z-50 overflow-y-auto;
   }
-  
+
   .modal-content {
-    @apply flex min-h-full items-center justify-center p-3 text-center;
+    @apply flex min-h-full items-center justify-center p-4 text-center;
     /* Tablet and up: More padding */
     @apply sm:p-4;
     @apply md:p-0;
   }
-  
+
   .modal-panel {
-    @apply relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all;
+    @apply relative transform overflow-hidden rounded-2xl text-left transition-all;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.12);
     /* Mobile: Full width with margin */
     @apply w-full max-w-sm mx-3;
     /* Tablet: Larger modal */
@@ -360,150 +437,162 @@
     /* Desktop: Even larger */
     @apply md:max-w-2xl md:mx-0;
   }
-  
+
   .modal-header {
-    @apply px-4 py-3 border-b border-gray-200;
+    @apply px-5 py-4 border-b;
+    border-color: rgba(229, 231, 235, 0.4);
     /* Tablet and up: More padding */
-    @apply md:px-6 md:py-4;
+    @apply md:px-6 md:py-5;
   }
-  
+
   .modal-body {
-    @apply px-4 py-3;
+    @apply px-5 py-4;
     /* Tablet and up: More padding */
-    @apply md:px-6 md:py-4;
+    @apply md:px-6 md:py-5;
   }
-  
+
   .modal-footer {
-    @apply px-4 py-3 border-t border-gray-200 bg-gray-50;
+    @apply px-5 py-4 border-t;
+    border-color: rgba(229, 231, 235, 0.4);
+    background: rgba(249, 250, 251, 0.4);
     /* Tablet and up: More padding */
-    @apply md:px-6 md:py-4;
+    @apply md:px-6 md:py-5;
   }
-  
-  /* Notification styles with responsive positioning */
+
+  /* ─── Notifications ─── */
   .notification {
-    @apply fixed z-50 bg-white rounded-lg shadow-lg border border-gray-200 p-3;
+    @apply fixed z-50 rounded-xl p-4;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
     /* Mobile: Full width at top */
-    @apply top-2 left-2 right-2;
+    @apply top-3 left-3 right-3;
     /* Tablet and up: Positioned at top right */
     @apply sm:top-4 sm:right-4 sm:left-auto sm:max-w-sm sm:w-full;
   }
-  
+
   .notification-success {
-    @apply border-success-200 bg-success-50;
+    border-color: rgba(187, 247, 208, 0.6);
+    background: rgba(240, 253, 244, 0.85);
   }
-  
+
   .notification-error {
-    @apply border-error-200 bg-error-50;
+    border-color: rgba(254, 202, 202, 0.6);
+    background: rgba(254, 242, 242, 0.85);
   }
-  
+
   .notification-warning {
-    @apply border-warning-200 bg-warning-50;
+    border-color: rgba(253, 230, 138, 0.6);
+    background: rgba(255, 251, 235, 0.85);
   }
-  
+
   .notification-info {
-    @apply border-primary-200 bg-primary-50;
+    border-color: rgba(191, 219, 254, 0.6);
+    background: rgba(239, 246, 255, 0.85);
   }
-  
-  /* Loading spinner */
+
+  /* ─── Loading Spinner ─── */
   .loading-spinner {
     @apply inline-block w-4 h-4 border-2 border-gray-300 border-t-primary-600 rounded-full animate-spin;
     /* Tablet and up: Slightly larger */
     @apply md:w-5 md:h-5;
   }
-  
-  /* Responsive grid utilities */
+
+  /* ─── Responsive Grids ─── */
   .responsive-grid-1 {
     @apply grid grid-cols-1;
   }
-  
+
   .responsive-grid-2 {
     @apply grid grid-cols-1 sm:grid-cols-2;
   }
-  
+
   .responsive-grid-3 {
     @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3;
   }
-  
+
   .responsive-grid-4 {
     @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4;
   }
-  
-  /* Responsive spacing utilities */
+
+  /* ─── Responsive Spacing ─── */
   .space-mobile {
     @apply space-y-3;
     /* Tablet and up: More space */
     @apply sm:space-y-4;
     @apply lg:space-y-6;
   }
-  
+
   .gap-mobile {
     @apply gap-3;
     /* Tablet and up: More gap */
     @apply sm:gap-4;
     @apply lg:gap-6;
   }
-  
-  /* Touch-friendly interactive elements */
+
+  /* ─── Touch-friendly Elements ─── */
   .touch-target {
     @apply min-h-[44px] min-w-[44px] flex items-center justify-center;
     /* Tablet and up: Standard sizing */
     @apply md:min-h-[auto] md:min-w-[auto];
   }
-  
-  /* Page content responsive padding */
+
+  /* ─── Page Content ─── */
   .page-content {
-    @apply p-3;
+    @apply p-4;
     /* Tablet and up: More padding */
-    @apply sm:p-4;
+    @apply sm:p-5;
     @apply md:p-6;
     @apply lg:p-8;
   }
-  
-  /* Responsive text utilities */
+
+  /* ─── Responsive Text ─── */
   .text-responsive-sm {
     @apply text-xs;
     @apply sm:text-sm;
     @apply md:text-base;
   }
-  
+
   .text-responsive-base {
     @apply text-sm;
     @apply sm:text-base;
     @apply md:text-lg;
   }
-  
+
   .text-responsive-lg {
     @apply text-base;
     @apply sm:text-lg;
     @apply md:text-xl;
     @apply lg:text-2xl;
   }
-  
-  /* Responsive flex utilities */
+
+  /* ─── Responsive Flex ─── */
   .flex-responsive {
     @apply flex-col;
     @apply sm:flex-row;
   }
-  
+
   .flex-responsive-reverse {
     @apply flex-col-reverse;
     @apply sm:flex-row;
   }
-  
-  /* Hide/show utilities for different breakpoints */
+
+  /* ─── Breakpoint Utilities ─── */
   .mobile-only {
     @apply block sm:hidden;
   }
-  
+
   .tablet-up {
     @apply hidden sm:block;
   }
-  
+
   .desktop-only {
     @apply hidden lg:block;
   }
-  
+
   .mobile-tablet {
     @apply block lg:hidden;
   }
-} 
+}

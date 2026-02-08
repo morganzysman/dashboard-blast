@@ -30,7 +30,7 @@
         <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 text-xs">
           <div class="text-gray-500 hidden lg:block" v-for="(d, index) in [$t('shifts.weekdays.0'), $t('shifts.weekdays.1'), $t('shifts.weekdays.2'), $t('shifts.weekdays.3'), $t('shifts.weekdays.4'), $t('shifts.weekdays.5'), $t('shifts.weekdays.6')]" :key="index">{{ d }}</div>
           <template v-for="day in weekDays" :key="day.date">
-            <div class="border rounded p-2 min-h-[140px]">
+            <div class="rounded-xl p-2 min-h-[140px]" style="background: rgba(255,255,255,0.5); border: 1px solid rgba(229,231,235,0.4);">
               <div class="text-[10px] text-gray-500">{{ day.label }}</div>
               <div class="mt-1 space-y-1">
                 <div v-if="loading" class="space-y-1 animate-pulse">
@@ -38,7 +38,7 @@
                   <div class="h-3 bg-gray-200 rounded w-24"></div>
                 </div>
                 <template v-else>
-                  <div v-for="e in day.entries" :key="e.user_id + ':' + e.start_time" class="rounded px-1 py-0.5 bg-gray-100">
+                  <div v-for="e in day.entries" :key="e.user_id + ':' + e.start_time" class="rounded-lg px-1 py-0.5" style="background: rgba(243,244,246,0.6);">
                     <div class="font-medium text-gray-900 truncate">{{ e.name || e.email }}</div>
                     <div class="text-gray-600">{{ formatTime(e.start_time) }} - {{ formatTime(e.end_time) }}</div>
                   </div>

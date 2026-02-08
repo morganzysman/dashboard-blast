@@ -1,5 +1,5 @@
 <template>
-  <div class="card relative overflow-hidden transition-shadow duration-200 hover:shadow-md dark:bg-gray-800 dark:border-gray-700">
+  <div class="card relative overflow-hidden transition-all duration-200 hover:shadow-glass-lg dark:bg-gray-800/70 dark:border-gray-700/40">
     <div class="card-body p-3 sm:p-4">
       <!-- Header with icon next to title -->
       <div class="flex items-center justify-between mb-2">

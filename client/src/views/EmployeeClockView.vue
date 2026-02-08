@@ -61,11 +61,11 @@
                     :style="{ backgroundColor: scannerOpen ? 'transparent' : '#f3f4f6' }"
                   ></video>
                   <div class="absolute inset-0 pointer-events-none border-2 border-green-500 m-8 rounded"></div>
-                  <div class="absolute bottom-1 right-2 bg-black bg-opacity-50 text-white text-[10px] px-1 rounded">
+                  <div class="absolute bottom-1 right-2 text-white text-[10px] px-1 rounded-lg" style="background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);">
                     {{ scannerOpen ? $t('employee.clock.scanner') : $t('employee.clock.starting') }}
                   </div>
                   <!-- Loading indicator for camera initialization -->
-                  <div v-if="!scannerOpen && cameraPermission !== 'denied'" class="absolute inset-0 flex items-center justify-center bg-gray-100 bg-opacity-75">
+                  <div v-if="!scannerOpen && cameraPermission !== 'denied'" class="absolute inset-0 flex items-center justify-center" style="background: rgba(243,244,246,0.75); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);">
                     <div class="flex flex-col items-center space-y-2">
                       <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
                       <div class="text-sm text-gray-600">{{ $t('employee.clock.initializingCamera') }}</div>
@@ -96,8 +96,8 @@
     </div>
 
     <!-- Day recap modal after clock-out -->
-    <div v-if="showRecap" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div class="bg-white rounded-lg w-full max-w-md p-4">
+    <div v-if="showRecap" class="fixed inset-0 flex items-center justify-center z-50 p-4" style="background: rgba(15,23,42,0.4); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);">
+      <div class="w-full max-w-md p-4 rounded-2xl" style="background: rgba(255,255,255,0.85); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid rgba(255,255,255,0.4); box-shadow: 0 25px 60px rgba(0,0,0,0.12);">
         <div class="flex items-center justify-between mb-2">
           <h3 class="text-md font-semibold">{{ recap.date }}</h3>
           <button class="btn-secondary btn-xs" @click="showRecap=false">Close</button>

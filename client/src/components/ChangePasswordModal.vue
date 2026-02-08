@@ -1,7 +1,7 @@
 <template>
-  <div v-if="isOpen" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md mx-4">
-      <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+  <div v-if="isOpen" class="fixed inset-0 flex items-center justify-center z-50" style="background: rgba(15,23,42,0.4); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);">
+    <div class="w-full max-w-md mx-4 rounded-2xl" style="background: rgba(255,255,255,0.85); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid rgba(255,255,255,0.4); box-shadow: 0 25px 60px rgba(0,0,0,0.12);">
+      <div class="px-6 py-4 border-b" style="border-color: rgba(229,231,235,0.4);">
         <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">
           {{ $t('modals.changePassword.title') }}
         </h3>
@@ -80,7 +80,7 @@
         </div>
       </form>
 
-      <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex justify-end space-x-3">
+      <div class="px-6 py-4 border-t flex justify-end space-x-3" style="border-color: rgba(229,231,235,0.4);">
         <button
           type="button"
           @click="$emit('close')"
@@ -245,19 +245,5 @@ watch(() => props.isOpen, (newValue) => {
 </script>
 
 <style scoped>
-.btn-primary {
-  @apply bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
-}
-
-.btn-secondary {
-  @apply bg-gray-300 hover:bg-gray-400 text-gray-700 font-medium py-2 px-4 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
-}
-
-.form-label {
-  @apply block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1;
-}
-
-.form-input {
-  @apply w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white;
-}
+/* Uses global glassmorphism .btn-primary, .btn-secondary, .form-label, .form-input styles */
 </style>

@@ -46,8 +46,8 @@
               <div v-if="notificationStatus.devices && notificationStatus.devices.length > 1" class="border-t pt-4">
                 <span class="text-sm font-medium text-gray-700 mb-2 block">{{ $t('notifications.allDevices') }}:</span>
                 <div class="space-y-2">
-                  <div v-for="(device, index) in notificationStatus.devices" :key="index" 
-                       class="flex items-center justify-between p-2 bg-gray-50 rounded">
+                  <div v-for="(device, index) in notificationStatus.devices" :key="index"
+                       class="flex items-center justify-between p-2 rounded-xl" style="background: rgba(249,250,251,0.5);">
                     <div>
                       <span class="text-sm font-medium text-gray-900">{{ device.deviceName }}</span>
                       <div class="text-xs text-gray-500">{{ formatDate(device.subscribedAt) }}</div>
@@ -137,7 +137,7 @@
             </select>
           </div>
           
-          <div v-if="isAdmin && notificationSettings.lastNotificationTime" class="bg-gray-50 rounded-lg p-3">
+          <div v-if="isAdmin && notificationSettings.lastNotificationTime" class="rounded-xl p-3" style="background: rgba(249,250,251,0.5);">
             <div class="flex items-center justify-between text-sm">
               <span class="font-medium text-gray-700">{{ $t('notifications.lastNotification') }}:</span>
               <span class="text-gray-600">{{ formatDate(notificationSettings.lastNotificationTime) }}</span>
@@ -148,7 +148,7 @@
             </div>
           </div>
           
-          <div class="bg-blue-50 rounded-lg p-3">
+          <div class="rounded-xl p-3" style="background: rgba(219,234,254,0.5);">
             <div class="flex items-start">
               <svg class="w-5 h-5 text-blue-400 mt-0.5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>

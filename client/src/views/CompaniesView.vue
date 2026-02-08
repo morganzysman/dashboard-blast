@@ -71,7 +71,7 @@
                 <th class="py-2">{{ $t('companies.apiToken') }}</th>
                 <th class="py-2 text-right">{{ $t('companies.actions') }}</th>
               </template>
-              <tr v-for="a in accounts[c.id] || []" :key="a.company_token" class="border-t hover:bg-gray-50 odd:bg-white even:bg-gray-50 dark:odd:bg-gray-900 dark:even:bg-gray-800 dark:hover:bg-gray-700">
+              <tr v-for="a in accounts[c.id] || []" :key="a.company_token" class="border-t transition-colors duration-150" style="border-color: rgba(229,231,235,0.3);" onmouseover="this.style.background='rgba(255,255,255,0.6)'" onmouseout="this.style.background='transparent'">
                   <td>
                     <div v-if="isEditing(c.id, a.company_token)">
                       <input v-model.trim="editForm[c.id][a.company_token].account_name" class="form-input w-full" :placeholder="$t('companies.accountName')" />

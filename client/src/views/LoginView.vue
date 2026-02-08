@@ -1,7 +1,7 @@
 <template>
   <div class="login-bg min-h-screen w-screen flex items-center justify-center">
     <div class="max-w-md w-full login-container">
-      <div class="bg-white rounded-xl shadow-2xl p-8 border border-gray-200">
+      <div class="rounded-3xl p-8" style="background: rgba(255,255,255,0.80); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid rgba(255,255,255,0.5); box-shadow: 0 25px 60px rgba(0,0,0,0.15);">
         <!-- Logo and title -->
         <div class="text-center">
           <div class="flex justify-center mb-6">
@@ -48,7 +48,7 @@
         </form>
         
         <!-- PWA Install Section -->
-        <div class="mt-6 border-t pt-6">
+        <div class="mt-6 border-t border-gray-200/40 pt-6">
           <div class="text-center">
             <h3 class="text-sm font-semibold text-gray-900 mb-2">{{ $t('pwa.installApp') }}</h3>
             <div v-if="canInstallPwa">
@@ -203,7 +203,7 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #1a202c 0%, #2d3748 50%, #1a202c 100%);
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 30%, #312e81 60%, #1e1b4b 100%);
   margin: 0;
   padding: 0;
   position: fixed;

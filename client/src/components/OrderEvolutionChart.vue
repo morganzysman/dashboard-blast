@@ -1,5 +1,5 @@
 <template>
-  <div class="card bg-white">
+  <div class="card">
     <div class="card-body p-4">
       <div class="flex items-center justify-between mb-4">
         <div class="min-w-0 flex-1">
@@ -389,11 +389,5 @@ watch(() => [props.currentDateRange?.start, props.currentDateRange?.end, props.t
 </script>
 
 <style scoped>
-.card {
-  @apply border border-gray-200 rounded-lg shadow-sm;
-}
-
-.card-body {
-  @apply p-4;
-}
+/* Uses global .card and .card-body glassmorphism styles */
 </style>

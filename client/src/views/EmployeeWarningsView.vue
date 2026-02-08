@@ -134,7 +134,7 @@
             </div>
             
             <!-- Warning Details -->
-            <div v-if="warning.description" class="bg-white dark:bg-gray-900 rounded-lg p-3 mb-3">
+            <div v-if="warning.description" class="rounded-xl p-3 mb-3" style="background: rgba(255,255,255,0.6); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);">
               <h4 class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">{{ $t('common.details') }}:</h4>
               <p class="text-sm text-gray-700 dark:text-gray-300">{{ warning.description }}</p>
             </div>

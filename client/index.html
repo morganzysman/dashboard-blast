@@ -12,7 +12,7 @@
     
     <!-- PWA Meta Tags -->
     <meta name="description" content="Real-time analytics dashboard for OlaClick restaurant accounts with user management">
-    <meta name="theme-color" content="#3b82f6">
+    <meta name="theme-color" content="#6366f1">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="OlaClick Analytics">
@@ -34,12 +34,12 @@
     <!-- Preload service worker -->
     <link rel="preload" href="/sw.js" as="script">
 </head>
-<body class="bg-gray-50 font-sans">
+<body class="font-sans">
     <div id="app" class="min-h-screen">
         <!-- Vue.js app will mount here -->
         <div class="flex items-center justify-center min-h-screen">
-            <div class="text-center">
-                <div class="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-500 mx-auto"></div>
+            <div class="text-center p-8 rounded-2xl" style="background: rgba(255,255,255,0.7); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.4); box-shadow: 0 8px 32px rgba(0,0,0,0.06);">
+                <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-primary-500 mx-auto"></div>
                 <p class="mt-4 text-gray-600">Loading OlaClick Analytics...</p>
             </div>
         </div>

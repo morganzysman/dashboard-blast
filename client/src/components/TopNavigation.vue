@@ -27,7 +27,7 @@
       <div class="flex items-center space-x-4">
         <!-- Dark mode toggle -->
         <button
-          class="touch-target rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 px-2 sm:px-3 py-2 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+          class="touch-target rounded-xl px-2 sm:px-3 py-2 text-gray-700 transition-all duration-200 hover:shadow-glass-sm dark:bg-gray-800/60 dark:text-gray-200 dark:hover:bg-gray-700/60" style="background: rgba(255,255,255,0.5); border: 1px solid rgba(229,231,235,0.4);"
           @click="toggleDarkMode"
           :aria-pressed="isDark"
           :title="$t('navigation.toggleDarkMode')"
@@ -45,7 +45,7 @@
         <div class="dropdown">
           <button
             @click="toggleUserMenu"
-            class="flex items-center space-x-2 sm:space-x-3 bg-white rounded-lg px-2 sm:px-3 py-2 hover:bg-gray-50 transition-colors duration-200"
+            class="flex items-center space-x-2 sm:space-x-3 rounded-xl px-2 sm:px-3 py-2 transition-all duration-200 hover:shadow-glass-sm" style="background: rgba(255,255,255,0.5); border: 1px solid rgba(229,231,235,0.4);"
           >
             <div class="h-8 w-8 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
               <span class="text-sm font-medium text-primary-600">
@@ -87,7 +87,7 @@
               {{ $t('auth.changePassword') }}
             </button>
             
-            <div class="border-t border-gray-200 my-1"></div>
+            <div class="border-t border-gray-200/40 my-1 mx-1"></div>
 
             <button @click="handleLogout" class="dropdown-item w-full text-left">
               <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
