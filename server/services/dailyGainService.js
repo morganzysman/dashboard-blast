@@ -169,18 +169,9 @@ export async function backfillGains(startDate, endDate, companyId = null) {
   return totalDays
 }
 
-// Auto-backfill on startup if table is empty — covers all of 2026 through yesterday
+// Auto-backfill on startup — find missing dates from 2026-01-01 through yesterday and fill gaps
 export async function autoBackfillIfNeeded() {
   try {
-    const countRes = await pool.query('SELECT COUNT(*) FROM daily_gains')
-    const count = parseInt(countRes.rows[0].count, 10)
-
-    if (count > 0) {
-      console.log(`📊 Daily gains table has ${count} rows, skipping auto-backfill`)
-      return
-    }
-
-    // Table is empty — backfill from 2026-01-01 to yesterday
     const yesterday = new Date()
     yesterday.setDate(yesterday.getDate() - 1)
     const endDate = yesterday.toISOString().split('T')[0]
@@ -191,15 +182,63 @@ export async function autoBackfillIfNeeded() {
       return
     }
 
-    console.log(`📊 Auto-backfill triggered: ${startDate} → ${endDate}`)
+    // Find dates that have NO data across any account between startDate and yesterday
+    // Generate all dates in range, then subtract dates that already have at least one row
+    const existingDatesRes = await pool.query(
+      'SELECT DISTINCT date FROM daily_gains WHERE date >= $1 AND date <= $2 ORDER BY date',
+      [startDate, endDate]
+    )
+    const existingDates = new Set(existingDatesRes.rows.map(r => {
+      const d = r.date
+      return typeof d === 'string' ? d.split('T')[0] : d.toISOString().split('T')[0]
+    }))
+
+    // Build list of missing dates
+    const missingDates = []
+    const current = new Date(startDate + 'T12:00:00')
+    const endObj = new Date(endDate + 'T12:00:00')
+    while (current <= endObj) {
+      const dateStr = current.toISOString().split('T')[0]
+      if (!existingDates.has(dateStr)) {
+        missingDates.push(dateStr)
+      }
+      current.setDate(current.getDate() + 1)
+    }
+
+    if (missingDates.length === 0) {
+      console.log(`📊 No missing dates to backfill (${existingDates.size} dates already computed)`)
+      return
+    }
+
+    console.log(`📊 Auto-backfill: ${missingDates.length} missing dates found (${existingDates.size} already exist)`)
+    console.log(`📊 First missing: ${missingDates[0]}, last missing: ${missingDates[missingDates.length - 1]}`)
+
     // Run in background — don't await
-    backfillGains(startDate, endDate).catch(err => {
+    backfillMissingDates(missingDates).catch(err => {
       console.error('❌ Auto-backfill error:', err.message)
     })
   } catch (err) {
     // Table might not exist yet if migration hasn't run
     console.log('📊 Daily gains table not ready, skipping auto-backfill')
   }
+}
+
+// Backfill only specific missing dates (throttled 1 day/min)
+async function backfillMissingDates(dates) {
+  console.log(`📊 Backfilling ${dates.length} missing dates...`)
+
+  for (let i = 0; i < dates.length; i++) {
+    const dateStr = dates[i]
+    const count = await computeAllAccountsForDate(dateStr)
+    console.log(`📊 Backfill [${i + 1}/${dates.length}] ${dateStr} — ${count} accounts computed`)
+
+    // ~60s between days to stay well under rate limits
+    if (i < dates.length - 1) {
+      await sleep(60000)
+    }
+  }
+
+  console.log(`📊 Backfill complete: ${dates.length} missing dates processed`)
 }
 
 // Schedule cron jobs for daily gain computation
