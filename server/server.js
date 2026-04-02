@@ -189,8 +189,14 @@ app.get('/ping', (req, res) => {
 scheduleDailyReports();
 
 // Schedule daily gain computation cron jobs and auto-backfill if needed
-scheduleDailyGainsCron();
-autoBackfillIfNeeded();
+try {
+  scheduleDailyGainsCron();
+} catch (err) {
+  console.error('❌ Failed to schedule daily gains cron:', err.message);
+}
+autoBackfillIfNeeded().catch(err => {
+  console.error('❌ Auto-backfill startup error:', err.message);
+});
 
 // Cleanup database daily
 setInterval(async () => {
