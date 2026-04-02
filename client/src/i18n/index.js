@@ -13,10 +13,19 @@ const messages = {
   fr
 }
 
+// Restore saved language from localStorage, otherwise default to Portuguese
+let savedLocale = 'pt'
+try {
+  const stored = localStorage.getItem('user_language')
+  if (stored && ['pt', 'es', 'en', 'fr'].includes(stored)) {
+    savedLocale = stored
+  }
+} catch {}
+
 const i18n = createI18n({
   legacy: false,
-  locale: 'pt', // default UI language; can be changed at runtime
-  fallbackLocale: 'en', // ensure missing keys fall back to English, not raw keys
+  locale: savedLocale,
+  fallbackLocale: 'en',
   messages
 })
 

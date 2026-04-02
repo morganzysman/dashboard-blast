@@ -210,17 +210,11 @@ app.use(router)
 const authStore = useAuthStore()
 authStore.initialize()
 
-// Apply saved language immediately (no auth needed), then full init after auth
-const { initializeLocale, setLocale } = useI18n()
-try {
-  const savedLang = localStorage.getItem('user_language')
-  if (savedLang && ['pt', 'es', 'en', 'fr'].includes(savedLang)) {
-    setLocale(savedLang)
-  }
-} catch {}
-
+// Locale is restored from localStorage in i18n/index.js at creation time.
+// After auth, fetch company info (but don't override user's language choice).
 router.isReady().then(() => {
   if (authStore.isAuthenticated) {
+    const { initializeLocale } = useI18n()
     initializeLocale()
   }
 })
