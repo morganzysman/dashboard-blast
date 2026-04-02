@@ -38,18 +38,20 @@
             </svg>
             <span class="hidden sm:inline uppercase">{{ currentLocale }}</span>
           </button>
-          <div v-if="showLangMenu" class="fixed w-36 rounded-xl shadow-lg overflow-hidden" style="z-index: 9999; background: rgba(255,255,255,0.95); backdrop-filter: blur(12px); border: 1px solid rgba(229,231,235,0.4);" :style="langDropdownPosition">
-            <button
-              v-for="lang in languages"
-              :key="lang.code"
-              class="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 transition-colors"
-              :class="currentLocale === lang.code ? 'text-primary-600 font-medium bg-primary-50' : 'text-gray-700 dark:text-gray-200'"
-              @click="switchLanguage(lang.code)"
-            >
-              <span>{{ lang.flag }}</span>
-              <span>{{ lang.label }}</span>
-            </button>
-          </div>
+          <Teleport to="body">
+            <div v-if="showLangMenu" class="fixed w-36 rounded-xl shadow-lg overflow-hidden" style="z-index: 9999; background: rgba(255,255,255,0.95); backdrop-filter: blur(12px); border: 1px solid rgba(229,231,235,0.4);" :style="langDropdownPosition">
+              <button
+                v-for="lang in languages"
+                :key="lang.code"
+                class="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 transition-colors"
+                :class="currentLocale === lang.code ? 'text-primary-600 font-medium bg-primary-50' : 'text-gray-700 dark:text-gray-200'"
+                @click="switchLanguage(lang.code)"
+              >
+                <span>{{ lang.flag }}</span>
+                <span>{{ lang.label }}</span>
+              </button>
+            </div>
+          </Teleport>
         </div>
 
         <!-- Dark mode toggle -->
