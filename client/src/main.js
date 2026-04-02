@@ -21,6 +21,7 @@ import AdminPayrollView from './views/AdminPayrollView.vue'
 import AdminShiftsCalendarView from './views/AdminShiftsCalendarView.vue'
 import CompaniesView from './views/CompaniesView.vue'
 import AdminHolidayView from './views/AdminHolidayView.vue'
+import GainCalendarView from './views/GainCalendarView.vue'
 
 // Import stores
 import { useAuthStore } from './stores/auth'
@@ -104,6 +105,12 @@ const routes = [
     path: '/rentability',
     name: 'Rentability',
     component: RentabilityView,
+    meta: { requiresAuth: true, excludeRoles: ['super-admin', 'employee'] }
+  },
+  {
+    path: '/gain-calendar',
+    name: 'GainCalendar',
+    component: GainCalendarView,
     meta: { requiresAuth: true, excludeRoles: ['super-admin', 'employee'] }
   }
 ]

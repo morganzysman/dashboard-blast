@@ -195,6 +195,24 @@
       }
     },
     {
+      "id": "5fe8e27a-ef6f-4c70-ae99-72e96629e985",
+      "code": "rappi_pay",
+      "country_code": "PE",
+      "position": 114,
+      "provider_id": null,
+      "provider_code": null,
+      "provider": null
+    },
+    {
+      "id": "8552126e-07d0-403d-8194-d08d4419bea1",
+      "code": "rappi_cash",
+      "country_code": "PE",
+      "position": 115,
+      "provider_id": null,
+      "provider_code": null,
+      "provider": null
+    },
+    {
       "id": "516845a6-8c2e-4ccd-9986-1d508bc2e82d",
       "code": "d24_yape",
       "country_code": "PE",

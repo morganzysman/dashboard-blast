@@ -141,6 +141,7 @@
     "holidays": "Holidays",
     "shiftsCalendar": "Shifts Calendar",
     "userManagement": "User Management",
+    "gainCalendar": "Gain Calendar",
     "managementSuite": "Management Suite",
     "workforce": "Workforce"
   },
@@ -942,5 +943,23 @@
     "serviceMetrics": "Service Metrics",
     "serviceMetricsInfo": "Service metrics are only available for predefined periods (Today, Yesterday, etc.)",
     "noAccountData": "No account data for this period."
+  },
+  "gainCalendar": {
+    "title": "Gain Calendar",
+    "allAccounts": "All Accounts",
+    "profit": "Profit",
+    "loss": "Loss",
+    "noData": "No data",
+    "today": "today",
+    "orders": "orders",
+    "monthTotal": "Month Total",
+    "grossRevenue": "Gross Revenue",
+    "paymentFees": "Payment Fees",
+    "foodCosts": "Food Costs (30%)",
+    "utilityCosts": "Utility Costs",
+    "payrollCosts": "Payroll Costs",
+    "netGain": "Net Gain",
+    "recalculate": "Recalculate Month",
+    "recalculating": "Recalculating..."
   }
 }

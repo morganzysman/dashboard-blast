@@ -1,7 +1,8 @@
 import { Router } from 'express'
-import { requireAuth } from '../middleware/auth.js'
+import { requireAuth, requireRole } from '../middleware/auth.js'
 import { pool } from '../database.js'
 import { fetchOlaClickData, fetchTipsData, getTimezoneAwareDate } from '../services/olaClickService.js'
+import { computeAndStoreDailyGain, backfillGains } from '../services/dailyGainService.js'
 
 const router = Router()
 
@@ -445,6 +446,130 @@ router.get('/order-evolution', requireAuth, async (req, res) => {
       success: false,
       error: 'Failed to fetch revenue evolution data'
     })
+  }
+})
+
+// ====== DAILY GAINS ENDPOINTS ======
+
+// GET /api/analytics/daily-gains?month=YYYY-MM&company_token=xxx
+// Returns stored daily gains for a month. Omit company_token for aggregated view.
+router.get('/daily-gains', requireAuth, async (req, res) => {
+  try {
+    const { month, company_token } = req.query
+    if (!month || !/^\d{4}-\d{2}$/.test(month)) {
+      return res.status(400).json({ success: false, error: 'month parameter required (YYYY-MM)' })
+    }
+
+    const companyId = req.user.companyId
+    const startDate = `${month}-01`
+    const endDate = new Date(parseInt(month.split('-')[0]), parseInt(month.split('-')[1]), 0)
+      .toISOString().split('T')[0] // last day of month
+
+    if (company_token) {
+      // Single account
+      const result = await pool.query(
+        `SELECT date, gross_revenue, payment_fees, food_costs, utility_costs, payroll_costs, net_gain, orders_count, computed_at
+         FROM daily_gains
+         WHERE company_id = $1 AND company_token = $2 AND date >= $3 AND date <= $4
+         ORDER BY date`,
+        [companyId, company_token, startDate, endDate]
+      )
+      return res.json({ success: true, data: result.rows })
+    } else {
+      // Aggregated across all accounts
+      const result = await pool.query(
+        `SELECT date,
+                SUM(gross_revenue) AS gross_revenue,
+                SUM(payment_fees) AS payment_fees,
+                SUM(food_costs) AS food_costs,
+                SUM(utility_costs) AS utility_costs,
+                SUM(payroll_costs) AS payroll_costs,
+                SUM(net_gain) AS net_gain,
+                SUM(orders_count) AS orders_count,
+                MAX(computed_at) AS computed_at
+         FROM daily_gains
+         WHERE company_id = $1 AND date >= $2 AND date <= $3
+         GROUP BY date
+         ORDER BY date`,
+        [companyId, startDate, endDate]
+      )
+      return res.json({ success: true, data: result.rows })
+    }
+  } catch (error) {
+    console.error('❌ Daily gains fetch error:', error)
+    res.status(500).json({ success: false, error: error.message })
+  }
+})
+
+// POST /api/analytics/daily-gains/compute
+// Manually compute gain for a specific date (optionally for a single account)
+router.post('/daily-gains/compute', requireAuth, requireRole(['admin', 'super-admin']), async (req, res) => {
+  try {
+    const { date, company_token } = req.body
+    if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return res.status(400).json({ success: false, error: 'date parameter required (YYYY-MM-DD)' })
+    }
+
+    const companyId = req.user.companyId
+    const tzQ = await pool.query('SELECT timezone FROM companies WHERE id = $1', [companyId])
+    const timezone = tzQ.rows[0]?.timezone || 'America/Lima'
+
+    let accounts
+    if (company_token) {
+      accounts = (await pool.query(
+        'SELECT company_token, api_token FROM company_accounts WHERE company_id = $1 AND company_token = $2',
+        [companyId, company_token]
+      )).rows
+    } else {
+      accounts = (await pool.query(
+        'SELECT company_token, api_token FROM company_accounts WHERE company_id = $1',
+        [companyId]
+      )).rows
+    }
+
+    const results = []
+    for (const acc of accounts) {
+      const result = await computeAndStoreDailyGain(companyId, acc.company_token, acc.api_token, date, timezone)
+      if (result) results.push(result)
+    }
+
+    return res.json({ success: true, computed: results.length, results })
+  } catch (error) {
+    console.error('❌ Daily gains compute error:', error)
+    res.status(500).json({ success: false, error: error.message })
+  }
+})
+
+// POST /api/analytics/daily-gains/backfill
+// Backfill gains for a date range (max 365 days)
+router.post('/daily-gains/backfill', requireAuth, requireRole(['admin', 'super-admin']), async (req, res) => {
+  try {
+    const { start_date, end_date } = req.body
+    if (!start_date || !end_date) {
+      return res.status(400).json({ success: false, error: 'start_date and end_date required (YYYY-MM-DD)' })
+    }
+
+    const startObj = new Date(start_date)
+    const endObj = new Date(end_date)
+    const daysDiff = Math.ceil((endObj - startObj) / (1000 * 3600 * 24)) + 1
+    if (daysDiff > 365) {
+      return res.status(400).json({ success: false, error: 'Maximum 365 days for backfill' })
+    }
+    if (daysDiff < 1) {
+      return res.status(400).json({ success: false, error: 'end_date must be >= start_date' })
+    }
+
+    const companyId = req.user.companyId
+
+    // Run backfill in background
+    backfillGains(start_date, end_date, companyId).catch(err => {
+      console.error('❌ Backfill error:', err.message)
+    })
+
+    return res.json({ success: true, message: `Backfill started for ${daysDiff} days. Check server logs for progress.` })
+  } catch (error) {
+    console.error('❌ Daily gains backfill error:', error)
+    res.status(500).json({ success: false, error: error.message })
   }
 })
 

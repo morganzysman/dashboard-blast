@@ -141,7 +141,8 @@
     "workforce": "Équipe",
     "holidays": "Congés",
     "shiftsCalendar": "Calendrier des équipes",
-    "userManagement": "Gestion des utilisateurs"
+    "userManagement": "Gestion des utilisateurs",
+    "gainCalendar": "Calendrier des Gains"
   },
   "auth": {
     "email": "E-mail",
@@ -841,5 +842,23 @@
     "serviceMetrics": "Métriques de Service",
     "serviceMetricsInfo": "Les métriques de service sont disponibles uniquement pour des périodes prédéfinies (Aujourd'hui, Hier, etc.)",
     "noAccountData": "Aucune donnée de compte pour cette période."
+  },
+  "gainCalendar": {
+    "title": "Calendrier des Gains",
+    "allAccounts": "Tous les Comptes",
+    "profit": "Profit",
+    "loss": "Perte",
+    "noData": "Pas de données",
+    "today": "aujourd'hui",
+    "orders": "commandes",
+    "monthTotal": "Total du Mois",
+    "grossRevenue": "Chiffre d'Affaires",
+    "paymentFees": "Frais de Paiement",
+    "foodCosts": "Coûts Alimentaires (30%)",
+    "utilityCosts": "Charges",
+    "payrollCosts": "Masse Salariale",
+    "netGain": "Gain Net",
+    "recalculate": "Recalculer le Mois",
+    "recalculating": "Recalcul en cours..."
   }
 }

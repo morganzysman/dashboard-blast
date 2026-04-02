@@ -6,6 +6,7 @@ import { fileURLToPath } from 'url';
 // Import configuration and services
 import { config, checkConfiguration } from './config/index.js';
 import { configureWebPush, scheduleDailyReports } from './services/notificationService.js';
+import { scheduleDailyGainsCron, autoBackfillIfNeeded } from './services/dailyGainService.js';
 
 // Import database module
 import {
@@ -186,6 +187,10 @@ app.get('/ping', (req, res) => {
 
 // Schedule daily reports
 scheduleDailyReports();
+
+// Schedule daily gain computation cron jobs and auto-backfill if needed
+scheduleDailyGainsCron();
+autoBackfillIfNeeded();
 
 // Cleanup database daily
 setInterval(async () => {

@@ -141,6 +141,7 @@
     "holidays": "Vacaciones",
     "shiftsCalendar": "Calendario de Turnos",
     "userManagement": "Gestión de Usuarios",
+    "gainCalendar": "Calendario de Ganancias",
     "searchUsers": "Buscar usuarios...",
     "allStatus": "Todos los estados",
     "toggleDarkMode": "Alternar modo oscuro"
@@ -847,5 +848,23 @@
     "serviceMetrics": "Métricas de Servicio",
     "serviceMetricsInfo": "Las métricas de servicio solo están disponibles para periodos predefinidos (Hoy, Ayer, etc.)",
     "noAccountData": "No hay datos de cuenta para este período."
+  },
+  "gainCalendar": {
+    "title": "Calendario de Ganancias",
+    "allAccounts": "Todas las Cuentas",
+    "profit": "Ganancia",
+    "loss": "Pérdida",
+    "noData": "Sin datos",
+    "today": "hoy",
+    "orders": "pedidos",
+    "monthTotal": "Total del Mes",
+    "grossRevenue": "Ingresos Brutos",
+    "paymentFees": "Comisiones de Pago",
+    "foodCosts": "Costo de Alimentos (30%)",
+    "utilityCosts": "Costos de Servicios",
+    "payrollCosts": "Costos de Nómina",
+    "netGain": "Ganancia Neta",
+    "recalculate": "Recalcular Mes",
+    "recalculating": "Recalculando..."
   }
 }

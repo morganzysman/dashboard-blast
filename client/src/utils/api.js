@@ -229,8 +229,20 @@ export const api = {
       'filter[timezone]': timezone
     })
     return apiRequest(`/api/analytics/profitability?${params.toString()}`, { method: 'GET' })
-  }
-  ,
+  },
+
+  // Daily gains endpoints
+  getDailyGains: (month, companyToken = null) => {
+    const params = new URLSearchParams({ month })
+    if (companyToken) params.set('company_token', companyToken)
+    return apiRequest(`/api/analytics/daily-gains?${params.toString()}`, { method: 'GET' })
+  },
+  computeDailyGain: (date, companyToken = null) => {
+    return apiRequest('/api/analytics/daily-gains/compute', { method: 'POST', body: JSON.stringify({ date, company_token: companyToken }) })
+  },
+  backfillDailyGains: (startDate, endDate) => {
+    return apiRequest('/api/analytics/daily-gains/backfill', { method: 'POST', body: JSON.stringify({ start_date: startDate, end_date: endDate }) })
+  },
   // Companies (admin)
   listCompanies: () => apiRequest('/api/admin/companies', { method: 'GET' }),
   createCompany: (name, timezone, currency, language) => apiRequest('/api/admin/companies', { method: 'POST', body: JSON.stringify({ name, timezone, currency, language }) }),

@@ -34,6 +34,8 @@ export function getCommonPaymentMethods() {
     { code: 'bitcoin', name: 'Bitcoin', defaultPercentage: 8.00, defaultFixed: 1.00 },
     { code: 'paypal', name: 'PayPal', defaultPercentage: 4.20, defaultFixed: 0.30 },
     { code: 'mercado_pago', name: 'Mercado Pago', defaultPercentage: 6.40, defaultFixed: 0.50 },
+    { code: 'rappi_pay', name: 'Rappi Pay', defaultPercentage: 32.00, defaultFixed: 0.00 },
+    { code: 'rappi_cash', name: 'Rappi Cash', defaultPercentage: 32.00, defaultFixed: 0.00 },
     { code: 'other', name: 'Other', defaultPercentage: 2.00, defaultFixed: 0.20 }
   ]
 }
