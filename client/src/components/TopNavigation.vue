@@ -30,7 +30,7 @@
           <button
             class="touch-target rounded-xl px-2 sm:px-3 py-2 text-gray-700 transition-all duration-200 hover:shadow-glass-sm dark:bg-gray-800/60 dark:text-gray-200 dark:hover:bg-gray-700/60 flex items-center gap-1 text-sm font-medium"
             style="background: rgba(255,255,255,0.5); border: 1px solid rgba(229,231,235,0.4);"
-            @click="showLangMenu = !showLangMenu"
+            @click="toggleLangMenu"
             :title="$t('navigation.language')"
           >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -38,7 +38,7 @@
             </svg>
             <span class="hidden sm:inline uppercase">{{ currentLocale }}</span>
           </button>
-          <div v-if="showLangMenu" class="absolute right-0 top-full mt-1 w-36 rounded-xl shadow-lg overflow-hidden z-50" style="background: rgba(255,255,255,0.95); backdrop-filter: blur(12px); border: 1px solid rgba(229,231,235,0.4);">
+          <div v-if="showLangMenu" class="fixed w-36 rounded-xl shadow-lg overflow-hidden" style="z-index: 9999; background: rgba(255,255,255,0.95); backdrop-filter: blur(12px); border: 1px solid rgba(229,231,235,0.4);" :style="langDropdownPosition">
             <button
               v-for="lang in languages"
               :key="lang.code"
@@ -162,6 +162,19 @@ const languages = [
 
 const { locale } = useI18n()
 const currentLocale = computed(() => locale.value)
+
+const langDropdownPosition = ref({})
+
+const toggleLangMenu = () => {
+  showLangMenu.value = !showLangMenu.value
+  if (showLangMenu.value && langDropdownRef.value) {
+    const rect = langDropdownRef.value.getBoundingClientRect()
+    langDropdownPosition.value = {
+      top: `${rect.bottom + 4}px`,
+      right: `${window.innerWidth - rect.right}px`
+    }
+  }
+}
 
 const switchLanguage = (lang) => {
   locale.value = lang
