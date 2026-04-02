@@ -142,7 +142,8 @@
     "holidays": "Férias",
     "shiftsCalendar": "Calendário de Turnos",
     "userManagement": "Gerenciamento de Usuários",
-    "gainCalendar": "Calendário de Ganhos"
+    "gainCalendar": "Calendário de Ganhos",
+    "language": "Idioma"
   },
   "auth": {
     "email": "Email",

@@ -19,21 +19,32 @@ export function useI18n() {
     }
   }
 
-  // Initialize locale based on current company
+  // Initialize locale based on user override or company default
   const initializeLocale = async () => {
     try {
-      // If user has a company, get company details to set language
+      // Check for user language override in localStorage first
+      const savedLang = localStorage.getItem('user_language')
+      if (savedLang && ['pt', 'es', 'en', 'fr'].includes(savedLang)) {
+        setLocale(savedLang)
+        // Still fetch company info for reference, but don't override locale
+        if (authStore.user?.company_id) {
+          const companyRes = await api.get(`/api/admin/companies/${authStore.user.company_id}`)
+          if (companyRes.success) {
+            authStore.currentCompany = companyRes.data
+          }
+        }
+        return
+      }
+
+      // No override — use company language
       if (authStore.user?.company_id) {
         const companyRes = await api.get(`/api/admin/companies/${authStore.user.company_id}`)
         if (companyRes.success) {
           const companyLanguage = companyRes.data.language || 'pt'
           setLocale(companyLanguage)
-          
-          // Store company info for future reference
           authStore.currentCompany = companyRes.data
         }
       } else {
-        // Fallback to Portuguese
         setLocale('pt')
       }
     } catch (error) {

@@ -142,7 +142,8 @@
     "holidays": "Congés",
     "shiftsCalendar": "Calendrier des équipes",
     "userManagement": "Gestion des utilisateurs",
-    "gainCalendar": "Calendrier des Gains"
+    "gainCalendar": "Calendrier des Gains",
+    "language": "Langue"
   },
   "auth": {
     "email": "E-mail",

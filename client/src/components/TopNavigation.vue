@@ -25,6 +25,33 @@
 
       <!-- User menu -->
       <div class="flex items-center space-x-4">
+        <!-- Language selector -->
+        <div class="relative" ref="langDropdownRef">
+          <button
+            class="touch-target rounded-xl px-2 sm:px-3 py-2 text-gray-700 transition-all duration-200 hover:shadow-glass-sm dark:bg-gray-800/60 dark:text-gray-200 dark:hover:bg-gray-700/60 flex items-center gap-1 text-sm font-medium"
+            style="background: rgba(255,255,255,0.5); border: 1px solid rgba(229,231,235,0.4);"
+            @click="showLangMenu = !showLangMenu"
+            :title="$t('navigation.language')"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"/>
+            </svg>
+            <span class="hidden sm:inline uppercase">{{ currentLocale }}</span>
+          </button>
+          <div v-if="showLangMenu" class="absolute right-0 top-full mt-1 w-36 rounded-xl shadow-lg overflow-hidden z-50" style="background: rgba(255,255,255,0.95); backdrop-filter: blur(12px); border: 1px solid rgba(229,231,235,0.4);">
+            <button
+              v-for="lang in languages"
+              :key="lang.code"
+              class="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 transition-colors"
+              :class="currentLocale === lang.code ? 'text-primary-600 font-medium bg-primary-50' : 'text-gray-700 dark:text-gray-200'"
+              @click="switchLanguage(lang.code)"
+            >
+              <span>{{ lang.flag }}</span>
+              <span>{{ lang.label }}</span>
+            </button>
+          </div>
+        </div>
+
         <!-- Dark mode toggle -->
         <button
           class="touch-target rounded-xl px-2 sm:px-3 py-2 text-gray-700 transition-all duration-200 hover:shadow-glass-sm dark:bg-gray-800/60 dark:text-gray-200 dark:hover:bg-gray-700/60" style="background: rgba(255,255,255,0.5); border: 1px solid rgba(229,231,235,0.4);"
@@ -123,6 +150,26 @@ const { t } = useI18n()
 
 const showUserMenu = ref(false)
 const showChangePasswordModal = ref(false)
+const showLangMenu = ref(false)
+const langDropdownRef = ref(null)
+
+const languages = [
+  { code: 'pt', label: 'Português', flag: '🇧🇷' },
+  { code: 'es', label: 'Español', flag: '🇪🇸' },
+  { code: 'en', label: 'English', flag: '🇬🇧' },
+  { code: 'fr', label: 'Français', flag: '🇫🇷' }
+]
+
+const { locale } = useI18n()
+const currentLocale = computed(() => locale.value)
+
+const switchLanguage = (lang) => {
+  locale.value = lang
+  showLangMenu.value = false
+  try {
+    localStorage.setItem('user_language', lang)
+  } catch {}
+}
 
 const emit = defineEmits(['toggle-mobile-menu'])
 
@@ -195,10 +242,13 @@ onMounted(() => {
 
 
 
-// Close dropdown when clicking outside
+// Close dropdowns when clicking outside
 const handleClickOutside = (event) => {
   if (!event.target.closest('.dropdown')) {
     showUserMenu.value = false
+  }
+  if (langDropdownRef.value && !langDropdownRef.value.contains(event.target)) {
+    showLangMenu.value = false
   }
 }
 
