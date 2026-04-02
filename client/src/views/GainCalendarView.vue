@@ -237,13 +237,13 @@ const calendarGrid = computed(() => {
       weekday: weekdayNames[dayOfWeek],
       isToday: dateStr === todayStr,
       index: firstWeekday + d - 1,
-      gain: row ? Number(row.net_gain) : null,
-      grossRevenue: row ? Number(row.gross_revenue) : 0,
-      paymentFees: row ? Number(row.payment_fees) : 0,
-      foodCosts: row ? Number(row.food_costs) : 0,
-      utilityCosts: row ? Number(row.utility_costs) : 0,
-      payrollCosts: row ? Number(row.payroll_costs) : 0,
-      orders: row ? Number(row.orders_count) : 0
+      gain: row ? (Number(row.net_gain) || 0) : null,
+      grossRevenue: row ? (Number(row.gross_revenue) || 0) : 0,
+      paymentFees: row ? (Number(row.payment_fees) || 0) : 0,
+      foodCosts: row ? (Number(row.food_costs) || 0) : 0,
+      utilityCosts: row ? (Number(row.utility_costs) || 0) : 0,
+      payrollCosts: row ? (Number(row.payroll_costs) || 0) : 0,
+      orders: row ? (Number(row.orders_count) || 0) : 0
     })
   }
 
@@ -269,7 +269,9 @@ function getDayCellClass(day) {
 // Currency formatting
 function formatCurrency(n) {
   const symbol = auth.user?.currencySymbol || 'S/'
-  return `${symbol} ${(Number(n) || 0).toFixed(2)}`
+  const val = Number(n) || 0
+  if (val < 0) return `-${symbol} ${Math.abs(val).toFixed(2)}`
+  return `${symbol} ${val.toFixed(2)}`
 }
 
 // Load accounts
