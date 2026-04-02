@@ -225,6 +225,9 @@ const calendarGrid = computed(() => {
   // Weekday short names
   const weekdayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
+  // Safe number parse that handles null, undefined, NaN, and strings
+  const num = (v) => { const n = parseFloat(v); return isNaN(n) ? 0 : n }
+
   // Actual days
   for (let d = 1; d <= daysInMonth; d++) {
     const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`
@@ -237,13 +240,13 @@ const calendarGrid = computed(() => {
       weekday: weekdayNames[dayOfWeek],
       isToday: dateStr === todayStr,
       index: firstWeekday + d - 1,
-      gain: row ? (Number(row.net_gain) || 0) : null,
-      grossRevenue: row ? (Number(row.gross_revenue) || 0) : 0,
-      paymentFees: row ? (Number(row.payment_fees) || 0) : 0,
-      foodCosts: row ? (Number(row.food_costs) || 0) : 0,
-      utilityCosts: row ? (Number(row.utility_costs) || 0) : 0,
-      payrollCosts: row ? (Number(row.payroll_costs) || 0) : 0,
-      orders: row ? (Number(row.orders_count) || 0) : 0
+      gain: row ? num(row.net_gain) : null,
+      grossRevenue: row ? num(row.gross_revenue) : 0,
+      paymentFees: row ? num(row.payment_fees) : 0,
+      foodCosts: row ? num(row.food_costs) : 0,
+      utilityCosts: row ? num(row.utility_costs) : 0,
+      payrollCosts: row ? num(row.payroll_costs) : 0,
+      orders: row ? num(row.orders_count) : 0
     })
   }
 
@@ -252,9 +255,13 @@ const calendarGrid = computed(() => {
 
 // Month total
 const monthTotal = computed(() => {
-  return calendarGrid.value
-    .filter(d => d.gain !== null)
-    .reduce((sum, d) => sum + d.gain, 0)
+  let total = 0
+  for (const d of calendarGrid.value) {
+    if (d.gain !== null && !isNaN(d.gain)) {
+      total += d.gain
+    }
+  }
+  return total
 })
 
 // Cell styling based on gain
@@ -269,7 +276,8 @@ function getDayCellClass(day) {
 // Currency formatting
 function formatCurrency(n) {
   const symbol = auth.user?.currencySymbol || 'S/'
-  const val = Number(n) || 0
+  const val = parseFloat(n)
+  if (isNaN(val)) return `${symbol} 0.00`
   if (val < 0) return `-${symbol} ${Math.abs(val).toFixed(2)}`
   return `${symbol} ${val.toFixed(2)}`
 }
