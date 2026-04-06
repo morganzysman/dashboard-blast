@@ -503,7 +503,8 @@
     "dayView": "Vista Diaria",
     "defineWeeklyShifts": "Definir turnos semanales por cuenta. Los horarios son locales (HH:MM, 24h).",
     "showsCurrentSelections": "Muestra las selecciones actuales por día de la semana",
-    "previewThisWeek": "Vista previa (Esta semana)"
+    "previewThisWeek": "Vista previa (Esta semana)",
+    "totalWeeklyHours": "Total horas / semana"
   },
   "rentability": {
     "title": "Análisis de Rentabilidad",

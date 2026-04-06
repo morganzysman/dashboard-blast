@@ -49,6 +49,11 @@
               </table>
             </div>
 
+            <div class="mt-3 flex items-center gap-2 text-sm font-semibold text-gray-800 dark:text-gray-200">
+              <span>{{ $t('shifts.totalWeeklyHours') || 'Total hours / week' }}:</span>
+              <span class="text-blue-600 dark:text-blue-400">{{ totalWeeklyHours }}</span>
+            </div>
+
             <div class="mt-4">
               <div class="flex items-center justify-between mb-2">
                 <h4 class="text-sm font-semibold text-gray-900">{{ $t('shifts.previewThisWeek') }}</h4>
@@ -82,7 +87,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import api from '../utils/api'
 
 const props = defineProps({
@@ -130,6 +135,23 @@ const accountNameFor = (token) => {
   const acc = accounts.value.find(a => a.company_token === token)
   return acc?.account_name || token || '—'
 }
+
+const totalWeeklyHours = computed(() => {
+  let totalMinutes = 0
+  for (let wd = 0; wd < 7; wd++) {
+    const row = form.value[wd]
+    if (row.company_token && row.start_time && row.end_time) {
+      const [sh, sm] = row.start_time.split(':').map(Number)
+      const [eh, em] = row.end_time.split(':').map(Number)
+      let diff = (eh * 60 + em) - (sh * 60 + sm)
+      if (diff < 0) diff += 24 * 60 // overnight shift
+      totalMinutes += diff
+    }
+  }
+  const hours = Math.floor(totalMinutes / 60)
+  const mins = totalMinutes % 60
+  return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`
+})
 
 const loadAccounts = async () => {
   // Prefer explicit companyId; otherwise infer from user
