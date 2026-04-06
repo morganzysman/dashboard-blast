@@ -404,42 +404,45 @@ const createUser = async (userData) => {
 }
 
 const updateUser = async (userId, userData) => {
-  // Update user role if changed
-  if (userData.role) {
-    const response = await fetch(`/api/admin/users/${userId}/role`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Session-ID': authStore.sessionId,
-      },
-      body: JSON.stringify({ role: userData.role }),
-    })
+  const current = selectedUser.value
+  const headers = { 'Content-Type': 'application/json', 'X-Session-ID': authStore.sessionId }
 
+  // Update name if changed
+  if (userData.name && userData.name !== current?.name) {
+    const response = await fetch(`/api/admin/users/${userId}/profile`, {
+      method: 'PUT', headers, body: JSON.stringify({ name: userData.name }),
+    })
     if (!response.ok) {
-      const error = await response.json()
+      const error = await response.json().catch(() => ({}))
+      throw new Error(error.error || 'Failed to update user name')
+    }
+  }
+
+  // Update role if changed
+  if (userData.role && userData.role !== current?.role) {
+    const response = await fetch(`/api/admin/users/${userId}/role`, {
+      method: 'PUT', headers, body: JSON.stringify({ role: userData.role }),
+    })
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}))
       throw new Error(error.error || 'Failed to update user role')
     }
   }
 
-  // Update user company if provided
-  if (userData.company_id) {
+  // Update company if changed
+  const currentCompanyId = current?.company?.id || current?.company_id
+  if (userData.company_id && userData.company_id !== currentCompanyId) {
     const response = await fetch(`/api/admin/users/${userId}/company`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Session-ID': authStore.sessionId,
-      },
-      body: JSON.stringify({ company_id: userData.company_id }),
+      method: 'PUT', headers, body: JSON.stringify({ company_id: userData.company_id }),
     })
-
     if (!response.ok) {
-      const error = await response.json()
+      const error = await response.json().catch(() => ({}))
       throw new Error(error.error || 'Failed to update user company')
     }
   }
 
-  // Update user email if provided and different from current email
-  if (userData.email && userData.email !== selectedUser.value?.email) {
+  // Update email if changed
+  if (userData.email && userData.email !== current?.email) {
     try {
       await api.updateUserEmail(userId, userData.email)
     } catch (error) {
@@ -448,35 +451,29 @@ const updateUser = async (userId, userData) => {
     }
   }
 
-  // Update hourly rate if provided and role is employee
-  if (userData.hourly_rate != null && (userData.role === 'employee' || selectedUser.value?.role === 'employee')) {
-    const response = await fetch(`/api/admin/users/${userId}/hourly-rate`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Session-ID': authStore.sessionId,
-      },
-      body: JSON.stringify({ hourly_rate: Number(userData.hourly_rate) })
-    })
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}))
-      throw new Error(error.error || 'Failed to update hourly rate')
+  // Update hourly rate if changed (employees only)
+  if (userData.hourly_rate != null && (userData.role === 'employee' || current?.role === 'employee')) {
+    if (Number(userData.hourly_rate) !== Number(current?.hourly_rate)) {
+      const response = await fetch(`/api/admin/users/${userId}/hourly-rate`, {
+        method: 'PUT', headers, body: JSON.stringify({ hourly_rate: Number(userData.hourly_rate) })
+      })
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}))
+        throw new Error(error.error || 'Failed to update hourly rate')
+      }
     }
   }
 
-  // Update hired_at if provided and role is employee
-  if (userData.hired_at && (userData.role === 'employee' || selectedUser.value?.role === 'employee')) {
-    const response = await fetch(`/api/admin/users/${userId}/hired-at`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Session-ID': authStore.sessionId,
-      },
-      body: JSON.stringify({ hired_at: userData.hired_at })
-    })
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}))
-      throw new Error(error.error || 'Failed to update hired date')
+  // Update hired_at if changed (employees only)
+  if (userData.hired_at && (userData.role === 'employee' || current?.role === 'employee')) {
+    if (userData.hired_at !== current?.hired_at) {
+      const response = await fetch(`/api/admin/users/${userId}/hired-at`, {
+        method: 'PUT', headers, body: JSON.stringify({ hired_at: userData.hired_at })
+      })
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}))
+        throw new Error(error.error || 'Failed to update hired date')
+      }
     }
   }
 }

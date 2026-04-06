@@ -10,6 +10,7 @@ import {
   updateUserStatus,
   updateUserCompany,
   updateUserEmail,
+  updateUserProfile,
   checkEmailExists,
   logNotificationEvent
 } from '../database.js';
@@ -194,6 +195,31 @@ router.put('/users/:userId/accounts', requireAuth, requireRole(['super-admin']),
   return res.status(410).json({ success: false, error: 'User accounts are deprecated. Manage accounts under company.' })
 });
 
+// Update user profile (name)
+router.put('/users/:userId/profile', requireAuth, requireRole(['admin', 'super-admin']), async (req, res) => {
+  try {
+    const { userId } = req.params
+    const { name } = req.body
+    if (!name || !name.trim()) {
+      return res.status(400).json({ success: false, error: 'Name is required' })
+    }
+    // Admin scope check
+    if (req.user.role === 'admin') {
+      const target = await pool.query('SELECT company_id FROM users WHERE id = $1', [userId])
+      if (target.rowCount === 0) return res.status(404).json({ success: false, error: 'User not found' })
+      if (target.rows[0].company_id !== req.user.companyId) {
+        return res.status(403).json({ success: false, error: 'Forbidden' })
+      }
+    }
+    const updated = await updateUserProfile(userId, { name: name.trim() })
+    if (!updated) return res.status(404).json({ success: false, error: 'User not found' })
+    res.json({ success: true, user: updated })
+  } catch (error) {
+    console.error('Error updating user profile:', error)
+    res.status(500).json({ success: false, error: 'Failed to update user profile' })
+  }
+})
+
 // Update user role (super-admin only)
 router.put('/users/:userId/role', requireAuth, requireRole(['admin', 'super-admin']), async (req, res) => {
   try {
@@ -349,18 +375,29 @@ router.put('/users/:userId/hired-at', requireAuth, requireRole(['admin', 'super-
 })
 
 // Update user status (activate/deactivate) (super-admin only)
-router.put('/users/:userId/status', requireAuth, requireRole(['super-admin']), async (req, res) => {
+router.put('/users/:userId/status', requireAuth, requireRole(['admin', 'super-admin']), async (req, res) => {
   try {
     const { userId } = req.params;
     const { is_active } = req.body;
-    
+
     if (typeof is_active !== 'boolean') {
       return res.status(400).json({
         success: false,
         error: 'is_active must be a boolean'
       });
     }
-    
+
+    // Admins can only toggle users within their own company
+    if (req.user.role === 'admin') {
+      const target = await pool.query('SELECT company_id FROM users WHERE id = $1', [userId]);
+      if (target.rowCount === 0) {
+        return res.status(404).json({ success: false, error: 'User not found' });
+      }
+      if (target.rows[0].company_id !== req.user.companyId) {
+        return res.status(403).json({ success: false, error: 'Forbidden' });
+      }
+    }
+
     const updatedUser = await updateUserStatus(userId, is_active);
     
     if (!updatedUser) {
@@ -790,15 +827,15 @@ router.get('/shifts', requireAuth, requireRole(['admin', 'super-admin']), async 
     }
 
     // Determine start of week (Sunday) using optional week_start
-    const TIMEZONE = 'America/Santiago'
     let startParam = (req.query.week_start || '').toString().slice(0, 10)
     let startTz
     if (/^\d{4}-\d{2}-\d{2}$/.test(startParam)) {
-      startTz = new Date(new Date(startParam).toLocaleString('en-US', { timeZone: TIMEZONE }))
+      // Parse as local date parts to avoid UTC-to-timezone off-by-one
+      const [y, m, d] = startParam.split('-').map(Number)
+      startTz = new Date(y, m - 1, d)
     } else {
-      const nowTz = new Date(new Date().toLocaleString('en-US', { timeZone: TIMEZONE }))
-      startTz = new Date(nowTz)
-      startTz.setDate(nowTz.getDate() - nowTz.getDay())
+      const now = new Date()
+      startTz = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay())
     }
     const days = []
     for (let i = 0; i < 7; i++) {
