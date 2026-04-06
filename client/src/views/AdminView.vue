@@ -407,8 +407,8 @@ const updateUser = async (userId, userData) => {
   const current = selectedUser.value
   const headers = { 'Content-Type': 'application/json', 'X-Session-ID': authStore.sessionId }
 
-  // Update name if changed
-  if (userData.name && userData.name !== current?.name) {
+  // Always update profile (name) when editing
+  if (userData.name) {
     const response = await fetch(`/api/admin/users/${userId}/profile`, {
       method: 'PUT', headers, body: JSON.stringify({ name: userData.name }),
     })
