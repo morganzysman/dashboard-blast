@@ -852,7 +852,7 @@ router.get('/shifts', requireAuth, requireRole(['admin', 'super-admin']), async 
       `SELECT es.user_id, u.name, u.email, es.weekday, es.start_time, es.end_time
        FROM employee_shifts es
        JOIN users u ON u.id = es.user_id
-       WHERE es.company_token = $1
+       WHERE es.company_token = $1 AND u.is_active = TRUE
        ORDER BY es.weekday, u.name`,
       [companyToken]
     )
