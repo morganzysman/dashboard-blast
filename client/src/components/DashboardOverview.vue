@@ -212,7 +212,7 @@
                 </div>
               </div>
               <div class="ml-2 sm:ml-3 space-y-0.5 text-xs min-w-0 flex-1">
-                <div v-for="method in analyticsData.aggregated.paymentMethods.slice(0, 3)" :key="method.name" class="min-w-0">
+                <div v-for="method in analyticsData.aggregated.paymentMethods" :key="method.name" class="min-w-0">
                   <div class="flex items-center justify-between min-w-0">
                     <div class="flex items-center space-x-1 min-w-0 flex-1">
                       <div class="w-2 h-2 rounded-full flex-shrink-0" :style="{ backgroundColor: getPaymentMethodColor(method.name) }"></div>
@@ -224,7 +224,6 @@
                     </div>
                   </div>
                 </div>
-                <div v-if="analyticsData.aggregated.paymentMethods.length > 3" class="text-purple-200 text-xs">+{{ analyticsData.aggregated.paymentMethods.length - 3 }} more</div>
               </div>
             </div>
           </div>
