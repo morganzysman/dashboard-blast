@@ -867,6 +867,9 @@
     "payrollCosts": "Costos de Nómina",
     "netGain": "Ganancia Neta",
     "recalculate": "Recalcular Mes",
-    "recalculating": "Recalculando..."
+    "recalculating": "Recalculando...",
+    "objective": "Objetivo",
+    "dailyObjective": "Objetivo Diario",
+    "objectiveProgress": "Progreso vs objetivo"
   }
 }

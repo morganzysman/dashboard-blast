@@ -861,6 +861,9 @@
     "payrollCosts": "Masse Salariale",
     "netGain": "Gain Net",
     "recalculate": "Recalculer le Mois",
-    "recalculating": "Recalcul en cours..."
+    "recalculating": "Recalcul en cours...",
+    "objective": "Objectif",
+    "dailyObjective": "Objectif Quotidien",
+    "objectiveProgress": "Progression vs objectif"
   }
 }

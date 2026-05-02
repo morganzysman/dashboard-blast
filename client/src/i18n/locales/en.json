@@ -962,6 +962,9 @@
     "payrollCosts": "Payroll Costs",
     "netGain": "Net Gain",
     "recalculate": "Recalculate Month",
-    "recalculating": "Recalculating..."
+    "recalculating": "Recalculating...",
+    "objective": "Objective",
+    "dailyObjective": "Daily Objective",
+    "objectiveProgress": "Progress vs objective"
   }
 }

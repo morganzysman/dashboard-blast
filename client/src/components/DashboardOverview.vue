@@ -243,6 +243,14 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
           </svg>
         </template>
+        <template #extra>
+          <ObjectiveProgress
+            show-label
+            :label="`${$t('gainCalendar.objective')}: ${formatCurrency(periodObjective)} (${formatCurrency(DAILY_GAIN_OBJECTIVE)} × ${calculateDaysInPeriod()})`"
+            :value="aggregatedDailyGain"
+            :objective="periodObjective"
+          />
+        </template>
       </KpiCard>
     </div>
 
@@ -319,9 +327,10 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import KpiCard from './ui/KpiCard.vue'
+import ObjectiveProgress from './ui/ObjectiveProgress.vue'
 import OrderEvolutionChart from './OrderEvolutionChart.vue'
 import { useAuthStore } from '../stores/auth'
-import { calculateDaysInPeriod as calcDays } from '../composables/useProfitability'
+import { calculateDaysInPeriod as calcDays, DAILY_GAIN_OBJECTIVE } from '../composables/useProfitability'
 
 const props = defineProps({
   analyticsData: Object,
@@ -386,6 +395,9 @@ const paymentMethodColors = {
 
 // Calculate number of days in the current date range
 const calculateDaysInPeriod = () => calcDays(props.currentDateRange)
+
+// Period objective scales with the selected date range
+const periodObjective = computed(() => DAILY_GAIN_OBJECTIVE * calcDays(props.currentDateRange))
 
 // Format gain period label
 const formatGainPeriodLabel = () => {

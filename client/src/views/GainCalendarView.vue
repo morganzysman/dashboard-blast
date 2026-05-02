@@ -61,6 +61,14 @@
               {{ $t('gainCalendar.monthTotal') }}: {{ formatCurrency(monthTotal) }}
             </div>
           </div>
+          <div class="mt-3">
+            <ObjectiveProgress
+              show-label
+              :label="`${$t('gainCalendar.objective')}: ${formatCurrency(monthObjective)} (${formatCurrency(DAILY_GAIN_OBJECTIVE)} × ${daysInMonthSoFar})`"
+              :value="monthTotal"
+              :objective="monthObjective"
+            />
+          </div>
         </div>
 
         <!-- Calendar grid -->
@@ -105,6 +113,13 @@
                 <div class="text-[9px] text-gray-500 mt-0.5">
                   {{ day.orders || 0 }} {{ $t('gainCalendar.orders') }}
                 </div>
+                <ObjectiveProgress
+                  class="mt-1.5"
+                  compact
+                  :value="day.gain"
+                  :objective="DAILY_GAIN_OBJECTIVE"
+                  :tooltip="`${$t('gainCalendar.dailyObjective')}: ${formatCurrency(DAILY_GAIN_OBJECTIVE)}`"
+                />
               </div>
               <div v-else class="mt-2 text-center text-[10px] text-gray-400">
                 —
@@ -128,6 +143,10 @@
                     <span>{{ $t('gainCalendar.netGain') }}</span>
                     <span>{{ formatCurrency(day.gain) }}</span>
                   </div>
+                  <div class="flex justify-between text-gray-500">
+                    <span>{{ $t('gainCalendar.dailyObjective') }}</span>
+                    <span>{{ formatCurrency(DAILY_GAIN_OBJECTIVE) }}</span>
+                  </div>
                 </div>
               </div>
             </template>
@@ -149,6 +168,8 @@ import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../stores/auth'
 import api from '../utils/api.js'
+import ObjectiveProgress from '../components/ui/ObjectiveProgress.vue'
+import { DAILY_GAIN_OBJECTIVE } from '../composables/useProfitability'
 
 const { t } = useI18n()
 const auth = useAuthStore()
@@ -263,6 +284,17 @@ const monthTotal = computed(() => {
   }
   return total
 })
+
+// Number of days in the displayed month that have gain data (used to scale objective fairly)
+const daysInMonthSoFar = computed(() => {
+  let count = 0
+  for (const d of calendarGrid.value) {
+    if (d.date && d.gain !== null && !isNaN(d.gain)) count++
+  }
+  return count || 1
+})
+
+const monthObjective = computed(() => DAILY_GAIN_OBJECTIVE * daysInMonthSoFar.value)
 
 // Cell styling based on gain
 function getDayCellClass(day) {
