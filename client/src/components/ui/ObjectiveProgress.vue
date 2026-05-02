@@ -5,8 +5,8 @@
       <span class="font-semibold tabular-nums" :class="percentTextClass">{{ percentDisplay }}</span>
     </div>
     <div
-      class="relative w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700"
-      :class="compact ? 'h-1.5' : 'h-2'"
+      class="relative w-full overflow-hidden rounded-full"
+      :class="[compact ? 'h-1.5' : 'h-2', trackClass]"
       role="progressbar"
       :aria-valuenow="Math.max(0, Math.round(percent))"
       aria-valuemin="0"
@@ -14,6 +14,7 @@
       :title="tooltip"
     >
       <div
+        v-if="percent >= 0"
         class="h-full transition-all duration-300 ease-out"
         :class="barClass"
         :style="{ width: barWidth }"
@@ -57,12 +58,16 @@ const barWidth = computed(() => {
 
 const barClass = computed(() => {
   const p = percent.value
-  if (p < 0) return 'bg-red-500'
   if (p >= 100) return 'bg-green-500'
   if (p >= 75) return 'bg-green-400'
   if (p >= 50) return 'bg-yellow-400'
   if (p >= 25) return 'bg-orange-400'
   return 'bg-red-400'
+})
+
+const trackClass = computed(() => {
+  if (percent.value < 0) return 'bg-transparent border border-red-500 dark:border-red-400'
+  return 'bg-gray-200 dark:bg-gray-700'
 })
 
 const percentTextClass = computed(() => {

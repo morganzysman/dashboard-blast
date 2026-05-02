@@ -246,7 +246,7 @@
         <template #extra>
           <ObjectiveProgress
             show-label
-            :label="`${$t('gainCalendar.objective')}: ${formatCurrency(periodObjective)} (${formatCurrency(DAILY_GAIN_OBJECTIVE)} × ${calculateDaysInPeriod()})`"
+            :label="`${$t('gainCalendar.objective')} ${formatCurrency(periodObjective)}`"
             :value="aggregatedDailyGain"
             :objective="periodObjective"
           />

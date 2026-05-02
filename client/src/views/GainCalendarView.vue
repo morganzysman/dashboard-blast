@@ -64,7 +64,7 @@
           <div class="mt-3">
             <ObjectiveProgress
               show-label
-              :label="`${$t('gainCalendar.objective')}: ${formatCurrency(monthObjective)} (${formatCurrency(DAILY_GAIN_OBJECTIVE)} × ${daysInMonthSoFar})`"
+              :label="`${$t('gainCalendar.objective')} ${formatCurrency(monthObjective)}`"
               :value="monthTotal"
               :objective="monthObjective"
             />
