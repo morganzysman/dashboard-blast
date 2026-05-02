@@ -64,9 +64,9 @@
           <div class="mt-3">
             <ObjectiveProgress
               show-label
-              :label="`${$t('gainCalendar.objective')} ${formatCurrency(monthObjective)}`"
+              :label="`${$t('gainCalendar.objective')} ${formatCurrency(monthMinObjective)} / ${formatCurrency(monthObjective)}`"
               :value="monthTotal"
-              :objective="monthObjective"
+              :objectives="monthTargets"
             />
           </div>
         </div>
@@ -117,8 +117,8 @@
                   class="mt-1.5"
                   compact
                   :value="day.gain"
-                  :objective="DAILY_GAIN_OBJECTIVE"
-                  :tooltip="`${$t('gainCalendar.dailyObjective')}: ${formatCurrency(DAILY_GAIN_OBJECTIVE)}`"
+                  :objectives="dailyTargets"
+                  :tooltip="`${$t('gainCalendar.dailyObjective')}: ${formatCurrency(DAILY_GAIN_MIN_OBJECTIVE)} / ${formatCurrency(DAILY_GAIN_OBJECTIVE)}`"
                 />
               </div>
               <div v-else class="mt-2 text-center text-[10px] text-gray-400">
@@ -145,7 +145,7 @@
                   </div>
                   <div class="flex justify-between text-gray-500">
                     <span>{{ $t('gainCalendar.dailyObjective') }}</span>
-                    <span>{{ formatCurrency(DAILY_GAIN_OBJECTIVE) }}</span>
+                    <span>{{ formatCurrency(DAILY_GAIN_MIN_OBJECTIVE) }} / {{ formatCurrency(DAILY_GAIN_OBJECTIVE) }}</span>
                   </div>
                 </div>
               </div>
@@ -169,7 +169,7 @@ import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../stores/auth'
 import api from '../utils/api.js'
 import ObjectiveProgress from '../components/ui/ObjectiveProgress.vue'
-import { DAILY_GAIN_OBJECTIVE } from '../composables/useProfitability'
+import { DAILY_GAIN_OBJECTIVE, DAILY_GAIN_MIN_OBJECTIVE } from '../composables/useProfitability'
 
 const { t } = useI18n()
 const auth = useAuthStore()
@@ -295,6 +295,9 @@ const daysInMonthSoFar = computed(() => {
 })
 
 const monthObjective = computed(() => DAILY_GAIN_OBJECTIVE * daysInMonthSoFar.value)
+const monthMinObjective = computed(() => DAILY_GAIN_MIN_OBJECTIVE * daysInMonthSoFar.value)
+const monthTargets = computed(() => [monthMinObjective.value, monthObjective.value])
+const dailyTargets = [DAILY_GAIN_MIN_OBJECTIVE, DAILY_GAIN_OBJECTIVE]
 
 // Cell styling based on gain
 function getDayCellClass(day) {

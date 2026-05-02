@@ -1,6 +1,8 @@
 // Shared profitability/calculation utilities for accounts and company-level aggregation
 
-// Company-wide daily gain objective (in account currency)
+// Company-wide daily gain objectives (in account currency)
+// Min: minimum acceptable daily gain (yellow zone). Full: stretch goal (green zone).
+export const DAILY_GAIN_MIN_OBJECTIVE = 2000
 export const DAILY_GAIN_OBJECTIVE = 3500
 
 // Calculate number of days in a selected date range
