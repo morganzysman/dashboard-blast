@@ -229,48 +229,6 @@
                 <div class="p-3 space-y-3">
                   <p class="text-[11px] text-gray-500">{{ $t('account.kitchenPrepSubtitle') }}</p>
 
-                  <details class="rounded border border-gray-100">
-                    <summary class="cursor-pointer list-none px-2 py-2 [&::-webkit-details-marker]:hidden">
-                      <p class="text-[11px] font-semibold text-gray-800">
-                        {{ $t('account.kitchenOutOfSla') }}
-                        <span class="font-normal text-gray-500">({{ slaBreachesForAccount(account).length }})</span>
-                      </p>
-                    </summary>
-                    <div class="p-2 pt-0">
-                    <p v-if="slaBreachTruncNote(account)" class="text-[10px] text-amber-800 mb-1">{{ $t('companyKitchen.breachTruncated') }}</p>
-                    <div v-if="slaBreachesForAccount(account).length" class="max-h-52 overflow-auto rounded border border-gray-100">
-                      <table class="w-full text-[11px]">
-                        <thead class="bg-gray-50 text-gray-600 sticky top-0">
-                          <tr>
-                            <th class="text-left font-medium px-2 py-1.5">{{ $t('account.kitchenTableOrderId') }}</th>
-                            <th class="text-left font-medium px-2 py-1.5">{{ $t('account.kitchenTableChannel') }}</th>
-                            <th class="text-right font-medium px-2 py-1.5">{{ $t('account.kitchenTableGoal') }}</th>
-                            <th class="text-right font-medium px-2 py-1.5">{{ $t('account.kitchenTableAvg') }}</th>
-                            <th class="text-right font-medium px-2 py-1.5">{{ $t('account.kitchenTableExtra') }}</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr
-                            v-for="(b, i) in slaBreachesForAccount(account)"
-                            :key="`${b.orderId}-${i}`"
-                            class="border-t border-gray-100"
-                          >
-                            <td
-                              class="px-2 py-1.5 font-mono text-gray-900"
-                              :title="b.orderId"
-                            >{{ b.publicId || b.orderId || '—' }}</td>
-                            <td class="px-2 py-1.5 text-gray-700">{{ kitchenChannelLabel(b.channelKey) }}</td>
-                            <td class="px-2 py-1.5 text-right text-gray-600">{{ b.targetMinutes }}′</td>
-                            <td class="px-2 py-1.5 text-right font-medium text-gray-900">{{ Math.round(b.prepMinutes) }}′</td>
-                            <td class="px-2 py-1.5 text-right font-semibold text-amber-800">+{{ b.delayOverTargetMinutes }}′</td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
-                    <p v-else class="text-[11px] text-gray-500">{{ $t('account.kitchenOutOfSlaEmpty') }}</p>
-                    </div>
-                  </details>
-
                   <details v-if="kitchenSlaRanking(account).length" class="rounded border border-gray-100">
                     <summary class="cursor-pointer list-none px-2 py-2 [&::-webkit-details-marker]:hidden">
                       <div class="flex items-center justify-between gap-2">
@@ -893,14 +851,6 @@ function onTimeBorderClass(r) {
   if (r >= 0.9) return 'border-emerald-200/80'
   if (r >= 0.7) return 'border-amber-200/80'
   return 'border-rose-200/80'
-}
-
-const slaBreachesForAccount = (account) => {
-  return getAccountKitchenPerformance(account).sla?.slaBreaches || []
-}
-
-const slaBreachTruncNote = (account) => {
-  return !!getAccountKitchenPerformance(account).sla?.slaBreachesTruncated
 }
 
 const kitchenSlaScore = (account) => {
