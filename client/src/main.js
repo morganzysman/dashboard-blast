@@ -13,7 +13,7 @@ import LoginView from './views/LoginView.vue'
 import DashboardView from './views/DashboardView.vue'
 import AdminView from './views/AdminView.vue'
 import NotificationsView from './views/NotificationsView.vue'
-import RentabilityView from './views/RentabilityView.vue'
+import SetupView from './views/SetupView.vue'
 import EmployeeClockView from './views/EmployeeClockView.vue'
 import EmployeeTimesheetView from './views/EmployeeTimesheetView.vue'
 import EmployeeWarningsView from './views/EmployeeWarningsView.vue'
@@ -103,10 +103,15 @@ const routes = [
     meta: { requiresAuth: true, excludeRoles: ['super-admin'] }
   },
   {
-    path: '/rentability',
-    name: 'Rentability',
-    component: RentabilityView,
+    path: '/setup',
+    name: 'Setup',
+    component: SetupView,
     meta: { requiresAuth: true, excludeRoles: ['super-admin', 'employee'] }
+  },
+  {
+    // Legacy URL kept so old bookmarks / sidebar caches keep working.
+    path: '/rentability',
+    redirect: '/setup'
   },
   {
     path: '/gain-calendar',

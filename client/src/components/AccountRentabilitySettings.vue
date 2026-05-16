@@ -451,7 +451,11 @@ const deleteUtilityCosts = async () => {
   }
 }
 
-const loadPaymentMethodCosts = async () => {
+// Declared as a hoisted `function` (not `const`) so the watcher above can
+// reference it during its `immediate: true` first run. With a const arrow the
+// watcher hits a ReferenceError TDZ during setup, the error is swallowed by
+// Vue's watcher handler, and the payment-method list silently stays empty.
+async function loadPaymentMethodCosts() {
   if (!props.companyToken) {
     accountPaymentCosts.value = []
     return
