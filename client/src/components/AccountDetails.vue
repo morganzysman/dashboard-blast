@@ -229,8 +229,14 @@
                 <div class="p-3 space-y-3">
                   <p class="text-[11px] text-gray-500">{{ $t('account.kitchenPrepSubtitle') }}</p>
 
-                  <div>
-                    <p class="text-[11px] font-semibold text-gray-800 mb-1">{{ $t('account.kitchenOutOfSla') }}</p>
+                  <details class="rounded border border-gray-100">
+                    <summary class="cursor-pointer list-none px-2 py-2 [&::-webkit-details-marker]:hidden">
+                      <p class="text-[11px] font-semibold text-gray-800">
+                        {{ $t('account.kitchenOutOfSla') }}
+                        <span class="font-normal text-gray-500">({{ slaBreachesForAccount(account).length }})</span>
+                      </p>
+                    </summary>
+                    <div class="p-2 pt-0">
                     <p v-if="slaBreachTruncNote(account)" class="text-[10px] text-amber-800 mb-1">{{ $t('companyKitchen.breachTruncated') }}</p>
                     <div v-if="slaBreachesForAccount(account).length" class="max-h-52 overflow-auto rounded border border-gray-100">
                       <table class="w-full text-[11px]">
@@ -262,7 +268,8 @@
                       </table>
                     </div>
                     <p v-else class="text-[11px] text-gray-500">{{ $t('account.kitchenOutOfSlaEmpty') }}</p>
-                  </div>
+                    </div>
+                  </details>
 
                   <details v-if="kitchenSlaRanking(account).length" class="rounded border border-gray-100">
                     <summary class="cursor-pointer list-none px-2 py-2 [&::-webkit-details-marker]:hidden">

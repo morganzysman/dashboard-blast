@@ -46,37 +46,55 @@
       </summary>
 
       <div class="border-t border-gray-100 px-4 sm:px-6 pb-4 space-y-4">
-        <div v-if="breaches.length">
-          <p class="text-xs font-medium text-gray-800 mb-1">{{ $t('companyKitchen.outOfSlaTitle') }}</p>
-          <p v-if="truncated" class="text-[10px] text-amber-800 mb-1">{{ $t('companyKitchen.breachTruncated') }}</p>
-          <div class="max-h-64 overflow-auto rounded border border-gray-100">
-            <table class="w-full text-[11px]">
-              <thead class="bg-gray-50 text-gray-600 sticky top-0">
-                <tr>
-                  <th class="text-left font-medium px-2 py-1.5">{{ $t('companyKitchen.tableAccount') }}</th>
-                  <th class="text-left font-medium px-2 py-1.5">{{ $t('companyKitchen.tableOrderId') }}</th>
-                  <th class="text-left font-medium px-2 py-1.5">{{ $t('account.kitchenTableChannel') }}</th>
-                  <th class="text-right font-medium px-2 py-1.5">{{ $t('companyKitchen.tableDelay') }}</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr
-                  v-for="(b, i) in breaches"
-                  :key="`${b.accountKey}-${b.orderId}-${i}`"
-                  class="border-t border-gray-100"
+        <!-- Per-service on-time scoreboard. Sorted worst-first so the channel
+             that needs attention is the first thing the eye lands on. This is
+             the primary performance signal at the company level — the per-
+             account breach list is one layer deeper, inside each account card. -->
+        <div v-if="serviceScorecard.length">
+          <div class="flex items-baseline justify-between mb-1.5">
+            <div class="flex items-center gap-1.5 min-w-0">
+              <p class="text-[11px] font-semibold text-gray-800">{{ $t('companyKitchen.serviceScorecardTitle') }}</p>
+              <span
+                class="text-gray-400 cursor-help select-none leading-none text-[11px]"
+                :title="$t('kitchenSla.rateInfoTooltip')"
+                aria-label="info"
+              >ⓘ</span>
+            </div>
+            <p class="text-[10px] text-gray-500">{{ $t('companyKitchen.serviceScorecardHint') }}</p>
+          </div>
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-2">
+            <div
+              v-for="row in serviceScorecard"
+              :key="row.channelKey"
+              class="rounded-lg border bg-white p-2.5 flex flex-col gap-1"
+              :class="onTimeBorderClass(row.onTimeRate)"
+            >
+              <div class="flex items-start justify-between gap-1">
+                <p class="text-[11px] font-semibold text-gray-800 leading-tight truncate" :title="channelLabel(row.channelKey)">
+                  {{ channelLabel(row.channelKey) }}
+                </p>
+                <span
+                  class="rounded-full px-1.5 py-0.5 text-[10px] font-bold leading-none whitespace-nowrap"
+                  :class="onTimePillClass(row.onTimeRate)"
                 >
-                  <td class="px-2 py-1.5 text-gray-800 truncate max-w-[120px]" :title="b.accountName">{{ b.accountName }}</td>
-                  <td
-                    class="px-2 py-1.5 font-mono text-gray-900"
-                    :title="b.orderId"
-                  >{{ b.publicId || b.orderId || '—' }}</td>
-                  <td class="px-2 py-1.5 text-gray-700">{{ channelLabel(b.channelKey) }}</td>
-                  <td class="px-2 py-1.5 text-right font-semibold text-amber-800">
-                    +{{ b.delayOverTargetMinutes }}′
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+                  {{ formatPct(row.onTimeRate) }}
+                </span>
+              </div>
+              <div class="text-[10px] text-gray-600 grid grid-cols-3 gap-1 mt-0.5">
+                <div class="flex flex-col">
+                  <span class="text-gray-500 leading-tight">{{ $t('companyKitchen.orders') }}</span>
+                  <span class="font-semibold text-gray-900">{{ row.ordersWithPrepTime }}</span>
+                </div>
+                <div class="flex flex-col">
+                  <span class="text-gray-500 leading-tight">{{ $t('account.kitchenTableGoal') }}</span>
+                  <span class="font-semibold text-gray-900">{{ row.targetMinutes ?? '—' }}′</span>
+                </div>
+                <div class="flex flex-col">
+                  <span class="text-gray-500 leading-tight">{{ $t('account.kitchenTableAvg') }}</span>
+                  <span class="font-semibold text-gray-900">{{ formatAvg(row.averagePreparationTime) }}</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -108,12 +126,45 @@ onBeforeUnmount(() => {
   if (mql) mql.removeEventListener('change', applyMq)
 })
 
-const breaches = computed(() => props.companyKitchen?.sla?.slaBreaches || [])
-const truncated = computed(() => props.companyKitchen?.sla?.slaBreachesTruncated)
+const ch = computed(() => props.companyKitchen?.byKitchenChannel || {})
+
+// Worst-on-time-first ordering; ties broken by highest volume so the channel
+// that hurts the most customers floats to the top.
+const serviceScorecard = computed(() => {
+  const rows = Object.entries(ch.value)
+    .filter(([, v]) => v && v.ordersWithPrepTime > 0)
+    .map(([channelKey, v]) => ({ channelKey, ...v }))
+  rows.sort((a, b) => {
+    const ar = a.onTimeRate ?? 0
+    const br = b.onTimeRate ?? 0
+    if (ar !== br) return ar - br
+    return (b.ordersWithPrepTime || 0) - (a.ordersWithPrepTime || 0)
+  })
+  return rows
+})
+
+function onTimePillClass(r) {
+  if (r == null) return 'bg-gray-100 text-gray-700'
+  if (r >= 0.9) return 'bg-emerald-100 text-emerald-800'
+  if (r >= 0.7) return 'bg-amber-100 text-amber-800'
+  return 'bg-rose-100 text-rose-800'
+}
+
+function onTimeBorderClass(r) {
+  if (r == null) return 'border-gray-100'
+  if (r >= 0.9) return 'border-emerald-200/80'
+  if (r >= 0.7) return 'border-amber-200/80'
+  return 'border-rose-200/80'
+}
 
 function formatAvg(m) {
   if (m == null || Number.isNaN(m)) return '—'
   return `${Math.round(m)}m`
+}
+
+function formatPct(r) {
+  if (r == null || Number.isNaN(r)) return '—'
+  return `${Math.round(r * 100)}%`
 }
 
 function onTimeLine(sla) {
