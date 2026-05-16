@@ -170,6 +170,7 @@
                 <th>{{ $t('common.status') }}</th>
                  <th>{{ $t('admin.company') }}</th>
                 <th>{{ $t('admin.hourlyRate') }}</th>
+                <th>{{ $t('admin.jobType') }}</th>
                 <th>{{ $t('admin.lastLogin') }}</th>
                 <th>{{ $t('companies.actions') }}</th>
               </tr>
@@ -208,6 +209,19 @@
                   <div class="flex items-center gap-1">
                     <input type="number" min="0" step="0.01" class="form-input w-24 text-sm" :value="formatRate(user.hourly_rate)" @change="e => onRateInput(user, e)" />
                   </div>
+                </td>
+                <td>
+                  <select
+                    class="form-select text-sm w-28"
+                    :value="user.job_type || ''"
+                    @change="e => onJobTypeInput(user, e)"
+                    :disabled="user.role !== 'employee'"
+                    :title="user.role !== 'employee' ? $t('admin.jobTypeEmployeeOnly') : ''"
+                  >
+                    <option value="">—</option>
+                    <option value="kitchen">{{ $t('admin.jobTypeKitchen') }}</option>
+                    <option value="waiter">{{ $t('admin.jobTypeWaiter') }}</option>
+                  </select>
                 </td>
                 <td>
                   <div class="text-sm text-gray-900">
@@ -559,6 +573,27 @@ const onRateInput = (user, e) => {
   const v = Number(e.target.value)
   user.hourly_rate = Number.isFinite(v) ? Number(v.toFixed(2)) : 0
   updateHourlyRate(user)
+}
+
+const onJobTypeInput = async (user, e) => {
+  const value = e.target.value || null
+  const previous = user.job_type || null
+  user.job_type = value
+  try {
+    await api.updateUserJobType(user.id, value)
+    window.showNotification?.({
+      type: 'success',
+      title: 'Job type',
+      message: value ? `Set to ${value}` : 'Cleared'
+    })
+  } catch (err) {
+    user.job_type = previous
+    window.showNotification?.({
+      type: 'error',
+      title: 'Job type',
+      message: err?.message || 'Failed to update'
+    })
+  }
 }
 const confirmDeleteUser = async (user) => {
   try {

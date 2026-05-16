@@ -22,6 +22,7 @@ import AdminShiftsCalendarView from './views/AdminShiftsCalendarView.vue'
 import CompaniesView from './views/CompaniesView.vue'
 import AdminHolidayView from './views/AdminHolidayView.vue'
 import GainCalendarView from './views/GainCalendarView.vue'
+import KitchenSlaView from './views/KitchenSlaView.vue'
 
 // Import stores
 import { useAuthStore } from './stores/auth'
@@ -111,6 +112,12 @@ const routes = [
     path: '/gain-calendar',
     name: 'GainCalendar',
     component: GainCalendarView,
+    meta: { requiresAuth: true, excludeRoles: ['super-admin', 'employee'] }
+  },
+  {
+    path: '/kitchen-sla',
+    name: 'KitchenSla',
+    component: KitchenSlaView,
     meta: { requiresAuth: true, excludeRoles: ['super-admin', 'employee'] }
   }
 ]

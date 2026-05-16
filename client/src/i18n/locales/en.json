@@ -142,6 +142,7 @@
     "shiftsCalendar": "Shifts Calendar",
     "userManagement": "User Management",
     "gainCalendar": "Gain Calendar",
+    "kitchenSla": "Kitchen SLA",
     "language": "Language",
     "managementSuite": "Management Suite",
     "workforce": "Workforce"
@@ -230,6 +231,19 @@
     "tableOrderId": "Order ID",
     "tableDelay": "Extra time"
   },
+  "kitchenSla": {
+    "title": "Kitchen SLA per cook",
+    "subtitle": "Per-employee prep performance for users tagged as kitchen. Each order is attributed to every cook who was clocked-in when it was prepared.",
+    "leaderboardTitle": "Cook leaderboard",
+    "dateRange": "Date range",
+    "allAccounts": "All accounts",
+    "noData": "No kitchen-SLA data for the selected window. Tag users as kitchen on the Admin page and wait for the next compute pass.",
+    "ordersCount": "Orders",
+    "onTime": "On time",
+    "late": "Late",
+    "onTimePct": "On-time %",
+    "avgPrep": "Avg prep"
+  },
   "languages": {
     "en": "English",
     "es": "Español",
@@ -268,6 +282,10 @@
     "createdAt": "Created At",
     "isActive": "Active",
     "hourlyRate": "Hourly Rate",
+    "jobType": "Job",
+    "jobTypeKitchen": "Kitchen",
+    "jobTypeWaiter": "Waiter",
+    "jobTypeEmployeeOnly": "Only available for employees",
     "resetPassword": "Reset Password",
     "changeEmail": "Change Email",
     "newPassword": "New Password",

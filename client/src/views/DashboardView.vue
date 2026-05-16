@@ -117,6 +117,8 @@ const authStore = useAuthStore()
 
 const analyticsData = ref(null)
 const ordersData = ref(null)
+const profitabilityData = ref(null)
+const serviceMetricsData = ref(null)
 const loading = ref(false)
 const error = ref('')
 

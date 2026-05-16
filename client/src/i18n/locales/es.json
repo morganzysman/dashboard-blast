@@ -142,6 +142,7 @@
     "shiftsCalendar": "Calendario de Turnos",
     "userManagement": "Gestión de Usuarios",
     "gainCalendar": "Calendario de Ganancias",
+    "kitchenSla": "SLA Cocina",
     "language": "Idioma",
     "searchUsers": "Buscar usuarios...",
     "allStatus": "Todos los estados",
@@ -231,6 +232,19 @@
     "tableOrderId": "ID pedido",
     "tableDelay": "Sobretiempo"
   },
+  "kitchenSla": {
+    "title": "SLA de cocina por cocinero",
+    "subtitle": "Rendimiento de preparación por empleado para usuarios marcados como cocina. Cada pedido se atribuye a cada cocinero que estaba fichado cuando se preparó.",
+    "leaderboardTitle": "Ranking de cocineros",
+    "dateRange": "Rango de fechas",
+    "allAccounts": "Todas las cuentas",
+    "noData": "No hay datos de SLA de cocina para el período seleccionado. Marca usuarios como cocina en el panel de Admin y espera al próximo cálculo.",
+    "ordersCount": "Pedidos",
+    "onTime": "A tiempo",
+    "late": "Tarde",
+    "onTimePct": "% a tiempo",
+    "avgPrep": "Prep. media"
+  },
   "languages": {
     "en": "English",
     "es": "Español",
@@ -261,6 +275,10 @@
     "createdAt": "Creado el",
     "isActive": "Activo",
     "hourlyRate": "Tarifa por Hora",
+    "jobType": "Puesto",
+    "jobTypeKitchen": "Cocina",
+    "jobTypeWaiter": "Mozo",
+    "jobTypeEmployeeOnly": "Solo disponible para empleados",
     "resetPassword": "Restablecer Contraseña",
     "changeEmail": "Cambiar Correo Electrónico",
     "newPassword": "Nueva Contraseña",

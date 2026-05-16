@@ -18,10 +18,34 @@ export function getOrderServiceType(order) {
   return 'OTHER';
 }
 
+/**
+ * When OlaClick auto-closes an order that was never explicitly marked prepared, both
+ * `preparing_at` and `prepared_at` get stamped with the close time. That fakes a
+ * 0-minute prep and poisons SLA averages. We treat any order whose `prepared_at` is
+ * within 60s of `closed_at`, `finished_at`, or `completed_at` as missing-prep.
+ *
+ * @param {Record<string, any>} order
+ */
+export function isPrepStampLikelyMissing(order) {
+  const preparedRaw = order?.prepared_at;
+  if (!preparedRaw) return true;
+  const prepared = new Date(preparedRaw).getTime();
+  if (!Number.isFinite(prepared)) return true;
+  const candidates = [order.closed_at, order.finished_at, order.completed_at];
+  for (const raw of candidates) {
+    if (!raw) continue;
+    const t = new Date(raw).getTime();
+    if (!Number.isFinite(t)) continue;
+    if (Math.abs(prepared - t) < 60_000) return true; // within 60s -> auto-close artefact
+  }
+  return false;
+}
+
 function kitchenPrepMinutes(order) {
   if (!order.preparing_at || !order.prepared_at || order.status === 'CANCELLED') {
     return null;
   }
+  if (isPrepStampLikelyMissing(order)) return null;
   const preparingTime = new Date(order.preparing_at);
   const preparedTime = new Date(order.prepared_at);
   if (Number.isNaN(preparingTime.getTime()) || Number.isNaN(preparedTime.getTime())) {
@@ -262,6 +286,68 @@ export function computeKitchenPerformanceFromOrders(orders, timeZone, slaCustomO
         }
       : null
   };
+}
+
+/**
+ * Fetch raw OlaClick orders for an account & date range. Mirrors the pagination logic
+ * used by `fetchGeneralIndicators` so callers that want the full list (e.g. per-employee
+ * SLA attribution) don't have to reimplement it. Returns the array of order objects
+ * exactly as OlaClick returned them.
+ *
+ * @param {{company_token:string, api_token:string, account_name?:string, name?:string, additional_cookies?:string}} account
+ * @param {{startDate:string, endDate:string, timezone?:string}} params
+ * @returns {Promise<any[]>}
+ */
+export async function fetchOrdersList(account, { startDate, endDate, timezone }) {
+  if (!account) throw new Error('Account not found');
+  if (!startDate || !endDate) throw new Error('startDate and endDate are required');
+
+  const tz =
+    timezone && timezone !== 'undefined' ? timezone : config.olaClick.defaultTimezone;
+
+  const baseUrl = 'https://api.olaclick.app/ms-orders/auth/orders';
+  const perPage = 100;
+  const baseParams = {
+    'filter[start_date]': startDate,
+    'filter[end_date]': endDate,
+    'filter[timezone]': tz,
+    'filter[start_time]': '00:00:00',
+    'filter[end_time]': '23:59:59',
+    'filter[time_type]': 'pending_at',
+    'filter[status]':
+      'PENDING,PREPARING,READY,DRIVER_ON_THE_WAY_TO_DESTINATION,CHECK_REQUESTED,CHECK_PRINTED,DRIVER_ARRIVED_AT_DESTINATION,DELIVERED,FINALIZED,CANCELLED',
+    'filter[max_order_limit]': 'true',
+    per_page: perPage
+  };
+
+  const headers = {
+    accept: 'application/json,multipart/form-data',
+    'accept-language': 'en-US,en;q=0.8',
+    'app-company-token': account.company_token,
+    'content-type': 'application/json',
+    cookie: constructCookieHeader(account),
+    origin: 'https://orders.olaclick.app',
+    referer: 'https://orders.olaclick.app/',
+    'user-agent':
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36'
+  };
+
+  let allOrders = [];
+  let page = 1;
+  const maxPages = 500;
+  while (page <= maxPages) {
+    const response = await axios.get(baseUrl, { params: { ...baseParams, page }, headers });
+    const chunk = response.data?.data;
+    const meta = response.data?.meta || {};
+    if (!Array.isArray(chunk) || chunk.length === 0) break;
+    allOrders = allOrders.concat(chunk);
+    const lastPage = Number(meta.last_page ?? meta.lastPage ?? page);
+    const currentPage = Number(meta.current_page ?? meta.currentPage ?? page);
+    if (Number.isFinite(lastPage) && Number.isFinite(currentPage) && currentPage >= lastPage) break;
+    if (chunk.length < perPage) break;
+    page += 1;
+  }
+  return allOrders;
 }
 
 // Helper function to construct cookie header from token structure

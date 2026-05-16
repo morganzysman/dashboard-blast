@@ -289,7 +289,36 @@ export const api = {
   putKitchenSla: (payload) => apiRequest('/api/orders/kitchen-sla', { method: 'PUT', body: JSON.stringify(payload) }),
 
   // User hired_at
-  updateUserHiredAt: (userId, hiredAt) => apiRequest(`/api/admin/users/${userId}/hired-at`, { method: 'PUT', body: JSON.stringify({ hired_at: hiredAt }) })
+  updateUserHiredAt: (userId, hiredAt) => apiRequest(`/api/admin/users/${userId}/hired-at`, { method: 'PUT', body: JSON.stringify({ hired_at: hiredAt }) }),
+
+  // User job_type (kitchen | waiter | null)
+  updateUserJobType: (userId, jobType) =>
+    apiRequest(`/api/admin/users/${userId}/job-type`, {
+      method: 'PUT',
+      body: JSON.stringify({ job_type: jobType })
+    }),
+
+  // Per-employee kitchen SLA
+  getEmployeeSlaLeaderboard: ({ startDate, endDate, companyToken } = {}) => {
+    const qs = new URLSearchParams()
+    if (startDate) qs.set('start_date', startDate)
+    if (endDate) qs.set('end_date', endDate)
+    if (companyToken) qs.set('company_token', companyToken)
+    return apiRequest(`/api/employee-sla/leaderboard?${qs.toString()}`, { method: 'GET' })
+  },
+  getEmployeeSlaUserDaily: (userId, { startDate, endDate } = {}) => {
+    const qs = new URLSearchParams()
+    if (startDate) qs.set('start_date', startDate)
+    if (endDate) qs.set('end_date', endDate)
+    return apiRequest(`/api/employee-sla/users/${userId}/daily?${qs.toString()}`, {
+      method: 'GET'
+    })
+  },
+  recomputeEmployeeSla: (companyToken, date) =>
+    apiRequest('/api/employee-sla/recompute', {
+      method: 'POST',
+      body: JSON.stringify({ company_token: companyToken, date })
+    })
 }
 
 export default api 

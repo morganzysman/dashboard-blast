@@ -143,6 +143,7 @@
     "shiftsCalendar": "Calendrier des équipes",
     "userManagement": "Gestion des utilisateurs",
     "gainCalendar": "Calendrier des Gains",
+    "kitchenSla": "SLA Cuisine",
     "language": "Langue"
   },
   "auth": {
@@ -229,6 +230,19 @@
     "tableOrderId": "N° commande",
     "tableDelay": "Dépassement"
   },
+  "kitchenSla": {
+    "title": "SLA cuisine par cuisinier",
+    "subtitle": "Performance de préparation par employé pour les utilisateurs marqués comme cuisine. Chaque commande est attribuée à chaque cuisinier pointé au moment de la préparation.",
+    "leaderboardTitle": "Classement des cuisiniers",
+    "dateRange": "Plage de dates",
+    "allAccounts": "Tous les comptes",
+    "noData": "Aucune donnée SLA cuisine pour la période sélectionnée. Marquez des utilisateurs comme cuisine sur la page Admin et attendez le prochain calcul.",
+    "ordersCount": "Commandes",
+    "onTime": "À l'heure",
+    "late": "En retard",
+    "onTimePct": "% à l'heure",
+    "avgPrep": "Prép. moyenne"
+  },
   "languages": {
     "en": "English",
     "es": "Español",
@@ -259,6 +273,10 @@
     "createdAt": "Créé le",
     "isActive": "Actif",
     "hourlyRate": "Taux horaire",
+    "jobType": "Poste",
+    "jobTypeKitchen": "Cuisine",
+    "jobTypeWaiter": "Serveur",
+    "jobTypeEmployeeOnly": "Disponible uniquement pour les employés",
     "resetPassword": "Réinitialiser le mot de passe",
     "changeEmail": "Modifier l'e-mail",
     "newPassword": "Nouveau mot de passe",

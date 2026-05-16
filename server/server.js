@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url';
 import { config, checkConfiguration } from './config/index.js';
 import { configureWebPush, scheduleDailyReports } from './services/notificationService.js';
 import { scheduleDailyGainsCron, autoBackfillIfNeeded } from './services/dailyGainService.js';
+import { scheduleEmployeeSlaCron, autoBackfillEmployeeSlaIfNeeded } from './services/employeeSlaService.js';
 
 // Import database module
 import {
@@ -30,6 +31,7 @@ import analyticsRoutes from './routes/analytics.js';
 import payrollRoutes from './routes/payroll.js';
 import warningsRoutes from './routes/warnings.js';
 import holidayRoutes from './routes/holidays.js';
+import employeeSlaRoutes from './routes/employee-sla.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -128,6 +130,7 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/payroll', payrollRoutes);
 app.use('/api/warnings', warningsRoutes);
 app.use('/api/holidays', holidayRoutes);
+app.use('/api/employee-sla', employeeSlaRoutes);
 
 // Serve notifications debug page
 app.get('/notifications-debug', (req, res) => {
@@ -196,6 +199,16 @@ try {
 }
 autoBackfillIfNeeded().catch(err => {
   console.error('❌ Auto-backfill startup error:', err.message);
+});
+
+// Per-employee kitchen SLA — cron + opportunistic backfill on boot
+try {
+  scheduleEmployeeSlaCron();
+} catch (err) {
+  console.error('❌ Failed to schedule employee-SLA cron:', err.message);
+}
+autoBackfillEmployeeSlaIfNeeded().catch(err => {
+  console.error('❌ Employee-SLA auto-backfill startup error:', err.message);
 });
 
 // Cleanup database daily

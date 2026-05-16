@@ -356,7 +356,7 @@ function hydrateForm() {
 watch(
   () => [props.companyToken, props.accountName, props.initialUtilityRecord, props.section],
   () => {
-    if (props.section !== 'payment') hydrateForm()
+    hydrateForm()
     if (props.section !== 'utility') loadPaymentMethodCosts()
   },
   { deep: true, immediate: true }

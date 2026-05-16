@@ -84,6 +84,7 @@ router.get('/users', requireAuth, requireRole(['admin', 'super-admin']), async (
       role: user.role,
       hourly_rate: user.hourly_rate != null ? Number(Number(user.hourly_rate).toFixed(2)) : null,
       hired_at: user.hired_at || null,
+      job_type: user.job_type || null,
       is_active: user.is_active,
       created_at: user.created_at,
       updated_at: user.updated_at,
@@ -371,6 +372,42 @@ router.put('/users/:userId/hired-at', requireAuth, requireRole(['admin', 'super-
   } catch (e) {
     console.error('Error updating hired_at:', e)
     res.status(500).json({ success: false, error: 'Failed to update hired date' })
+  }
+})
+
+// Update user job_type (kitchen | waiter | null)
+router.put('/users/:userId/job-type', requireAuth, requireRole(['admin', 'super-admin']), async (req, res) => {
+  try {
+    const { userId } = req.params
+    const { job_type } = req.body || {}
+
+    const allowed = [null, 'kitchen', 'waiter']
+    const normalised = job_type === '' || job_type == null ? null : String(job_type).toLowerCase()
+    if (!allowed.includes(normalised)) {
+      return res.status(400).json({
+        success: false,
+        error: 'job_type must be one of: kitchen, waiter, or null'
+      })
+    }
+
+    if (req.user.role === 'admin') {
+      const q = await pool.query('SELECT company_id FROM users WHERE id = $1', [userId])
+      if (q.rowCount === 0) return res.status(404).json({ success: false, error: 'User not found' })
+      const cid = q.rows[0].company_id || null
+      if (!cid || cid !== req.user.companyId) {
+        return res.status(403).json({ success: false, error: 'Forbidden' })
+      }
+    }
+
+    const upd = await pool.query(
+      'UPDATE users SET job_type = $2, updated_at = NOW() WHERE id = $1 RETURNING id, email, name, role, job_type, company_id',
+      [userId, normalised]
+    )
+    if (upd.rowCount === 0) return res.status(404).json({ success: false, error: 'User not found' })
+    res.json({ success: true, user: upd.rows[0] })
+  } catch (e) {
+    console.error('Error updating job_type:', e)
+    res.status(500).json({ success: false, error: 'Failed to update job type' })
   }
 })
 
