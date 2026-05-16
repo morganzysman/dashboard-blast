@@ -432,8 +432,8 @@
   },
   "rentability": {
     "title": "Profitability Analysis",
-    "subtitle": "Manage monthly utility costs and payment method fees for profitability analysis",
-    "perAccountNote": "You can also edit costs and fees under Account settings on each store card on the Dashboard.",
+    "subtitle": "Configure fixed costs, payment fees, and kitchen prep goals (SLA) per location",
+    "perAccountNote": "Each store below has three modules: monthly fixed costs, payment processing fees, and SLA prep-time targets. The dashboard shows performance only.",
     "period": "Period",
     "account": "Account",
     "revenue": "Revenue",
@@ -510,7 +510,12 @@
     "addDefaultMethodsTooltip": "Add common payment methods with default costs",
     "removeFromList": "Remove from list",
     "deleteFromDatabase": "Delete from database",
-    "paymentMethodRemoved": "Payment Method Removed"
+    "paymentMethodRemoved": "Payment Method Removed",
+    "moduleRentability": "Rentability",
+    "modulePayments": "Payments",
+    "moduleSla": "SLA",
+    "slaModuleHint": "Target prep time in minutes by channel. These goals feed kitchen metrics on the dashboard.",
+    "noAccountsToConfigure": "No OlaClick accounts were found for your company. Add accounts in company settings first."
   },
   "notifications": {
     "title": "Notification Status",

@@ -24,14 +24,10 @@
       :analytics-data="analyticsDataWithServiceMetrics"
       :orders-data="ordersData"
       :profitability-data="profitabilityData"
-      :kitchen-sla-response="kitchenSlaResponse"
-      :utility-costs-catalog="utilityCostsCatalog"
       :current-date-range="currentDateRange"
       :selected-date-range="selectedDateRange"
       :loading="loading"
       :key="`${currentDateRange.start}-${currentDateRange.end}-${profitabilityData?.period?.start || ''}-${profitabilityData?.period?.end || ''}`"
-      @kitchen-sla-saved="onKitchenSlaSaved"
-      @utility-costs-changed="onUtilityCostsChanged"
     />
 
     <!-- Order Evolution Chart Component -->
@@ -121,29 +117,6 @@ const authStore = useAuthStore()
 
 const analyticsData = ref(null)
 const ordersData = ref(null)
-const profitabilityData = ref(null)
-const serviceMetricsData = ref(null)
-const kitchenSlaResponse = ref(null)
-const utilityCostsCatalog = ref([])
-
-const fetchUtilityCostsCatalog = async () => {
-  try {
-    const data = await api.get('/api/utility-costs')
-    if (data.success) {
-      utilityCostsCatalog.value = data.data || []
-    } else {
-      utilityCostsCatalog.value = []
-    }
-  } catch (e) {
-    console.warn('utility-costs catalog fetch failed', e)
-    utilityCostsCatalog.value = []
-  }
-}
-
-const onUtilityCostsChanged = async () => {
-  await fetchUtilityCostsCatalog()
-  await fetchProfitabilityData()
-}
 const loading = ref(false)
 const error = ref('')
 
@@ -471,43 +444,7 @@ const analyticsDataWithServiceMetrics = computed(() => {
   }
 })
 
-const refreshData = () => {
-  fetchAnalyticsData()
-  fetchOrdersData(currentDateRange.value)
-  fetchServiceMetricsData()
-  fetchProfitabilityData()
-  fetchUtilityCostsCatalog()
-  fetchKitchenSla()
-}
 
-const fetchKitchenSla = async () => {
-  try {
-    const data = await api.getKitchenSla()
-    if (data.success) {
-      kitchenSlaResponse.value = data
-    } else {
-      kitchenSlaResponse.value = null
-    }
-  } catch (e) {
-    console.warn('kitchen-sla fetch failed', e)
-    kitchenSlaResponse.value = null
-  }
-}
-
-const onKitchenSlaSaved = async () => {
-  await fetchKitchenSla()
-  await fetchOrdersData(currentDateRange.value)
-}
-
-onMounted(() => {
-  currentDateRange.value = getDateRange('today')
-  fetchAnalyticsData()
-  fetchOrdersData(currentDateRange.value)
-  fetchServiceMetricsData()
-  fetchProfitabilityData()
-  fetchUtilityCostsCatalog()
-  fetchKitchenSla()
-})
 
 // Fetch server-side aggregated profitability data
 const fetchProfitabilityData = async () => {
@@ -545,6 +482,21 @@ const fetchProfitabilityData = async () => {
     profitabilityData.value = null
   }
 }
+
+const refreshData = () => {
+  fetchAnalyticsData()
+  fetchOrdersData(currentDateRange.value)
+  fetchServiceMetricsData()
+  fetchProfitabilityData()
+}
+
+onMounted(() => {
+  currentDateRange.value = getDateRange('today')
+  fetchAnalyticsData()
+  fetchOrdersData(currentDateRange.value)
+  fetchServiceMetricsData()
+  fetchProfitabilityData()
+})
 </script>
 
 <style scoped>

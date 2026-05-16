@@ -1,7 +1,7 @@
 <template>
   <div class="account-rentability-settings" :class="{ compact }">
-    <!-- Tabs: full modal style vs compact pills -->
-    <div v-if="!compact" class="border-b border-gray-200/80 -mx-1 mb-4">
+    <!-- Tabs: full modal style vs compact pills (only when showing both sections) -->
+    <div v-if="showTabs && !compact" class="border-b border-gray-200/80 -mx-1 mb-4">
       <nav class="-mb-px flex flex-wrap gap-2 sm:gap-6 px-1" aria-label="Tabs">
         <button
           type="button"
@@ -19,7 +19,7 @@
         </button>
       </nav>
     </div>
-    <div v-else class="flex flex-wrap gap-1.5 mb-3">
+    <div v-else-if="showTabs && compact" class="flex flex-wrap gap-1.5 mb-3">
       <button type="button" @click="activeTab = 'utility'" :class="pillClass('utility')">
         🏠 {{ $t('rentability.utilityCosts') }}
       </button>
@@ -28,7 +28,7 @@
       </button>
     </div>
 
-    <div v-if="!compact" class="mb-4 px-1">
+    <div v-if="showTabs && !compact" class="mb-4 px-1">
       <label class="block text-sm font-medium text-gray-700 mb-1">{{ $t('rentability.account') }}</label>
       <div class="px-3 py-2 rounded-xl text-sm text-gray-700 embedded-account-label">
         {{ accountName || companyToken }}
@@ -36,7 +36,7 @@
     </div>
 
     <!-- Utility -->
-    <div v-show="activeTab === 'utility'" class="space-y-4">
+    <div v-show="showUtilityPanel" class="space-y-4">
       <form @submit.prevent="saveCosts">
         <div :class="compact ? 'grid grid-cols-1 sm:grid-cols-2 gap-2' : 'grid grid-cols-1 md:grid-cols-2 gap-4'">
           <div v-for="field in costFields" :key="field.key" :class="compact ? 'mb-0' : 'mb-4'">
@@ -97,7 +97,7 @@
     </div>
 
     <!-- Payment methods -->
-    <div v-show="activeTab === 'payment'" class="space-y-4">
+    <div v-show="showPaymentPanel" class="space-y-4">
       <div class="flex items-center justify-between gap-2 flex-wrap">
         <h3 v-if="!compact" class="text-lg font-medium text-gray-900">
           {{ $t('rentability.paymentProcessingCosts') }}
@@ -236,7 +236,13 @@ const props = defineProps({
   accountName: { type: String, default: '' },
   initialUtilityRecord: { type: Object, default: null },
   compact: { type: Boolean, default: false },
-  showDeleteUtility: { type: Boolean, default: true }
+  showDeleteUtility: { type: Boolean, default: true },
+  /** Show both utility + payment with tabs, or a single section only (for embedded modules). */
+  section: {
+    type: String,
+    default: 'both',
+    validator: (v) => ['both', 'utility', 'payment'].includes(v)
+  }
 })
 
 const emit = defineEmits(['utility-saved', 'utility-deleted', 'payment-costs-saved'])
@@ -245,6 +251,29 @@ const authStore = useAuthStore()
 const { t } = useI18n()
 
 const activeTab = ref('utility')
+
+const showTabs = computed(() => props.section === 'both')
+
+const showUtilityPanel = computed(() => {
+  if (props.section === 'utility') return true
+  if (props.section === 'both') return activeTab.value === 'utility'
+  return false
+})
+
+const showPaymentPanel = computed(() => {
+  if (props.section === 'payment') return true
+  if (props.section === 'both') return activeTab.value === 'payment'
+  return false
+})
+
+watch(
+  () => props.section,
+  (s) => {
+    if (s === 'utility') activeTab.value = 'utility'
+    if (s === 'payment') activeTab.value = 'payment'
+  },
+  { immediate: true }
+)
 const saving = ref(false)
 const accountPaymentCosts = ref([])
 const savingPaymentCosts = ref(false)
@@ -325,10 +354,10 @@ function hydrateForm() {
 }
 
 watch(
-  () => [props.companyToken, props.accountName, props.initialUtilityRecord],
+  () => [props.companyToken, props.accountName, props.initialUtilityRecord, props.section],
   () => {
-    hydrateForm()
-    loadPaymentMethodCosts()
+    if (props.section !== 'payment') hydrateForm()
+    if (props.section !== 'utility') loadPaymentMethodCosts()
   },
   { deep: true, immediate: true }
 )
