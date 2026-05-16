@@ -77,25 +77,28 @@ router.get('/leaderboard', requireAuth, async (req, res) => {
       req.user.role === 'super-admin' ? '' : 'AND u.company_id = $4'
     if (rolesFilter) params.push(req.user.companyId)
 
+    // We read straight from the per-order table here (instead of the daily
+    // rollup) so we can compute avg_cook_count — the average team size when
+    // this cook was on shift. cook_count = 1 means a solo shift; >1 means a
+    // shared shift where wins/losses were spread across multiple cooks.
     const q = await pool.query(
       `SELECT
          u.id            AS user_id,
          u.email,
          u.name,
          u.job_type,
-         d.company_token,
-         SUM(d.orders_count)::int                               AS orders_count,
-         SUM(d.on_time_count)::int                              AS on_time_count,
-         SUM(d.late_count)::int                                 AS late_count,
-         CASE WHEN SUM(d.orders_count) > 0
-              THEN ROUND((SUM(d.total_prep_minutes) / SUM(d.orders_count))::numeric, 2)
-              ELSE 0 END                                        AS avg_prep_minutes
-       FROM employee_kitchen_sla_daily d
-       JOIN users u ON u.id = d.user_id
-      WHERE d.company_token = ANY($1::text[])
-        AND d.day_local BETWEEN $2 AND $3
+         o.company_token,
+         COUNT(*)::int                                          AS orders_count,
+         COUNT(*) FILTER (WHERE o.on_time)::int                 AS on_time_count,
+         COUNT(*) FILTER (WHERE NOT o.on_time)::int             AS late_count,
+         ROUND(AVG(o.prep_minutes)::numeric, 2)                 AS avg_prep_minutes,
+         ROUND(AVG(o.cook_count)::numeric, 2)                   AS avg_cook_count
+       FROM employee_kitchen_sla_orders o
+       JOIN users u ON u.id = o.user_id
+      WHERE o.company_token = ANY($1::text[])
+        AND o.day_local BETWEEN $2 AND $3
         ${rolesFilter}
-      GROUP BY u.id, u.email, u.name, u.job_type, d.company_token
+      GROUP BY u.id, u.email, u.name, u.job_type, o.company_token
       ORDER BY orders_count DESC, avg_prep_minutes ASC`,
       params
     )
@@ -113,6 +116,179 @@ router.get('/leaderboard', requireAuth, async (req, res) => {
     res.status(500).json({ success: false, error: err.message })
   }
 })
+
+/* -------------------------------------------------------------------------- */
+/* account x channel matrix (main SLA view)                                   */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * GET /api/employee-sla/account-matrix
+ * Query: start_date, end_date (YYYY-MM-DD; default = today/today)
+ *
+ * Returns the per-account-per-channel SLA scoreboard used by the main SLA
+ * dashboard:
+ *   { period, accounts: [{ company_token, account_name, channels: { [channelKey]: stats }, total: stats }],
+ *     channels: [orderedChannelKey...], grandTotal: stats }
+ *
+ * Stats: { ordersCount, onTimeCount, lateCount, onTimeRate, avgPrepMinutes, targetMinutes }
+ *
+ * The channel column order pins the four SLA-editor keys first
+ * (DELIVERY:RAPPI_TURBO, DELIVERY:RAPPI, ONSITE:*, DELIVERY:OTHER) so the
+ * matrix has a stable, predictable shape, then appends any additional
+ * channels that had traffic in the window. ONSITE:* aggregates every ONSITE:x
+ * sub-channel since they share the same target.
+ */
+router.get('/account-matrix', requireAuth, async (req, res) => {
+  try {
+    const today = getTodayInTimezone(req.user.userTimezone)
+    const startDate = parseDate(req.query.start_date, today)
+    const endDate = parseDate(req.query.end_date, today)
+
+    const accounts = await getCompanyAccountsForUser(req, null)
+    if (accounts.length === 0) {
+      return res.json({
+        success: true,
+        data: { period: { start: startDate, end: endDate }, accounts: [], channels: [], grandTotal: emptyStats() }
+      })
+    }
+    const tokens = accounts.map((a) => a.company_token)
+
+    const q = await pool.query(
+      `SELECT
+         company_token,
+         channel_key,
+         SUM(orders_count)::int                                AS orders_count,
+         SUM(on_time_count)::int                               AS on_time_count,
+         SUM(late_count)::int                                  AS late_count,
+         SUM(total_prep_minutes)::numeric                      AS total_prep_minutes,
+         MAX(target_minutes)::int                              AS target_minutes
+       FROM account_kitchen_sla_daily
+       WHERE company_token = ANY($1::text[])
+         AND day_local BETWEEN $2 AND $3
+       GROUP BY company_token, channel_key`,
+      [tokens, startDate, endDate]
+    )
+
+    // Bucket sub-channels back into their canonical column. Targets are
+    // resolved per sub-channel anyway; for the matrix view we collapse the
+    // long tail into the four editor keys + a single "OTHER" bucket so the
+    // table stays scannable.
+    const PINNED = ['DELIVERY:RAPPI_TURBO', 'DELIVERY:RAPPI', 'ONSITE:*', 'DELIVERY:OTHER']
+    /** @param {string} ck */
+    function bucket(ck) {
+      const k = String(ck || '').toUpperCase()
+      if (k === 'DELIVERY:RAPPI_TURBO' || k === 'DELIVERY:RAPPI') return k
+      if (k.startsWith('ONSITE:')) return 'ONSITE:*'
+      if (k.startsWith('DELIVERY:')) return 'DELIVERY:OTHER'
+      return 'OTHER:*'
+    }
+
+    /** @type {Map<string, Map<string, ReturnType<typeof emptyStats>>>} */
+    const perAccount = new Map()
+    /** @type {Set<string>} */
+    const seenChannels = new Set(PINNED)
+    /** @type {Record<string, ReturnType<typeof emptyStats>>} */
+    const grand = {}
+
+    for (const row of q.rows) {
+      const colKey = bucket(row.channel_key)
+      seenChannels.add(colKey)
+      if (!perAccount.has(row.company_token)) perAccount.set(row.company_token, new Map())
+      const accMap = perAccount.get(row.company_token)
+      const cell = accMap.get(colKey) || emptyStats(row.target_minutes)
+      cell.ordersCount += Number(row.orders_count) || 0
+      cell.onTimeCount += Number(row.on_time_count) || 0
+      cell.lateCount += Number(row.late_count) || 0
+      cell.totalPrepMinutes += Number(row.total_prep_minutes) || 0
+      // target_minutes per editor key is single-valued, but if multiple
+      // sub-channels collapsed into "OTHER" carry different targets we keep
+      // the highest (most lenient) so a bucketed pseudo-cell isn't unfairly
+      // penalised.
+      cell.targetMinutes = Math.max(cell.targetMinutes || 0, Number(row.target_minutes) || 0)
+      accMap.set(colKey, cell)
+
+      const g = grand[colKey] || emptyStats()
+      g.ordersCount += Number(row.orders_count) || 0
+      g.onTimeCount += Number(row.on_time_count) || 0
+      g.lateCount += Number(row.late_count) || 0
+      g.totalPrepMinutes += Number(row.total_prep_minutes) || 0
+      g.targetMinutes = Math.max(g.targetMinutes || 0, Number(row.target_minutes) || 0)
+      grand[colKey] = g
+    }
+
+    const channels = [
+      ...PINNED.filter((c) => seenChannels.has(c)),
+      ...[...seenChannels].filter((c) => !PINNED.includes(c)).sort()
+    ]
+
+    const accountRows = accounts.map((a) => {
+      const accMap = perAccount.get(a.company_token) || new Map()
+      const channelsOut = {}
+      const total = emptyStats()
+      for (const c of channels) {
+        const cell = accMap.get(c) || emptyStats()
+        channelsOut[c] = finaliseStats(cell)
+        total.ordersCount += cell.ordersCount
+        total.onTimeCount += cell.onTimeCount
+        total.lateCount += cell.lateCount
+        total.totalPrepMinutes += cell.totalPrepMinutes
+      }
+      return {
+        company_token: a.company_token,
+        account_name: a.account_name,
+        channels: channelsOut,
+        total: finaliseStats(total)
+      }
+    })
+
+    const grandTotal = emptyStats()
+    const grandPerChannel = {}
+    for (const c of channels) {
+      const cell = grand[c] || emptyStats()
+      grandPerChannel[c] = finaliseStats(cell)
+      grandTotal.ordersCount += cell.ordersCount
+      grandTotal.onTimeCount += cell.onTimeCount
+      grandTotal.lateCount += cell.lateCount
+      grandTotal.totalPrepMinutes += cell.totalPrepMinutes
+    }
+
+    res.json({
+      success: true,
+      data: {
+        period: { start: startDate, end: endDate },
+        channels,
+        accounts: accountRows,
+        grandPerChannel,
+        grandTotal: finaliseStats(grandTotal)
+      }
+    })
+  } catch (err) {
+    console.error('❌ employee-sla account-matrix error:', err)
+    res.status(500).json({ success: false, error: err.message })
+  }
+})
+
+function emptyStats(target = 0) {
+  return {
+    ordersCount: 0,
+    onTimeCount: 0,
+    lateCount: 0,
+    totalPrepMinutes: 0,
+    targetMinutes: Number(target) || 0
+  }
+}
+
+function finaliseStats(cell) {
+  const orders = cell.ordersCount || 0
+  return {
+    ordersCount: orders,
+    onTimeCount: cell.onTimeCount || 0,
+    lateCount: cell.lateCount || 0,
+    onTimeRate: orders > 0 ? cell.onTimeCount / orders : null,
+    avgPrepMinutes: orders > 0 ? Number((cell.totalPrepMinutes / orders).toFixed(2)) : null,
+    targetMinutes: cell.targetMinutes || null
+  }
+}
 
 /* -------------------------------------------------------------------------- */
 /* per-user breakdown                                                         */

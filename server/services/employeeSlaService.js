@@ -95,7 +95,19 @@ export async function computeAndStoreEmployeeSlaForDay(companyId, account, date,
   const targets = slaMap.get(companyToken) || {}
 
   // 3. Build attributions
-  const attributions = [] // rows for employee_kitchen_sla_orders
+  //
+  // Two parallel rollups are produced in the same loop so the per-account
+  // matrix and the per-cook leaderboard always agree on the underlying orders:
+  //   - `attributions` => rows for employee_kitchen_sla_orders (per-cook).
+  //     Only populated for orders where at least one job_type='kitchen' user
+  //     was clocked-in at `prepared_at`.
+  //   - `accountChannelMap` => rows for account_kitchen_sla_daily (per
+  //     account x channel). Populated for every prepped order, even if no
+  //     cook was tagged. Without this, the matrix would silently undercount
+  //     volume whenever the cook tagging is incomplete.
+  const attributions = []
+  /** @type {Map<string, {ordersCount:number, onTimeCount:number, lateCount:number, totalPrepMinutes:number, targetMinutes:number}>} */
+  const accountChannelMap = new Map()
   let withPrep = 0
 
   for (const order of orders) {
@@ -113,7 +125,22 @@ export async function computeAndStoreEmployeeSlaForDay(companyId, account, date,
     const preparedAt = order.prepared_at
     const dayLocal = formatDateInTimezone(preparedAt, timezone) || date
 
-    // Find clocked-in cooks at preparedAt
+    // Always update the per-account-per-channel bucket first (this is the
+    // ground-truth view; cook attribution, if any, gets layered on top).
+    const acc = accountChannelMap.get(channelKey) || {
+      ordersCount: 0,
+      onTimeCount: 0,
+      lateCount: 0,
+      totalPrepMinutes: 0,
+      targetMinutes: target
+    }
+    acc.ordersCount += 1
+    acc.totalPrepMinutes += mins
+    if (onTime) acc.onTimeCount += 1
+    else acc.lateCount += 1
+    accountChannelMap.set(channelKey, acc)
+
+    // Per-cook attribution (subset). Skip when no kitchen user was clocked-in.
     const cookRows = await pool.query(
       `SELECT te.user_id
          FROM time_entries te
@@ -226,6 +253,46 @@ export async function computeAndStoreEmployeeSlaForDay(companyId, account, date,
       [companyToken, date]
     )
 
+    // Rebuild per-account-per-channel rollup for this (account, day) too. We
+    // wipe-and-insert from `accountChannelMap` (not from
+    // employee_kitchen_sla_orders) because the latter excludes orders without
+    // tagged cooks; the matrix needs the complete ground truth.
+    await client.query(
+      `DELETE FROM account_kitchen_sla_daily
+        WHERE company_token = $1 AND day_local = $2`,
+      [companyToken, date]
+    )
+
+    if (accountChannelMap.size > 0) {
+      const accValues = []
+      const accParams = []
+      let q = 1
+      for (const [channelKey, b] of accountChannelMap) {
+        const avg = b.ordersCount > 0 ? b.totalPrepMinutes / b.ordersCount : 0
+        accValues.push(
+          `($${q++}, $${q++}, $${q++}, $${q++}, $${q++}, $${q++}, $${q++}, $${q++}, $${q++})`
+        )
+        accParams.push(
+          companyToken,
+          date,
+          channelKey,
+          b.ordersCount,
+          b.onTimeCount,
+          b.lateCount,
+          Number(b.totalPrepMinutes.toFixed(2)),
+          Number(avg.toFixed(2)),
+          b.targetMinutes
+        )
+      }
+      await client.query(
+        `INSERT INTO account_kitchen_sla_daily
+           (company_token, day_local, channel_key, orders_count, on_time_count,
+            late_count, total_prep_minutes, avg_prep_minutes, target_minutes)
+         VALUES ${accValues.join(', ')}`,
+        accParams
+      )
+    }
+
     await client.query('COMMIT')
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {})
@@ -311,9 +378,13 @@ export async function autoBackfillEmployeeSlaIfNeeded() {
       return
     }
 
+    // Use account_kitchen_sla_daily as the freshness signal: it carries a row
+    // for every day that had at least one prepped order, regardless of cook
+    // tagging coverage. employee_kitchen_sla_daily would mark days as missing
+    // whenever no kitchen user happened to be clocked-in.
     const existing = await pool.query(
       `SELECT DISTINCT to_char(day_local, 'YYYY-MM-DD') AS d
-         FROM employee_kitchen_sla_daily
+         FROM account_kitchen_sla_daily
         WHERE day_local >= $1 AND day_local <= $2`,
       [startDate, endDate]
     )

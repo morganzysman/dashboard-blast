@@ -306,6 +306,12 @@ export const api = {
     if (companyToken) qs.set('company_token', companyToken)
     return apiRequest(`/api/employee-sla/leaderboard?${qs.toString()}`, { method: 'GET' })
   },
+  getKitchenSlaAccountMatrix: ({ startDate, endDate } = {}) => {
+    const qs = new URLSearchParams()
+    if (startDate) qs.set('start_date', startDate)
+    if (endDate) qs.set('end_date', endDate)
+    return apiRequest(`/api/employee-sla/account-matrix?${qs.toString()}`, { method: 'GET' })
+  },
   getEmployeeSlaUserDaily: (userId, { startDate, endDate } = {}) => {
     const qs = new URLSearchParams()
     if (startDate) qs.set('start_date', startDate)
