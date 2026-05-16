@@ -16,15 +16,20 @@
               @refresh-data="refreshData"
             />
 
+    <!-- Company-wide kitchen (all accounts) -->
+    <CompanyKitchenSummary :company-kitchen="ordersData?.aggregated?.companyKitchen" />
+
     <!-- Account Details Component -->
     <AccountDetails
       :analytics-data="analyticsDataWithServiceMetrics"
       :orders-data="ordersData"
       :profitability-data="profitabilityData"
+      :kitchen-sla-response="kitchenSlaResponse"
       :current-date-range="currentDateRange"
       :selected-date-range="selectedDateRange"
       :loading="loading"
       :key="`${currentDateRange.start}-${currentDateRange.end}-${profitabilityData?.period?.start || ''}-${profitabilityData?.period?.end || ''}`"
+      @kitchen-sla-saved="onKitchenSlaSaved"
     />
 
     <!-- Order Evolution Chart Component -->
@@ -106,6 +111,7 @@ import { ref, onMounted, computed, nextTick } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import DashboardOverview from '../components/DashboardOverview.vue'
 import AccountDetails from '../components/AccountDetails.vue'
+import CompanyKitchenSummary from '../components/CompanyKitchenSummary.vue'
 import OrderEvolutionChart from '../components/OrderEvolutionChart.vue'
 import api from '../utils/api'
 
@@ -115,6 +121,7 @@ const analyticsData = ref(null)
 const ordersData = ref(null)
 const profitabilityData = ref(null)
 const serviceMetricsData = ref(null)
+const kitchenSlaResponse = ref(null)
 const loading = ref(false)
 const error = ref('')
 
@@ -447,6 +454,26 @@ const refreshData = () => {
   fetchOrdersData(currentDateRange.value)
   fetchServiceMetricsData()
   fetchProfitabilityData()
+  fetchKitchenSla()
+}
+
+const fetchKitchenSla = async () => {
+  try {
+    const data = await api.getKitchenSla()
+    if (data.success) {
+      kitchenSlaResponse.value = data
+    } else {
+      kitchenSlaResponse.value = null
+    }
+  } catch (e) {
+    console.warn('kitchen-sla fetch failed', e)
+    kitchenSlaResponse.value = null
+  }
+}
+
+const onKitchenSlaSaved = async () => {
+  await fetchKitchenSla()
+  await fetchOrdersData(currentDateRange.value)
 }
 
 onMounted(() => {
@@ -455,6 +482,7 @@ onMounted(() => {
   fetchOrdersData(currentDateRange.value)
   fetchServiceMetricsData()
   fetchProfitabilityData()
+  fetchKitchenSla()
 })
 
 // Fetch server-side aggregated profitability data

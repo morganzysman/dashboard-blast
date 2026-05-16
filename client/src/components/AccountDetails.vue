@@ -10,7 +10,11 @@
             <div class="h-5 w-14 bg-gray-200 rounded-full"></div>
             <div class="h-4 w-40 bg-gray-200 rounded"></div>
           </div>
-          <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 animate-pulse">
+          <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 animate-pulse">
+            <div class="bg-gray-50 rounded-lg p-3 text-center">
+              <div class="h-5 bg-gray-200 rounded mb-1"></div>
+              <div class="h-3 bg-gray-200 rounded"></div>
+            </div>
             <div class="bg-gray-50 rounded-lg p-3 text-center">
               <div class="h-5 bg-gray-200 rounded mb-1"></div>
               <div class="h-3 bg-gray-200 rounded"></div>
@@ -54,7 +58,14 @@
 
           <!-- Account Indicators -->
           <div class="mb-4">
-            <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <details :open="isDesktop" class="rounded-lg border border-gray-100 lg:border-0 lg:rounded-none">
+              <summary
+                class="lg:hidden flex items-center justify-between px-2 py-2 text-sm font-medium text-gray-800 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden border-b border-gray-100 mb-2"
+              >
+                <span>{{ $t('account.accountKpiToggle') }}</span>
+                <span class="text-gray-400 text-xs" aria-hidden="true">▼</span>
+              </summary>
+              <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
               <div class="bg-indigo-50 rounded-lg p-3 text-center">
                 <p class="text-sm sm:text-lg font-bold text-indigo-600 truncate">{{ formatCurrency(getAccountAvgTicket(account)) }}</p>
                 <p class="text-xs text-indigo-500">{{ $t('dashboard.avgTicket') }}</p>
@@ -69,6 +80,16 @@
                 <p class="text-sm sm:text-lg font-bold text-emerald-600 truncate">{{ formatKitchenPerformance(getAccountKitchenPerformance(account)) }}</p>
                 <p class="text-xs text-emerald-600">{{ $t('account.kitchenPerf') }}</p>
                 <p class="text-[10px] leading-tight text-emerald-600/70 mt-0.5">{{ $t('account.kitchenPerfOverall') }}</p>
+              </div>
+
+              <div v-if="kitchenSlaScore(account) != null" class="bg-teal-50 rounded-lg p-3 text-center">
+                <p class="text-sm sm:text-lg font-bold text-teal-700 truncate">{{ kitchenSlaScore(account) }}</p>
+                <p class="text-xs text-teal-600">{{ $t('account.kitchenSlaScore') }}</p>
+                <p class="text-[10px] leading-tight text-teal-600/70 mt-0.5">{{ kitchenOnTimePct(account) }}</p>
+              </div>
+              <div v-else class="bg-gray-50 rounded-lg p-3 text-center">
+                <p class="text-sm sm:text-lg font-bold text-gray-400 truncate">—</p>
+                <p class="text-xs text-gray-500">{{ $t('account.kitchenSlaScore') }}</p>
               </div>
 
               <!-- Daily Gain KPI -->
@@ -156,6 +177,7 @@
                 </Popover>
               </div>
             </div>
+          </details>
           </div>
 
           <!-- Additional Profitability Chips (none currently) -->
@@ -187,62 +209,246 @@
               </div>
             </div>
 
-            <!-- Kitchen prep time: by service type + by day (same date range as dashboard) -->
+            <!-- Kitchen prep & SLA -->
             <div
               v-if="account.success && hasKitchenBreakdown(account)"
-              class="bg-white border border-gray-100 rounded-lg p-3 mt-3"
+              class="bg-white border border-gray-100 rounded-lg mt-3 overflow-hidden"
             >
-              <h5 class="text-xs font-medium text-gray-700 mb-1 flex items-center">
-                <svg class="w-3 h-3 mr-1 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                {{ $t('account.kitchenPrepSection') }}
-              </h5>
-              <p class="text-[11px] text-gray-500 mb-2">{{ $t('account.kitchenPrepSubtitle') }}</p>
-              <p class="text-[11px] font-medium text-gray-600 mb-1.5">{{ $t('account.kitchenByService') }}</p>
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <div
-                  v-for="svc in kitchenServiceTypesForAccount(account)"
-                  :key="svc"
-                  class="bg-gray-50 rounded p-2 flex items-start justify-between gap-2"
+              <details :open="isDesktop" class="group">
+                <summary
+                  class="flex items-center justify-between cursor-pointer list-none px-3 py-2.5 text-xs font-medium text-gray-800 select-none [&::-webkit-details-marker]:hidden lg:cursor-default border-b border-gray-100 bg-gray-50/80"
                 >
-                  <div class="flex items-center gap-2 min-w-0">
-                    <span class="w-2 h-2 rounded-full shrink-0" :style="{ backgroundColor: getServiceColor(svc) }" />
-                    <span class="text-xs font-medium text-gray-900 truncate">{{ kitchenServiceLabel(svc) }}</span>
+                  <span class="flex items-center gap-1.5 min-w-0">
+                    <svg class="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span class="truncate">{{ $t('account.kitchenSectionToggle') }}</span>
+                  </span>
+                  <span class="lg:hidden text-[10px] text-gray-500 shrink-0" aria-hidden="true">▼</span>
+                </summary>
+                <div class="p-3 space-y-3">
+                  <p class="text-[11px] text-gray-500">{{ $t('account.kitchenPrepSubtitle') }}</p>
+
+                  <div>
+                    <p class="text-[11px] font-semibold text-gray-800 mb-1">{{ $t('account.kitchenOutOfSla') }}</p>
+                    <p v-if="slaBreachTruncNote(account)" class="text-[10px] text-amber-800 mb-1">{{ $t('companyKitchen.breachTruncated') }}</p>
+                    <div v-if="slaBreachesForAccount(account).length" class="max-h-52 overflow-auto rounded border border-gray-100">
+                      <table class="w-full text-[11px]">
+                        <thead class="bg-gray-50 text-gray-600 sticky top-0">
+                          <tr>
+                            <th class="text-left font-medium px-2 py-1.5">{{ $t('account.kitchenTableOrderId') }}</th>
+                            <th class="text-left font-medium px-2 py-1.5">{{ $t('account.kitchenTableChannel') }}</th>
+                            <th class="text-right font-medium px-2 py-1.5">{{ $t('account.kitchenTableGoal') }}</th>
+                            <th class="text-right font-medium px-2 py-1.5">{{ $t('account.kitchenTableAvg') }}</th>
+                            <th class="text-right font-medium px-2 py-1.5">{{ $t('account.kitchenTableExtra') }}</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr
+                            v-for="(b, i) in slaBreachesForAccount(account)"
+                            :key="`${b.orderId}-${i}`"
+                            class="border-t border-gray-100"
+                          >
+                            <td class="px-2 py-1.5 font-mono text-gray-900">{{ b.orderId || '—' }}</td>
+                            <td class="px-2 py-1.5 text-gray-700">{{ kitchenChannelLabel(b.channelKey) }}</td>
+                            <td class="px-2 py-1.5 text-right text-gray-600">{{ b.targetMinutes }}′</td>
+                            <td class="px-2 py-1.5 text-right font-medium text-gray-900">{{ Math.round(b.prepMinutes) }}′</td>
+                            <td class="px-2 py-1.5 text-right font-semibold text-amber-800">+{{ b.delayOverTargetMinutes }}′</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                    <p v-else class="text-[11px] text-gray-500">{{ $t('account.kitchenOutOfSlaEmpty') }}</p>
                   </div>
-                  <div class="text-right shrink-0">
-                    <p class="text-xs font-bold text-gray-900">{{ formatKitchenPerformance(kitchenPerfForService(account, svc)) }}</p>
-                    <p class="text-[10px] text-gray-500">{{ $t('account.kitchenOrdersWithPrep', { n: kitchenPerfForService(account, svc).ordersWithPrepTime }) }}</p>
-                  </div>
-                </div>
-              </div>
-              <template v-if="getKitchenByDay(account).length > 0">
-                <p class="text-[11px] font-medium text-gray-600 mt-3 mb-1.5">{{ $t('account.kitchenByDay') }}</p>
-                <div class="max-h-48 overflow-y-auto rounded border border-gray-100">
-                  <table class="w-full text-[11px]">
-                    <thead class="bg-gray-50 text-gray-600 sticky top-0">
-                      <tr>
-                        <th class="text-left font-medium px-2 py-1.5">{{ $t('account.kitchenTableDay') }}</th>
-                        <th class="text-left font-medium px-2 py-1.5">{{ $t('account.kitchenTableOrders') }}</th>
-                        <th class="text-right font-medium px-2 py-1.5">{{ $t('account.kitchenTableAvg') }}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr
-                        v-for="row in getKitchenByDay(account)"
-                        :key="row.date"
-                        class="border-t border-gray-100"
-                        :class="isSlowPrepDay(row, account) ? 'bg-amber-50/80' : ''"
+
+                  <div>
+                    <p class="text-[11px] font-semibold text-gray-800 mb-1.5">{{ $t('account.kitchenRappiCompare') }}</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <div
+                        v-for="rx in rappiCompareMeta"
+                        :key="rx.channelKey"
+                        class="rounded-lg border border-gray-100 bg-gray-50/80 p-2"
                       >
-                        <td class="px-2 py-1.5 text-gray-800 whitespace-nowrap">{{ row.date }}</td>
-                        <td class="px-2 py-1.5 text-gray-600">{{ row.ordersWithPrepTime }}</td>
-                        <td class="px-2 py-1.5 text-right font-semibold text-gray-900">{{ formatKitchenPerformance({ averagePreparationTime: row.averagePreparationTime }) }}</td>
-                      </tr>
-                    </tbody>
-                  </table>
+                        <p class="text-[10px] font-semibold text-gray-700 mb-1">{{ rx.label }}</p>
+                        <template v-if="kitchenChannelStats(account, rx.channelKey)">
+                          <div class="text-[10px] text-gray-600 space-y-0.5">
+                            <div class="flex justify-between gap-2">
+                              <span>{{ $t('companyKitchen.orders') }}</span>
+                              <span class="font-semibold text-gray-900">{{ kitchenChannelStats(account, rx.channelKey).ordersWithPrepTime }}</span>
+                            </div>
+                            <div class="flex justify-between gap-2">
+                              <span>{{ $t('account.kitchenTableGoal') }}</span>
+                              <span>{{ kitchenChannelStats(account, rx.channelKey).targetMinutes ?? '—' }}′</span>
+                            </div>
+                            <div class="flex justify-between gap-2">
+                              <span>{{ $t('account.kitchenTableAvg') }}</span>
+                              <span class="font-medium">{{ formatKitchenPerformance({ averagePreparationTime: kitchenChannelStats(account, rx.channelKey).averagePreparationTime }) }}</span>
+                            </div>
+                            <div class="flex justify-between gap-2">
+                              <span>{{ $t('account.kitchenTableOnTime') }}</span>
+                              <span>{{ formatPct(kitchenChannelStats(account, rx.channelKey).onTimeRate) }}</span>
+                            </div>
+                          </div>
+                        </template>
+                        <p v-else class="text-[10px] text-gray-400">{{ $t('companyKitchen.noOrdersChannel') }}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div v-if="slaRowForAccount(account) && slaDraftByAccount[account.accountKey]" class="rounded border border-dashed border-gray-200 p-2 bg-gray-50/50">
+                    <p class="text-[11px] font-medium text-gray-700 mb-1.5">{{ $t('account.kitchenSlaGoals') }}</p>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2">
+                      <label class="block text-[10px] text-gray-600">
+                        {{ $t('account.kitchenGoalTurbo') }}
+                        <input
+                          v-model.number="slaDraftByAccount[account.accountKey].turbo"
+                          type="number"
+                          min="1"
+                          max="240"
+                          class="mt-0.5 w-full border border-gray-200 rounded px-1 py-0.5 text-xs"
+                        />
+                      </label>
+                      <label class="block text-[10px] text-gray-600">
+                        {{ $t('account.kitchenGoalRappi') }}
+                        <input
+                          v-model.number="slaDraftByAccount[account.accountKey].rappi"
+                          type="number"
+                          min="1"
+                          max="240"
+                          class="mt-0.5 w-full border border-gray-200 rounded px-1 py-0.5 text-xs"
+                        />
+                      </label>
+                      <label class="block text-[10px] text-gray-600">
+                        {{ $t('account.kitchenGoalOnsite') }}
+                        <input
+                          v-model.number="slaDraftByAccount[account.accountKey].onsite"
+                          type="number"
+                          min="1"
+                          max="240"
+                          class="mt-0.5 w-full border border-gray-200 rounded px-1 py-0.5 text-xs"
+                        />
+                      </label>
+                      <label class="block text-[10px] text-gray-600">
+                        {{ $t('account.kitchenGoalDeliveryOther') }}
+                        <input
+                          v-model.number="slaDraftByAccount[account.accountKey].deliveryOther"
+                          type="number"
+                          min="1"
+                          max="240"
+                          class="mt-0.5 w-full border border-gray-200 rounded px-1 py-0.5 text-xs"
+                        />
+                      </label>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        class="text-[11px] px-2 py-1 rounded bg-teal-600 text-white disabled:opacity-50"
+                        :disabled="slaSavingKey === account.accountKey"
+                        @click="saveKitchenSla(account)"
+                      >
+                        {{ slaSavingKey === account.accountKey ? $t('common.loading') : $t('account.kitchenSlaSave') }}
+                      </button>
+                      <button
+                        type="button"
+                        class="text-[11px] px-2 py-1 rounded border border-gray-300 text-gray-700 disabled:opacity-50"
+                        :disabled="slaSavingKey === account.accountKey"
+                        @click="resetKitchenSlaDefaults(account)"
+                      >
+                        {{ $t('account.kitchenSlaReset') }}
+                      </button>
+                    </div>
+                  </div>
+
+                  <details v-if="kitchenSlaRanking(account).length" class="rounded border border-gray-100 open:bg-white">
+                    <summary class="text-[11px] font-medium px-2 py-2 cursor-pointer text-gray-800 list-none [&::-webkit-details-marker]:hidden">
+                      {{ $t('account.kitchenAllChannels') }}
+                    </summary>
+                    <div class="px-2 pb-2">
+                      <p class="text-[10px] text-gray-500 mb-1">{{ $t('account.kitchenByChannelHint') }}</p>
+                      <div class="max-h-40 overflow-y-auto rounded border border-gray-100">
+                        <table class="w-full text-[11px]">
+                          <thead class="bg-gray-50 text-gray-600 sticky top-0">
+                            <tr>
+                              <th class="text-left font-medium px-2 py-1.5">{{ $t('account.kitchenTableChannel') }}</th>
+                              <th class="text-right font-medium px-2 py-1.5">{{ $t('account.kitchenTableGoal') }}</th>
+                              <th class="text-right font-medium px-2 py-1.5">{{ $t('account.kitchenTableAvg') }}</th>
+                              <th class="text-right font-medium px-2 py-1.5">{{ $t('account.kitchenTableOnTime') }}</th>
+                              <th class="text-right font-medium px-2 py-1.5">{{ $t('account.kitchenTableScore') }}</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr
+                              v-for="row in kitchenSlaRanking(account)"
+                              :key="row.channelKey"
+                              class="border-t border-gray-100"
+                            >
+                              <td class="px-2 py-1.5 text-gray-800">{{ kitchenChannelLabel(row.channelKey) }}</td>
+                              <td class="px-2 py-1.5 text-right text-gray-600">{{ row.targetMinutes }}′</td>
+                              <td class="px-2 py-1.5 text-right font-semibold text-gray-900">{{ formatKitchenPerformance({ averagePreparationTime: row.averagePreparationTime }) }}</td>
+                              <td class="px-2 py-1.5 text-right text-gray-700">{{ formatPct(row.onTimeRate) }}</td>
+                              <td class="px-2 py-1.5 text-right font-semibold text-teal-700">{{ row.slaScore }}</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </details>
+
+                  <details v-if="kitchenServiceTypesForAccount(account).length" class="rounded border border-gray-100">
+                    <summary class="text-[11px] font-medium px-2 py-2 cursor-pointer list-none [&::-webkit-details-marker]:hidden">{{ $t('account.kitchenByServiceDetails') }}</summary>
+                    <div class="p-2 pt-0">
+                      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div
+                          v-for="svc in kitchenServiceTypesForAccount(account)"
+                          :key="svc"
+                          class="bg-gray-50 rounded p-2 flex items-start justify-between gap-2"
+                        >
+                          <div class="flex items-center gap-2 min-w-0">
+                            <span class="w-2 h-2 rounded-full shrink-0" :style="{ backgroundColor: getServiceColor(svc) }" />
+                            <span class="text-xs font-medium text-gray-900 truncate">{{ kitchenServiceLabel(svc) }}</span>
+                          </div>
+                          <div class="text-right shrink-0">
+                            <p class="text-xs font-bold text-gray-900">{{ formatKitchenPerformance(kitchenPerfForService(account, svc)) }}</p>
+                            <p class="text-[10px] text-gray-500">{{ $t('account.kitchenOrdersWithPrep', { n: kitchenPerfForService(account, svc).ordersWithPrepTime }) }}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </details>
+
+                  <details v-if="getKitchenByDay(account).length > 0" class="rounded border border-gray-100">
+                    <summary class="text-[11px] font-medium px-2 py-2 cursor-pointer list-none [&::-webkit-details-marker]:hidden">{{ $t('account.kitchenByDayDetails') }}</summary>
+                    <div class="p-2 pt-0">
+                      <div class="max-h-48 overflow-y-auto rounded border border-gray-100">
+                        <table class="w-full text-[11px]">
+                          <thead class="bg-gray-50 text-gray-600 sticky top-0">
+                            <tr>
+                              <th class="text-left font-medium px-2 py-1.5">{{ $t('account.kitchenTableDay') }}</th>
+                              <th class="text-left font-medium px-2 py-1.5">{{ $t('account.kitchenTableOrders') }}</th>
+                              <th class="text-right font-medium px-2 py-1.5">{{ $t('account.kitchenTableAvg') }}</th>
+                              <th v-if="getKitchenByDay(account).some(r => r.onTimeRate != null)" class="text-right font-medium px-2 py-1.5">{{ $t('account.kitchenTableOnTime') }}</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr
+                              v-for="row in getKitchenByDay(account)"
+                              :key="row.date"
+                              class="border-t border-gray-100"
+                              :class="isSlowPrepDay(row, account) ? 'bg-amber-50/80' : ''"
+                            >
+                              <td class="px-2 py-1.5 text-gray-800 whitespace-nowrap">{{ row.date }}</td>
+                              <td class="px-2 py-1.5 text-gray-600">{{ row.ordersWithPrepTime }}</td>
+                              <td class="px-2 py-1.5 text-right font-semibold text-gray-900">{{ formatKitchenPerformance({ averagePreparationTime: row.averagePreparationTime }) }}</td>
+                              <td v-if="row.onTimeRate != null" class="px-2 py-1.5 text-right text-gray-700">{{ formatPct(row.onTimeRate) }}</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <p v-if="getKitchenByDay(account).some(r => isSlowPrepDay(r, account))" class="text-[10px] text-amber-700 mt-1.5">{{ $t('account.kitchenDaySlow') }} — {{ $t('account.kitchenDaySlowHint') }}</p>
+                    </div>
+                  </details>
                 </div>
-                <p v-if="getKitchenByDay(account).some(r => isSlowPrepDay(r, account))" class="text-[10px] text-amber-700 mt-1.5">{{ $t('account.kitchenDaySlow') }} — {{ $t('account.kitchenDaySlowHint') }}</p>
-              </template>
+              </details>
             </div>
             <div
               v-else-if="account.success && hasOrdersApiRow(account)"
@@ -342,20 +548,24 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, nextTick } from 'vue'
+import { ref, computed, watch, nextTick, reactive, onMounted, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../stores/auth'
 import { calculateDaysInPeriod as calcDays } from '../composables/useProfitability'
 import Popover from './ui/Popover.vue'
+import api from '../utils/api'
 
 const props = defineProps({
   analyticsData: Object,
   ordersData: Object,
   profitabilityData: Object,
+  kitchenSlaResponse: Object,
   currentDateRange: Object,
   selectedDateRange: String,
   loading: Boolean
 })
+
+const emit = defineEmits(['kitchen-sla-saved'])
 
 const authStore = useAuthStore()
 const { t } = useI18n()
@@ -365,6 +575,40 @@ const KITCHEN_SERVICE_ORDER = ['TABLE', 'ONSITE', 'TAKEAWAY', 'DELIVERY', 'OTHER
 
 // Force re-computation trigger
 const forceRecompute = ref(0)
+
+const slaDraftByAccount = reactive({})
+const slaSavingKey = ref('')
+
+const isDesktop = ref(true)
+let kpiMediaQuery
+function applyKpiMedia() {
+  isDesktop.value = window.matchMedia('(min-width: 1024px)').matches
+}
+onMounted(() => {
+  applyKpiMedia()
+  kpiMediaQuery = window.matchMedia('(min-width: 1024px)')
+  kpiMediaQuery.addEventListener('change', applyKpiMedia)
+})
+onBeforeUnmount(() => {
+  if (kpiMediaQuery) kpiMediaQuery.removeEventListener('change', applyKpiMedia)
+})
+
+watch(
+  () => props.kitchenSlaResponse?.accounts,
+  (accounts) => {
+    if (!accounts) return
+    for (const a of accounts) {
+      const r = a.resolvedPreset || {}
+      slaDraftByAccount[a.company_token] = {
+        turbo: r['DELIVERY:RAPPI_TURBO'] ?? 5,
+        rappi: r['DELIVERY:RAPPI'] ?? 10,
+        onsite: r['ONSITE:*'] ?? 10,
+        deliveryOther: r['DELIVERY:OTHER'] ?? 10
+      }
+    }
+  },
+  { deep: true, immediate: true }
+)
 
 const paymentMethodColors = {
   'cash': '#10B981',
@@ -759,7 +1003,9 @@ const getAccountKitchenPerformance = (account) => {
     averagePreparationTime: 0,
     ordersWithPrepTime: 0,
     byServiceType: {},
-    byDay: []
+    byKitchenChannel: {},
+    byDay: [],
+    sla: null
   }
   if (!account.success) return { ...empty }
 
@@ -803,6 +1049,91 @@ const isSlowPrepDay = (dayRow, account) => {
   const overall = getAccountKitchenPerformance(account).averagePreparationTime
   if (!overall || overall <= 0 || !dayRow?.averagePreparationTime) return false
   return dayRow.averagePreparationTime > overall * 1.25
+}
+
+const slaRowForAccount = (account) => {
+  return props.kitchenSlaResponse?.accounts?.find((a) => a.company_token === account.accountKey)
+}
+
+const kitchenSlaRanking = (account) => {
+  return getAccountKitchenPerformance(account).sla?.channelRanking || []
+}
+
+const rappiCompareMeta = computed(() => [
+  { channelKey: 'DELIVERY:RAPPI_TURBO', label: t('account.kitchenGoalTurbo') },
+  { channelKey: 'DELIVERY:RAPPI', label: t('account.kitchenGoalRappi') }
+])
+
+const slaBreachesForAccount = (account) => {
+  return getAccountKitchenPerformance(account).sla?.slaBreaches || []
+}
+
+const slaBreachTruncNote = (account) => {
+  return !!getAccountKitchenPerformance(account).sla?.slaBreachesTruncated
+}
+
+const kitchenChannelStats = (account, channelKey) => {
+  const ch = getAccountKitchenPerformance(account).byKitchenChannel?.[channelKey]
+  if (!ch || !ch.ordersWithPrepTime) return null
+  return ch
+}
+
+const kitchenSlaScore = (account) => {
+  const s = getAccountKitchenPerformance(account).sla
+  if (!s || !s.totalScoredOrders) return null
+  return s.overallSlaScore
+}
+
+const kitchenOnTimePct = (account) => {
+  const s = getAccountKitchenPerformance(account).sla
+  if (!s || !s.totalScoredOrders) return ''
+  const pct = Math.round((s.overallOnTimeRate || 0) * 100)
+  return t('account.kitchenOnTimeLine', { pct })
+}
+
+const formatPct = (r) => {
+  if (r == null || Number.isNaN(r)) return '—'
+  return `${Math.round(r * 100)}%`
+}
+
+const kitchenChannelLabel = (key) => {
+  const flat = key.replace(/:/g, '_')
+  const path = `account.kitchenChannelKeys.${flat}`
+  const translated = t(path)
+  if (translated !== path) return translated
+  const parts = key.split(':')
+  if (parts.length >= 2) return `${parts[0]} · ${parts[1]}`
+  return key
+}
+
+const saveKitchenSla = async (account) => {
+  const d = slaDraftByAccount[account.accountKey]
+  if (!d) return
+  slaSavingKey.value = account.accountKey
+  try {
+    await api.putKitchenSla({
+      company_token: account.accountKey,
+      targets: {
+        'DELIVERY:RAPPI_TURBO': Number(d.turbo),
+        'DELIVERY:RAPPI': Number(d.rappi),
+        'ONSITE:*': Number(d.onsite),
+        'DELIVERY:OTHER': Number(d.deliveryOther)
+      }
+    })
+    emit('kitchen-sla-saved')
+  } finally {
+    slaSavingKey.value = ''
+  }
+}
+
+const resetKitchenSlaDefaults = async (account) => {
+  slaSavingKey.value = account.accountKey
+  try {
+    await api.putKitchenSla({ company_token: account.accountKey, targets: {} })
+    emit('kitchen-sla-saved')
+  } finally {
+    slaSavingKey.value = ''
+  }
 }
 
 const formatKitchenPerformance = (performanceData) => {

@@ -4,10 +4,137 @@ import {
   fetchGeneralIndicators,
   fetchServiceMetrics
 } from '../services/olaClickService.js';
+import {
+  fetchKitchenSlaTargetsByTokens,
+  upsertKitchenSlaTargets,
+  KITCHEN_SLA_DEFAULT_MINUTES,
+  buildResolvedPreset
+} from '../services/kitchenSlaService.js';
 import { config } from '../config/index.js';
 import { pool } from '../database.js';
 
 const router = Router();
+
+/** Merge kitchen/SLA metrics across all accounts for company-wide view */
+function buildCompanyKitchenAggregate(accountsPayload) {
+  const list = (accountsPayload || []).filter((a) => a.kitchenPerformance?.ordersWithPrepTime > 0);
+  if (list.length === 0) return null;
+
+  let totalPrepMin = 0;
+  let totalPrepCount = 0;
+  let ordersAnalyzed = 0;
+  let slaOnTime = 0;
+  let slaScored = 0;
+  /** @type {Record<string, { totalMinutes: number; count: number; onTimeCount: number; targetWeighted: number }>} */
+  const chAgg = {};
+  /** @type {Record<string, { totalMinutes: number; count: number; onTimeCount: number; scoredCount: number }>} */
+  const dayMap = {};
+  /** @type {Array<Record<string, unknown>>} */
+  const breaches = [];
+
+  for (const acc of list) {
+    const kp = acc.kitchenPerformance;
+    totalPrepMin += kp.averagePreparationTime * kp.ordersWithPrepTime;
+    totalPrepCount += kp.ordersWithPrepTime;
+    ordersAnalyzed += kp.ordersAnalyzed || 0;
+
+    for (const [ch, row] of Object.entries(kp.byKitchenChannel || {})) {
+      if (!chAgg[ch]) {
+        chAgg[ch] = { totalMinutes: 0, count: 0, onTimeCount: 0, targetWeighted: 0 };
+      }
+      const c = row.ordersWithPrepTime;
+      chAgg[ch].totalMinutes += row.averagePreparationTime * c;
+      chAgg[ch].count += c;
+      if (row.onTimeCount != null) chAgg[ch].onTimeCount += row.onTimeCount;
+      if (row.targetMinutes != null) chAgg[ch].targetWeighted += row.targetMinutes * c;
+    }
+
+    for (const d of kp.byDay || []) {
+      if (!dayMap[d.date]) {
+        dayMap[d.date] = { totalMinutes: 0, count: 0, onTimeCount: 0, scoredCount: 0 };
+      }
+      const c = d.ordersWithPrepTime;
+      dayMap[d.date].totalMinutes += d.averagePreparationTime * c;
+      dayMap[d.date].count += c;
+      if (d.onTimeCount != null) {
+        dayMap[d.date].onTimeCount += d.onTimeCount;
+        dayMap[d.date].scoredCount += d.scoredOrders || 0;
+      }
+    }
+
+    if (kp.sla) {
+      slaOnTime += kp.sla.onTimeOrders || 0;
+      slaScored += kp.sla.totalScoredOrders || 0;
+    }
+    for (const b of kp.sla?.slaBreaches || []) {
+      breaches.push({
+        ...b,
+        accountKey: acc.accountKey,
+        accountName: acc.account
+      });
+    }
+  }
+
+  const byKitchenChannel = {};
+  for (const [ch, b] of Object.entries(chAgg)) {
+    const onTimeRate = b.count > 0 ? b.onTimeCount / b.count : 0;
+    const targetM =
+      b.targetWeighted > 0 && b.count > 0 ? Math.round((b.targetWeighted / b.count) * 10) / 10 : null;
+    byKitchenChannel[ch] = {
+      averagePreparationTime: b.totalMinutes / b.count,
+      ordersWithPrepTime: b.count,
+      targetMinutes: targetM,
+      onTimeCount: b.onTimeCount,
+      onTimeRate,
+      slaScore: Math.round(onTimeRate * 100)
+    };
+  }
+
+  const channelRanking = Object.entries(byKitchenChannel)
+    .map(([channelKey, v]) => ({ channelKey, ...v }))
+    .filter((x) => x.ordersWithPrepTime > 0)
+    .sort((a, b) => (a.onTimeRate ?? 0) - (b.onTimeRate ?? 0));
+
+  breaches.sort((a, b) => (b.delayOverTargetMinutes || 0) - (a.delayOverTargetMinutes || 0));
+  const breachTotal = breaches.length;
+  const MAX_CO = 200;
+  const slaBreaches = breaches.slice(0, MAX_CO);
+
+  const byDay = Object.keys(dayMap)
+    .sort()
+    .map((date) => {
+      const d = dayMap[date];
+      return {
+        date,
+        averagePreparationTime: d.totalMinutes / d.count,
+        ordersWithPrepTime: d.count,
+        onTimeCount: d.onTimeCount,
+        scoredOrders: d.scoredCount,
+        onTimeRate: d.scoredCount > 0 ? d.onTimeCount / d.scoredCount : 0
+      };
+    });
+
+  const overallOnTimeRate = slaScored > 0 ? slaOnTime / slaScored : 0;
+
+  return {
+    averagePreparationTime: totalPrepCount > 0 ? totalPrepMin / totalPrepCount : 0,
+    ordersWithPrepTime: totalPrepCount,
+    byKitchenChannel,
+    byDay,
+    ordersAnalyzed,
+    accountsInKitchenAgg: list.length,
+    sla: {
+      overallOnTimeRate,
+      overallSlaScore: slaScored > 0 ? Math.round(overallOnTimeRate * 100) : 0,
+      onTimeOrders: slaOnTime,
+      totalScoredOrders: slaScored,
+      channelRanking,
+      slaBreaches,
+      slaBreachTotal: breachTotal,
+      slaBreachesTruncated: breachTotal > MAX_CO
+    }
+  };
+}
 
 // Helper function to aggregate orders data
 function aggregateOrdersData(accountsData) {
@@ -19,7 +146,8 @@ function aggregateOrdersData(accountsData) {
       totalOrders: 0,
       totalSales: 0,
       averageTicket: 0,
-      accounts: []
+      accounts: [],
+      companyKitchen: null
     };
   }
   
@@ -43,7 +171,9 @@ function aggregateOrdersData(accountsData) {
         ordersWithPrepTime: 0,
         totalOrders: 0,
         byServiceType: {},
+        byKitchenChannel: {},
         byDay: [],
+        sla: null,
         ordersAnalyzed: 0
       };
       
@@ -69,11 +199,14 @@ function aggregateOrdersData(accountsData) {
   
   console.log(`   Aggregation result: totalOrders=${totalOrders}, totalSales=${totalSales}, averageTicket=${averageTicket}`);
   
+  const companyKitchen = buildCompanyKitchenAggregate(accounts);
+
   return {
     totalOrders,
     totalSales,
     averageTicket,
-    accounts
+    accounts,
+    companyKitchen
   };
 }
 
@@ -226,14 +359,18 @@ router.get('/', requireAuth, async (req, res) => {
     console.log(`   📅 Date range: ${startDate} to ${endDate}`);
     console.log(`   📅 Days difference: ${Math.ceil((new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24))} days`);
     
+    const tokens = userAccounts.map((a) => a.company_token);
+    const slaByToken = await fetchKitchenSlaTargetsByTokens(tokens);
+
     const currentPromises = userAccounts.map(account => {
       const params = { 
         timezone,
         startDate,
         endDate
       };
+      const slaOverrides = slaByToken.get(account.company_token) || {};
       console.log(`   🔍 Account ${account.company_token}: params=${JSON.stringify(params)}`);
-      return fetchGeneralIndicators(account, params);
+      return fetchGeneralIndicators(account, params, slaOverrides);
     });
     
     const currentResults = await Promise.all(currentPromises);
@@ -251,7 +388,8 @@ router.get('/', requireAuth, async (req, res) => {
         totalOrders: currentAggregated.totalOrders,
         totalSales: currentAggregated.totalSales,
         averageTicket: currentAggregated.averageTicket,
-        accountsCount: currentAggregated.accounts.length
+        accountsCount: currentAggregated.accounts.length,
+        companyKitchen: currentAggregated.companyKitchen
       },
       timezone
     });
@@ -262,6 +400,137 @@ router.get('/', requireAuth, async (req, res) => {
       success: false,
       error: error.message
     });
+  }
+});
+
+/** Load per-account kitchen SLA target overrides (defaults + saved targets). */
+router.get('/kitchen-sla', requireAuth, async (req, res) => {
+  try {
+    const requestedCompanyId = req.query.company_id || null;
+    const requestedToken = req.query.company_token || null;
+    let rows = [];
+    if (req.user.role === 'super-admin') {
+      if (requestedCompanyId) {
+        const q = await pool.query(
+          `SELECT company_id, company_token, account_name, api_token FROM company_accounts WHERE company_id = $1 ORDER BY account_name`,
+          [requestedCompanyId]
+        );
+        rows = q.rows;
+      } else {
+        const q = await pool.query(
+          `SELECT company_id, company_token, account_name, api_token FROM company_accounts ORDER BY account_name`
+        );
+        rows = q.rows;
+      }
+    } else {
+      const companyId = req.user.companyId;
+      if (requestedCompanyId && requestedCompanyId !== companyId) {
+        return res.status(403).json({ success: false, error: 'Forbidden' });
+      }
+      if (companyId) {
+        const q = await pool.query(
+          `SELECT company_id, company_token, account_name, api_token FROM company_accounts WHERE company_id = $1 ORDER BY account_name`,
+          [companyId]
+        );
+        rows = q.rows;
+      }
+    }
+    if (requestedToken) {
+      rows = rows.filter((r) => r.company_token === requestedToken);
+    }
+    const accounts = rows.map((r) => ({
+      company_id: r.company_id,
+      company_token: r.company_token,
+      account_name: r.account_name,
+      api_token: r.api_token
+    }));
+
+    if (accounts.length === 0) {
+      return res.status(404).json({ success: false, error: 'No accounts found for user' });
+    }
+
+    const tokens = accounts.map((a) => a.company_token);
+    const slaMap = await fetchKitchenSlaTargetsByTokens(tokens);
+    const payload = accounts.map((a) => {
+      const ov = slaMap.get(a.company_token) || {};
+      return {
+        company_token: a.company_token,
+        account_name: a.account_name,
+        overrides: ov,
+        resolvedPreset: buildResolvedPreset(ov)
+      };
+    });
+
+    res.json({
+      success: true,
+      defaults: KITCHEN_SLA_DEFAULT_MINUTES,
+      accounts: payload
+    });
+  } catch (error) {
+    console.error('❌ kitchen-sla GET error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/** Save per-account kitchen SLA minute overrides (partial map merged server-side is not done — send full map from client). */
+router.put('/kitchen-sla', requireAuth, async (req, res) => {
+  try {
+    const company_token = req.body?.company_token;
+    const targets = req.body?.targets;
+    if (!company_token || typeof company_token !== 'string') {
+      return res.status(400).json({ success: false, error: 'company_token is required' });
+    }
+    if (targets != null && typeof targets !== 'object') {
+      return res.status(400).json({ success: false, error: 'targets must be an object' });
+    }
+
+    const requestedCompanyId = req.body?.company_id || req.query.company_id || null;
+    const requestedToken = req.query.company_token || null;
+    let rows = [];
+    if (req.user.role === 'super-admin') {
+      if (requestedCompanyId) {
+        const q = await pool.query(
+          `SELECT company_id, company_token, account_name, api_token FROM company_accounts WHERE company_id = $1 ORDER BY account_name`,
+          [requestedCompanyId]
+        );
+        rows = q.rows;
+      } else {
+        const q = await pool.query(
+          `SELECT company_id, company_token, account_name, api_token FROM company_accounts ORDER BY account_name`
+        );
+        rows = q.rows;
+      }
+    } else {
+      const companyId = req.user.companyId;
+      if (requestedCompanyId && requestedCompanyId !== companyId) {
+        return res.status(403).json({ success: false, error: 'Forbidden' });
+      }
+      if (companyId) {
+        const q = await pool.query(
+          `SELECT company_id, company_token, account_name, api_token FROM company_accounts WHERE company_id = $1 ORDER BY account_name`,
+          [companyId]
+        );
+        rows = q.rows;
+      }
+    }
+    if (requestedToken) {
+      rows = rows.filter((r) => r.company_token === requestedToken);
+    }
+    const acc = rows.find((r) => r.company_token === company_token);
+    if (!acc) {
+      return res.status(403).json({ success: false, error: 'Unknown account or access denied' });
+    }
+
+    const cleaned = await upsertKitchenSlaTargets(company_token, acc.company_id, targets || {});
+    res.json({
+      success: true,
+      company_token,
+      targets: cleaned,
+      resolvedPreset: buildResolvedPreset(cleaned)
+    });
+  } catch (error) {
+    console.error('❌ kitchen-sla PUT error:', error);
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 

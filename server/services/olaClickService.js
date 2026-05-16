@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { config } from '../config/index.js';
+import { resolveKitchenTargetMinutes } from './kitchenSlaService.js';
 
 const KITCHEN_SERVICE_TYPES = ['TABLE', 'ONSITE', 'TAKEAWAY', 'DELIVERY'];
 
@@ -43,10 +44,65 @@ function formatDateInTimezone(isoString, timeZone) {
   }
 }
 
+function normKitchenSource(v) {
+  if (v == null || v === '') return '';
+  return String(v).toUpperCase().trim();
+}
+
 /**
- * Kitchen prep stats from orders: overall average, per service_type, per day (by prepared_at in timezone).
+ * Stable channel key for SLA and kitchen breakdown (service + source/delivered_by).
+ * Examples: DELIVERY:RAPPI_TURBO, DELIVERY:RAPPI, ONSITE:OUTBOUND
  */
-export function computeKitchenPerformanceFromOrders(orders, timeZone) {
+export function getKitchenChannelKey(order) {
+  const st = getOrderServiceType(order);
+  const source = normKitchenSource(order.source ?? order.source_name);
+  const deliveredBy = normKitchenSource(order.delivered_by ?? order.deliveredBy);
+
+  if (st === 'DELIVERY') {
+    if (source === 'RAPPI_TURBO' || deliveredBy === 'RAPPI_TURBO') return 'DELIVERY:RAPPI_TURBO';
+    if (source === 'RAPPI' || deliveredBy === 'RAPPI') return 'DELIVERY:RAPPI';
+    if (source) return `DELIVERY:${source}`;
+    if (deliveredBy) return `DELIVERY:${deliveredBy}`;
+    return 'DELIVERY:OTHER';
+  }
+  if (st === 'ONSITE') {
+    const sub = source || deliveredBy || 'OUTBOUND';
+    return `ONSITE:${sub}`;
+  }
+  if (st === 'TABLE' || st === 'TAKEAWAY') {
+    const sub = source || deliveredBy || 'GENERAL';
+    return `${st}:${sub}`;
+  }
+  const sub = source || deliveredBy || 'GENERAL';
+  return `OTHER:${sub}`;
+}
+
+const SLA_BREACH_RETURN_LIMIT = 120;
+
+/** Best-effort OlaClick order id for support / deep links */
+export function getOrderId(order) {
+  const id =
+    order?.id ??
+    order?.order_id ??
+    order?.orderId ??
+    order?.uuid ??
+    order?.number ??
+    order?.order_number;
+  if (id == null || id === '') return '';
+  return String(id);
+}
+
+function round1(n) {
+  return Math.round(Number(n) * 10) / 10;
+}
+
+/**
+ * Kitchen prep stats from orders: overall average, per service_type, per channel, SLA scoring, per day.
+ * @param {unknown[]} orders
+ * @param {string} timeZone
+ * @param {Record<string, number>|null} [slaCustomOverrides] When non-null, enables SLA / byKitchenChannel / per-day on-time.
+ */
+export function computeKitchenPerformanceFromOrders(orders, timeZone, slaCustomOverrides = null) {
   const ordersWithPrep = (orders || []).filter((o) => kitchenPrepMinutes(o) != null);
   let averagePreparationTime = 0;
   if (ordersWithPrep.length > 0) {
@@ -54,14 +110,36 @@ export function computeKitchenPerformanceFromOrders(orders, timeZone) {
       ordersWithPrep.reduce((sum, o) => sum + kitchenPrepMinutes(o), 0) / ordersWithPrep.length;
   }
 
+  const scoreSla = slaCustomOverrides != null;
+
   const serviceBuckets = {};
+  const channelBuckets = {};
+  let slaOnTime = 0;
+
   for (const o of ordersWithPrep) {
+    const mins = kitchenPrepMinutes(o);
     const st = getOrderServiceType(o);
+
     if (!serviceBuckets[st]) {
       serviceBuckets[st] = { totalMinutes: 0, count: 0 };
     }
-    serviceBuckets[st].totalMinutes += kitchenPrepMinutes(o);
+    serviceBuckets[st].totalMinutes += mins;
     serviceBuckets[st].count += 1;
+
+    const ch = getKitchenChannelKey(o);
+    if (!channelBuckets[ch]) {
+      channelBuckets[ch] = { totalMinutes: 0, count: 0, onTimeCount: 0 };
+    }
+    channelBuckets[ch].totalMinutes += mins;
+    channelBuckets[ch].count += 1;
+
+    if (scoreSla) {
+      const target = resolveKitchenTargetMinutes(ch, slaCustomOverrides);
+      if (mins <= target) {
+        channelBuckets[ch].onTimeCount += 1;
+        slaOnTime += 1;
+      }
+    }
   }
 
   const byServiceType = {};
@@ -76,29 +154,113 @@ export function computeKitchenPerformanceFromOrders(orders, timeZone) {
     }
   }
 
+  const byKitchenChannel = {};
+  for (const [ch, b] of Object.entries(channelBuckets)) {
+    const onTimeRate = scoreSla && b.count > 0 ? b.onTimeCount / b.count : 0;
+    const targetM = scoreSla ? resolveKitchenTargetMinutes(ch, slaCustomOverrides) : null;
+    byKitchenChannel[ch] = {
+      averagePreparationTime: b.totalMinutes / b.count,
+      ordersWithPrepTime: b.count,
+      ...(scoreSla
+        ? {
+            targetMinutes: targetM,
+            onTimeCount: b.onTimeCount,
+            onTimeRate,
+            slaScore: Math.round(onTimeRate * 100)
+          }
+        : {})
+    };
+  }
+
   const dayBuckets = {};
   for (const o of ordersWithPrep) {
+    const mins = kitchenPrepMinutes(o);
     const dk = formatDateInTimezone(o.prepared_at, timeZone);
     if (!dk) continue;
     if (!dayBuckets[dk]) {
-      dayBuckets[dk] = { totalMinutes: 0, count: 0 };
+      dayBuckets[dk] = { totalMinutes: 0, count: 0, onTimeCount: 0, scoredCount: 0 };
     }
-    dayBuckets[dk].totalMinutes += kitchenPrepMinutes(o);
+    dayBuckets[dk].totalMinutes += mins;
     dayBuckets[dk].count += 1;
+
+    if (scoreSla) {
+      const ch = getKitchenChannelKey(o);
+      const target = resolveKitchenTargetMinutes(ch, slaCustomOverrides);
+      dayBuckets[dk].scoredCount += 1;
+      if (mins <= target) dayBuckets[dk].onTimeCount += 1;
+    }
   }
   const byDay = Object.keys(dayBuckets)
     .sort()
-    .map((date) => ({
-      date,
-      averagePreparationTime: dayBuckets[date].totalMinutes / dayBuckets[date].count,
-      ordersWithPrepTime: dayBuckets[date].count
-    }));
+    .map((date) => {
+      const d = dayBuckets[date];
+      const row = {
+        date,
+        averagePreparationTime: d.totalMinutes / d.count,
+        ordersWithPrepTime: d.count
+      };
+      if (scoreSla) {
+        row.onTimeCount = d.onTimeCount;
+        row.scoredOrders = d.scoredCount;
+        row.onTimeRate = d.scoredCount > 0 ? d.onTimeCount / d.scoredCount : 0;
+      }
+      return row;
+    });
+
+  const nScored = scoreSla ? ordersWithPrep.length : 0;
+  const overallOnTimeRate = scoreSla && nScored > 0 ? slaOnTime / nScored : 0;
+  const channelRanking = scoreSla
+    ? Object.entries(byKitchenChannel)
+        .map(([channelKey, v]) => ({
+          channelKey,
+          ...v
+        }))
+        .filter((x) => x.ordersWithPrepTime > 0)
+        .sort((a, b) => (a.onTimeRate ?? 0) - (b.onTimeRate ?? 0))
+    : [];
+
+  /** Orders that exceeded SLA — for ops follow-up in OlaClick */
+  let slaBreaches = [];
+  let slaBreachTotal = 0;
+  if (scoreSla && ordersWithPrep.length > 0) {
+    const raw = [];
+    for (const o of ordersWithPrep) {
+      const mins = kitchenPrepMinutes(o);
+      const ch = getKitchenChannelKey(o);
+      const target = resolveKitchenTargetMinutes(ch, slaCustomOverrides);
+      if (mins > target) {
+        raw.push({
+          orderId: getOrderId(o),
+          channelKey: ch,
+          prepMinutes: round1(mins),
+          targetMinutes: target,
+          delayOverTargetMinutes: round1(mins - target)
+        });
+      }
+    }
+    raw.sort((a, b) => b.delayOverTargetMinutes - a.delayOverTargetMinutes);
+    slaBreachTotal = raw.length;
+    slaBreaches = raw.slice(0, SLA_BREACH_RETURN_LIMIT);
+  }
 
   return {
     averagePreparationTime,
     ordersWithPrepTime: ordersWithPrep.length,
     byServiceType,
-    byDay
+    byKitchenChannel,
+    byDay,
+    sla: scoreSla
+      ? {
+          overallOnTimeRate,
+          overallSlaScore: nScored > 0 ? Math.round(overallOnTimeRate * 100) : 0,
+          onTimeOrders: slaOnTime,
+          totalScoredOrders: nScored,
+          channelRanking,
+          slaBreaches,
+          slaBreachTotal,
+          slaBreachesTruncated: slaBreachTotal > slaBreaches.length
+        }
+      : null
   };
 }
 
@@ -475,7 +637,7 @@ export async function fetchOlaClickData(account, queryParams = {}) {
 }
 
 // Helper function to fetch general indicators data from OlaClick API
-export async function fetchGeneralIndicators(account, queryParams = {}) {
+export async function fetchGeneralIndicators(account, queryParams = {}, slaCustomOverrides = {}) {
   if (!account) {
     throw new Error('Account not found');
   }
@@ -600,10 +762,10 @@ export async function fetchGeneralIndicators(account, queryParams = {}) {
       const totalSales = meta.total_amount || 0;
       const avgTicket = totalOrders > 0 ? totalSales/totalOrders : 0;
 
-      const kitchenStats = computeKitchenPerformanceFromOrders(allOrders, timezone);
+      const kitchenStats = computeKitchenPerformanceFromOrders(allOrders, timezone, slaCustomOverrides);
 
       console.log(
-        `📊 Kitchen Performance: ${kitchenStats.ordersWithPrepTime} orders with prep time, avg: ${kitchenStats.averagePreparationTime.toFixed(1)} min (by service: ${Object.keys(kitchenStats.byServiceType).join(', ') || '—'})`
+        `📊 Kitchen Performance: ${kitchenStats.ordersWithPrepTime} orders with prep time, avg: ${kitchenStats.averagePreparationTime.toFixed(1)} min (by service: ${Object.keys(kitchenStats.byServiceType).join(', ') || '—'}; channels: ${Object.keys(kitchenStats.byKitchenChannel || {}).join(', ') || '—'})`
       );
 
       transformedData = {
@@ -615,7 +777,9 @@ export async function fetchGeneralIndicators(account, queryParams = {}) {
           ordersWithPrepTime: kitchenStats.ordersWithPrepTime,
           totalOrders,
           byServiceType: kitchenStats.byServiceType,
+          byKitchenChannel: kitchenStats.byKitchenChannel,
           byDay: kitchenStats.byDay,
+          sla: kitchenStats.sla,
           ordersAnalyzed: allOrders.length
         }
       };

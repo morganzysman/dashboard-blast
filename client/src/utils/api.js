@@ -284,6 +284,10 @@ export const api = {
   createHolidayRequest: (payload) => apiRequest('/api/holidays/requests', { method: 'POST', body: JSON.stringify(payload) }),
   deleteHolidayRequest: (id, companyId) => apiRequest(`/api/holidays/requests/${id}${companyId ? `?companyId=${companyId}` : ''}`, { method: 'DELETE' }),
 
+  getKitchenSla: (params = '') =>
+    apiRequest(`/api/orders/kitchen-sla${params ? `?${params}` : ''}`, { method: 'GET' }),
+  putKitchenSla: (payload) => apiRequest('/api/orders/kitchen-sla', { method: 'PUT', body: JSON.stringify(payload) }),
+
   // User hired_at
   updateUserHiredAt: (userId, hiredAt) => apiRequest(`/api/admin/users/${userId}/hired-at`, { method: 'PUT', body: JSON.stringify({ hired_at: hiredAt }) })
 }
