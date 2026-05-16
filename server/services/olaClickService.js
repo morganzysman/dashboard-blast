@@ -1,6 +1,107 @@
 import axios from 'axios';
 import { config } from '../config/index.js';
 
+const KITCHEN_SERVICE_TYPES = ['TABLE', 'ONSITE', 'TAKEAWAY', 'DELIVERY'];
+
+/** Normalize OlaClick order service channel for kitchen breakdowns */
+export function getOrderServiceType(order) {
+  const raw =
+    order.service_type ??
+    order.serviceType ??
+    order.type ??
+    order.order_type ??
+    order.orderType;
+  if (raw == null || raw === '') return 'OTHER';
+  const u = String(raw).toUpperCase().trim();
+  if (KITCHEN_SERVICE_TYPES.includes(u)) return u;
+  return 'OTHER';
+}
+
+function kitchenPrepMinutes(order) {
+  if (!order.preparing_at || !order.prepared_at || order.status === 'CANCELLED') {
+    return null;
+  }
+  const preparingTime = new Date(order.preparing_at);
+  const preparedTime = new Date(order.prepared_at);
+  if (Number.isNaN(preparingTime.getTime()) || Number.isNaN(preparedTime.getTime())) {
+    return null;
+  }
+  return Math.max(0, (preparedTime - preparingTime) / (1000 * 60));
+}
+
+function formatDateInTimezone(isoString, timeZone) {
+  if (!isoString) return null;
+  try {
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: timeZone || 'UTC',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).format(new Date(isoString));
+  } catch {
+    return new Date(isoString).toISOString().slice(0, 10);
+  }
+}
+
+/**
+ * Kitchen prep stats from orders: overall average, per service_type, per day (by prepared_at in timezone).
+ */
+export function computeKitchenPerformanceFromOrders(orders, timeZone) {
+  const ordersWithPrep = (orders || []).filter((o) => kitchenPrepMinutes(o) != null);
+  let averagePreparationTime = 0;
+  if (ordersWithPrep.length > 0) {
+    averagePreparationTime =
+      ordersWithPrep.reduce((sum, o) => sum + kitchenPrepMinutes(o), 0) / ordersWithPrep.length;
+  }
+
+  const serviceBuckets = {};
+  for (const o of ordersWithPrep) {
+    const st = getOrderServiceType(o);
+    if (!serviceBuckets[st]) {
+      serviceBuckets[st] = { totalMinutes: 0, count: 0 };
+    }
+    serviceBuckets[st].totalMinutes += kitchenPrepMinutes(o);
+    serviceBuckets[st].count += 1;
+  }
+
+  const byServiceType = {};
+  const serviceOrder = [...KITCHEN_SERVICE_TYPES, 'OTHER'];
+  for (const st of serviceOrder) {
+    const b = serviceBuckets[st];
+    if (b && b.count > 0) {
+      byServiceType[st] = {
+        averagePreparationTime: b.totalMinutes / b.count,
+        ordersWithPrepTime: b.count
+      };
+    }
+  }
+
+  const dayBuckets = {};
+  for (const o of ordersWithPrep) {
+    const dk = formatDateInTimezone(o.prepared_at, timeZone);
+    if (!dk) continue;
+    if (!dayBuckets[dk]) {
+      dayBuckets[dk] = { totalMinutes: 0, count: 0 };
+    }
+    dayBuckets[dk].totalMinutes += kitchenPrepMinutes(o);
+    dayBuckets[dk].count += 1;
+  }
+  const byDay = Object.keys(dayBuckets)
+    .sort()
+    .map((date) => ({
+      date,
+      averagePreparationTime: dayBuckets[date].totalMinutes / dayBuckets[date].count,
+      ordersWithPrepTime: dayBuckets[date].count
+    }));
+
+  return {
+    averagePreparationTime,
+    ordersWithPrepTime: ordersWithPrep.length,
+    byServiceType,
+    byDay
+  };
+}
+
 // Helper function to construct cookie header from token structure
 export function constructCookieHeader(account) {
   // Create the tokens array structure that matches the working cURL
@@ -397,7 +498,8 @@ export async function fetchGeneralIndicators(account, queryParams = {}) {
   // Construct the URL for the request
   // Use the correct orders endpoint with proper parameters
   const baseUrl = 'https://api.olaclick.app/ms-orders/auth/orders';
-  const params = {
+  const perPage = 100;
+  const baseParams = {
     'filter[start_date]': startDate,
     'filter[end_date]': endDate,
     'filter[timezone]': timezone,
@@ -406,16 +508,12 @@ export async function fetchGeneralIndicators(account, queryParams = {}) {
     'filter[time_type]': 'pending_at',
     'filter[status]': 'PENDING,PREPARING,READY,DRIVER_ON_THE_WAY_TO_DESTINATION,CHECK_REQUESTED,CHECK_PRINTED,DRIVER_ARRIVED_AT_DESTINATION,DELIVERED,FINALIZED,CANCELLED',
     'filter[max_order_limit]': 'true',
-    'per_page': 25,
-    'page': 1
+    per_page: perPage
   };
-  
-  const urlParams = new URLSearchParams(params);
-  const fullUrl = `${baseUrl}?${urlParams.toString()}`;
 
   // Debug logging for API requests
   console.log(`🔍 General Indicators API Request for ${account.company_token}:`);
-  console.log(`   URL: ${fullUrl}`);
+  console.log(`   URL: ${baseUrl}`);
   console.log(`   Company Token: ${account.company_token}`);
   console.log(`   Start Date: ${startDate}`);
   console.log(`   End Date: ${endDate}`);
@@ -447,15 +545,44 @@ export async function fetchGeneralIndicators(account, queryParams = {}) {
   console.log(`   Making request...`);
 
   try {
-    const response = await axios.get(baseUrl, {
-      params,
-      headers
-    });
+    let allOrders = [];
+    let meta = {};
+    let page = 1;
+    const maxPages = 500;
 
-    // Debug logging for API responses
-    console.log(`📊 Orders API Response for ${account.company_token}:`);
-    console.log(`   Status: ${response.status}`);
-    console.log(`   Data: ${JSON.stringify(response.data)}`);
+    while (page <= maxPages) {
+      const response = await axios.get(baseUrl, {
+        params: { ...baseParams, page },
+        headers
+      });
+
+      if (page === 1) {
+        console.log(`📊 Orders API Response for ${account.company_token}: status ${response.status}`);
+      }
+
+      const chunk = response.data?.data;
+      meta = response.data?.meta || meta;
+
+      if (!Array.isArray(chunk) || chunk.length === 0) {
+        break;
+      }
+
+      allOrders = allOrders.concat(chunk);
+
+      const lastPage = Number(meta.last_page ?? meta.lastPage ?? page);
+      const currentPage = Number(meta.current_page ?? meta.currentPage ?? page);
+      if (Number.isFinite(lastPage) && Number.isFinite(currentPage) && currentPage >= lastPage) {
+        break;
+      }
+      if (chunk.length < perPage) {
+        break;
+      }
+      page += 1;
+    }
+
+    console.log(
+      `📦 Fetched ${allOrders.length} order rows for kitchen metrics (meta.total=${meta.total ?? 'n'}, pages=${page})`
+    );
 
     // Transform the response to match the expected format for orders
     // Try to process the actual response data
@@ -468,51 +595,34 @@ export async function fetchGeneralIndicators(account, queryParams = {}) {
       }
     };
 
-    // Process the actual orders data from the response
-    if (response.data && response.data.data && Array.isArray(response.data.data)) {
-      console.log(`🔍 Processing orders data: ${response.data.data.length} orders found`);
-      
-      // Extract orders data from the data array
-      const orders = response.data.data;
-      const meta = response.data.meta || {};
-      
-      let totalOrders = meta.total;
-      let totalSales = meta.total_amount || 0;
-      let avgTicket = totalOrders > 0 ? totalSales / totalOrders : 0;
-      
-      // Calculate kitchen performance metrics
-      const ordersWithPrepTime = orders.filter(order => 
-        order.preparing_at && order.prepared_at && 
-        order.status !== 'CANCELLED'
+    if (allOrders.length > 0 || (meta && (meta.total != null || meta.total_amount != null))) {
+      const totalOrders = meta.total ?? allOrders.length;
+      const totalSales = meta.total_amount || 0;
+      const avgTicket = totalOrders > 0 ? totalSales/totalOrders : 0;
+
+      const kitchenStats = computeKitchenPerformanceFromOrders(allOrders, timezone);
+
+      console.log(
+        `📊 Kitchen Performance: ${kitchenStats.ordersWithPrepTime} orders with prep time, avg: ${kitchenStats.averagePreparationTime.toFixed(1)} min (by service: ${Object.keys(kitchenStats.byServiceType).join(', ') || '—'})`
       );
-      
-      let averagePreparationTime = 0;
-      if (ordersWithPrepTime.length > 0) {
-        const totalPrepTime = ordersWithPrepTime.reduce((sum, order) => {
-          const preparingTime = new Date(order.preparing_at);
-          const preparedTime = new Date(order.prepared_at);
-          const prepTimeMinutes = (preparedTime - preparingTime) / (1000 * 60); // Convert to minutes
-          return sum + Math.max(0, prepTimeMinutes); // Ensure positive values
-        }, 0);
-        averagePreparationTime = totalPrepTime / ordersWithPrepTime.length;
-      }
-      
-      console.log(`📊 Kitchen Performance: ${ordersWithPrepTime.length} orders with prep time, avg: ${averagePreparationTime.toFixed(1)} minutes`);
-      
-      // Enhanced data with kitchen performance
+
       transformedData = {
         orders: totalOrders,
         sales: totalSales,
         averageTicket: avgTicket,
         kitchenPerformance: {
-          averagePreparationTime: averagePreparationTime,
-          ordersWithPrepTime: ordersWithPrepTime.length,
-          totalOrders: totalOrders
-        },
-        detailedOrders: orders // Include detailed orders for frontend processing
+          averagePreparationTime: kitchenStats.averagePreparationTime,
+          ordersWithPrepTime: kitchenStats.ordersWithPrepTime,
+          totalOrders,
+          byServiceType: kitchenStats.byServiceType,
+          byDay: kitchenStats.byDay,
+          ordersAnalyzed: allOrders.length
+        }
       };
-      
-      console.log(`📊 Processed ${totalOrders} orders with ${totalSales} total sales, avg prep time: ${averagePreparationTime.toFixed(1)} min`);
+
+      console.log(
+        `📊 Processed ${totalOrders} orders with ${totalSales} total sales, avg prep time: ${kitchenStats.averagePreparationTime.toFixed(1)} min`
+      );
     } else {
       console.log(`⚠️  No orders data found in response`);
     }

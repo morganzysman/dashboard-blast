@@ -67,7 +67,8 @@
 
               <div class="bg-emerald-50 rounded-lg p-3 text-center">
                 <p class="text-sm sm:text-lg font-bold text-emerald-600 truncate">{{ formatKitchenPerformance(getAccountKitchenPerformance(account)) }}</p>
-                <p class="text-xs text-emerald-500">{{ $t('account.kitchenPerf') }}</p>
+                <p class="text-xs text-emerald-600">{{ $t('account.kitchenPerf') }}</p>
+                <p class="text-[10px] leading-tight text-emerald-600/70 mt-0.5">{{ $t('account.kitchenPerfOverall') }}</p>
               </div>
 
               <!-- Daily Gain KPI -->
@@ -186,6 +187,76 @@
               </div>
             </div>
 
+            <!-- Kitchen prep time: by service type + by day (same date range as dashboard) -->
+            <div
+              v-if="account.success && hasKitchenBreakdown(account)"
+              class="bg-white border border-gray-100 rounded-lg p-3 mt-3"
+            >
+              <h5 class="text-xs font-medium text-gray-700 mb-1 flex items-center">
+                <svg class="w-3 h-3 mr-1 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                {{ $t('account.kitchenPrepSection') }}
+              </h5>
+              <p class="text-[11px] text-gray-500 mb-2">{{ $t('account.kitchenPrepSubtitle') }}</p>
+              <p class="text-[11px] font-medium text-gray-600 mb-1.5">{{ $t('account.kitchenByService') }}</p>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div
+                  v-for="svc in kitchenServiceTypesForAccount(account)"
+                  :key="svc"
+                  class="bg-gray-50 rounded p-2 flex items-start justify-between gap-2"
+                >
+                  <div class="flex items-center gap-2 min-w-0">
+                    <span class="w-2 h-2 rounded-full shrink-0" :style="{ backgroundColor: getServiceColor(svc) }" />
+                    <span class="text-xs font-medium text-gray-900 truncate">{{ kitchenServiceLabel(svc) }}</span>
+                  </div>
+                  <div class="text-right shrink-0">
+                    <p class="text-xs font-bold text-gray-900">{{ formatKitchenPerformance(kitchenPerfForService(account, svc)) }}</p>
+                    <p class="text-[10px] text-gray-500">{{ $t('account.kitchenOrdersWithPrep', { n: kitchenPerfForService(account, svc).ordersWithPrepTime }) }}</p>
+                  </div>
+                </div>
+              </div>
+              <template v-if="getKitchenByDay(account).length > 0">
+                <p class="text-[11px] font-medium text-gray-600 mt-3 mb-1.5">{{ $t('account.kitchenByDay') }}</p>
+                <div class="max-h-48 overflow-y-auto rounded border border-gray-100">
+                  <table class="w-full text-[11px]">
+                    <thead class="bg-gray-50 text-gray-600 sticky top-0">
+                      <tr>
+                        <th class="text-left font-medium px-2 py-1.5">{{ $t('account.kitchenTableDay') }}</th>
+                        <th class="text-left font-medium px-2 py-1.5">{{ $t('account.kitchenTableOrders') }}</th>
+                        <th class="text-right font-medium px-2 py-1.5">{{ $t('account.kitchenTableAvg') }}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr
+                        v-for="row in getKitchenByDay(account)"
+                        :key="row.date"
+                        class="border-t border-gray-100"
+                        :class="isSlowPrepDay(row, account) ? 'bg-amber-50/80' : ''"
+                      >
+                        <td class="px-2 py-1.5 text-gray-800 whitespace-nowrap">{{ row.date }}</td>
+                        <td class="px-2 py-1.5 text-gray-600">{{ row.ordersWithPrepTime }}</td>
+                        <td class="px-2 py-1.5 text-right font-semibold text-gray-900">{{ formatKitchenPerformance({ averagePreparationTime: row.averagePreparationTime }) }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <p v-if="getKitchenByDay(account).some(r => isSlowPrepDay(r, account))" class="text-[10px] text-amber-700 mt-1.5">{{ $t('account.kitchenDaySlow') }} — {{ $t('account.kitchenDaySlowHint') }}</p>
+              </template>
+            </div>
+            <div
+              v-else-if="account.success && hasOrdersApiRow(account)"
+              class="bg-white border border-gray-100 rounded-lg p-3 mt-3"
+            >
+              <h5 class="text-xs font-medium text-gray-700 mb-1 flex items-center">
+                <svg class="w-3 h-3 mr-1 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                {{ $t('account.kitchenPrepSection') }}
+              </h5>
+              <p class="text-xs text-gray-500">{{ $t('account.kitchenNoPrepDetail') }}</p>
+            </div>
+
                       <!-- Account Service Metrics -->
                       <div v-if="account.serviceMetrics" class="bg-white border border-gray-100 rounded-lg p-3 mt-3">
               <div class="flex items-center justify-between mb-2">
@@ -272,6 +343,7 @@
 
 <script setup>
 import { ref, computed, watch, nextTick } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../stores/auth'
 import { calculateDaysInPeriod as calcDays } from '../composables/useProfitability'
 import Popover from './ui/Popover.vue'
@@ -286,7 +358,10 @@ const props = defineProps({
 })
 
 const authStore = useAuthStore()
+const { t } = useI18n()
 const collapsedServiceMetrics = ref(new Set())
+
+const KITCHEN_SERVICE_ORDER = ['TABLE', 'ONSITE', 'TAKEAWAY', 'DELIVERY', 'OTHER']
 
 // Force re-computation trigger
 const forceRecompute = ref(0)
@@ -661,7 +736,8 @@ const getServiceColor = (serviceType) => {
     'TABLE': '#4F46E5', // Indigo
     'ONSITE': '#10B981', // Green
     'TAKEAWAY': '#F59E0B', // Amber
-    'DELIVERY': '#EF4444' // Red
+    'DELIVERY': '#EF4444', // Red
+    'OTHER': '#6B7280'
   }
   return colors[serviceType] || '#6B7280' // Default color
 }
@@ -679,17 +755,54 @@ const getAccountTotalTips = (account) => {
 }
 
 const getAccountKitchenPerformance = (account) => {
-  if (!account.success) return { averagePreparationTime: 0, ordersWithPrepTime: 0 }
-  
-  // Get kitchen performance data from orders data
+  const empty = {
+    averagePreparationTime: 0,
+    ordersWithPrepTime: 0,
+    byServiceType: {},
+    byDay: []
+  }
+  if (!account.success) return { ...empty }
+
   if (props.ordersData && props.ordersData.accounts) {
     const accountData = props.ordersData.accounts.find(acc => acc.accountKey === account.accountKey)
     if (accountData && accountData.kitchenPerformance) {
-      return accountData.kitchenPerformance
+      return { ...empty, ...accountData.kitchenPerformance }
     }
   }
-  
-  return { averagePreparationTime: 0, ordersWithPrepTime: 0 }
+
+  return { ...empty }
+}
+
+const hasOrdersApiRow = (account) => {
+  return !!(props.ordersData?.accounts?.some(a => a.accountKey === account.accountKey))
+}
+
+const hasKitchenBreakdown = (account) => {
+  return getAccountKitchenPerformance(account).ordersWithPrepTime > 0
+}
+
+const kitchenServiceLabel = (type) => t(`account.kitchenService${type}`)
+
+const kitchenServiceTypesForAccount = (account) => {
+  const by = getAccountKitchenPerformance(account).byServiceType || {}
+  return KITCHEN_SERVICE_ORDER.filter((k) => by[k] && by[k].ordersWithPrepTime > 0)
+}
+
+const kitchenPerfForService = (account, serviceKey) => {
+  const by = getAccountKitchenPerformance(account).byServiceType || {}
+  const row = by[serviceKey]
+  if (!row) return { averagePreparationTime: 0, ordersWithPrepTime: 0 }
+  return row
+}
+
+const getKitchenByDay = (account) => {
+  return getAccountKitchenPerformance(account).byDay || []
+}
+
+const isSlowPrepDay = (dayRow, account) => {
+  const overall = getAccountKitchenPerformance(account).averagePreparationTime
+  if (!overall || overall <= 0 || !dayRow?.averagePreparationTime) return false
+  return dayRow.averagePreparationTime > overall * 1.25
 }
 
 const formatKitchenPerformance = (performanceData) => {

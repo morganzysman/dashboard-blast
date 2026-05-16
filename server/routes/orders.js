@@ -41,7 +41,10 @@ function aggregateOrdersData(accountsData) {
       const kitchenPerformance = data.kitchenPerformance || {
         averagePreparationTime: 0,
         ordersWithPrepTime: 0,
-        totalOrders: 0
+        totalOrders: 0,
+        byServiceType: {},
+        byDay: [],
+        ordersAnalyzed: 0
       };
       
       totalOrders += accountOrders;
