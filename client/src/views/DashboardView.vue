@@ -25,11 +25,13 @@
       :orders-data="ordersData"
       :profitability-data="profitabilityData"
       :kitchen-sla-response="kitchenSlaResponse"
+      :utility-costs-catalog="utilityCostsCatalog"
       :current-date-range="currentDateRange"
       :selected-date-range="selectedDateRange"
       :loading="loading"
       :key="`${currentDateRange.start}-${currentDateRange.end}-${profitabilityData?.period?.start || ''}-${profitabilityData?.period?.end || ''}`"
       @kitchen-sla-saved="onKitchenSlaSaved"
+      @utility-costs-changed="onUtilityCostsChanged"
     />
 
     <!-- Order Evolution Chart Component -->
@@ -122,6 +124,26 @@ const ordersData = ref(null)
 const profitabilityData = ref(null)
 const serviceMetricsData = ref(null)
 const kitchenSlaResponse = ref(null)
+const utilityCostsCatalog = ref([])
+
+const fetchUtilityCostsCatalog = async () => {
+  try {
+    const data = await api.get('/api/utility-costs')
+    if (data.success) {
+      utilityCostsCatalog.value = data.data || []
+    } else {
+      utilityCostsCatalog.value = []
+    }
+  } catch (e) {
+    console.warn('utility-costs catalog fetch failed', e)
+    utilityCostsCatalog.value = []
+  }
+}
+
+const onUtilityCostsChanged = async () => {
+  await fetchUtilityCostsCatalog()
+  await fetchProfitabilityData()
+}
 const loading = ref(false)
 const error = ref('')
 
@@ -454,6 +476,7 @@ const refreshData = () => {
   fetchOrdersData(currentDateRange.value)
   fetchServiceMetricsData()
   fetchProfitabilityData()
+  fetchUtilityCostsCatalog()
   fetchKitchenSla()
 }
 
@@ -482,6 +505,7 @@ onMounted(() => {
   fetchOrdersData(currentDateRange.value)
   fetchServiceMetricsData()
   fetchProfitabilityData()
+  fetchUtilityCostsCatalog()
   fetchKitchenSla()
 })
 

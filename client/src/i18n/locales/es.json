@@ -523,6 +523,7 @@
   "rentability": {
     "title": "Análisis de Rentabilidad",
     "subtitle": "Analizar el rendimiento del negocio y los costos",
+    "perAccountNote": "También puedes editar costos y comisiones en « Ajustes de la cuenta » en cada tienda del panel.",
     "period": "Período",
     "account": "Cuenta",
     "revenue": "Ingresos",
@@ -882,6 +883,8 @@
     "kitchenSlaSave": "Guardar objetivos",
     "kitchenSlaReset": "Usar valores por defecto",
     "accountKpiToggle": "Indicadores de la cuenta",
+    "accountSettings": "Ajustes de la cuenta",
+    "accountSettingsHint": "Objetivos de preparación (SLA), costos fijos mensuales y comisiones de pago / entrega para esta ubicación.",
     "kitchenSectionToggle": "Preparación y SLA",
     "kitchenOutOfSla": "Fuera de objetivo (peores primero)",
     "kitchenOutOfSlaEmpty": "Ningún pedido superó el tiempo objetivo en este período.",

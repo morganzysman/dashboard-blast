@@ -433,6 +433,7 @@
   "rentability": {
     "title": "Profitability Analysis",
     "subtitle": "Manage monthly utility costs and payment method fees for profitability analysis",
+    "perAccountNote": "You can also edit costs and fees under Account settings on each store card on the Dashboard.",
     "period": "Period",
     "account": "Account",
     "revenue": "Revenue",
@@ -977,6 +978,8 @@
     "kitchenSlaSave": "Save goals",
     "kitchenSlaReset": "Use defaults",
     "accountKpiToggle": "Account KPIs",
+    "accountSettings": "Account settings",
+    "accountSettingsHint": "Kitchen prep goals (SLA), monthly fixed costs, and card / delivery fees for this location.",
     "kitchenSectionToggle": "Kitchen prep & SLA",
     "kitchenOutOfSla": "Late vs goal (worst first)",
     "kitchenOutOfSlaEmpty": "No orders exceeded the prep goal in this period.",

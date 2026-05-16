@@ -518,6 +518,7 @@
   "rentability": {
     "title": "Análise de Rentabilidade",
     "subtitle": "Analisar performance empresarial e custos",
+    "perAccountNote": "Você também pode editar custos e taxas em « Configurações da conta » em cada loja no painel.",
     "period": "Período",
     "account": "Conta",
     "revenue": "Receita",
@@ -877,6 +878,8 @@
     "kitchenSlaSave": "Salvar metas",
     "kitchenSlaReset": "Usar padrões",
     "accountKpiToggle": "Indicadores da conta",
+    "accountSettings": "Configurações da conta",
+    "accountSettingsHint": "Metas de preparo (SLA), custos fixos mensais e taxas de pagamento / entrega para esta unidade.",
     "kitchenSectionToggle": "Preparo e SLA",
     "kitchenOutOfSla": "Fora da meta (piores primeiro)",
     "kitchenOutOfSlaEmpty": "Nenhum pedido acima do tempo meta neste período.",
