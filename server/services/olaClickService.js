@@ -116,6 +116,31 @@ export function getOrderId(order) {
   return String(id);
 }
 
+/**
+ * Best-effort short, human-friendly OlaClick order identifier (the one shown
+ * to staff in the OlaClick UI — e.g. "BMR0042" / "00123"). We try the names
+ * we've seen in the wild, falling back through `code`/`number` etc. so the
+ * helper degrades gracefully if a particular tenant doesn't return the
+ * canonical `public_id`. Empty string when nothing usable is present so the
+ * UI can fall back to the long UUID for support lookups.
+ */
+export function getOrderPublicId(order) {
+  const v =
+    order?.public_id ??
+    order?.publicId ??
+    order?.code ??
+    order?.order_code ??
+    order?.daily_id ??
+    order?.dailyId ??
+    order?.display_id ??
+    order?.displayId ??
+    order?.reference ??
+    order?.number ??
+    order?.order_number;
+  if (v == null || v === '') return '';
+  return String(v);
+}
+
 function round1(n) {
   return Math.round(Number(n) * 10) / 10;
 }
@@ -255,6 +280,7 @@ export function computeKitchenPerformanceFromOrders(orders, timeZone, slaCustomO
       if (mins > target) {
         raw.push({
           orderId: getOrderId(o),
+          publicId: getOrderPublicId(o),
           channelKey: ch,
           prepMinutes: round1(mins),
           targetMinutes: target,

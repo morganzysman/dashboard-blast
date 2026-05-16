@@ -237,6 +237,7 @@
     "title": "Kitchen SLA",
     "subtitle": "Per-employee prep performance for users tagged as kitchen. Each order is attributed to every cook who was clocked-in when it was prepared.",
     "subtitleHub": "Performance per service per account is the main scoreboard; the per-cook leaderboard below it is the same data attributed to whoever was clocked-in.",
+    "rateInfoTooltip": "Share of prepped orders that finished within the per-channel SLA target. Targets are configured in Setup → SLA goals; orders without a real prep stamp (closed without being marked ready) are excluded.",
     "matrixTitle": "Performance per service per account",
     "matrixSubtitle": "On-time % of prepped orders, with order count and average prep time. Counts every prepped order — independent of cook tagging.",
     "matrixEmpty": "No kitchen orders with prep stamps in this window.",

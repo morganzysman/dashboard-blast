@@ -25,10 +25,15 @@
             </span>
             <span
               v-if="companyKitchen.sla"
-              class="rounded-full bg-teal-100 text-teal-800 px-2 py-0.5 font-medium"
+              class="inline-flex items-center gap-1 rounded-full bg-teal-100 text-teal-800 px-2 py-0.5 font-medium"
             >
               SLA: {{ companyKitchen.sla.overallSlaScore }}
               <span class="font-normal text-teal-700">· {{ onTimeLine(companyKitchen.sla) }}</span>
+              <span
+                class="text-teal-700/70 cursor-help select-none leading-none"
+                :title="$t('kitchenSla.rateInfoTooltip')"
+                aria-label="info"
+              >ⓘ</span>
             </span>
             <span
               v-if="companyKitchen.sla?.slaBreachTotal"
@@ -41,47 +46,6 @@
       </summary>
 
       <div class="border-t border-gray-100 px-4 sm:px-6 pb-4 space-y-4">
-        <div v-if="serviceScorecard.length">
-          <div class="flex items-baseline justify-between mb-1.5">
-            <p class="text-[11px] font-semibold text-gray-800">{{ $t('companyKitchen.serviceScorecardTitle') }}</p>
-            <p class="text-[10px] text-gray-500">{{ $t('companyKitchen.serviceScorecardHint') }}</p>
-          </div>
-          <div class="grid grid-cols-2 lg:grid-cols-4 gap-2">
-            <div
-              v-for="row in serviceScorecard"
-              :key="row.channelKey"
-              class="rounded-lg border bg-white p-2.5 flex flex-col gap-1"
-              :class="onTimeBorderClass(row.onTimeRate)"
-            >
-              <div class="flex items-start justify-between gap-1">
-                <p class="text-[11px] font-semibold text-gray-800 leading-tight truncate" :title="channelLabel(row.channelKey)">
-                  {{ channelLabel(row.channelKey) }}
-                </p>
-                <span
-                  class="rounded-full px-1.5 py-0.5 text-[10px] font-bold leading-none whitespace-nowrap"
-                  :class="onTimePillClass(row.onTimeRate)"
-                >
-                  {{ formatPct(row.onTimeRate) }}
-                </span>
-              </div>
-              <div class="text-[10px] text-gray-600 grid grid-cols-3 gap-1 mt-0.5">
-                <div class="flex flex-col">
-                  <span class="text-gray-500 leading-tight">{{ $t('companyKitchen.orders') }}</span>
-                  <span class="font-semibold text-gray-900">{{ row.ordersWithPrepTime }}</span>
-                </div>
-                <div class="flex flex-col">
-                  <span class="text-gray-500 leading-tight">{{ $t('account.kitchenTableGoal') }}</span>
-                  <span class="font-semibold text-gray-900">{{ row.targetMinutes ?? '—' }}′</span>
-                </div>
-                <div class="flex flex-col">
-                  <span class="text-gray-500 leading-tight">{{ $t('account.kitchenTableAvg') }}</span>
-                  <span class="font-semibold text-gray-900">{{ formatAvg(row.averagePreparationTime) }}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
         <div v-if="breaches.length">
           <p class="text-xs font-medium text-gray-800 mb-1">{{ $t('companyKitchen.outOfSlaTitle') }}</p>
           <p v-if="truncated" class="text-[10px] text-amber-800 mb-1">{{ $t('companyKitchen.breachTruncated') }}</p>
@@ -102,7 +66,10 @@
                   class="border-t border-gray-100"
                 >
                   <td class="px-2 py-1.5 text-gray-800 truncate max-w-[120px]" :title="b.accountName">{{ b.accountName }}</td>
-                  <td class="px-2 py-1.5 font-mono text-gray-900">{{ b.orderId || '—' }}</td>
+                  <td
+                    class="px-2 py-1.5 font-mono text-gray-900"
+                    :title="b.orderId"
+                  >{{ b.publicId || b.orderId || '—' }}</td>
                   <td class="px-2 py-1.5 text-gray-700">{{ channelLabel(b.channelKey) }}</td>
                   <td class="px-2 py-1.5 text-right font-semibold text-amber-800">
                     +{{ b.delayOverTargetMinutes }}′
@@ -141,50 +108,12 @@ onBeforeUnmount(() => {
   if (mql) mql.removeEventListener('change', applyMq)
 })
 
-const ch = computed(() => props.companyKitchen?.byKitchenChannel || {})
-
-// Per-service on-time scorecard. We surface every channel that actually had
-// orders with a prep time in the period; sorting by on-time rate ascending
-// puts the worst performers first so attention naturally lands on the channel
-// that needs intervention. This is the baseline performance score.
-const serviceScorecard = computed(() => {
-  const rows = Object.entries(ch.value)
-    .filter(([, v]) => v && v.ordersWithPrepTime > 0)
-    .map(([channelKey, v]) => ({ channelKey, ...v }))
-  rows.sort((a, b) => {
-    const ar = a.onTimeRate ?? 0
-    const br = b.onTimeRate ?? 0
-    if (ar !== br) return ar - br
-    return (b.ordersWithPrepTime || 0) - (a.ordersWithPrepTime || 0)
-  })
-  return rows
-})
-
-function onTimePillClass(r) {
-  if (r == null) return 'bg-gray-100 text-gray-700'
-  if (r >= 0.9) return 'bg-emerald-100 text-emerald-800'
-  if (r >= 0.7) return 'bg-amber-100 text-amber-800'
-  return 'bg-rose-100 text-rose-800'
-}
-
-function onTimeBorderClass(r) {
-  if (r == null) return 'border-gray-100'
-  if (r >= 0.9) return 'border-emerald-200/80'
-  if (r >= 0.7) return 'border-amber-200/80'
-  return 'border-rose-200/80'
-}
-
 const breaches = computed(() => props.companyKitchen?.sla?.slaBreaches || [])
 const truncated = computed(() => props.companyKitchen?.sla?.slaBreachesTruncated)
 
 function formatAvg(m) {
   if (m == null || Number.isNaN(m)) return '—'
   return `${Math.round(m)}m`
-}
-
-function formatPct(r) {
-  if (r == null || Number.isNaN(r)) return '—'
-  return `${Math.round(r * 100)}%`
 }
 
 function onTimeLine(sla) {

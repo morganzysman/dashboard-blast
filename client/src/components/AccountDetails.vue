@@ -249,7 +249,10 @@
                             :key="`${b.orderId}-${i}`"
                             class="border-t border-gray-100"
                           >
-                            <td class="px-2 py-1.5 font-mono text-gray-900">{{ b.orderId || '—' }}</td>
+                            <td
+                              class="px-2 py-1.5 font-mono text-gray-900"
+                              :title="b.orderId"
+                            >{{ b.publicId || b.orderId || '—' }}</td>
                             <td class="px-2 py-1.5 text-gray-700">{{ kitchenChannelLabel(b.channelKey) }}</td>
                             <td class="px-2 py-1.5 text-right text-gray-600">{{ b.targetMinutes }}′</td>
                             <td class="px-2 py-1.5 text-right font-medium text-gray-900">{{ Math.round(b.prepMinutes) }}′</td>
@@ -261,98 +264,55 @@
                     <p v-else class="text-[11px] text-gray-500">{{ $t('account.kitchenOutOfSlaEmpty') }}</p>
                   </div>
 
-                  <div v-if="kitchenSlaRanking(account).length">
-                    <div class="flex items-baseline justify-between mb-1.5">
-                      <p class="text-[11px] font-semibold text-gray-800">{{ $t('account.kitchenServiceScorecard') }}</p>
-                      <p class="text-[10px] text-gray-500">{{ $t('companyKitchen.serviceScorecardHint') }}</p>
-                    </div>
-                    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-                      <div
-                        v-for="row in kitchenSlaRanking(account)"
-                        :key="row.channelKey"
-                        class="rounded-lg border bg-white p-2 flex flex-col gap-1"
-                        :class="onTimeBorderClass(row.onTimeRate)"
-                      >
-                        <div class="flex items-start justify-between gap-1">
-                          <p class="text-[11px] font-semibold text-gray-800 leading-tight truncate" :title="kitchenChannelLabel(row.channelKey)">
-                            {{ kitchenChannelLabel(row.channelKey) }}
-                          </p>
+                  <details v-if="kitchenSlaRanking(account).length" class="rounded border border-gray-100">
+                    <summary class="cursor-pointer list-none px-2 py-2 [&::-webkit-details-marker]:hidden">
+                      <div class="flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-1.5 min-w-0">
+                          <p class="text-[11px] font-semibold text-gray-800 truncate">{{ $t('account.kitchenServiceScorecard') }}</p>
                           <span
-                            class="rounded-full px-1.5 py-0.5 text-[10px] font-bold leading-none whitespace-nowrap"
-                            :class="onTimePillClass(row.onTimeRate)"
-                          >
-                            {{ formatPct(row.onTimeRate) }}
-                          </span>
+                            class="text-gray-400 cursor-help select-none leading-none text-[11px]"
+                            :title="$t('kitchenSla.rateInfoTooltip')"
+                            aria-label="info"
+                          >ⓘ</span>
                         </div>
-                        <div class="text-[10px] text-gray-600 grid grid-cols-3 gap-1 mt-0.5">
-                          <div class="flex flex-col">
-                            <span class="text-gray-500 leading-tight">{{ $t('companyKitchen.orders') }}</span>
-                            <span class="font-semibold text-gray-900">{{ row.ordersWithPrepTime }}</span>
-                          </div>
-                          <div class="flex flex-col">
-                            <span class="text-gray-500 leading-tight">{{ $t('account.kitchenTableGoal') }}</span>
-                            <span class="font-semibold text-gray-900">{{ row.targetMinutes ?? '—' }}′</span>
-                          </div>
-                          <div class="flex flex-col">
-                            <span class="text-gray-500 leading-tight">{{ $t('account.kitchenTableAvg') }}</span>
-                            <span class="font-semibold text-gray-900">{{ formatKitchenPerformance({ averagePreparationTime: row.averagePreparationTime }) }}</span>
-                          </div>
-                        </div>
+                        <p class="text-[10px] text-gray-500 shrink-0">{{ $t('companyKitchen.serviceScorecardHint') }}</p>
                       </div>
-                    </div>
-                  </div>
-
-                  <details v-if="kitchenServiceTypesForAccount(account).length" class="rounded border border-gray-100">
-                    <summary class="text-[11px] font-medium px-2 py-2 cursor-pointer list-none [&::-webkit-details-marker]:hidden">{{ $t('account.kitchenByServiceDetails') }}</summary>
+                    </summary>
                     <div class="p-2 pt-0">
-                      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
                         <div
-                          v-for="svc in kitchenServiceTypesForAccount(account)"
-                          :key="svc"
-                          class="bg-gray-50 rounded p-2 flex items-start justify-between gap-2"
+                          v-for="row in kitchenSlaRanking(account)"
+                          :key="row.channelKey"
+                          class="rounded-lg border bg-white p-2 flex flex-col gap-1"
+                          :class="onTimeBorderClass(row.onTimeRate)"
                         >
-                          <div class="flex items-center gap-2 min-w-0">
-                            <span class="w-2 h-2 rounded-full shrink-0" :style="{ backgroundColor: getServiceColor(svc) }" />
-                            <span class="text-xs font-medium text-gray-900 truncate">{{ kitchenServiceLabel(svc) }}</span>
+                          <div class="flex items-start justify-between gap-1">
+                            <p class="text-[11px] font-semibold text-gray-800 leading-tight truncate" :title="kitchenChannelLabel(row.channelKey)">
+                              {{ kitchenChannelLabel(row.channelKey) }}
+                            </p>
+                            <span
+                              class="rounded-full px-1.5 py-0.5 text-[10px] font-bold leading-none whitespace-nowrap"
+                              :class="onTimePillClass(row.onTimeRate)"
+                            >
+                              {{ formatPct(row.onTimeRate) }}
+                            </span>
                           </div>
-                          <div class="text-right shrink-0">
-                            <p class="text-xs font-bold text-gray-900">{{ formatKitchenPerformance(kitchenPerfForService(account, svc)) }}</p>
-                            <p class="text-[10px] text-gray-500">{{ $t('account.kitchenOrdersWithPrep', { n: kitchenPerfForService(account, svc).ordersWithPrepTime }) }}</p>
+                          <div class="text-[10px] text-gray-600 grid grid-cols-3 gap-1 mt-0.5">
+                            <div class="flex flex-col">
+                              <span class="text-gray-500 leading-tight">{{ $t('companyKitchen.orders') }}</span>
+                              <span class="font-semibold text-gray-900">{{ row.ordersWithPrepTime }}</span>
+                            </div>
+                            <div class="flex flex-col">
+                              <span class="text-gray-500 leading-tight">{{ $t('account.kitchenTableGoal') }}</span>
+                              <span class="font-semibold text-gray-900">{{ row.targetMinutes ?? '—' }}′</span>
+                            </div>
+                            <div class="flex flex-col">
+                              <span class="text-gray-500 leading-tight">{{ $t('account.kitchenTableAvg') }}</span>
+                              <span class="font-semibold text-gray-900">{{ formatKitchenPerformance({ averagePreparationTime: row.averagePreparationTime }) }}</span>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  </details>
-
-                  <details v-if="getKitchenByDay(account).length > 0" class="rounded border border-gray-100">
-                    <summary class="text-[11px] font-medium px-2 py-2 cursor-pointer list-none [&::-webkit-details-marker]:hidden">{{ $t('account.kitchenByDayDetails') }}</summary>
-                    <div class="p-2 pt-0">
-                      <div class="max-h-48 overflow-y-auto rounded border border-gray-100">
-                        <table class="w-full text-[11px]">
-                          <thead class="bg-gray-50 text-gray-600 sticky top-0">
-                            <tr>
-                              <th class="text-left font-medium px-2 py-1.5">{{ $t('account.kitchenTableDay') }}</th>
-                              <th class="text-left font-medium px-2 py-1.5">{{ $t('account.kitchenTableOrders') }}</th>
-                              <th class="text-right font-medium px-2 py-1.5">{{ $t('account.kitchenTableAvg') }}</th>
-                              <th v-if="getKitchenByDay(account).some(r => r.onTimeRate != null)" class="text-right font-medium px-2 py-1.5">{{ $t('account.kitchenTableOnTime') }}</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            <tr
-                              v-for="row in getKitchenByDay(account)"
-                              :key="row.date"
-                              class="border-t border-gray-100"
-                              :class="isSlowPrepDay(row, account) ? 'bg-amber-50/80' : ''"
-                            >
-                              <td class="px-2 py-1.5 text-gray-800 whitespace-nowrap">{{ row.date }}</td>
-                              <td class="px-2 py-1.5 text-gray-600">{{ row.ordersWithPrepTime }}</td>
-                              <td class="px-2 py-1.5 text-right font-semibold text-gray-900">{{ formatKitchenPerformance({ averagePreparationTime: row.averagePreparationTime }) }}</td>
-                              <td v-if="row.onTimeRate != null" class="px-2 py-1.5 text-right text-gray-700">{{ formatPct(row.onTimeRate) }}</td>
-                            </tr>
-                          </tbody>
-                        </table>
-                      </div>
-                      <p v-if="getKitchenByDay(account).some(r => isSlowPrepDay(r, account))" class="text-[10px] text-amber-700 mt-1.5">{{ $t('account.kitchenDaySlow') }} — {{ $t('account.kitchenDaySlowHint') }}</p>
                     </div>
                   </details>
                 </div>
@@ -474,9 +434,6 @@ const authStore = useAuthStore()
 const { t } = useI18n()
 const collapsedServiceMetrics = ref(new Set())
 
-const KITCHEN_SERVICE_ORDER = ['TABLE', 'ONSITE', 'TAKEAWAY', 'DELIVERY', 'OTHER']
-
-// Force re-computation trigger
 const forceRecompute = ref(0)
 
 const isDesktop = ref(true)
@@ -908,30 +865,6 @@ const hasOrdersApiRow = (account) => {
 
 const hasKitchenBreakdown = (account) => {
   return getAccountKitchenPerformance(account).ordersWithPrepTime > 0
-}
-
-const kitchenServiceLabel = (type) => t(`account.kitchenService${type}`)
-
-const kitchenServiceTypesForAccount = (account) => {
-  const by = getAccountKitchenPerformance(account).byServiceType || {}
-  return KITCHEN_SERVICE_ORDER.filter((k) => by[k] && by[k].ordersWithPrepTime > 0)
-}
-
-const kitchenPerfForService = (account, serviceKey) => {
-  const by = getAccountKitchenPerformance(account).byServiceType || {}
-  const row = by[serviceKey]
-  if (!row) return { averagePreparationTime: 0, ordersWithPrepTime: 0 }
-  return row
-}
-
-const getKitchenByDay = (account) => {
-  return getAccountKitchenPerformance(account).byDay || []
-}
-
-const isSlowPrepDay = (dayRow, account) => {
-  const overall = getAccountKitchenPerformance(account).averagePreparationTime
-  if (!overall || overall <= 0 || !dayRow?.averagePreparationTime) return false
-  return dayRow.averagePreparationTime > overall * 1.25
 }
 
 const kitchenSlaRanking = (account) => {

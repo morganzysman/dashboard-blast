@@ -236,6 +236,7 @@
     "title": "SLA cuisine",
     "subtitle": "Performance de préparation par employé pour les utilisateurs marqués comme cuisine. Chaque commande est attribuée à chaque cuisinier pointé au moment de la préparation.",
     "subtitleHub": "La performance par service et par compte est le tableau principal ; le classement par cuisinier en-dessous reprend les mêmes données attribuées à qui était pointé.",
+    "rateInfoTooltip": "Part des commandes préparées dans la cible SLA du canal. Les cibles se configurent dans Setup → Objectifs SLA ; les commandes sans vraie horodatage de préparation (fermées sans être marquées prêtes) sont exclues.",
     "matrixTitle": "Performance par service et par compte",
     "matrixSubtitle": "% de commandes à l'heure préparées, avec nombre et temps de prép. moyen. Compte chaque commande préparée, indépendamment du marquage des cuisiniers.",
     "matrixEmpty": "Aucune commande cuisine avec horodatage de prép. sur cette période.",

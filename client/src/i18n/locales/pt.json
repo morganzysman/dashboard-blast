@@ -236,6 +236,7 @@
     "title": "SLA da cozinha",
     "subtitle": "Desempenho de preparação por funcionário para usuários marcados como cozinha. Cada pedido é atribuído a cada cozinheiro que estava registrado quando foi preparado.",
     "subtitleHub": "O desempenho por serviço e por conta é o painel principal; o ranking por cozinheiro abaixo são os mesmos dados atribuídos a quem estava registrado.",
+    "rateInfoTooltip": "Percentual de pedidos preparados dentro da meta de SLA do canal. As metas são configuradas em Setup → Metas de SLA; pedidos sem marca real de preparação (fechados sem serem marcados como prontos) são excluídos.",
     "matrixTitle": "Desempenho por serviço e por conta",
     "matrixSubtitle": "% de pedidos no prazo preparados, com contagem e tempo médio de prep. Conta cada pedido preparado, independente da marcação de cozinheiros.",
     "matrixEmpty": "Sem pedidos de cozinha com marcas de preparação neste período.",
