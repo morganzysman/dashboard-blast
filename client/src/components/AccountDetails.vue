@@ -229,7 +229,7 @@
                 <div class="p-3 space-y-3">
                   <p class="text-[11px] text-gray-500">{{ $t('account.kitchenPrepSubtitle') }}</p>
 
-                  <details v-if="kitchenSlaRanking(account).length" class="rounded border border-gray-100">
+                  <details v-if="kitchenSlaRanking(account).length" open class="rounded border border-gray-100">
                     <summary class="cursor-pointer list-none px-2 py-2 [&::-webkit-details-marker]:hidden">
                       <div class="flex items-center justify-between gap-2">
                         <div class="flex items-center gap-1.5 min-w-0">
