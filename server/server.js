@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -65,13 +66,28 @@ if (config.nodeEnv === 'production') {
 app.use(cors());
 app.use(express.json());
 
-// Serve static files from client directory in development
-// In production, this would typically serve from a dist/build directory
-const clientPath = config.nodeEnv === 'production' 
-  ? path.join(__dirname, '..', 'dist')
-  : path.join(__dirname, '..', 'client');
+// Resolve the static-asset root defensively. We *always* prefer the built
+// `dist/` output when it exists on disk, regardless of NODE_ENV. This survives
+// platforms (looking at you, Railway) where NODE_ENV isn't propagated to the
+// runtime even though the build phase succeeded — the previous gate on
+// `config.nodeEnv === 'production'` was silently falling back to the source
+// `client/` tree, which serves an `index.html` whose `<script type="module"
+// src="/src/main.js">` triggers `Failed to resolve module specifier "vue"` in
+// the browser. We still fall back to `client/` for true local dev where no
+// build has been produced yet.
+const distPath = path.join(__dirname, '..', 'dist');
+const clientSourcePath = path.join(__dirname, '..', 'client');
+const distIndexExists = fs.existsSync(path.join(distPath, 'index.html'));
+const clientPath = distIndexExists ? distPath : clientSourcePath;
 
-console.log(`📁 Serving static files from: ${clientPath}`);
+if (distIndexExists) {
+  console.log(`📁 Serving built bundle from: ${clientPath}`);
+} else {
+  console.warn(
+    `⚠️  No dist/index.html found at ${distPath}. Falling back to source at ${clientPath}. ` +
+    `Browsers will fail to load bare module imports — run "npm run build" before deploying.`
+  );
+}
 
 // Disable caching for all static assets to prevent cache issues after deployment
 app.use((req, res, next) => {
