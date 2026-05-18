@@ -490,6 +490,22 @@ const updateUser = async (userId, userData) => {
       }
     }
   }
+
+  // Update job_type if changed. Dedicated admin-scoped endpoint with its own
+  // audit log; the modal sends null for non-employees so we don't leak a stale
+  // job_type onto an account whose role just changed.
+  if (Object.prototype.hasOwnProperty.call(userData, 'job_type')) {
+    const nextJobType = userData.job_type || null
+    const previousJobType = current?.job_type || null
+    if (nextJobType !== previousJobType) {
+      try {
+        await api.updateUserJobType(userId, nextJobType)
+      } catch (error) {
+        console.error('Failed to update user job_type:', error)
+        throw new Error(error.data?.error || error.message || 'Failed to update job type')
+      }
+    }
+  }
 }
 
 const toggleUserStatus = async (user) => {

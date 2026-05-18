@@ -91,6 +91,16 @@
           </div>
         </div>
 
+        <!-- Job Type (for employees) -->
+        <div v-if="form.role === 'employee'">
+          <label class="form-label">{{ $t('admin.jobType') }}</label>
+          <select v-model="form.job_type" class="form-input">
+            <option value="">—</option>
+            <option value="kitchen">{{ $t('admin.jobTypeKitchen') }}</option>
+            <option value="waiter">{{ $t('admin.jobTypeWaiter') }}</option>
+          </select>
+        </div>
+
         <!-- Company Selection (super-admin only) -->
         <div v-if="isSuperAdmin">
           <label class="form-label">{{ $t('modals.userModal.assignedCompany') }}</label>
@@ -337,7 +347,8 @@ const form = reactive({
   role: '',
   company_id: '',
   hourly_rate: null,
-  hired_at: ''
+  hired_at: '',
+  job_type: ''
 })
 
 // Companies list for dropdown (super-admin only)
@@ -367,6 +378,7 @@ watch(() => props.user, (user) => {
     form.company_id = (user.company && user.company.id) || user.company_id || ''
     form.hourly_rate = user.hourly_rate ?? null
     form.hired_at = user.hired_at || ''
+    form.job_type = user.job_type || ''
   }
 }, { immediate: true })
 
@@ -381,7 +393,8 @@ const handleSubmit = () => {
     role: form.role,
     company_id: form.company_id || undefined,
     hourly_rate: form.hourly_rate != null ? Number(form.hourly_rate) : undefined,
-    hired_at: form.hired_at || undefined
+    hired_at: form.hired_at || undefined,
+    job_type: form.role === 'employee' ? (form.job_type || null) : null
   }
 
   if (!props.isEdit) {
