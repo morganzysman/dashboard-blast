@@ -147,12 +147,35 @@ function round1(n) {
 
 /**
  * Kitchen prep stats from orders: overall average, per service_type, per channel, SLA scoring, per day.
+ *
+ * Filter asymmetry vs. `employeeSlaService.computeAndStoreEmployeeSlaForDay`:
+ *   - This function's `ordersWithPrep` requires `preparing_at && prepared_at && status !== 'CANCELLED' &&
+ *     !isPrepStampLikelyMissing`. That set drives `slaBreaches` and the per-channel/per-day stats.
+ *   - The coverage denominator built by `employeeSlaService` (unreliable_prep_count) requires
+ *     `prepared_at && hasCloseStamp && isPrepStampLikelyMissing` — i.e. the auto-close artefacts only.
+ *   The two sets are not strictly complementary: orders with `prepared_at` set but no `preparing_at` are
+ *   counted as unreliable in coverage but excluded from the breach pool entirely, and cancelled orders
+ *   are excluded from breaches regardless. This is intentional (cancelled / never-prepped orders should
+ *   never appear in the "out of SLA" list), but keep the two filters in lockstep when changing the
+ *   60-second threshold.
  * @param {unknown[]} orders
  * @param {string} timeZone
  * @param {Record<string, number>|null} [slaCustomOverrides] When non-null, enables SLA / byKitchenChannel / per-day on-time.
  */
 export function computeKitchenPerformanceFromOrders(orders, timeZone, slaCustomOverrides = null) {
   const ordersWithPrep = (orders || []).filter((o) => kitchenPrepMinutes(o) != null);
+
+  // Mirror of the coverage denominator built by `employeeSlaService` so the breach payload can
+  // surface the same "filtered out as auto-close artefacts" count the SLA-coverage indicator uses.
+  // Counts orders where `prepared_at` and a close stamp are both set BUT `prepared_at` lands within
+  // 60s of close — i.e. waiter never marked prep, OlaClick stamped both at close time.
+  let unreliablePrepCount = 0;
+  for (const o of orders || []) {
+    if (!o?.prepared_at) continue;
+    const hasCloseStamp = !!(o.closed_at || o.finished_at || o.completed_at);
+    if (!hasCloseStamp) continue;
+    if (isPrepStampLikelyMissing(o)) unreliablePrepCount += 1;
+  }
   let averagePreparationTime = 0;
   if (ordersWithPrep.length > 0) {
     averagePreparationTime =
@@ -271,9 +294,30 @@ export function computeKitchenPerformanceFromOrders(orders, timeZone, slaCustomO
   /** Orders that exceeded SLA — for ops follow-up in OlaClick */
   let slaBreaches = [];
   let slaBreachTotal = 0;
+  let defensivelyDroppedFromBreaches = 0;
   if (scoreSla && ordersWithPrep.length > 0) {
     const raw = [];
     for (const o of ordersWithPrep) {
+      // Defensive: kitchenPrepMinutes() already enforces this when building
+      // ordersWithPrep, but make the dependency explicit so future refactors
+      // (or alternate prep-minute calculators) don't accidentally drop the
+      // filter and let auto-close artefacts surface in "Fuera de objetivo".
+      // In steady state this branch should never fire — the console.warn below
+      // catches it if it ever does.
+      if (isPrepStampLikelyMissing(o)) {
+        defensivelyDroppedFromBreaches += 1;
+        const dbg = {
+          orderId: getOrderId(o),
+          prepared_at: o.prepared_at,
+          closed_at: o.closed_at ?? null,
+          finished_at: o.finished_at ?? null,
+          completed_at: o.completed_at ?? null
+        };
+        console.warn(
+          `⚠️  kitchenPerformance: dropped breach candidate that passed ordersWithPrep but is flagged as auto-close artefact — ${JSON.stringify(dbg)}`
+        );
+        continue;
+      }
       const mins = kitchenPrepMinutes(o);
       const ch = getKitchenChannelKey(o);
       const target = resolveKitchenTargetMinutes(ch, slaCustomOverrides);
@@ -288,6 +332,10 @@ export function computeKitchenPerformanceFromOrders(orders, timeZone, slaCustomO
         });
       }
     }
+    // TODO(threshold): If users still see auto-close artefacts in breaches,
+    // consider widening isPrepStampLikelyMissing's 60s window (e.g. 5 minutes)
+    // — but coordinate with the coverage denominator in employeeSlaService.js
+    // (unreliable_prep_count) so both metrics stay consistent.
     raw.sort((a, b) => b.delayOverTargetMinutes - a.delayOverTargetMinutes);
     slaBreachTotal = raw.length;
     slaBreaches = raw.slice(0, SLA_BREACH_RETURN_LIMIT);
@@ -308,7 +356,13 @@ export function computeKitchenPerformanceFromOrders(orders, timeZone, slaCustomO
           channelRanking,
           slaBreaches,
           slaBreachTotal,
-          slaBreachesTruncated: slaBreachTotal > slaBreaches.length
+          slaBreachesTruncated: slaBreachTotal > slaBreaches.length,
+          // Debug fields — surface the same "auto-close artefact" count the
+          // SLA-coverage indicator uses (employeeSlaService.unreliable_prep_count)
+          // so the breach payload can be audited against coverage without
+          // requiring a second round-trip.
+          unreliablePrepCount,
+          breachesDefensivelyDropped: defensivelyDroppedFromBreaches
         }
       : null
   };

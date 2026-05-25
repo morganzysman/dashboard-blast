@@ -118,6 +118,21 @@ export async function computeAndStoreEmployeeSlaForDay(companyId, account, date,
   // orders actually counted. The denominator for coverage is
   //   orders_count + unreliable_prep_count
   // because together they represent every order we *attempted* to score.
+  //
+  // Filter asymmetry vs. `olaClickService.computeKitchenPerformanceFromOrders`
+  // (which builds the per-account "Fuera de objetivo" breach list):
+  //   - This unreliable_prep_count requires `prepared_at && close_stamp &&
+  //     isPrepStampLikelyMissing`. It explicitly does NOT require
+  //     `preparing_at` (because the artefact's whole point is that both
+  //     prep stamps are equal to close).
+  //   - The breach pool over there requires `preparing_at && prepared_at &&
+  //     status !== 'CANCELLED' && !isPrepStampLikelyMissing`.
+  //   So orders with `prepared_at` set but no `preparing_at` show up here as
+  //   unreliable (correctly — we couldn't compute prep minutes) and are
+  //   silently excluded from the breach list (correctly — there's no prep
+  //   delta to evaluate). Cancelled orders are excluded from breaches
+  //   regardless. Keep both filters in lockstep when changing the 60s
+  //   threshold in `isPrepStampLikelyMissing`.
   for (const order of orders) {
     if (!order?.prepared_at) continue
     const hasCloseStamp = !!(order.closed_at || order.finished_at || order.completed_at)
