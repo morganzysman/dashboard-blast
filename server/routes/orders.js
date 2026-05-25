@@ -47,6 +47,16 @@ function buildCompanyKitchenAggregate(accountsPayload) {
   const dayMap = {};
   /** @type {Array<Record<string, unknown>>} */
   const breaches = [];
+  // Company-level cause-pill rollup — a simple sum of every per-account
+  // `sla.causeCounts` bucket. Same shape as the per-account counters so the
+  // UI can reuse a single renderer. `anyCauseCounts` lets us emit `null`
+  // when no account in the list reported counts (e.g. SLA scoring disabled),
+  // so the UI can skip the row instead of rendering empty pills.
+  let causeKitchenSum = 0;
+  let causeWaiterSum = 0;
+  let causeDeliverySum = 0;
+  let causeTotalEvaluatedSum = 0;
+  let anyCauseCounts = false;
 
   for (const acc of list) {
     const kp = acc.kitchenPerformance;
@@ -90,6 +100,13 @@ function buildCompanyKitchenAggregate(accountsPayload) {
     if (kp.sla) {
       slaOnTime += kp.sla.onTimeOrders || 0;
       slaScored += kp.sla.totalScoredOrders || 0;
+    }
+    if (kp.sla?.causeCounts) {
+      anyCauseCounts = true;
+      causeKitchenSum += kp.sla.causeCounts.kitchenDelay || 0;
+      causeWaiterSum += kp.sla.causeCounts.waiterMissed || 0;
+      causeDeliverySum += kp.sla.causeCounts.slowDelivery || 0;
+      causeTotalEvaluatedSum += kp.sla.causeCounts.totalEvaluated || 0;
     }
     for (const b of kp.sla?.slaBreaches || []) {
       breaches.push({
@@ -162,7 +179,18 @@ function buildCompanyKitchenAggregate(accountsPayload) {
       channelRanking,
       slaBreaches,
       slaBreachTotal: breachTotal,
-      slaBreachesTruncated: breachTotal > MAX_CO
+      slaBreachesTruncated: breachTotal > MAX_CO,
+      // Simple sum of every per-account `causeCounts` bucket; `null` when
+      // no account reported counts. See per-account counters in
+      // `computeKitchenPerformanceFromOrders` for bucket semantics.
+      causeCounts: anyCauseCounts
+        ? {
+            kitchenDelay: causeKitchenSum,
+            waiterMissed: causeWaiterSum,
+            slowDelivery: causeDeliverySum,
+            totalEvaluated: causeTotalEvaluatedSum
+          }
+        : null
     }
   };
 }

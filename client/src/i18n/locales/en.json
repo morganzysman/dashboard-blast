@@ -1060,6 +1060,14 @@
       "kitchen_delay_likely": "Likely kitchen delay",
       "kitchen_delay_likely_tooltip": "Doesn't match any late-marking pattern. Most likely a real cook delay."
     },
+    "causePill": {
+      "kitchenDelay": "Kitchen delays",
+      "kitchenDelayTooltip": "Out-of-goal orders with no late waiter mark and no long wait. Most likely a real kitchen delay.",
+      "waiterMissed": "Waiter marked late",
+      "waiterMissedTooltip": "Orders without a timely prep mark. Includes those excluded from SLA (prep == close) and those marked right at close.",
+      "slowDelivery": "Slow delivery",
+      "slowDeliveryTooltip": "Orders that sat ready more than 15 min before close. Delivery or service delay, not a kitchen delay."
+    },
     "viewBreakdown": "View breakdown",
     "gainBreakdown": "Gain Breakdown",
     "revenueByMethod": "Revenue by Payment Method",

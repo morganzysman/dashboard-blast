@@ -19,7 +19,31 @@
               {{ $t('companyKitchen.subtitle', { n: companyKitchen.accountsInKitchenAgg || 1 }) }}
             </p>
           </div>
-          <div class="flex flex-wrap gap-2 text-xs sm:text-sm mt-2 sm:mt-0">
+          <div class="flex flex-col items-start gap-2 mt-2 sm:mt-0 sm:items-end">
+            <!-- Executive-summary cause pills (kitchen / waiter / delivery).
+                 Placed above the existing pill strip so the biggest
+                 operational issue is the first thing the eye lands on, even
+                 before the user expands the card. Hidden when the
+                 company-wide totalEvaluated is 0. -->
+            <div v-if="causePills.length" class="flex flex-wrap gap-2">
+              <div
+                v-for="b in causePills"
+                :key="b.id"
+                class="flex items-center gap-2 rounded px-2 py-1"
+                :class="b.tone"
+                :title="$t(`account.causePill.${b.id}Tooltip`)"
+              >
+                <span class="text-sm leading-none" aria-hidden="true">{{ b.icon }}</span>
+                <div class="leading-tight">
+                  <div class="text-xs font-semibold">
+                    {{ b.count }}
+                    <span class="font-normal">({{ formatCausePct(b.pct) }})</span>
+                  </div>
+                  <div class="text-[10px]">{{ $t(`account.causePill.${b.id}`) }}</div>
+                </div>
+              </div>
+            </div>
+            <div class="flex flex-wrap gap-2 text-xs sm:text-sm">
             <span
               class="rounded-full bg-emerald-100 text-emerald-800 px-2 py-0.5 font-medium"
               :title="companyMedianPillTooltip"
@@ -56,6 +80,7 @@
             >
               {{ $t('companyKitchen.lateOrders', { n: companyKitchen.sla.slaBreachTotal }) }}
             </span>
+            </div>
           </div>
         </div>
       </summary>
@@ -194,6 +219,52 @@ onBeforeUnmount(() => {
 })
 
 const ch = computed(() => props.companyKitchen?.byKitchenChannel || {})
+
+// Executive-summary cause pills mirror the per-account row in
+// AccountDetails — same buckets, same tones, same tie-break — sourced
+// from the company aggregate's `sla.causeCounts`. Kept in lockstep with
+// the per-account renderer so the company and per-account headers always
+// describe the same dataset with the same vocabulary.
+const CAUSE_PILL_TIE_ORDER = ['kitchenDelay', 'waiterMissed', 'slowDelivery']
+const CAUSE_PILL_TONES = {
+  waiterMissed: 'bg-rose-50 text-rose-800 dark:bg-rose-900/30 dark:text-rose-200',
+  slowDelivery: 'bg-amber-50 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200',
+  kitchenDelay: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+}
+const CAUSE_PILL_ICONS = {
+  kitchenDelay: '🍳',
+  waiterMissed: '⏰',
+  slowDelivery: '🛵'
+}
+
+const causePills = computed(() => {
+  const cc = props.companyKitchen?.sla?.causeCounts
+  if (!cc || !(cc.totalEvaluated > 0)) return []
+  const denom = cc.totalEvaluated
+  const ids = ['kitchenDelay', 'waiterMissed', 'slowDelivery']
+  const pills = ids.map((id) => {
+    const count = cc[id] || 0
+    return {
+      id,
+      count,
+      // Round to 1 decimal; Math.round(x*10)/10 drops trailing .0 so a clean
+      // 28% reads as "28%", not "28.0%", while 28.5% stays "28.5%".
+      pct: denom > 0 ? Math.round((count / denom) * 1000) / 10 : null,
+      icon: CAUSE_PILL_ICONS[id],
+      tone: CAUSE_PILL_TONES[id]
+    }
+  })
+  pills.sort((a, b) => {
+    if (b.count !== a.count) return b.count - a.count
+    return CAUSE_PILL_TIE_ORDER.indexOf(a.id) - CAUSE_PILL_TIE_ORDER.indexOf(b.id)
+  })
+  return pills
+})
+
+function formatCausePct(pct) {
+  if (pct == null || Number.isNaN(pct)) return '—'
+  return `${pct}%`
+}
 
 // Worst-on-time-first ordering; ties broken by highest volume so the channel
 // that hurts the most customers floats to the top.

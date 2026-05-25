@@ -461,8 +461,14 @@ export function computeKitchenPerformanceFromOrders(orders, timeZone, slaCustomO
   let slaBreaches = [];
   let slaBreachTotal = 0;
   let defensivelyDroppedFromBreaches = 0;
+  // `rawBreaches` holds the FULL breach set with classification metadata,
+  // pre-truncation. We need it intact to compute the per-cause executive-
+  // summary counters (`causeCounts`) below; only the *display* list gets
+  // sliced to `SLA_BREACH_RETURN_LIMIT`. Declared at function scope so the
+  // counting pass after this block can see it even when the block is
+  // skipped (scoreSla=false or no scored orders).
+  const rawBreaches = [];
   if (scoreSla && ordersWithPrep.length > 0) {
-    const raw = [];
     for (const o of ordersWithPrep) {
       // Defensive: kitchenPrepMinutes() already enforces this when building
       // ordersWithPrep, but make the dependency explicit so future refactors
@@ -489,7 +495,7 @@ export function computeKitchenPerformanceFromOrders(orders, timeZone, slaCustomO
       const target = resolveKitchenTargetMinutes(ch, slaCustomOverrides);
       if (mins > target) {
         const { cause, meta } = classifyBreachCause(o);
-        raw.push({
+        rawBreaches.push({
           orderId: getOrderId(o),
           publicId: getOrderPublicId(o),
           channelKey: ch,
@@ -505,9 +511,48 @@ export function computeKitchenPerformanceFromOrders(orders, timeZone, slaCustomO
     // consider widening isPrepStampLikelyMissing's 60s window (e.g. 5 minutes)
     // — but coordinate with the coverage denominator in employeeSlaService.js
     // (unreliable_prep_count) so both metrics stay consistent.
-    raw.sort((a, b) => b.delayOverTargetMinutes - a.delayOverTargetMinutes);
-    slaBreachTotal = raw.length;
-    slaBreaches = raw.slice(0, SLA_BREACH_RETURN_LIMIT);
+    rawBreaches.sort((a, b) => b.delayOverTargetMinutes - a.delayOverTargetMinutes);
+    slaBreachTotal = rawBreaches.length;
+    slaBreaches = rawBreaches.slice(0, SLA_BREACH_RETURN_LIMIT);
+  }
+
+  // Per-cause executive-summary counters for the dashboard KPI pills
+  // ("kitchen / waiter / delivery" buckets). Three deliberate design choices:
+  //
+  //   1. Counts run on the FULL breach set (`rawBreaches`), NOT on the sliced
+  //      `slaBreaches` returned to the UI — the displayed top-N is a view
+  //      limit; the rollups must reflect every breach in the period.
+  //   2. `waiterMissed` rolls together (a) the orders excluded entirely from
+  //      SLA scoring because `prepared_at` is within 60s of close (the
+  //      `unreliablePrepCount` mirror of the coverage denominator) and
+  //      (b) breaches classified as `marked_at_close` (the 60s–3min window).
+  //      Both are "waiter forgot to mark prep on time" failure modes;
+  //      operators don't distinguish them in practice.
+  //   3. `totalEvaluated` matches the Cobertura SLA denominator exactly
+  //      (`orders_count + unreliable_prep_count`) so the pill percentages
+  //      compose meaningfully with the coverage indicator.
+  //
+  // NOTE(persistence): these counts live in the live path only. They are
+  // intentionally NOT persisted to `account_kitchen_sla_daily` — the cause
+  // classification logic doesn't run on the persisted path, and adding the
+  // columns would require backfilling. If we want historical cause trends
+  // later that's a separate effort.
+  let causeCounts = null;
+  if (scoreSla) {
+    let kitchenDelayCount = 0;
+    let markedAtCloseCount = 0;
+    let slowDeliveryCount = 0;
+    for (const b of rawBreaches) {
+      if (b.likelyCause === 'kitchen_delay_likely') kitchenDelayCount += 1;
+      else if (b.likelyCause === 'marked_at_close') markedAtCloseCount += 1;
+      else if (b.likelyCause === 'order_sat_ready') slowDeliveryCount += 1;
+    }
+    causeCounts = {
+      kitchenDelay: kitchenDelayCount,
+      waiterMissed: unreliablePrepCount + markedAtCloseCount,
+      slowDelivery: slowDeliveryCount,
+      totalEvaluated: nScored + unreliablePrepCount
+    };
   }
 
   return {
@@ -533,6 +578,10 @@ export function computeKitchenPerformanceFromOrders(orders, timeZone, slaCustomO
           slaBreaches,
           slaBreachTotal,
           slaBreachesTruncated: slaBreachTotal > slaBreaches.length,
+          // Per-cause executive-summary counters consumed by the KPI pills.
+          // See the comment near the `causeCounts` definition above for the
+          // bucket semantics and the live-path-only persistence note.
+          causeCounts,
           // Debug fields — surface the same "auto-close artefact" count the
           // SLA-coverage indicator uses (employeeSlaService.unreliable_prep_count)
           // so the breach payload can be audited against coverage without

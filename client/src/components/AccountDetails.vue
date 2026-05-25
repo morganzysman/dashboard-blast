@@ -232,6 +232,33 @@
                 <div class="p-3 space-y-3">
                   <p class="text-[11px] text-gray-500">{{ $t('account.kitchenPrepSubtitle') }}</p>
 
+                  <!-- Executive-summary cause pills (kitchen / waiter / delivery).
+                       Sorted left-to-right by count desc so the biggest issue is the
+                       first thing the eye lands on; tie-break is stable per
+                       CAUSE_PILL_TIE_ORDER. Hidden when there are no evaluable
+                       orders to summarize. -->
+                  <div
+                    v-if="causePillsFor(account).length"
+                    class="flex flex-wrap gap-2"
+                  >
+                    <div
+                      v-for="b in causePillsFor(account)"
+                      :key="b.id"
+                      class="flex items-center gap-2 rounded px-2 py-1"
+                      :class="b.tone"
+                      :title="$t(`account.causePill.${b.id}Tooltip`)"
+                    >
+                      <span class="text-sm leading-none" aria-hidden="true">{{ b.icon }}</span>
+                      <div class="leading-tight">
+                        <div class="text-xs font-semibold">
+                          {{ b.count }}
+                          <span class="font-normal">({{ formatCausePct(b.pct) }})</span>
+                        </div>
+                        <div class="text-[10px]">{{ $t(`account.causePill.${b.id}`) }}</div>
+                      </div>
+                    </div>
+                  </div>
+
                   <details class="rounded border border-gray-100">
                     <summary class="cursor-pointer list-none px-2 py-2 [&::-webkit-details-marker]:hidden">
                       <p class="text-[11px] font-semibold text-gray-800">
@@ -1155,6 +1182,61 @@ const BREACH_CAUSE_TONES = {
   marked_at_close: 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300',
   order_sat_ready: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
   kitchen_delay_likely: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+}
+
+// Executive-summary KPI pills: one per operational issue bucket. Sourced
+// from `sla.causeCounts`, sorted left-to-right by count desc with a stable
+// tie-break (kitchen → waiter → delivery) so a 0/0/0 day always lays out
+// the same way. Tones DO NOT mirror BREACH_CAUSE_TONES exactly — the
+// per-row chip uses `bg-rose-100` while the executive pill uses the
+// lighter `bg-rose-50` so the larger pill area doesn't visually overwhelm
+// the row chips beneath it.
+const CAUSE_PILL_TIE_ORDER = ['kitchenDelay', 'waiterMissed', 'slowDelivery']
+const CAUSE_PILL_TONES = {
+  waiterMissed: 'bg-rose-50 text-rose-800 dark:bg-rose-900/30 dark:text-rose-200',
+  slowDelivery: 'bg-amber-50 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200',
+  kitchenDelay: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+}
+const CAUSE_PILL_ICONS = {
+  kitchenDelay: '🍳',
+  waiterMissed: '⏰',
+  slowDelivery: '🛵'
+}
+
+// Build the sorted pill array for one account. Returns `[]` when there's
+// no causeCounts payload OR when the SLA pipeline saw zero evaluable
+// orders — both signal "nothing to summarize", and the template uses an
+// empty array to skip the entire row rather than render empty pills.
+function buildCausePills(causeCounts) {
+  if (!causeCounts || !(causeCounts.totalEvaluated > 0)) return []
+  const denom = causeCounts.totalEvaluated
+  const ids = ['kitchenDelay', 'waiterMissed', 'slowDelivery']
+  const pills = ids.map((id) => {
+    const count = causeCounts[id] || 0
+    return {
+      id,
+      count,
+      // Round to 1 decimal; Math.round(x*10)/10 drops trailing .0 so
+      // a clean 28% reads as "28%", not "28.0%", while 28.5% stays "28.5%".
+      pct: denom > 0 ? Math.round((count / denom) * 1000) / 10 : null,
+      icon: CAUSE_PILL_ICONS[id],
+      tone: CAUSE_PILL_TONES[id]
+    }
+  })
+  pills.sort((a, b) => {
+    if (b.count !== a.count) return b.count - a.count
+    return CAUSE_PILL_TIE_ORDER.indexOf(a.id) - CAUSE_PILL_TIE_ORDER.indexOf(b.id)
+  })
+  return pills
+}
+
+const causePillsFor = (account) => {
+  return buildCausePills(getAccountKitchenPerformance(account).sla?.causeCounts)
+}
+
+const formatCausePct = (pct) => {
+  if (pct == null || Number.isNaN(pct)) return '—'
+  return `${pct}%`
 }
 
 function breachCauseTone(cause) {

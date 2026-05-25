@@ -965,6 +965,14 @@
       "kitchen_delay_likely": "Demora cocina probable",
       "kitchen_delay_likely_tooltip": "No coincide con patrones de marcado tardío. Probablemente demora real en cocina."
     },
+    "causePill": {
+      "kitchenDelay": "Demoras de cocina",
+      "kitchenDelayTooltip": "Pedidos fuera de objetivo sin marcador de retraso del mesero ni espera larga. Probablemente demora real de cocina.",
+      "waiterMissed": "Marcado tardío del mesero",
+      "waiterMissedTooltip": "Pedidos sin marcado de preparado a tiempo. Incluye los excluidos del SLA (prep == cierre) y los marcados al cerrar.",
+      "slowDelivery": "Entrega tardía",
+      "slowDeliveryTooltip": "Pedidos listos por más de 15 min antes de cerrarse. Demora de entrega o servicio, no de cocina."
+    },
     "viewBreakdown": "Ver desglose",
     "gainBreakdown": "Desglose de Ganancia",
     "revenueByMethod": "Ingresos por Método de Pago",

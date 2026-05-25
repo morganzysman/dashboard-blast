@@ -959,6 +959,14 @@
       "kitchen_delay_likely": "Probable retard cuisine",
       "kitchen_delay_likely_tooltip": "Ne correspond à aucun schéma de marquage tardif. Probablement un vrai retard de cuisine."
     },
+    "causePill": {
+      "kitchenDelay": "Retards cuisine",
+      "kitchenDelayTooltip": "Commandes hors objectif sans marquage tardif du serveur ni longue attente. Probablement un vrai retard de cuisine.",
+      "waiterMissed": "Marquage tardif (serveur)",
+      "waiterMissedTooltip": "Commandes sans marquage de préparation à temps. Inclut celles exclues du SLA (prep == fermeture) et celles marquées juste à la fermeture.",
+      "slowDelivery": "Livraison tardive",
+      "slowDeliveryTooltip": "Commandes restées prêtes plus de 15 min avant la fermeture. Retard de livraison ou de service, pas de cuisine."
+    },
     "viewBreakdown": "Voir le détail",
     "gainBreakdown": "Détail du Gain",
     "revenueByMethod": "Chiffre par Méthode de Paiement",
