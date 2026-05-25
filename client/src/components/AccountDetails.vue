@@ -312,7 +312,7 @@
 
                   <details v-if="kitchenSlaRanking(account).length" open class="rounded border border-gray-100">
                     <summary class="cursor-pointer list-none px-2 py-2 [&::-webkit-details-marker]:hidden">
-                      <div class="flex items-center justify-between gap-2">
+                      <div class="flex items-center justify-between gap-2 flex-wrap">
                         <div class="flex items-center gap-1.5 min-w-0">
                           <p class="text-[11px] font-semibold text-gray-800 truncate">{{ $t('account.kitchenServiceScorecard') }}</p>
                           <span
@@ -320,6 +320,13 @@
                             :title="$t('kitchenSla.rateInfoTooltip')"
                             aria-label="info"
                           >ⓘ</span>
+                          <span
+                            class="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold leading-none whitespace-nowrap"
+                            :class="coverageTone(coverageFor(account)?.coveragePct)"
+                            :title="coverageTooltipText(coverageFor(account))"
+                          >
+                            {{ $t('kitchenSla.coverageLabel') }}: {{ coverageLabelText(coverageFor(account)) }}
+                          </span>
                         </div>
                         <p class="text-[10px] text-gray-500 shrink-0">{{ $t('companyKitchen.serviceScorecardHint') }}</p>
                       </div>
@@ -482,6 +489,80 @@ const { t } = useI18n()
 const collapsedServiceMetrics = ref(new Set())
 
 const forceRecompute = ref(0)
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * SLA coverage pill
+ *
+ * "Coverage" = the share of orders the SLA pipeline actually counted vs. the
+ * orders it had to drop because `prepared_at` was missing (waiter didn't mark
+ * prep and OlaClick auto-stamped on close). We fetch it separately from the
+ * account-matrix endpoint because the kitchenPerformance already attached to
+ * each order doesn't carry the "dropped" denominator. One fetch per
+ * date-range change keys both the per-account pills and (indirectly) the
+ * company-level summary that lives in CompanyKitchenSummary.vue.
+ * ────────────────────────────────────────────────────────────────────────── */
+const coverageByAccount = ref({}) // { [company_token]: { ordersCount, unreliablePrepCount, coveragePct, coverageEvaluated } }
+
+async function fetchCoverageMatrix() {
+  const range = props.currentDateRange
+  if (!range?.start || !range?.end) return
+  try {
+    const res = await api.getKitchenSlaAccountMatrix({
+      startDate: range.start,
+      endDate: range.end
+    })
+    if (!res?.success || !res.data?.accounts) {
+      coverageByAccount.value = {}
+      return
+    }
+    const next = {}
+    for (const a of res.data.accounts) {
+      next[a.company_token] = a.total || null
+    }
+    coverageByAccount.value = next
+  } catch (err) {
+    // Non-blocking — coverage is a nice-to-have; the main SLA scoreboard
+    // still renders without it.
+    console.warn('coverage matrix fetch failed', err)
+  }
+}
+
+watch(
+  () => `${props.currentDateRange?.start || ''}-${props.currentDateRange?.end || ''}`,
+  () => fetchCoverageMatrix(),
+  { immediate: true }
+)
+
+const coverageFor = (account) => {
+  const key = account?.accountKey || account?.company_token
+  if (!key) return null
+  return coverageByAccount.value[key] || null
+}
+
+function coverageTone(pct) {
+  if (pct == null) return 'bg-gray-100 text-gray-600 dark:bg-gray-700/40 dark:text-gray-300'
+  if (pct >= 0.8) return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+  if (pct >= 0.5) return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
+  return 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300'
+}
+
+function coverageLabelText(stats) {
+  if (!stats || stats.coverageEvaluated == null || stats.coveragePct == null) {
+    return t('kitchenSla.coverageNoData')
+  }
+  return `${Math.round(stats.coveragePct * 100)}%`
+}
+
+function coverageTooltipText(stats) {
+  if (!stats || stats.coverageEvaluated == null) {
+    return t('kitchenSla.coverageTooltip')
+  }
+  return t('kitchenSla.coverageDenominator', {
+    counted: stats.ordersCount || 0,
+    total: stats.coverageEvaluated || 0,
+    dropped: stats.unreliablePrepCount || 0
+  })
+}
 
 const isDesktop = ref(true)
 let kpiMediaQuery

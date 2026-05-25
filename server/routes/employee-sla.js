@@ -161,6 +161,7 @@ router.get('/account-matrix', requireAuth, async (req, res) => {
          SUM(on_time_count)::int                               AS on_time_count,
          SUM(late_count)::int                                  AS late_count,
          SUM(total_prep_minutes)::numeric                      AS total_prep_minutes,
+         SUM(unreliable_prep_count)::int                       AS unreliable_prep_count,
          MAX(target_minutes)::int                              AS target_minutes
        FROM account_kitchen_sla_daily
        WHERE company_token = ANY($1::text[])
@@ -200,6 +201,7 @@ router.get('/account-matrix', requireAuth, async (req, res) => {
       cell.onTimeCount += Number(row.on_time_count) || 0
       cell.lateCount += Number(row.late_count) || 0
       cell.totalPrepMinutes += Number(row.total_prep_minutes) || 0
+      cell.unreliablePrepCount += Number(row.unreliable_prep_count) || 0
       // target_minutes per editor key is single-valued, but if multiple
       // sub-channels collapsed into "OTHER" carry different targets we keep
       // the highest (most lenient) so a bucketed pseudo-cell isn't unfairly
@@ -212,6 +214,7 @@ router.get('/account-matrix', requireAuth, async (req, res) => {
       g.onTimeCount += Number(row.on_time_count) || 0
       g.lateCount += Number(row.late_count) || 0
       g.totalPrepMinutes += Number(row.total_prep_minutes) || 0
+      g.unreliablePrepCount += Number(row.unreliable_prep_count) || 0
       g.targetMinutes = Math.max(g.targetMinutes || 0, Number(row.target_minutes) || 0)
       grand[colKey] = g
     }
@@ -232,6 +235,7 @@ router.get('/account-matrix', requireAuth, async (req, res) => {
         total.onTimeCount += cell.onTimeCount
         total.lateCount += cell.lateCount
         total.totalPrepMinutes += cell.totalPrepMinutes
+        total.unreliablePrepCount += cell.unreliablePrepCount
       }
       return {
         company_token: a.company_token,
@@ -250,6 +254,7 @@ router.get('/account-matrix', requireAuth, async (req, res) => {
       grandTotal.onTimeCount += cell.onTimeCount
       grandTotal.lateCount += cell.lateCount
       grandTotal.totalPrepMinutes += cell.totalPrepMinutes
+      grandTotal.unreliablePrepCount += cell.unreliablePrepCount
     }
 
     res.json({
@@ -274,19 +279,29 @@ function emptyStats(target = 0) {
     onTimeCount: 0,
     lateCount: 0,
     totalPrepMinutes: 0,
+    unreliablePrepCount: 0,
     targetMinutes: Number(target) || 0
   }
 }
 
 function finaliseStats(cell) {
   const orders = cell.ordersCount || 0
+  const unreliable = cell.unreliablePrepCount || 0
+  // SLA coverage = orders that survived `isPrepStampLikelyMissing` / orders
+  // the SLA pipeline tried to evaluate. Denominator includes the unreliable
+  // ones because *those are the orders we attempted to score and dropped*;
+  // unprepped orders (no close stamp etc.) are not part of the denominator.
+  const evaluated = orders + unreliable
   return {
     ordersCount: orders,
     onTimeCount: cell.onTimeCount || 0,
     lateCount: cell.lateCount || 0,
     onTimeRate: orders > 0 ? cell.onTimeCount / orders : null,
     avgPrepMinutes: orders > 0 ? Number((cell.totalPrepMinutes / orders).toFixed(2)) : null,
-    targetMinutes: cell.targetMinutes || null
+    targetMinutes: cell.targetMinutes || null,
+    unreliablePrepCount: unreliable,
+    coverageEvaluated: evaluated,
+    coveragePct: evaluated > 0 ? orders / evaluated : null
   }
 }
 

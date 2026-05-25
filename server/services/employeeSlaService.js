@@ -106,9 +106,39 @@ export async function computeAndStoreEmployeeSlaForDay(companyId, account, date,
   //     cook was tagged. Without this, the matrix would silently undercount
   //     volume whenever the cook tagging is incomplete.
   const attributions = []
-  /** @type {Map<string, {ordersCount:number, onTimeCount:number, lateCount:number, totalPrepMinutes:number, targetMinutes:number}>} */
+  /** @type {Map<string, {ordersCount:number, onTimeCount:number, lateCount:number, totalPrepMinutes:number, targetMinutes:number, unreliablePrepCount:number}>} */
   const accountChannelMap = new Map()
   let withPrep = 0
+
+  // First pass: count "unreliable prep" orders per channel. These are orders
+  // the SLA pipeline tried to evaluate (prepared_at + a close stamp set) but
+  // dropped because prepared_at sits within 60s of the close — i.e. the
+  // waiter likely didn't mark prep and OlaClick stamped it on auto-close.
+  // We track this so the UI can show "SLA coverage" — what % of evaluated
+  // orders actually counted. The denominator for coverage is
+  //   orders_count + unreliable_prep_count
+  // because together they represent every order we *attempted* to score.
+  for (const order of orders) {
+    if (!order?.prepared_at) continue
+    const hasCloseStamp = !!(order.closed_at || order.finished_at || order.completed_at)
+    if (!hasCloseStamp) continue
+    if (!isPrepStampLikelyMissing(order)) continue
+    const channelKey = getKitchenChannelKey(order)
+    const target = resolveKitchenTargetMinutes(channelKey, targets)
+    const acc = accountChannelMap.get(channelKey) || {
+      ordersCount: 0,
+      onTimeCount: 0,
+      lateCount: 0,
+      totalPrepMinutes: 0,
+      targetMinutes: target,
+      unreliablePrepCount: 0
+    }
+    acc.unreliablePrepCount += 1
+    // Hold onto the target so channels that have ONLY unreliable orders still
+    // persist with a sensible target_minutes (NOT NULL column).
+    if (!acc.targetMinutes) acc.targetMinutes = target
+    accountChannelMap.set(channelKey, acc)
+  }
 
   for (const order of orders) {
     const mins = prepMinutes(order)
@@ -132,7 +162,8 @@ export async function computeAndStoreEmployeeSlaForDay(companyId, account, date,
       onTimeCount: 0,
       lateCount: 0,
       totalPrepMinutes: 0,
-      targetMinutes: target
+      targetMinutes: target,
+      unreliablePrepCount: 0
     }
     acc.ordersCount += 1
     acc.totalPrepMinutes += mins
@@ -270,7 +301,7 @@ export async function computeAndStoreEmployeeSlaForDay(companyId, account, date,
       for (const [channelKey, b] of accountChannelMap) {
         const avg = b.ordersCount > 0 ? b.totalPrepMinutes / b.ordersCount : 0
         accValues.push(
-          `($${q++}, $${q++}, $${q++}, $${q++}, $${q++}, $${q++}, $${q++}, $${q++}, $${q++})`
+          `($${q++}, $${q++}, $${q++}, $${q++}, $${q++}, $${q++}, $${q++}, $${q++}, $${q++}, $${q++})`
         )
         accParams.push(
           companyToken,
@@ -281,13 +312,15 @@ export async function computeAndStoreEmployeeSlaForDay(companyId, account, date,
           b.lateCount,
           Number(b.totalPrepMinutes.toFixed(2)),
           Number(avg.toFixed(2)),
-          b.targetMinutes
+          b.targetMinutes,
+          b.unreliablePrepCount || 0
         )
       }
       await client.query(
         `INSERT INTO account_kitchen_sla_daily
            (company_token, day_local, channel_key, orders_count, on_time_count,
-            late_count, total_prep_minutes, avg_prep_minutes, target_minutes)
+            late_count, total_prep_minutes, avg_prep_minutes, target_minutes,
+            unreliable_prep_count)
          VALUES ${accValues.join(', ')}`,
         accParams
       )
@@ -363,9 +396,21 @@ export async function backfillEmployeeSla(startDate, endDate) {
   return totalDays
 }
 
+// Process-lifetime flag so the 14-day coverage recompute (see below) runs at
+// most once per server boot, even if `autoBackfillEmployeeSlaIfNeeded` is
+// invoked again later. We deliberately do NOT persist this flag — the goal
+// is "every fresh process catches the latest 14 days up", not full idempotency.
+let coverageRecomputeRanThisProcess = false
+
 /**
  * Auto-backfill on startup. Looks for missing day_local rows in employee_kitchen_sla_daily
  * between 2026-01-01 and yesterday (per-company timezone) and fills them in the background.
+ *
+ * Additionally, on the first invocation per process we always recompute the
+ * last 14 days (regardless of whether rows already exist for those days). This
+ * is the one-shot data fix that populates the new `unreliable_prep_count`
+ * column for the SLA-coverage rollout: existing rows default to 0, and
+ * recomputing pulls the real value off the source orders.
  */
 export async function autoBackfillEmployeeSlaIfNeeded() {
   try {
@@ -399,7 +444,30 @@ export async function autoBackfillEmployeeSlaIfNeeded() {
       cur.setDate(cur.getDate() + 1)
     }
 
-    if (missing.length === 0) {
+    // Always force-recompute the last 14 days the first time we run in this
+    // process. This catches up the new coverage column on rows that pre-date
+    // migration 048 without requiring a manual backfill command.
+    const recomputeWindow = []
+    if (!coverageRecomputeRanThisProcess) {
+      coverageRecomputeRanThisProcess = true
+      const start = new Date(endDate + 'T12:00:00')
+      start.setDate(start.getDate() - 13) // 14 days inclusive
+      const cur2 = new Date(start)
+      while (cur2 <= endObj) {
+        recomputeWindow.push(cur2.toISOString().split('T')[0])
+        cur2.setDate(cur2.getDate() + 1)
+      }
+      console.log(
+        `👨‍🍳 [employee-sla] Recomputing last 14 days to populate coverage denominators (${recomputeWindow[0]} → ${recomputeWindow[recomputeWindow.length - 1]})…`
+      )
+    }
+
+    // Merge: anything missing OR in the forced recompute window. De-dup and
+    // sort so we walk dates in order.
+    const todoSet = new Set([...missing, ...recomputeWindow])
+    const todo = [...todoSet].sort()
+
+    if (todo.length === 0) {
       console.log(
         `👨‍🍳 Employee-SLA: no missing dates (${have.size} already computed)`
       )
@@ -407,22 +475,22 @@ export async function autoBackfillEmployeeSlaIfNeeded() {
     }
 
     console.log(
-      `👨‍🍳 Employee-SLA auto-backfill: ${missing.length} missing dates (${missing[0]} → ${missing[missing.length - 1]})`
+      `👨‍🍳 Employee-SLA auto-backfill: ${todo.length} dates queued (${todo[0]} → ${todo[todo.length - 1]}; ${missing.length} missing + ${recomputeWindow.length} forced recompute)`
     )
 
     // Run in background — don't await
     ;(async () => {
-      for (let i = 0; i < missing.length; i++) {
-        const d = missing[i]
+      for (let i = 0; i < todo.length; i++) {
+        const d = todo[i]
         try {
           const n = await computeAllAccountsForDate(d)
-          console.log(`👨‍🍳 backfill [${i + 1}/${missing.length}] ${d} — ${n} attributions`)
+          console.log(`👨‍🍳 backfill [${i + 1}/${todo.length}] ${d} — ${n} attributions`)
         } catch (err) {
-          console.error(`👨‍🍳 backfill [${i + 1}/${missing.length}] ${d} — ERROR: ${err.message}`)
+          console.error(`👨‍🍳 backfill [${i + 1}/${todo.length}] ${d} — ERROR: ${err.message}`)
         }
-        if (i < missing.length - 1) await sleep(60_000)
+        if (i < todo.length - 1) await sleep(60_000)
       }
-      console.log(`👨‍🍳 Employee-SLA backfill complete: ${missing.length} dates`)
+      console.log(`👨‍🍳 Employee-SLA backfill complete: ${todo.length} dates`)
     })().catch((err) => console.error('❌ Employee-SLA auto-backfill error:', err.message))
   } catch (err) {
     console.log('👨‍🍳 Employee-SLA tables not ready, skipping auto-backfill:', err.message)

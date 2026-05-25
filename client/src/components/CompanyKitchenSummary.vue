@@ -36,6 +36,18 @@
               >ⓘ</span>
             </span>
             <span
+              class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-medium"
+              :class="coverageTone(coverageStats?.coveragePct)"
+              :title="coverageTooltipText(coverageStats)"
+            >
+              {{ $t('kitchenSla.coverageLabel') }}: {{ coverageLabelText(coverageStats) }}
+              <span
+                class="cursor-help select-none leading-none opacity-70"
+                :title="$t('kitchenSla.coverageTooltip')"
+                aria-label="info"
+              >ⓘ</span>
+            </span>
+            <span
               v-if="companyKitchen.sla?.slaBreachTotal"
               class="rounded-full bg-amber-100 text-amber-900 px-2 py-0.5 font-medium"
             >
@@ -105,12 +117,63 @@
 <script setup>
 import { computed, ref, onMounted, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useAuthStore } from '../stores/auth'
+import api from '../utils/api'
 
 const props = defineProps({
   companyKitchen: { type: Object, default: null }
 })
 
 const { t } = useI18n()
+const authStore = useAuthStore()
+
+// SLA coverage pill — global aggregate (today). The matrix endpoint stores
+// historical coverage too, but this card lives on the dashboard summary where
+// the most actionable signal is *current operational health* ("are waiters
+// marking prep right now?"), so we anchor it to today.
+const coverageStats = ref(null)
+
+function getTodayStr() {
+  const tz = authStore.user?.timezone || 'America/Lima'
+  return new Date().toLocaleDateString('en-CA', { timeZone: tz })
+}
+
+async function fetchCoverage() {
+  try {
+    const today = getTodayStr()
+    const res = await api.getKitchenSlaAccountMatrix({ startDate: today, endDate: today })
+    coverageStats.value = res?.data?.grandTotal || null
+  } catch (err) {
+    // Non-blocking — pill renders as "no data" if the request fails.
+    console.warn('coverage fetch failed', err)
+    coverageStats.value = null
+  }
+}
+
+function coverageTone(pct) {
+  if (pct == null) return 'bg-gray-100 text-gray-600 dark:bg-gray-700/40 dark:text-gray-300'
+  if (pct >= 0.8) return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+  if (pct >= 0.5) return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
+  return 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300'
+}
+
+function coverageLabelText(stats) {
+  if (!stats || stats.coverageEvaluated == null || stats.coveragePct == null) {
+    return t('kitchenSla.coverageNoData')
+  }
+  return `${Math.round(stats.coveragePct * 100)}%`
+}
+
+function coverageTooltipText(stats) {
+  if (!stats || stats.coverageEvaluated == null) {
+    return t('kitchenSla.coverageTooltip')
+  }
+  return t('kitchenSla.coverageDenominator', {
+    counted: stats.ordersCount || 0,
+    total: stats.coverageEvaluated || 0,
+    dropped: stats.unreliablePrepCount || 0
+  })
+}
 
 const isDesktop = ref(true)
 let mql
@@ -121,6 +184,7 @@ onMounted(() => {
   applyMq()
   mql = window.matchMedia('(min-width: 1024px)')
   mql.addEventListener('change', applyMq)
+  fetchCoverage()
 })
 onBeforeUnmount(() => {
   if (mql) mql.removeEventListener('change', applyMq)

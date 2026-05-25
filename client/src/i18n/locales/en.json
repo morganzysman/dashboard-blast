@@ -256,7 +256,11 @@
     "onTime": "On time",
     "late": "Late",
     "onTimePct": "On-time %",
-    "avgPrep": "Avg prep"
+    "avgPrep": "Avg prep",
+    "coverageLabel": "SLA coverage",
+    "coverageTooltip": "% of orders where the waiter marked prep. Low coverage means SLA numbers are not trustworthy.",
+    "coverageDenominator": "{counted} of {total} orders ({dropped} dropped)",
+    "coverageNoData": "—"
   },
   "languages": {
     "en": "English",

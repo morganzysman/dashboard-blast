@@ -306,6 +306,22 @@ export const api = {
     if (companyToken) qs.set('company_token', companyToken)
     return apiRequest(`/api/employee-sla/leaderboard?${qs.toString()}`, { method: 'GET' })
   },
+  /**
+   * GET /api/employee-sla/account-matrix
+   *
+   * Returns the per-account × per-channel SLA scoreboard. Each cell stats
+   * shape (also used for per-account `total`, per-channel grand and overall
+   * `grandTotal`):
+   *   {
+   *     ordersCount,           // numerator: orders that survived the SLA filter
+   *     onTimeCount, lateCount,
+   *     onTimeRate,            // onTimeCount / ordersCount, or null
+   *     avgPrepMinutes, targetMinutes,
+   *     unreliablePrepCount,   // orders dropped from SLA (auto-close artefact)
+   *     coverageEvaluated,     // ordersCount + unreliablePrepCount
+   *     coveragePct            // ordersCount / coverageEvaluated, or null
+   *   }
+   */
   getKitchenSlaAccountMatrix: ({ startDate, endDate } = {}) => {
     const qs = new URLSearchParams()
     if (startDate) qs.set('start_date', startDate)

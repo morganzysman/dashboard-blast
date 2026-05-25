@@ -255,7 +255,11 @@
     "onTime": "À l'heure",
     "late": "En retard",
     "onTimePct": "% à l'heure",
-    "avgPrep": "Prép. moyenne"
+    "avgPrep": "Prép. moyenne",
+    "coverageLabel": "Couverture SLA",
+    "coverageTooltip": "% des commandes où le serveur a marqué la préparation. Une couverture faible signifie que les chiffres SLA ne sont pas fiables.",
+    "coverageDenominator": "{counted} sur {total} commandes ({dropped} écartées)",
+    "coverageNoData": "—"
   },
   "languages": {
     "en": "English",

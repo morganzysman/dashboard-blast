@@ -255,7 +255,11 @@
     "onTime": "No prazo",
     "late": "Atraso",
     "onTimePct": "% no prazo",
-    "avgPrep": "Prep. média"
+    "avgPrep": "Prep. média",
+    "coverageLabel": "Cobertura SLA",
+    "coverageTooltip": "% de pedidos onde o garçom marcou o preparo. Cobertura baixa indica que as métricas de SLA não são confiáveis.",
+    "coverageDenominator": "{counted} de {total} pedidos ({dropped} descartados)",
+    "coverageNoData": "—"
   },
   "languages": {
     "en": "English",

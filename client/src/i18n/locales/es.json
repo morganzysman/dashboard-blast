@@ -257,7 +257,11 @@
     "onTime": "A tiempo",
     "late": "Tarde",
     "onTimePct": "% a tiempo",
-    "avgPrep": "Prep. media"
+    "avgPrep": "Prep. media",
+    "coverageLabel": "Cobertura SLA",
+    "coverageTooltip": "% de pedidos donde el mesero marcó la preparación. Si es baja, las métricas SLA no son confiables.",
+    "coverageDenominator": "{counted} de {total} pedidos ({dropped} descartados)",
+    "coverageNoData": "—"
   },
   "languages": {
     "en": "English",
