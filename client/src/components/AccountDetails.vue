@@ -229,6 +229,78 @@
                 <div class="p-3 space-y-3">
                   <p class="text-[11px] text-gray-500">{{ $t('account.kitchenPrepSubtitle') }}</p>
 
+                  <details class="rounded border border-gray-100">
+                    <summary class="cursor-pointer list-none px-2 py-2 [&::-webkit-details-marker]:hidden">
+                      <p class="text-[11px] font-semibold text-gray-800">
+                        {{ $t('account.kitchenOutOfSla') }}
+                        <span class="font-normal text-gray-500">({{ slaBreachesForAccount(account).length }})</span>
+                      </p>
+                    </summary>
+                    <div class="p-2 pt-0">
+                      <p v-if="slaBreachTruncNote(account)" class="text-[10px] text-amber-800 mb-1">{{ $t('companyKitchen.breachTruncated') }}</p>
+                      <div v-if="slaBreachesForAccount(account).length" class="max-h-52 overflow-auto rounded border border-gray-100">
+                        <table class="w-full text-[11px]">
+                          <thead class="bg-gray-50 text-gray-600 sticky top-0">
+                            <tr>
+                              <th class="text-left font-medium px-2 py-1.5">{{ $t('account.kitchenTableOrderId') }}</th>
+                              <th class="text-left font-medium px-2 py-1.5">{{ $t('account.kitchenTableChannel') }}</th>
+                              <th class="text-right font-medium px-2 py-1.5">{{ $t('account.kitchenTableGoal') }}</th>
+                              <th class="text-right font-medium px-2 py-1.5">{{ $t('account.kitchenTableAvg') }}</th>
+                              <th class="text-right font-medium px-2 py-1.5">{{ $t('account.kitchenTableExtra') }}</th>
+                              <th class="w-6 px-1 py-1.5" aria-hidden="true"></th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <template v-for="(b, i) in slaBreachesForAccount(account)" :key="`${b.orderId}-${i}`">
+                              <tr class="border-t border-gray-100">
+                                <td class="px-2 py-1.5 font-mono text-gray-900" :title="b.orderId">{{ b.publicId || b.orderId || '—' }}</td>
+                                <td class="px-2 py-1.5 text-gray-700">{{ kitchenChannelLabel(b.channelKey) }}</td>
+                                <td class="px-2 py-1.5 text-right text-gray-600">{{ b.targetMinutes }}′</td>
+                                <td class="px-2 py-1.5 text-right font-medium text-gray-900">{{ Math.round(b.prepMinutes) }}′</td>
+                                <td class="px-2 py-1.5 text-right font-semibold text-amber-800">+{{ b.delayOverTargetMinutes }}′</td>
+                                <td class="px-1 py-1.5 text-right align-middle">
+                                  <button
+                                    type="button"
+                                    class="inline-flex items-center justify-center w-5 h-5 rounded text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition-colors"
+                                    :class="{ 'text-gray-800': isProductsOpen(b.orderId) }"
+                                    :aria-label="$t('account.kitchenShowProducts')"
+                                    :title="$t('account.kitchenShowProducts')"
+                                    @click="toggleProducts(account, b)"
+                                  >
+                                    <span class="inline-block leading-none transition-transform duration-150" :class="{ 'rotate-90': isProductsOpen(b.orderId) }">▸</span>
+                                  </button>
+                                </td>
+                              </tr>
+                              <tr v-if="isProductsOpen(b.orderId)" class="bg-gray-50/60 border-t border-gray-100">
+                                <td colspan="6" class="px-2 py-1.5">
+                                  <p v-if="productStateFor(b.orderId).status === 'loading'" class="text-[10px] text-gray-500">{{ $t('account.kitchenProductsLoading') }}</p>
+                                  <p v-else-if="productStateFor(b.orderId).status === 'error'" class="text-[10px] text-rose-700">{{ $t('account.kitchenProductsError') }}</p>
+                                  <p v-else-if="productStateFor(b.orderId).status === 'loaded' && (productStateFor(b.orderId).products || []).length === 0" class="text-[10px] text-gray-500">{{ $t('account.kitchenProductsEmpty') }}</p>
+                                  <div v-else-if="productStateFor(b.orderId).status === 'loaded'" class="flex flex-wrap gap-x-2 gap-y-1 text-[10px] text-gray-700">
+                                    <span
+                                      v-for="(p, idx) in productStateFor(b.orderId).products"
+                                      :key="`${b.orderId}-p-${idx}`"
+                                      class="whitespace-nowrap"
+                                    >
+                                      <span class="font-semibold text-gray-900">{{ p.quantity }}×</span> {{ p.name }}<span v-if="idx < productStateFor(b.orderId).products.length - 1" class="text-gray-400">&nbsp;·</span>
+                                    </span>
+                                    <span
+                                      v-if="productStateFor(b.orderId).productsTruncated"
+                                      class="text-gray-500 whitespace-nowrap"
+                                    >
+                                      {{ $t('account.kitchenProductsMore', { n: (productStateFor(b.orderId).totalCount || 0) - (productStateFor(b.orderId).products || []).length }) }}
+                                    </span>
+                                  </div>
+                                </td>
+                              </tr>
+                            </template>
+                          </tbody>
+                        </table>
+                      </div>
+                      <p v-else class="text-[11px] text-gray-500">{{ $t('account.kitchenOutOfSlaEmpty') }}</p>
+                    </div>
+                  </details>
+
                   <details v-if="kitchenSlaRanking(account).length" open class="rounded border border-gray-100">
                     <summary class="cursor-pointer list-none px-2 py-2 [&::-webkit-details-marker]:hidden">
                       <div class="flex items-center justify-between gap-2">
@@ -381,11 +453,12 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
+import { ref, reactive, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../stores/auth'
 import { calculateDaysInPeriod as calcDays } from '../composables/useProfitability'
 import Popover from './ui/Popover.vue'
+import api from '../utils/api'
 const props = defineProps({
   analyticsData: Object,
   ordersData: Object,
@@ -834,6 +907,88 @@ const hasKitchenBreakdown = (account) => {
 
 const kitchenSlaRanking = (account) => {
   return getAccountKitchenPerformance(account).sla?.channelRanking || []
+}
+
+const slaBreachesForAccount = (account) => {
+  return getAccountKitchenPerformance(account).sla?.slaBreaches || []
+}
+
+const slaBreachTruncNote = (account) => {
+  return !!getAccountKitchenPerformance(account).sla?.slaBreachesTruncated
+}
+
+/**
+ * Per-orderId state for the SLA-breach product drill-down. Lazy: we only call
+ * the server when an operator clicks the chevron, and we cache the response so
+ * collapse / re-expand is instant. Keyed by OlaClick order UUID; the publicId
+ * is shown in the row but the API needs the UUID.
+ */
+const productState = reactive({})
+
+const productStateFor = (orderId) => {
+  if (!orderId) return { status: 'idle', products: [], productsTruncated: false, totalCount: 0 }
+  return productState[orderId] || { status: 'idle', products: [], productsTruncated: false, totalCount: 0 }
+}
+
+const isProductsOpen = (orderId) => {
+  if (!orderId) return false
+  return !!productState[orderId]?.open
+}
+
+async function toggleProducts(account, breach) {
+  const orderId = breach?.orderId
+  if (!orderId) return
+  const existing = productState[orderId]
+  if (existing?.open) {
+    existing.open = false
+    return
+  }
+  if (!existing) {
+    productState[orderId] = {
+      open: true,
+      status: 'loading',
+      products: [],
+      productsTruncated: false,
+      totalCount: 0
+    }
+  } else {
+    existing.open = true
+    if (existing.status === 'loaded' || existing.status === 'error') {
+      // We have a cached response — no need to refetch.
+      return
+    }
+    existing.status = 'loading'
+  }
+
+  const companyToken = account?.accountKey || account?.company_token
+  if (!companyToken) {
+    productState[orderId] = {
+      ...productState[orderId],
+      open: true,
+      status: 'error'
+    }
+    return
+  }
+
+  try {
+    const payload = await api.getOrderProducts(companyToken, orderId)
+    productState[orderId] = {
+      open: true,
+      status: 'loaded',
+      products: payload?.products || [],
+      productsTruncated: !!payload?.productsTruncated,
+      totalCount: payload?.totalCount || (payload?.products?.length || 0)
+    }
+  } catch (err) {
+    console.error('Failed to load order products', err)
+    productState[orderId] = {
+      open: true,
+      status: 'error',
+      products: [],
+      productsTruncated: false,
+      totalCount: 0
+    }
+  }
 }
 
 // Color cues for the per-service scorecard. Thresholds match the company-wide

@@ -324,7 +324,15 @@ export const api = {
     apiRequest('/api/employee-sla/recompute', {
       method: 'POST',
       body: JSON.stringify({ company_token: companyToken, date })
-    })
+    }),
+
+  // Per-order products peek (lazy fetch for SLA breach drill-down).
+  // Returns { success, orderId, publicId, products:[{name,quantity}], productsTruncated, totalCount }.
+  getOrderProducts: (companyToken, orderId) =>
+    apiRequest(
+      `/api/orders/${encodeURIComponent(companyToken)}/${encodeURIComponent(orderId)}/products`,
+      { method: 'GET' }
+    )
 }
 
 export default api 

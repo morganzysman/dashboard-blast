@@ -2,7 +2,8 @@ import { Router } from 'express';
 import { requireAuth } from '../middleware/auth.js';
 import {
   fetchGeneralIndicators,
-  fetchServiceMetrics
+  fetchServiceMetrics,
+  fetchOrderProducts
 } from '../services/olaClickService.js';
 import {
   fetchKitchenSlaTargetsByTokens,
@@ -678,5 +679,71 @@ function aggregateServiceMetricsData(accountsData) {
   
   return aggregated;
 }
+
+/**
+ * Per-order product peek for the per-account SLA-breach drill-down. Lazy: we
+ * only hit OlaClick when an operator expands a row, so the main dashboard
+ * aggregation stays cheap. Scope is the same as other order routes — the
+ * caller's company must own the requested company_token.
+ */
+router.get('/:companyToken/:orderId/products', requireAuth, async (req, res) => {
+  try {
+    const { companyToken, orderId } = req.params;
+    if (!companyToken || !orderId) {
+      return res
+        .status(400)
+        .json({ success: false, error: 'companyToken and orderId are required' });
+    }
+
+    let row = null;
+    if (req.user.role === 'super-admin') {
+      const q = await pool.query(
+        `SELECT company_id, company_token, account_name, api_token
+         FROM company_accounts WHERE company_token = $1 LIMIT 1`,
+        [companyToken]
+      );
+      row = q.rows[0] || null;
+    } else {
+      const companyId = req.user.companyId;
+      if (!companyId) {
+        return res.status(403).json({ success: false, error: 'Forbidden' });
+      }
+      const q = await pool.query(
+        `SELECT company_id, company_token, account_name, api_token
+         FROM company_accounts WHERE company_token = $1 AND company_id = $2 LIMIT 1`,
+        [companyToken, companyId]
+      );
+      row = q.rows[0] || null;
+    }
+    if (!row) {
+      return res
+        .status(404)
+        .json({ success: false, error: 'Account not found or access denied' });
+    }
+
+    const account = {
+      company_token: row.company_token,
+      account_name: row.account_name,
+      api_token: row.api_token
+    };
+
+    const detail = await fetchOrderProducts(account, orderId);
+    return res.json({
+      success: true,
+      orderId,
+      publicId: detail.publicId || null,
+      products: detail.products,
+      productsTruncated: !!detail.productsTruncated,
+      totalCount: detail.totalCount || 0
+    });
+  } catch (error) {
+    console.error('❌ Order products endpoint error:', error?.message || error);
+    return res.status(502).json({
+      success: false,
+      error: 'Failed to fetch order products from OlaClick',
+      detail: error?.message || String(error)
+    });
+  }
+});
 
 export default router; 

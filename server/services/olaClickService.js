@@ -376,6 +376,121 @@ export async function fetchOrdersList(account, { startDate, endDate, timezone })
   return allOrders;
 }
 
+/**
+ * Compact, render-ready product-line shape for one OlaClick order. Tries the
+ * common Laravel/REST keys (products, order_products, items, lines, details)
+ * and degrades gracefully when none match. Returns at most `visibleCap` items
+ * plus `productsTruncated`/`totalCount` so callers can render a "+N more" hint
+ * without leaking raw OlaClick payloads to the dashboard.
+ */
+export function extractCompactProducts(order, { visibleCap = 8, scanCap = 30 } = {}) {
+  if (!order || typeof order !== 'object') {
+    return { products: [], totalCount: 0, productsTruncated: false };
+  }
+  const candidates =
+    order.products ??
+    order.order_products ??
+    order.items ??
+    order.lines ??
+    order.details ??
+    order.orderProducts ??
+    order.line_items ??
+    order.lineItems ??
+    null;
+  if (!Array.isArray(candidates)) {
+    return { products: [], totalCount: 0, productsTruncated: false };
+  }
+  const totalCount = candidates.length;
+  const scanned = candidates.slice(0, scanCap);
+  const compact = scanned
+    .map((p) => {
+      if (!p || typeof p !== 'object') return null;
+      const rawName =
+        p.name ??
+        p.title ??
+        p.product_name ??
+        p.productName ??
+        p.label ??
+        p.description ??
+        p.product?.name ??
+        p.product?.title ??
+        '';
+      const rawQty = p.quantity ?? p.qty ?? p.count ?? p.units ?? p.amount ?? 1;
+      const qty = Number(rawQty);
+      return {
+        name: typeof rawName === 'string' ? rawName.trim() : String(rawName || '').trim(),
+        quantity: Number.isFinite(qty) && qty > 0 ? qty : 1
+      };
+    })
+    .filter((p) => p && p.name);
+  const visible = compact.slice(0, visibleCap);
+  return {
+    products: visible,
+    totalCount,
+    productsTruncated: totalCount > visible.length
+  };
+}
+
+/**
+ * Fetch one OlaClick order detail and return a compact product list. Used by
+ * the dashboard's per-account SLA-breach drill-down so we only pay the detail
+ * round-trip when an operator actually expands a row. Tries `/orders/{id}` first
+ * and a `/orders/{id}/products` subroute as fallback — different OlaClick
+ * tenants have used slightly different shapes historically.
+ *
+ * Returns `{ products, productsTruncated, totalCount, publicId, source }`.
+ * Throws if both candidates fail; the route handler maps that to a 502 so the
+ * client can show an inline error.
+ *
+ * @param {{company_token:string, api_token:string, additional_cookies?:string}} account
+ * @param {string} orderId
+ */
+export async function fetchOrderProducts(account, orderId) {
+  if (!account) throw new Error('Account not found');
+  if (!orderId) throw new Error('orderId is required');
+
+  const headers = {
+    accept: 'application/json,multipart/form-data',
+    'accept-language': 'en-US,en;q=0.8',
+    'app-company-token': account.company_token,
+    'content-type': 'application/json',
+    cookie: constructCookieHeader(account),
+    origin: 'https://orders.olaclick.app',
+    referer: 'https://orders.olaclick.app/',
+    'user-agent':
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36'
+  };
+
+  const candidates = [
+    `https://api.olaclick.app/ms-orders/auth/orders/${encodeURIComponent(orderId)}`,
+    `https://api.olaclick.app/ms-orders/auth/orders/${encodeURIComponent(orderId)}/products`
+  ];
+
+  let lastError = null;
+  for (const url of candidates) {
+    try {
+      const response = await axios.get(url, {
+        headers,
+        validateStatus: (s) => s < 500
+      });
+      if (response.status >= 200 && response.status < 300) {
+        const raw = response.data?.data ?? response.data ?? null;
+        const order = Array.isArray(raw) ? raw[0] : raw;
+        const compact = extractCompactProducts(order);
+        return {
+          ...compact,
+          publicId: getOrderPublicId(order || {}),
+          source: url
+        };
+      }
+      lastError = new Error(`OlaClick ${response.status} from ${url}`);
+    } catch (err) {
+      lastError = err;
+    }
+  }
+  throw lastError || new Error('OlaClick detail fetch failed');
+}
+
 // Helper function to construct cookie header from token structure
 export function constructCookieHeader(account) {
   // Create the tokens array structure that matches the working cURL
