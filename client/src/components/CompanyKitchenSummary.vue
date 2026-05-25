@@ -20,8 +20,11 @@
             </p>
           </div>
           <div class="flex flex-wrap gap-2 text-xs sm:text-sm mt-2 sm:mt-0">
-            <span class="rounded-full bg-emerald-100 text-emerald-800 px-2 py-0.5 font-medium">
-              {{ $t('companyKitchen.avgPrep') }}: {{ formatAvg(companyKitchen.averagePreparationTime) }}
+            <span
+              class="rounded-full bg-emerald-100 text-emerald-800 px-2 py-0.5 font-medium"
+              :title="companyMedianPillTooltip"
+            >
+              {{ $t('companyKitchen.medianPrep') }}: {{ formatMedian(companyKitchen) }}
             </span>
             <span
               v-if="companyKitchen.sla"
@@ -101,9 +104,9 @@
                   <span class="text-gray-500 leading-tight">{{ $t('account.kitchenTableGoal') }}</span>
                   <span class="font-semibold text-gray-900">{{ row.targetMinutes ?? '—' }}′</span>
                 </div>
-                <div class="flex flex-col">
-                  <span class="text-gray-500 leading-tight">{{ $t('account.kitchenTableAvg') }}</span>
-                  <span class="font-semibold text-gray-900">{{ formatAvg(row.averagePreparationTime) }}</span>
+                <div class="flex flex-col" :title="scorecardTileTooltip(row)">
+                  <span class="text-gray-500 leading-tight">{{ $t('account.kitchenScorecardMedian') }}</span>
+                  <span class="font-semibold text-gray-900">{{ formatAvg(row.medianPreparationTime) }}</span>
                 </div>
               </div>
             </div>
@@ -224,6 +227,37 @@ function onTimeBorderClass(r) {
 function formatAvg(m) {
   if (m == null || Number.isNaN(m)) return '—'
   return `${Math.round(m)}m`
+}
+
+/**
+ * Median-first formatter for the company-level pill. Mirrors AccountDetails'
+ * `formatKitchenMedian` so the company and per-account headers always read
+ * the same number for the same dataset.
+ */
+function formatMedian(kp) {
+  if (!kp) return '—'
+  const m =
+    kp.medianPreparationTime != null
+      ? kp.medianPreparationTime
+      : kp.averagePreparationTime
+  return formatAvg(m)
+}
+
+const companyMedianPillTooltip = computed(() => {
+  const kp = props.companyKitchen
+  if (!kp || !kp.ordersWithPrepTime) return ''
+  return t('account.kitchenScorecardAvgTooltip', {
+    avg: formatAvg(kp.averagePreparationTime),
+    n: kp.prepMinutesSamples ?? kp.ordersWithPrepTime
+  })
+})
+
+function scorecardTileTooltip(row) {
+  if (!row) return ''
+  return t('account.kitchenScorecardAvgTooltip', {
+    avg: formatAvg(row.averagePreparationTime),
+    n: row.prepMinutesSamples ?? row.ordersWithPrepTime ?? 0
+  })
 }
 
 function formatPct(r) {

@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { requireAuth, requireRole } from '../middleware/auth.js'
 import { pool } from '../database.js'
 import { computeAndStoreEmployeeSlaForDay } from '../services/employeeSlaService.js'
+import { weightedMedian } from '../services/olaClickService.js'
 
 const router = Router()
 
@@ -81,6 +82,11 @@ router.get('/leaderboard', requireAuth, async (req, res) => {
     // rollup) so we can compute avg_cook_count — the average team size when
     // this cook was on shift. cook_count = 1 means a solo shift; >1 means a
     // shared shift where wins/losses were spread across multiple cooks.
+    //
+    // Median per cook is computed directly via PERCENTILE_CONT (exact across
+    // the full range, since we're aggregating over raw per-order rows here —
+    // no daily-median approximation needed). avg_prep_minutes is retained as
+    // the secondary signal.
     const q = await pool.query(
       `SELECT
          u.id            AS user_id,
@@ -92,6 +98,10 @@ router.get('/leaderboard', requireAuth, async (req, res) => {
          COUNT(*) FILTER (WHERE o.on_time)::int                 AS on_time_count,
          COUNT(*) FILTER (WHERE NOT o.on_time)::int             AS late_count,
          ROUND(AVG(o.prep_minutes)::numeric, 2)                 AS avg_prep_minutes,
+         ROUND(
+           (PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY o.prep_minutes))::numeric,
+           2
+         )                                                      AS median_prep_minutes,
          ROUND(AVG(o.cook_count)::numeric, 2)                   AS avg_cook_count
        FROM employee_kitchen_sla_orders o
        JOIN users u ON u.id = o.user_id
@@ -99,7 +109,7 @@ router.get('/leaderboard', requireAuth, async (req, res) => {
         AND o.day_local BETWEEN $2 AND $3
         ${rolesFilter}
       GROUP BY u.id, u.email, u.name, u.job_type, o.company_token
-      ORDER BY orders_count DESC, avg_prep_minutes ASC`,
+      ORDER BY orders_count DESC, median_prep_minutes ASC`,
       params
     )
 
@@ -130,13 +140,33 @@ router.get('/leaderboard', requireAuth, async (req, res) => {
  *   { period, accounts: [{ company_token, account_name, channels: { [channelKey]: stats }, total: stats }],
  *     channels: [orderedChannelKey...], grandTotal: stats }
  *
- * Stats: { ordersCount, onTimeCount, lateCount, onTimeRate, avgPrepMinutes, targetMinutes }
+ * Stats: { ordersCount, onTimeCount, lateCount, onTimeRate, avgPrepMinutes,
+ *           medianPrepMinutes, targetMinutes }
  *
  * The channel column order pins the four SLA-editor keys first
  * (DELIVERY:RAPPI_TURBO, DELIVERY:RAPPI, ONSITE:*, DELIVERY:OTHER) so the
  * matrix has a stable, predictable shape, then appends any additional
  * channels that had traffic in the window. ONSITE:* aggregates every ONSITE:x
  * sub-channel since they share the same target.
+ *
+ * Central-tendency math
+ * ---------------------
+ * `avgPrepMinutes` is a weighted mean across days (weighted by `orders_count`),
+ * which is the exact population mean over the multi-day window.
+ *
+ * `medianPrepMinutes` is the *weighted median of the per-day medians*,
+ * weighted by `orders_count`. This is an APPROXIMATION of the true population
+ * median across the window — we don't store raw samples, only the per-day
+ * median + count. It is exact when there is only one day in the window
+ * (single value) and tracks the true population median closely as long as
+ * per-day order counts are roughly stable. We could persist a full sketch
+ * (e.g. t-digest) to make this exact, but for the SLA workload (single
+ * location, tens to hundreds of orders per day) the approximation is well
+ * within the noise floor and the storage cost would dwarf the precision
+ * gain.
+ *
+ * The primary displayed metric in the UI is `medianPrepMinutes`; `avgPrepMinutes`
+ * is kept around as a secondary tooltip value and outlier-detection signal.
  */
 router.get('/account-matrix', requireAuth, async (req, res) => {
   try {
@@ -153,20 +183,25 @@ router.get('/account-matrix', requireAuth, async (req, res) => {
     }
     const tokens = accounts.map((a) => a.company_token)
 
+    // Per-day rows (no SUM/GROUP BY in SQL) so we can compute the weighted
+    // median of daily medians in JS. Sums for the other metrics are also
+    // computed in JS — trivially cheap given the row volume (per-account
+    // per-day per-channel for a single window).
     const q = await pool.query(
       `SELECT
          company_token,
          channel_key,
-         SUM(orders_count)::int                                AS orders_count,
-         SUM(on_time_count)::int                               AS on_time_count,
-         SUM(late_count)::int                                  AS late_count,
-         SUM(total_prep_minutes)::numeric                      AS total_prep_minutes,
-         SUM(unreliable_prep_count)::int                       AS unreliable_prep_count,
-         MAX(target_minutes)::int                              AS target_minutes
+         day_local,
+         orders_count,
+         on_time_count,
+         late_count,
+         total_prep_minutes,
+         unreliable_prep_count,
+         target_minutes,
+         median_prep_minutes
        FROM account_kitchen_sla_daily
        WHERE company_token = ANY($1::text[])
-         AND day_local BETWEEN $2 AND $3
-       GROUP BY company_token, channel_key`,
+         AND day_local BETWEEN $2 AND $3`,
       [tokens, startDate, endDate]
     )
 
@@ -197,11 +232,18 @@ router.get('/account-matrix', requireAuth, async (req, res) => {
       if (!perAccount.has(row.company_token)) perAccount.set(row.company_token, new Map())
       const accMap = perAccount.get(row.company_token)
       const cell = accMap.get(colKey) || emptyStats(row.target_minutes)
-      cell.ordersCount += Number(row.orders_count) || 0
+      const ordersCount = Number(row.orders_count) || 0
+      cell.ordersCount += ordersCount
       cell.onTimeCount += Number(row.on_time_count) || 0
       cell.lateCount += Number(row.late_count) || 0
       cell.totalPrepMinutes += Number(row.total_prep_minutes) || 0
       cell.unreliablePrepCount += Number(row.unreliable_prep_count) || 0
+      // Per-day median ↦ (value, weight=orders_count). Skip rows with no
+      // reliable orders (median is NULL there) so they don't pollute the
+      // weighted-median sort.
+      if (row.median_prep_minutes != null && ordersCount > 0) {
+        cell.medianSamples.push([Number(row.median_prep_minutes), ordersCount])
+      }
       // target_minutes per editor key is single-valued, but if multiple
       // sub-channels collapsed into "OTHER" carry different targets we keep
       // the highest (most lenient) so a bucketed pseudo-cell isn't unfairly
@@ -210,11 +252,14 @@ router.get('/account-matrix', requireAuth, async (req, res) => {
       accMap.set(colKey, cell)
 
       const g = grand[colKey] || emptyStats()
-      g.ordersCount += Number(row.orders_count) || 0
+      g.ordersCount += ordersCount
       g.onTimeCount += Number(row.on_time_count) || 0
       g.lateCount += Number(row.late_count) || 0
       g.totalPrepMinutes += Number(row.total_prep_minutes) || 0
       g.unreliablePrepCount += Number(row.unreliable_prep_count) || 0
+      if (row.median_prep_minutes != null && ordersCount > 0) {
+        g.medianSamples.push([Number(row.median_prep_minutes), ordersCount])
+      }
       g.targetMinutes = Math.max(g.targetMinutes || 0, Number(row.target_minutes) || 0)
       grand[colKey] = g
     }
@@ -236,6 +281,10 @@ router.get('/account-matrix', requireAuth, async (req, res) => {
         total.lateCount += cell.lateCount
         total.totalPrepMinutes += cell.totalPrepMinutes
         total.unreliablePrepCount += cell.unreliablePrepCount
+        // Per-account total median: re-use the same (value, weight) samples
+        // we collected for the cells; concatenation is fine because
+        // weightedMedian is order-invariant within the input sort.
+        for (const s of cell.medianSamples) total.medianSamples.push(s)
       }
       return {
         company_token: a.company_token,
@@ -255,6 +304,7 @@ router.get('/account-matrix', requireAuth, async (req, res) => {
       grandTotal.lateCount += cell.lateCount
       grandTotal.totalPrepMinutes += cell.totalPrepMinutes
       grandTotal.unreliablePrepCount += cell.unreliablePrepCount
+      for (const s of cell.medianSamples) grandTotal.medianSamples.push(s)
     }
 
     res.json({
@@ -280,7 +330,9 @@ function emptyStats(target = 0) {
     lateCount: 0,
     totalPrepMinutes: 0,
     unreliablePrepCount: 0,
-    targetMinutes: Number(target) || 0
+    targetMinutes: Number(target) || 0,
+    /** (per-day median, weight=orders_count) tuples; consumed by weightedMedian. */
+    medianSamples: []
   }
 }
 
@@ -292,12 +344,16 @@ function finaliseStats(cell) {
   // ones because *those are the orders we attempted to score and dropped*;
   // unprepped orders (no close stamp etc.) are not part of the denominator.
   const evaluated = orders + unreliable
+  const med = weightedMedian(cell.medianSamples)
   return {
     ordersCount: orders,
     onTimeCount: cell.onTimeCount || 0,
     lateCount: cell.lateCount || 0,
     onTimeRate: orders > 0 ? cell.onTimeCount / orders : null,
     avgPrepMinutes: orders > 0 ? Number((cell.totalPrepMinutes / orders).toFixed(2)) : null,
+    // Primary central-tendency metric. Weighted-median-of-daily-medians; see
+    // JSDoc on /account-matrix for the approximation notes.
+    medianPrepMinutes: med != null ? Number(med.toFixed(2)) : null,
     targetMinutes: cell.targetMinutes || null,
     unreliablePrepCount: unreliable,
     coverageEvaluated: evaluated,
@@ -329,7 +385,8 @@ router.get('/users/:userId/daily', requireAuth, async (req, res) => {
     }
 
     const q = await pool.query(
-      `SELECT day_local, company_token, orders_count, on_time_count, late_count, avg_prep_minutes
+      `SELECT day_local, company_token, orders_count, on_time_count, late_count,
+              avg_prep_minutes, median_prep_minutes
          FROM employee_kitchen_sla_daily
         WHERE user_id = $1 AND day_local BETWEEN $2 AND $3
         ORDER BY day_local DESC, company_token`,

@@ -161,7 +161,7 @@
                 <th class="text-right">{{ $t('kitchenSla.onTime') }}</th>
                 <th class="text-right">{{ $t('kitchenSla.late') }}</th>
                 <th class="text-right">{{ $t('kitchenSla.onTimePct') }}</th>
-                <th class="text-right">{{ $t('kitchenSla.avgPrep') }}</th>
+                <th class="text-right" :title="$t('kitchenSla.avgPrepSecondary')">{{ $t('kitchenSla.medianPrep') }}</th>
                 <th class="text-right" :title="$t('kitchenSla.avgTeamSizeHelp')">
                   {{ $t('kitchenSla.avgTeamSize') }}
                 </th>
@@ -180,7 +180,10 @@
                 <td class="text-right text-sm font-medium" :class="onTimeClass(row)">
                   {{ onTimePct(row) }}%
                 </td>
-                <td class="text-right text-sm text-gray-700">{{ Number(row.avg_prep_minutes).toFixed(1) }}m</td>
+                <td
+                  class="text-right text-sm text-gray-700"
+                  :title="$t('account.kitchenScorecardAvgTooltip', { avg: `${Number(row.avg_prep_minutes).toFixed(1)}m`, n: row.orders_count })"
+                >{{ row.median_prep_minutes != null ? `${Number(row.median_prep_minutes).toFixed(1)}m` : `${Number(row.avg_prep_minutes).toFixed(1)}m` }}</td>
                 <td class="text-right text-sm">
                   <span
                     class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium"
@@ -229,6 +232,7 @@ function emptyStats() {
     lateCount: 0,
     onTimeRate: null,
     avgPrepMinutes: null,
+    medianPrepMinutes: null,
     targetMinutes: null
   }
 }
@@ -334,6 +338,19 @@ function cellComponent(stats) {
             : pct >= 70
               ? 'bg-amber-100 text-amber-800'
               : 'bg-rose-100 text-rose-800'
+        // Median-first display; mean drops to the tooltip as a secondary
+        // signal. When the (legacy) median is missing for some reason — e.g.
+        // an old daily row that pre-dates the median backfill window — we
+        // fall back to mean so the cell never goes blank.
+        const primaryMinutes =
+          s.medianPrepMinutes != null ? s.medianPrepMinutes : s.avgPrepMinutes
+        const tooltip =
+          s.avgPrepMinutes != null
+            ? t('account.kitchenScorecardAvgTooltip', {
+                avg: `${Math.round(s.avgPrepMinutes)}m`,
+                n: s.ordersCount
+              })
+            : null
         return h('div', { class: 'flex flex-col items-center gap-0.5' }, [
           h(
             'span',
@@ -349,11 +366,14 @@ function cellComponent(stats) {
             { class: 'text-[10px] text-gray-500 leading-tight' },
             `${s.ordersCount} ${t('kitchenSla.ordersShort')}`
           ),
-          s.avgPrepMinutes != null
+          primaryMinutes != null
             ? h(
                 'span',
-                { class: 'text-[10px] text-gray-400 leading-tight' },
-                `${Math.round(s.avgPrepMinutes)}m ${$tCompare(s.avgPrepMinutes, s.targetMinutes)}`
+                {
+                  class: 'text-[10px] text-gray-400 leading-tight',
+                  title: tooltip || undefined
+                },
+                `${Math.round(primaryMinutes)}m ${$tCompare(primaryMinutes, s.targetMinutes)}`
               )
             : null
         ])

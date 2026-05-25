@@ -5,7 +5,8 @@ import {
   getOrderId,
   getKitchenChannelKey,
   getOrderServiceType,
-  isPrepStampLikelyMissing
+  isPrepStampLikelyMissing,
+  median
 } from './olaClickService.js'
 import {
   fetchKitchenSlaTargetsByTokens,
@@ -106,7 +107,7 @@ export async function computeAndStoreEmployeeSlaForDay(companyId, account, date,
   //     cook was tagged. Without this, the matrix would silently undercount
   //     volume whenever the cook tagging is incomplete.
   const attributions = []
-  /** @type {Map<string, {ordersCount:number, onTimeCount:number, lateCount:number, totalPrepMinutes:number, targetMinutes:number, unreliablePrepCount:number}>} */
+  /** @type {Map<string, {ordersCount:number, onTimeCount:number, lateCount:number, totalPrepMinutes:number, targetMinutes:number, unreliablePrepCount:number, prepMinutesValues:number[]}>} */
   const accountChannelMap = new Map()
   let withPrep = 0
 
@@ -146,7 +147,8 @@ export async function computeAndStoreEmployeeSlaForDay(companyId, account, date,
       lateCount: 0,
       totalPrepMinutes: 0,
       targetMinutes: target,
-      unreliablePrepCount: 0
+      unreliablePrepCount: 0,
+      prepMinutesValues: []
     }
     acc.unreliablePrepCount += 1
     // Hold onto the target so channels that have ONLY unreliable orders still
@@ -178,10 +180,12 @@ export async function computeAndStoreEmployeeSlaForDay(companyId, account, date,
       lateCount: 0,
       totalPrepMinutes: 0,
       targetMinutes: target,
-      unreliablePrepCount: 0
+      unreliablePrepCount: 0,
+      prepMinutesValues: []
     }
     acc.ordersCount += 1
     acc.totalPrepMinutes += mins
+    acc.prepMinutesValues.push(mins)
     if (onTime) acc.onTimeCount += 1
     else acc.lateCount += 1
     accountChannelMap.set(channelKey, acc)
@@ -279,10 +283,14 @@ export async function computeAndStoreEmployeeSlaForDay(companyId, account, date,
       [companyToken, date]
     )
 
+    // Median per cook per day. Postgres `PERCENTILE_CONT(0.5)` is
+    // linear-interpolated and matches the JS `median()` helper exactly
+    // (even-length arrays => midpoint of the two middles), so SQL and JS
+    // paths agree on the same number.
     await client.query(
       `INSERT INTO employee_kitchen_sla_daily
          (user_id, company_token, day_local, orders_count, on_time_count, late_count,
-          avg_prep_minutes, total_prep_minutes, computed_at)
+          avg_prep_minutes, total_prep_minutes, median_prep_minutes, computed_at)
        SELECT
          user_id,
          company_token,
@@ -292,6 +300,10 @@ export async function computeAndStoreEmployeeSlaForDay(companyId, account, date,
          COUNT(*) FILTER (WHERE NOT on_time)::int            AS late_count,
          ROUND(AVG(prep_minutes)::numeric, 2)                AS avg_prep_minutes,
          ROUND(SUM(prep_minutes)::numeric, 2)                AS total_prep_minutes,
+         ROUND(
+           (PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY prep_minutes))::numeric,
+           2
+         )                                                   AS median_prep_minutes,
          NOW()
        FROM employee_kitchen_sla_orders
        WHERE company_token = $1 AND day_local = $2
@@ -315,8 +327,13 @@ export async function computeAndStoreEmployeeSlaForDay(companyId, account, date,
       let q = 1
       for (const [channelKey, b] of accountChannelMap) {
         const avg = b.ordersCount > 0 ? b.totalPrepMinutes / b.ordersCount : 0
+        // Median computed in JS off the raw per-channel samples we collected
+        // in the loop above. Channels that have ONLY unreliable orders carry
+        // an empty `prepMinutesValues`, so median => null and the column
+        // stays NULL (correct: no reliable prep observations).
+        const med = median(b.prepMinutesValues)
         accValues.push(
-          `($${q++}, $${q++}, $${q++}, $${q++}, $${q++}, $${q++}, $${q++}, $${q++}, $${q++}, $${q++})`
+          `($${q++}, $${q++}, $${q++}, $${q++}, $${q++}, $${q++}, $${q++}, $${q++}, $${q++}, $${q++}, $${q++})`
         )
         accParams.push(
           companyToken,
@@ -328,14 +345,15 @@ export async function computeAndStoreEmployeeSlaForDay(companyId, account, date,
           Number(b.totalPrepMinutes.toFixed(2)),
           Number(avg.toFixed(2)),
           b.targetMinutes,
-          b.unreliablePrepCount || 0
+          b.unreliablePrepCount || 0,
+          med != null ? Number(med.toFixed(2)) : null
         )
       }
       await client.query(
         `INSERT INTO account_kitchen_sla_daily
            (company_token, day_local, channel_key, orders_count, on_time_count,
             late_count, total_prep_minutes, avg_prep_minutes, target_minutes,
-            unreliable_prep_count)
+            unreliable_prep_count, median_prep_minutes)
          VALUES ${accValues.join(', ')}`,
         accParams
       )

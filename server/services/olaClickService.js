@@ -4,6 +4,63 @@ import { resolveKitchenTargetMinutes } from './kitchenSlaService.js';
 
 const KITCHEN_SERVICE_TYPES = ['TABLE', 'ONSITE', 'TAKEAWAY', 'DELIVERY'];
 
+/**
+ * Compute median (50th percentile, linear-interpolated for even N) of a numeric
+ * array. Returns null on empty / no finite values. Used as the primary central-
+ * tendency for prep-time KPIs because mean is routinely poisoned by 80-minute
+ * waiter-mark-late outliers; median tracks the typical kitchen experience.
+ *
+ * Even-length: midpoint of the two middle values (matches Postgres
+ * PERCENTILE_CONT(0.5) so SQL and JS paths agree).
+ *
+ * @param {ReadonlyArray<number>} values
+ * @returns {number|null}
+ */
+export function median(values) {
+  if (!Array.isArray(values) || values.length === 0) return null;
+  const sorted = values
+    .filter((v) => Number.isFinite(v))
+    .slice()
+    .sort((a, b) => a - b);
+  if (sorted.length === 0) return null;
+  const mid = sorted.length >> 1;
+  return sorted.length % 2 === 0
+    ? (sorted[mid - 1] + sorted[mid]) / 2
+    : sorted[mid];
+}
+
+/**
+ * Weighted median over `(value, weight)` pairs. Used by cross-day rollups
+ * (e.g. range queries on `account_kitchen_sla_daily`) where the storage grain
+ * is one row per (account, day, channel) and we only have the per-day median
+ * + per-day count, not the raw samples. Sorts ascending by `value` and picks
+ * the value where the cumulative weight first crosses `totalWeight / 2` —
+ * i.e. the "discrete weighted median" as opposed to a linear-interpolated one.
+ *
+ * This is an approximation of the true population median across days; it
+ * tracks the population median closely as long as per-day order counts are
+ * roughly stable (which they are for the SLA workload). NaN / non-positive
+ * weights are filtered out.
+ *
+ * @param {ReadonlyArray<readonly [number, number]>} pairs
+ * @returns {number|null}
+ */
+export function weightedMedian(pairs) {
+  if (!Array.isArray(pairs) || pairs.length === 0) return null;
+  const cleaned = pairs
+    .filter(([v, w]) => Number.isFinite(v) && Number.isFinite(w) && w > 0)
+    .sort((a, b) => a[0] - b[0]);
+  if (cleaned.length === 0) return null;
+  const totalWeight = cleaned.reduce((s, [, w]) => s + w, 0);
+  if (totalWeight <= 0) return null;
+  let cum = 0;
+  for (const [v, w] of cleaned) {
+    cum += w;
+    if (cum >= totalWeight / 2) return v;
+  }
+  return cleaned[cleaned.length - 1][0];
+}
+
 /** Normalize OlaClick order service channel for kitchen breakdowns */
 export function getOrderServiceType(order) {
   const raw =
@@ -259,15 +316,25 @@ export function computeKitchenPerformanceFromOrders(orders, timeZone, slaCustomO
     if (!hasCloseStamp) continue;
     if (isPrepStampLikelyMissing(o)) unreliablePrepCount += 1;
   }
+  // We track raw per-bucket sample arrays alongside the running sum so the
+  // company-level aggregator can compute an *exact* median across accounts
+  // (concatenating arrays). The arrays are request-scoped — the route handler
+  // strips them off before sending the JSON response — so they never bloat
+  // the wire payload or persist anywhere.
+  const allPrepMinutes = [];
   let averagePreparationTime = 0;
   if (ordersWithPrep.length > 0) {
+    for (const o of ordersWithPrep) allPrepMinutes.push(kitchenPrepMinutes(o));
     averagePreparationTime =
-      ordersWithPrep.reduce((sum, o) => sum + kitchenPrepMinutes(o), 0) / ordersWithPrep.length;
+      allPrepMinutes.reduce((sum, m) => sum + m, 0) / allPrepMinutes.length;
   }
+  const medianPreparationTime = median(allPrepMinutes);
 
   const scoreSla = slaCustomOverrides != null;
 
+  /** @type {Record<string, { totalMinutes:number, count:number, prepMinutesValues:number[] }>} */
   const serviceBuckets = {};
+  /** @type {Record<string, { totalMinutes:number, count:number, onTimeCount:number, prepMinutesValues:number[] }>} */
   const channelBuckets = {};
   let slaOnTime = 0;
 
@@ -276,17 +343,19 @@ export function computeKitchenPerformanceFromOrders(orders, timeZone, slaCustomO
     const st = getOrderServiceType(o);
 
     if (!serviceBuckets[st]) {
-      serviceBuckets[st] = { totalMinutes: 0, count: 0 };
+      serviceBuckets[st] = { totalMinutes: 0, count: 0, prepMinutesValues: [] };
     }
     serviceBuckets[st].totalMinutes += mins;
     serviceBuckets[st].count += 1;
+    serviceBuckets[st].prepMinutesValues.push(mins);
 
     const ch = getKitchenChannelKey(o);
     if (!channelBuckets[ch]) {
-      channelBuckets[ch] = { totalMinutes: 0, count: 0, onTimeCount: 0 };
+      channelBuckets[ch] = { totalMinutes: 0, count: 0, onTimeCount: 0, prepMinutesValues: [] };
     }
     channelBuckets[ch].totalMinutes += mins;
     channelBuckets[ch].count += 1;
+    channelBuckets[ch].prepMinutesValues.push(mins);
 
     if (scoreSla) {
       const target = resolveKitchenTargetMinutes(ch, slaCustomOverrides);
@@ -304,7 +373,13 @@ export function computeKitchenPerformanceFromOrders(orders, timeZone, slaCustomO
     if (b && b.count > 0) {
       byServiceType[st] = {
         averagePreparationTime: b.totalMinutes / b.count,
-        ordersWithPrepTime: b.count
+        medianPreparationTime: median(b.prepMinutesValues),
+        prepMinutesSamples: b.count,
+        ordersWithPrepTime: b.count,
+        // Live-path-only: stripped by the route handler before HTTP send. The
+        // company aggregator concatenates these to compute an exact median
+        // across accounts without re-fetching raw orders.
+        prepMinutesValues: b.prepMinutesValues
       };
     }
   }
@@ -315,7 +390,10 @@ export function computeKitchenPerformanceFromOrders(orders, timeZone, slaCustomO
     const targetM = scoreSla ? resolveKitchenTargetMinutes(ch, slaCustomOverrides) : null;
     byKitchenChannel[ch] = {
       averagePreparationTime: b.totalMinutes / b.count,
+      medianPreparationTime: median(b.prepMinutesValues),
+      prepMinutesSamples: b.count,
       ordersWithPrepTime: b.count,
+      prepMinutesValues: b.prepMinutesValues, // live-path-only; see byServiceType above
       ...(scoreSla
         ? {
             targetMinutes: targetM,
@@ -327,16 +405,18 @@ export function computeKitchenPerformanceFromOrders(orders, timeZone, slaCustomO
     };
   }
 
+  /** @type {Record<string, { totalMinutes:number, count:number, onTimeCount:number, scoredCount:number, prepMinutesValues:number[] }>} */
   const dayBuckets = {};
   for (const o of ordersWithPrep) {
     const mins = kitchenPrepMinutes(o);
     const dk = formatDateInTimezone(o.prepared_at, timeZone);
     if (!dk) continue;
     if (!dayBuckets[dk]) {
-      dayBuckets[dk] = { totalMinutes: 0, count: 0, onTimeCount: 0, scoredCount: 0 };
+      dayBuckets[dk] = { totalMinutes: 0, count: 0, onTimeCount: 0, scoredCount: 0, prepMinutesValues: [] };
     }
     dayBuckets[dk].totalMinutes += mins;
     dayBuckets[dk].count += 1;
+    dayBuckets[dk].prepMinutesValues.push(mins);
 
     if (scoreSla) {
       const ch = getKitchenChannelKey(o);
@@ -352,7 +432,10 @@ export function computeKitchenPerformanceFromOrders(orders, timeZone, slaCustomO
       const row = {
         date,
         averagePreparationTime: d.totalMinutes / d.count,
-        ordersWithPrepTime: d.count
+        medianPreparationTime: median(d.prepMinutesValues),
+        prepMinutesSamples: d.count,
+        ordersWithPrepTime: d.count,
+        prepMinutesValues: d.prepMinutesValues // live-path-only; see byServiceType above
       };
       if (scoreSla) {
         row.onTimeCount = d.onTimeCount;
@@ -429,7 +512,14 @@ export function computeKitchenPerformanceFromOrders(orders, timeZone, slaCustomO
 
   return {
     averagePreparationTime,
+    medianPreparationTime,
+    prepMinutesSamples: ordersWithPrep.length,
     ordersWithPrepTime: ordersWithPrep.length,
+    // Live-path-only sample array (request-scoped). Stripped by the route
+    // handler before HTTP send; used by the company aggregator to compute an
+    // exact median across accounts. See byServiceType in this function for
+    // the same field at the bucket level.
+    prepMinutesValues: allPrepMinutes,
     byServiceType,
     byKitchenChannel,
     byDay,
@@ -1185,7 +1275,14 @@ export async function fetchGeneralIndicators(account, queryParams = {}, slaCusto
         averageTicket: avgTicket,
         kitchenPerformance: {
           averagePreparationTime: kitchenStats.averagePreparationTime,
+          medianPreparationTime: kitchenStats.medianPreparationTime,
+          prepMinutesSamples: kitchenStats.prepMinutesSamples,
           ordersWithPrepTime: kitchenStats.ordersWithPrepTime,
+          // Live-path-only: stripped by routes/orders.js before HTTP send. The
+          // company aggregator concatenates these (and the per-bucket arrays
+          // tucked inside byKitchenChannel / byDay / byServiceType) to compute
+          // an exact median across accounts.
+          prepMinutesValues: kitchenStats.prepMinutesValues,
           totalOrders,
           byServiceType: kitchenStats.byServiceType,
           byKitchenChannel: kitchenStats.byKitchenChannel,
@@ -1195,8 +1292,13 @@ export async function fetchGeneralIndicators(account, queryParams = {}, slaCusto
         }
       };
 
+      const meanStr = kitchenStats.averagePreparationTime.toFixed(1);
+      const medianStr =
+        kitchenStats.medianPreparationTime != null
+          ? kitchenStats.medianPreparationTime.toFixed(1)
+          : '—';
       console.log(
-        `📊 Processed ${totalOrders} orders with ${totalSales} total sales, avg prep time: ${kitchenStats.averagePreparationTime.toFixed(1)} min`
+        `📊 Processed ${totalOrders} orders with ${totalSales} total sales, prep time: median ${medianStr} min / mean ${meanStr} min`
       );
     } else {
       console.log(`⚠️  No orders data found in response`);

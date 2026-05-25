@@ -3,7 +3,8 @@ import { requireAuth } from '../middleware/auth.js';
 import {
   fetchGeneralIndicators,
   fetchServiceMetrics,
-  fetchOrderProducts
+  fetchOrderProducts,
+  median
 } from '../services/olaClickService.js';
 import {
   fetchKitchenSlaTargetsByTokens,
@@ -16,19 +17,33 @@ import { pool } from '../database.js';
 
 const router = Router();
 
-/** Merge kitchen/SLA metrics across all accounts for company-wide view */
+/**
+ * Merge kitchen/SLA metrics across all accounts for company-wide view.
+ *
+ * Central-tendency math: each per-account / per-channel / per-day bucket
+ * carries a request-scoped `prepMinutesValues` sample array (populated by
+ * `computeKitchenPerformanceFromOrders` in the live path). We concatenate
+ * those across accounts and run an exact `median()` to get the company-level
+ * primary KPI. The arrays themselves are stripped from the HTTP response by
+ * `stripPrepMinutesValuesInPlace` before send so they don't bloat payloads.
+ *
+ * Mean is still produced (weighted by order count) — it's now the secondary
+ * tooltip value, useful for outlier detection.
+ */
 function buildCompanyKitchenAggregate(accountsPayload) {
   const list = (accountsPayload || []).filter((a) => a.kitchenPerformance?.ordersWithPrepTime > 0);
   if (list.length === 0) return null;
 
   let totalPrepMin = 0;
   let totalPrepCount = 0;
+  /** Concatenated raw prep-minute samples across every account, for exact median. */
+  const allPrepMinutes = [];
   let ordersAnalyzed = 0;
   let slaOnTime = 0;
   let slaScored = 0;
-  /** @type {Record<string, { totalMinutes: number; count: number; onTimeCount: number; targetWeighted: number }>} */
+  /** @type {Record<string, { totalMinutes:number, count:number, onTimeCount:number, targetWeighted:number, prepMinutesValues:number[] }>} */
   const chAgg = {};
-  /** @type {Record<string, { totalMinutes: number; count: number; onTimeCount: number; scoredCount: number }>} */
+  /** @type {Record<string, { totalMinutes:number, count:number, onTimeCount:number, scoredCount:number, prepMinutesValues:number[] }>} */
   const dayMap = {};
   /** @type {Array<Record<string, unknown>>} */
   const breaches = [];
@@ -37,26 +52,35 @@ function buildCompanyKitchenAggregate(accountsPayload) {
     const kp = acc.kitchenPerformance;
     totalPrepMin += kp.averagePreparationTime * kp.ordersWithPrepTime;
     totalPrepCount += kp.ordersWithPrepTime;
+    if (Array.isArray(kp.prepMinutesValues)) {
+      for (const m of kp.prepMinutesValues) allPrepMinutes.push(m);
+    }
     ordersAnalyzed += kp.ordersAnalyzed || 0;
 
     for (const [ch, row] of Object.entries(kp.byKitchenChannel || {})) {
       if (!chAgg[ch]) {
-        chAgg[ch] = { totalMinutes: 0, count: 0, onTimeCount: 0, targetWeighted: 0 };
+        chAgg[ch] = { totalMinutes: 0, count: 0, onTimeCount: 0, targetWeighted: 0, prepMinutesValues: [] };
       }
       const c = row.ordersWithPrepTime;
       chAgg[ch].totalMinutes += row.averagePreparationTime * c;
       chAgg[ch].count += c;
+      if (Array.isArray(row.prepMinutesValues)) {
+        for (const m of row.prepMinutesValues) chAgg[ch].prepMinutesValues.push(m);
+      }
       if (row.onTimeCount != null) chAgg[ch].onTimeCount += row.onTimeCount;
       if (row.targetMinutes != null) chAgg[ch].targetWeighted += row.targetMinutes * c;
     }
 
     for (const d of kp.byDay || []) {
       if (!dayMap[d.date]) {
-        dayMap[d.date] = { totalMinutes: 0, count: 0, onTimeCount: 0, scoredCount: 0 };
+        dayMap[d.date] = { totalMinutes: 0, count: 0, onTimeCount: 0, scoredCount: 0, prepMinutesValues: [] };
       }
       const c = d.ordersWithPrepTime;
       dayMap[d.date].totalMinutes += d.averagePreparationTime * c;
       dayMap[d.date].count += c;
+      if (Array.isArray(d.prepMinutesValues)) {
+        for (const m of d.prepMinutesValues) dayMap[d.date].prepMinutesValues.push(m);
+      }
       if (d.onTimeCount != null) {
         dayMap[d.date].onTimeCount += d.onTimeCount;
         dayMap[d.date].scoredCount += d.scoredOrders || 0;
@@ -83,6 +107,8 @@ function buildCompanyKitchenAggregate(accountsPayload) {
       b.targetWeighted > 0 && b.count > 0 ? Math.round((b.targetWeighted / b.count) * 10) / 10 : null;
     byKitchenChannel[ch] = {
       averagePreparationTime: b.totalMinutes / b.count,
+      medianPreparationTime: median(b.prepMinutesValues),
+      prepMinutesSamples: b.count,
       ordersWithPrepTime: b.count,
       targetMinutes: targetM,
       onTimeCount: b.onTimeCount,
@@ -108,6 +134,8 @@ function buildCompanyKitchenAggregate(accountsPayload) {
       return {
         date,
         averagePreparationTime: d.totalMinutes / d.count,
+        medianPreparationTime: median(d.prepMinutesValues),
+        prepMinutesSamples: d.count,
         ordersWithPrepTime: d.count,
         onTimeCount: d.onTimeCount,
         scoredOrders: d.scoredCount,
@@ -119,6 +147,8 @@ function buildCompanyKitchenAggregate(accountsPayload) {
 
   return {
     averagePreparationTime: totalPrepCount > 0 ? totalPrepMin / totalPrepCount : 0,
+    medianPreparationTime: median(allPrepMinutes),
+    prepMinutesSamples: totalPrepCount,
     ordersWithPrepTime: totalPrepCount,
     byKitchenChannel,
     byDay,
@@ -135,6 +165,46 @@ function buildCompanyKitchenAggregate(accountsPayload) {
       slaBreachesTruncated: breachTotal > MAX_CO
     }
   };
+}
+
+/**
+ * Strip the request-scoped `prepMinutesValues` sample arrays from every level
+ * of a kitchen-performance object tree before it's sent over the wire. Those
+ * arrays exist purely so the company aggregator can compute an exact median;
+ * shipping them to the client would bloat the response and serve no UI need
+ * (the UI just consumes the precomputed `medianPreparationTime`).
+ *
+ * Mutates `kp` in place — caller owns the object.
+ *
+ * @param {Record<string, any>|null|undefined} kp kitchenPerformance / companyKitchen object
+ */
+function stripPrepMinutesValuesInPlace(kp) {
+  if (!kp || typeof kp !== 'object') return;
+  delete kp.prepMinutesValues;
+  if (kp.byKitchenChannel) {
+    for (const ch of Object.values(kp.byKitchenChannel)) {
+      if (ch && typeof ch === 'object') delete ch.prepMinutesValues;
+    }
+  }
+  if (kp.byServiceType) {
+    for (const st of Object.values(kp.byServiceType)) {
+      if (st && typeof st === 'object') delete st.prepMinutesValues;
+    }
+  }
+  if (Array.isArray(kp.byDay)) {
+    for (const d of kp.byDay) {
+      if (d && typeof d === 'object') delete d.prepMinutesValues;
+    }
+  }
+  // `sla.channelRanking` is built per-account via spread over byKitchenChannel,
+  // so each entry holds an *independent* reference to the same array. Strip
+  // them here too — otherwise the wire payload would still carry every prep
+  // sample under a sibling path.
+  if (kp.sla?.channelRanking && Array.isArray(kp.sla.channelRanking)) {
+    for (const r of kp.sla.channelRanking) {
+      if (r && typeof r === 'object') delete r.prepMinutesValues;
+    }
+  }
 }
 
 // Helper function to aggregate orders data
@@ -201,6 +271,12 @@ function aggregateOrdersData(accountsData) {
   console.log(`   Aggregation result: totalOrders=${totalOrders}, totalSales=${totalSales}, averageTicket=${averageTicket}`);
   
   const companyKitchen = buildCompanyKitchenAggregate(accounts);
+
+  // Strip the request-scoped sample arrays before we hand the payload to the
+  // route handler for HTTP send. The aggregator has already consumed them to
+  // compute exact medians; from here on the data is "wire-shaped".
+  for (const a of accounts) stripPrepMinutesValuesInPlace(a.kitchenPerformance);
+  if (companyKitchen) stripPrepMinutesValuesInPlace(companyKitchen);
 
   return {
     totalOrders,

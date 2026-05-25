@@ -316,7 +316,11 @@ export const api = {
    *     ordersCount,           // numerator: orders that survived the SLA filter
    *     onTimeCount, lateCount,
    *     onTimeRate,            // onTimeCount / ordersCount, or null
-   *     avgPrepMinutes, targetMinutes,
+   *     avgPrepMinutes,        // weighted mean (secondary signal)
+   *     medianPrepMinutes,     // primary central-tendency — weighted median
+   *                            // of per-day medians (approximation across days,
+   *                            // exact within a single day). See route JSDoc.
+   *     targetMinutes,
    *     unreliablePrepCount,   // orders dropped from SLA (auto-close artefact)
    *     coverageEvaluated,     // ordersCount + unreliablePrepCount
    *     coveragePct            // ordersCount / coverageEvaluated, or null

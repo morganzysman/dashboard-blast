@@ -76,8 +76,11 @@
                 <p class="text-xs text-amber-500">{{ $t('dashboard.tips') }}</p>
               </div>
 
-              <div class="bg-emerald-50 rounded-lg p-3 text-center">
-                <p class="text-sm sm:text-lg font-bold text-emerald-600 truncate">{{ formatKitchenPerformance(getAccountKitchenPerformance(account)) }}</p>
+              <div
+                class="bg-emerald-50 rounded-lg p-3 text-center"
+                :title="kitchenPerfTooltip(getAccountKitchenPerformance(account))"
+              >
+                <p class="text-sm sm:text-lg font-bold text-emerald-600 truncate">{{ formatKitchenMedian(getAccountKitchenPerformance(account)) }}</p>
                 <p class="text-xs text-emerald-600">{{ $t('account.kitchenPerf') }}</p>
                 <p class="text-[10px] leading-tight text-emerald-600/70 mt-0.5">{{ $t('account.kitchenPerfOverall') }}</p>
               </div>
@@ -245,7 +248,7 @@
                               <th class="text-left font-medium px-2 py-1.5">{{ $t('account.kitchenTableOrderId') }}</th>
                               <th class="text-left font-medium px-2 py-1.5">{{ $t('account.kitchenTableChannel') }}</th>
                               <th class="text-right font-medium px-2 py-1.5">{{ $t('account.kitchenTableGoal') }}</th>
-                              <th class="text-right font-medium px-2 py-1.5">{{ $t('account.kitchenTableAvg') }}</th>
+                              <th class="text-right font-medium px-2 py-1.5">{{ $t('account.kitchenTablePrep') }}</th>
                               <th class="text-right font-medium px-2 py-1.5">{{ $t('account.kitchenTableExtra') }}</th>
                               <th class="w-6 px-1 py-1.5" aria-hidden="true"></th>
                             </tr>
@@ -377,9 +380,9 @@
                               <span class="text-gray-500 leading-tight">{{ $t('account.kitchenTableGoal') }}</span>
                               <span class="font-semibold text-gray-900">{{ row.targetMinutes ?? '—' }}′</span>
                             </div>
-                            <div class="flex flex-col">
-                              <span class="text-gray-500 leading-tight">{{ $t('account.kitchenTableAvg') }}</span>
-                              <span class="font-semibold text-gray-900">{{ formatKitchenPerformance({ averagePreparationTime: row.averagePreparationTime }) }}</span>
+                            <div class="flex flex-col" :title="kitchenScorecardTileTooltip(row)">
+                              <span class="text-gray-500 leading-tight">{{ $t('account.kitchenScorecardMedian') }}</span>
+                              <span class="font-semibold text-gray-900">{{ formatKitchenMinutes(row.medianPreparationTime) }}</span>
                             </div>
                           </div>
                         </div>
@@ -1202,6 +1205,52 @@ const formatKitchenPerformance = (performanceData) => {
     const minutes = Math.round(avgMinutes % 60)
     return `${hours}h ${minutes}m`
   }
+}
+
+// Median-first formatter for the kitchen-perf KPI pill. Falls back to mean
+// only if median is missing (e.g. zero reliable orders) so existing accounts
+// with no median still render a sensible number.
+const formatKitchenMedian = (performanceData) => {
+  if (!performanceData) return 'N/A'
+  const m =
+    performanceData.medianPreparationTime != null
+      ? performanceData.medianPreparationTime
+      : performanceData.averagePreparationTime
+  return formatKitchenMinutes(m)
+}
+
+// Bare-number minute formatter — same scale as `formatKitchenPerformance`
+// but takes a raw value instead of a `{ averagePreparationTime }` shape, so
+// we don't have to keep wrapping the median in an object literal at the call
+// sites.
+const formatKitchenMinutes = (minutes) => {
+  if (minutes == null || minutes === 0 || Number.isNaN(minutes)) return 'N/A'
+  if (minutes < 60) return `${Math.round(minutes)}m`
+  const hours = Math.floor(minutes / 60)
+  const m = Math.round(minutes % 60)
+  return `${hours}h ${m}m`
+}
+
+// Tooltip for the account-level KPI pill: "Promedio: 22m · 145 pedidos".
+// Surfaces the (now-secondary) mean alongside the sample size so operators
+// who care about outliers can still see the mean without leaving the pill.
+const kitchenPerfTooltip = (perf) => {
+  if (!perf || !perf.ordersWithPrepTime) return ''
+  const avg = formatKitchenMinutes(perf.averagePreparationTime)
+  return t('account.kitchenScorecardAvgTooltip', {
+    avg,
+    n: perf.prepMinutesSamples ?? perf.ordersWithPrepTime
+  })
+}
+
+// Tooltip for a per-channel scorecard tile (account view).
+const kitchenScorecardTileTooltip = (row) => {
+  if (!row) return ''
+  const avg = formatKitchenMinutes(row.averagePreparationTime)
+  return t('account.kitchenScorecardAvgTooltip', {
+    avg,
+    n: row.prepMinutesSamples ?? row.ordersWithPrepTime ?? 0
+  })
 }
 
 const getAccountTotalOrders = (account) => {
