@@ -252,23 +252,30 @@
                           </thead>
                           <tbody>
                             <template v-for="(b, i) in slaBreachesForAccount(account)" :key="`${b.orderId}-${i}`">
-                              <tr class="border-t border-gray-100">
+                              <tr
+                                class="border-t border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors focus:outline-none focus:bg-gray-50"
+                                :class="{ 'bg-gray-50/80': isProductsOpen(b.orderId) }"
+                                role="button"
+                                tabindex="0"
+                                :aria-expanded="isProductsOpen(b.orderId) ? 'true' : 'false'"
+                                :aria-label="$t('account.kitchenShowProducts')"
+                                @click="toggleProducts(account, b)"
+                                @keydown.enter.prevent="toggleProducts(account, b)"
+                                @keydown.space.prevent="toggleProducts(account, b)"
+                              >
                                 <td class="px-2 py-1.5 font-mono text-gray-900" :title="b.orderId">{{ b.publicId || b.orderId || '—' }}</td>
                                 <td class="px-2 py-1.5 text-gray-700">{{ kitchenChannelLabel(b.channelKey) }}</td>
                                 <td class="px-2 py-1.5 text-right text-gray-600">{{ b.targetMinutes }}′</td>
                                 <td class="px-2 py-1.5 text-right font-medium text-gray-900">{{ Math.round(b.prepMinutes) }}′</td>
                                 <td class="px-2 py-1.5 text-right font-semibold text-amber-800">+{{ b.delayOverTargetMinutes }}′</td>
                                 <td class="px-1 py-1.5 text-right align-middle">
-                                  <button
-                                    type="button"
-                                    class="inline-flex items-center justify-center w-5 h-5 rounded text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition-colors"
+                                  <span
+                                    class="inline-flex items-center justify-center w-5 h-5 rounded text-gray-500 transition-colors"
                                     :class="{ 'text-gray-800': isProductsOpen(b.orderId) }"
-                                    :aria-label="$t('account.kitchenShowProducts')"
-                                    :title="$t('account.kitchenShowProducts')"
-                                    @click="toggleProducts(account, b)"
+                                    aria-hidden="true"
                                   >
                                     <span class="inline-block leading-none transition-transform duration-150" :class="{ 'rotate-90': isProductsOpen(b.orderId) }">▸</span>
-                                  </button>
+                                  </span>
                                 </td>
                               </tr>
                               <tr v-if="isProductsOpen(b.orderId)" class="bg-gray-50/60 border-t border-gray-100">
