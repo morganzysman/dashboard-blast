@@ -944,6 +944,16 @@
       "TAKEAWAY_GENERAL": "Retirada",
       "OTHER_GENERAL": "Outro"
     },
+    "breachCause": {
+      "marked_at_close": "Marcado ao fechar",
+      "marked_at_close_tooltip": "O garçom esqueceu de marcar o pedido como preparado a tempo; só marcou {minutes} min antes do fechamento.",
+      "marked_at_close_tooltip_generic": "O garçom esqueceu de marcar o pedido como preparado a tempo; só marcou pouco antes do fechamento.",
+      "order_sat_ready": "Pedido em espera",
+      "order_sat_ready_tooltip": "O pedido ficou {minutes} min pronto antes de ser fechado. Atraso de serviço ou entrega, não de cozinha.",
+      "order_sat_ready_tooltip_generic": "O pedido ficou pronto bem antes de ser fechado. Atraso de serviço ou entrega, não de cozinha.",
+      "kitchen_delay_likely": "Provável atraso cozinha",
+      "kitchen_delay_likely_tooltip": "Não corresponde a padrões de marcação tardia. Provavelmente atraso real na cozinha."
+    },
     "viewBreakdown": "Ver detalhamento",
     "gainBreakdown": "Detalhamento da Margem",
     "revenueByMethod": "Receita por Método de Pagamento",

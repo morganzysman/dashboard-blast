@@ -943,6 +943,16 @@
       "TAKEAWAY_GENERAL": "À emporter",
       "OTHER_GENERAL": "Autre"
     },
+    "breachCause": {
+      "marked_at_close": "Marqué à la fermeture",
+      "marked_at_close_tooltip": "Le serveur a oublié de marquer la commande comme préparée à temps ; il l'a marquée seulement {minutes} min avant la fermeture.",
+      "marked_at_close_tooltip_generic": "Le serveur a oublié de marquer la commande comme préparée à temps ; il l'a marquée juste avant la fermeture.",
+      "order_sat_ready": "Commande en attente",
+      "order_sat_ready_tooltip": "La commande est restée prête {minutes} min avant d'être fermée. Retard de service ou de livraison, pas de cuisine.",
+      "order_sat_ready_tooltip_generic": "La commande est restée prête bien avant d'être fermée. Retard de service ou de livraison, pas de cuisine.",
+      "kitchen_delay_likely": "Probable retard cuisine",
+      "kitchen_delay_likely_tooltip": "Ne correspond à aucun schéma de marquage tardif. Probablement un vrai retard de cuisine."
+    },
     "viewBreakdown": "Voir le détail",
     "gainBreakdown": "Détail du Gain",
     "revenueByMethod": "Chiffre par Méthode de Paiement",

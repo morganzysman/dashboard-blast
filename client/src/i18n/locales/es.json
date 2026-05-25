@@ -949,6 +949,16 @@
       "TAKEAWAY_GENERAL": "Para llevar",
       "OTHER_GENERAL": "Otro"
     },
+    "breachCause": {
+      "marked_at_close": "Marcado al cerrar",
+      "marked_at_close_tooltip": "El mesero olvidó marcar el pedido como preparado a tiempo; lo marcó solo {minutes} min antes del cierre.",
+      "marked_at_close_tooltip_generic": "El mesero olvidó marcar el pedido como preparado a tiempo; lo marcó justo antes del cierre.",
+      "order_sat_ready": "Pedido reposado",
+      "order_sat_ready_tooltip": "El pedido estuvo {minutes} min listo antes de cerrarse. Demora de servicio o entrega, no de cocina.",
+      "order_sat_ready_tooltip_generic": "El pedido estuvo listo bastante antes de cerrarse. Demora de servicio o entrega, no de cocina.",
+      "kitchen_delay_likely": "Demora cocina probable",
+      "kitchen_delay_likely_tooltip": "No coincide con patrones de marcado tardío. Probablemente demora real en cocina."
+    },
     "viewBreakdown": "Ver desglose",
     "gainBreakdown": "Desglose de Ganancia",
     "revenueByMethod": "Ingresos por Método de Pago",

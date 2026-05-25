@@ -263,7 +263,18 @@
                                 @keydown.enter.prevent="toggleProducts(account, b)"
                                 @keydown.space.prevent="toggleProducts(account, b)"
                               >
-                                <td class="px-2 py-1.5 font-mono text-gray-900" :title="b.orderId">{{ b.publicId || b.orderId || '—' }}</td>
+                                <td class="px-2 py-1.5 font-mono text-gray-900" :title="b.orderId">
+                                  <div>{{ b.publicId || b.orderId || '—' }}</div>
+                                  <div v-if="b.likelyCause" class="mt-0.5">
+                                    <span
+                                      class="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium leading-tight"
+                                      :class="breachCauseTone(b.likelyCause)"
+                                      :title="breachCauseTooltip(b)"
+                                    >
+                                      {{ $t(`account.breachCause.${b.likelyCause}`) }}
+                                    </span>
+                                  </div>
+                                </td>
                                 <td class="px-2 py-1.5 text-gray-700">{{ kitchenChannelLabel(b.channelKey) }}</td>
                                 <td class="px-2 py-1.5 text-right text-gray-600">{{ b.targetMinutes }}′</td>
                                 <td class="px-2 py-1.5 text-right font-medium text-gray-900">{{ Math.round(b.prepMinutes) }}′</td>
@@ -1131,6 +1142,50 @@ const kitchenChannelLabel = (key) => {
   const parts = key.split(':')
   if (parts.length >= 2) return `${parts[0]} · ${parts[1]}`
   return key
+}
+
+// Server-classified breach root cause — visual tone matches the severity
+// hinted at server-side (rose = waiter forgot to mark prep, amber = order
+// sat ready, slate = likely real kitchen delay). Keep these in lockstep with
+// the classifyBreachCause severities in `server/services/olaClickService.js`.
+const BREACH_CAUSE_TONES = {
+  marked_at_close: 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300',
+  order_sat_ready: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
+  kitchen_delay_likely: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+}
+
+function breachCauseTone(cause) {
+  return BREACH_CAUSE_TONES[cause] || 'bg-gray-100 text-gray-700 dark:bg-gray-700/40 dark:text-gray-300'
+}
+
+// Tooltip prefers the per-cause string with the supporting delta interpolated
+// (e.g. "marcado solo 2 min antes del cierre"). If `causeMeta` doesn't carry
+// the relevant number (NaN / null — should only happen on the fallback
+// `kitchen_delay_likely` branch or on partial timestamp data) we fall back to
+// the generic copy so the chip is never silently empty.
+function breachCauseTooltip(breach) {
+  if (!breach?.likelyCause) return ''
+  const cause = breach.likelyCause
+  const meta = breach.causeMeta || {}
+  const minutes = Number(meta.closeToPreparedMinutes)
+  const hasMinutes = Number.isFinite(minutes)
+
+  if (cause === 'marked_at_close') {
+    if (hasMinutes) {
+      return t('account.breachCause.marked_at_close_tooltip', { minutes: minutes.toFixed(1) })
+    }
+    return t('account.breachCause.marked_at_close_tooltip_generic')
+  }
+  if (cause === 'order_sat_ready') {
+    if (hasMinutes) {
+      return t('account.breachCause.order_sat_ready_tooltip', { minutes: minutes.toFixed(1) })
+    }
+    return t('account.breachCause.order_sat_ready_tooltip_generic')
+  }
+  if (cause === 'kitchen_delay_likely') {
+    return t('account.breachCause.kitchen_delay_likely_tooltip')
+  }
+  return ''
 }
 
 const formatKitchenPerformance = (performanceData) => {

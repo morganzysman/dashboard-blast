@@ -41,6 +41,89 @@ export function isPrepStampLikelyMissing(order) {
   return false;
 }
 
+/**
+ * Return the first non-null close stamp on an OlaClick order, in priority order:
+ * `closed_at` → `finished_at` → `completed_at`. Used by both the auto-close
+ * detection and the breach-cause classifier so they agree on what "close time"
+ * means. Returns `{ ts, source }` with `ts` as a finite ms epoch, or `null` if
+ * none of the candidates parse.
+ *
+ * @param {Record<string, any>} order
+ */
+function resolveCloseTime(order) {
+  const candidates = [
+    ['closed_at', order?.closed_at],
+    ['finished_at', order?.finished_at],
+    ['completed_at', order?.completed_at]
+  ];
+  for (const [source, raw] of candidates) {
+    if (!raw) continue;
+    const ts = new Date(raw).getTime();
+    if (Number.isFinite(ts)) return { ts, source };
+  }
+  return null;
+}
+
+/**
+ * Classify why an SLA breach happened. Returns one of:
+ *   - 'marked_at_close'        : closeTime − prepared_at is in [60s, 180s) — waiter
+ *                                  forgot to mark the order prepared on time and only
+ *                                  tapped it right before closing.
+ *   - 'order_sat_ready'        : closeTime > 15 min after prepared_at — food was ready
+ *                                  but order waited (service / delivery delay, not cook).
+ *   - 'kitchen_delay_likely'   : default; most plausibly a real cook delay. Also covers
+ *                                  the missing-close-stamp case so we never accuse the
+ *                                  kitchen on partial data — fallback is the safe default.
+ *
+ * The 60s lower bound on `marked_at_close` is intentional — orders within 60s are already
+ * filtered upstream by isPrepStampLikelyMissing. Keep the bounds in sync if that threshold
+ * ever moves (see TODO(threshold) comment in this file).
+ *
+ * Returns `{ cause, meta }` where `meta` carries the supporting raw delta
+ * (rounded minutes, and which close-stamp source matched) so the UI can render
+ * a deterministic tooltip without re-parsing timestamps client-side.
+ *
+ * @param {Record<string, any>} order
+ * @returns {{ cause: 'marked_at_close'|'order_sat_ready'|'kitchen_delay_likely',
+ *             meta: {
+ *               closeToPreparedMinutes: number|null,
+ *               closeTimeSource: 'closed_at'|'finished_at'|'completed_at'|null
+ *             } }}
+ */
+export function classifyBreachCause(order) {
+  const meta = {
+    closeToPreparedMinutes: null,
+    closeTimeSource: null
+  };
+
+  const preparedRaw = order?.prepared_at;
+  const prepared = preparedRaw ? new Date(preparedRaw).getTime() : NaN;
+  const hasPrepared = Number.isFinite(prepared);
+
+  const close = resolveCloseTime(order);
+  if (close) meta.closeTimeSource = close.source;
+
+  let closeMinusPreparedSec = null;
+  if (hasPrepared && close) {
+    const deltaSec = (close.ts - prepared) / 1000;
+    // Negative deltas (clock skew, prepared after close) → treat as missing.
+    if (Number.isFinite(deltaSec) && deltaSec >= 0) {
+      closeMinusPreparedSec = deltaSec;
+      meta.closeToPreparedMinutes = round1(deltaSec / 60);
+    }
+  }
+
+  if (closeMinusPreparedSec != null && closeMinusPreparedSec >= 60 && closeMinusPreparedSec < 180) {
+    return { cause: 'marked_at_close', meta };
+  }
+
+  if (closeMinusPreparedSec != null && closeMinusPreparedSec > 15 * 60) {
+    return { cause: 'order_sat_ready', meta };
+  }
+
+  return { cause: 'kitchen_delay_likely', meta };
+}
+
 function kitchenPrepMinutes(order) {
   if (!order.preparing_at || !order.prepared_at || order.status === 'CANCELLED') {
     return null;
@@ -322,13 +405,16 @@ export function computeKitchenPerformanceFromOrders(orders, timeZone, slaCustomO
       const ch = getKitchenChannelKey(o);
       const target = resolveKitchenTargetMinutes(ch, slaCustomOverrides);
       if (mins > target) {
+        const { cause, meta } = classifyBreachCause(o);
         raw.push({
           orderId: getOrderId(o),
           publicId: getOrderPublicId(o),
           channelKey: ch,
           prepMinutes: round1(mins),
           targetMinutes: target,
-          delayOverTargetMinutes: round1(mins - target)
+          delayOverTargetMinutes: round1(mins - target),
+          likelyCause: cause,
+          causeMeta: meta
         });
       }
     }

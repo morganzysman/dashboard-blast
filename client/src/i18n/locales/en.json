@@ -1044,6 +1044,16 @@
       "TAKEAWAY_GENERAL": "Takeaway",
       "OTHER_GENERAL": "Other"
     },
+    "breachCause": {
+      "marked_at_close": "Marked at close",
+      "marked_at_close_tooltip": "The waiter forgot to mark the order prepared on time; they only tapped it {minutes} min before closing.",
+      "marked_at_close_tooltip_generic": "The waiter forgot to mark the order prepared on time; they only tapped it just before closing.",
+      "order_sat_ready": "Order sat ready",
+      "order_sat_ready_tooltip": "The order sat ready {minutes} min before it was closed. Service / delivery delay, not a kitchen delay.",
+      "order_sat_ready_tooltip_generic": "The order sat ready well before it was closed. Service / delivery delay, not a kitchen delay.",
+      "kitchen_delay_likely": "Likely kitchen delay",
+      "kitchen_delay_likely_tooltip": "Doesn't match any late-marking pattern. Most likely a real cook delay."
+    },
     "viewBreakdown": "View breakdown",
     "gainBreakdown": "Gain Breakdown",
     "revenueByMethod": "Revenue by Payment Method",
