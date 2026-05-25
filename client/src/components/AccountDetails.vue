@@ -276,17 +276,26 @@
                                   <p v-if="productStateFor(b.orderId).status === 'loading'" class="text-[10px] text-gray-500">{{ $t('account.kitchenProductsLoading') }}</p>
                                   <p v-else-if="productStateFor(b.orderId).status === 'error'" class="text-[10px] text-rose-700">{{ $t('account.kitchenProductsError') }}</p>
                                   <p v-else-if="productStateFor(b.orderId).status === 'loaded' && (productStateFor(b.orderId).products || []).length === 0" class="text-[10px] text-gray-500">{{ $t('account.kitchenProductsEmpty') }}</p>
-                                  <div v-else-if="productStateFor(b.orderId).status === 'loaded'" class="flex flex-wrap gap-x-2 gap-y-1 text-[10px] text-gray-700">
-                                    <span
+                                  <div v-else-if="productStateFor(b.orderId).status === 'loaded'" class="flex flex-col gap-1 text-[10px] text-gray-700">
+                                    <div
                                       v-for="(p, idx) in productStateFor(b.orderId).products"
                                       :key="`${b.orderId}-p-${idx}`"
-                                      class="whitespace-nowrap"
+                                      class="leading-tight"
                                     >
-                                      <span class="font-semibold text-gray-900">{{ p.quantity }}×</span> {{ p.name }}<span v-if="idx < productStateFor(b.orderId).products.length - 1" class="text-gray-400">&nbsp;·</span>
-                                    </span>
+                                      <div>
+                                        <span class="font-semibold text-gray-900">{{ p.quantity }}×</span> {{ p.name }}
+                                      </div>
+                                      <div
+                                        v-if="(p.modifiers || []).length"
+                                        class="pl-4 text-[10px] text-gray-500 dark:text-gray-400"
+                                      >
+                                        <span>{{ (p.modifiers || []).map((m) => (m.quantity > 1 ? `${m.quantity}× ${m.name}` : m.name)).join(', ') }}</span>
+                                        <span v-if="p.modifiersTruncated">, …</span>
+                                      </div>
+                                    </div>
                                     <span
                                       v-if="productStateFor(b.orderId).productsTruncated"
-                                      class="text-gray-500 whitespace-nowrap"
+                                      class="text-gray-500"
                                     >
                                       {{ $t('account.kitchenProductsMore', { n: (productStateFor(b.orderId).totalCount || 0) - (productStateFor(b.orderId).products || []).length }) }}
                                     </span>

@@ -376,18 +376,59 @@ export async function fetchOrdersList(account, { startDate, endDate, timezone })
   return allOrders;
 }
 
+const MODIFIERS_VISIBLE_CAP = 6;
+
+function isCanceled(entry) {
+  if (!entry || typeof entry !== 'object') return false;
+  const c = entry.canceled_at ?? entry.cancelled_at ?? entry.canceledAt ?? entry.cancelledAt;
+  return c != null && c !== '';
+}
+
+function extractModifierLines(rawModifiers) {
+  if (!Array.isArray(rawModifiers)) {
+    return { modifiers: [], modifiersTruncated: false };
+  }
+  const cleaned = [];
+  for (const m of rawModifiers) {
+    if (!m || typeof m !== 'object') continue;
+    if (isCanceled(m)) continue;
+    const rawName = m.name ?? m.title ?? m.label ?? m.modifier_name ?? m.product_name ?? '';
+    const name = typeof rawName === 'string' ? rawName.trim() : String(rawName || '').trim();
+    if (!name) continue;
+    const rawQty = m.quantity ?? m.qty ?? m.count ?? m.units ?? m.amount ?? 1;
+    const qty = Number(rawQty);
+    cleaned.push({
+      name,
+      quantity: Number.isFinite(qty) && qty > 0 ? qty : 1
+    });
+  }
+  const visible = cleaned.slice(0, MODIFIERS_VISIBLE_CAP);
+  return {
+    modifiers: visible,
+    modifiersTruncated: cleaned.length > visible.length
+  };
+}
+
 /**
- * Compact, render-ready product-line shape for one OlaClick order. Tries the
- * common Laravel/REST keys (products, order_products, items, lines, details)
- * and degrades gracefully when none match. Returns at most `visibleCap` items
- * plus `productsTruncated`/`totalCount` so callers can render a "+N more" hint
- * without leaking raw OlaClick payloads to the dashboard.
+ * Compact, render-ready product-line shape for one OlaClick order. Prefers the
+ * `combos[]` array (the shape OlaClick actually returns today, with each combo
+ * carrying its own `modifiers[]` array of `{ name, quantity }`) and falls back
+ * through the older Laravel/REST keys (products, order_products, items, lines,
+ * details, …) so we don't regress tenants we haven't observed yet. Canceled
+ * lines (and canceled modifiers) are skipped via the `canceled_at` stamp.
+ *
+ * Returns at most `visibleCap` top-level items plus `productsTruncated` /
+ * `totalCount` (the count reflects *active* lines, i.e. after filtering out
+ * canceled entries). Each product also carries an optional `modifiers` list
+ * (capped at 6 entries) with a `modifiersTruncated` flag so the UI can show a
+ * "+more" hint without leaking the raw OlaClick payload to the dashboard.
  */
 export function extractCompactProducts(order, { visibleCap = 8, scanCap = 30 } = {}) {
   if (!order || typeof order !== 'object') {
     return { products: [], totalCount: 0, productsTruncated: false };
   }
   const candidates =
+    order.combos ??
     order.products ??
     order.order_products ??
     order.items ??
@@ -400,15 +441,15 @@ export function extractCompactProducts(order, { visibleCap = 8, scanCap = 30 } =
   if (!Array.isArray(candidates)) {
     return { products: [], totalCount: 0, productsTruncated: false };
   }
-  const totalCount = candidates.length;
-  const scanned = candidates.slice(0, scanCap);
+  const active = candidates.filter((p) => p && typeof p === 'object' && !isCanceled(p));
+  const totalCount = active.length;
+  const scanned = active.slice(0, scanCap);
   const compact = scanned
     .map((p) => {
-      if (!p || typeof p !== 'object') return null;
       const rawName =
+        p.product_name ??
         p.name ??
         p.title ??
-        p.product_name ??
         p.productName ??
         p.label ??
         p.description ??
@@ -417,9 +458,12 @@ export function extractCompactProducts(order, { visibleCap = 8, scanCap = 30 } =
         '';
       const rawQty = p.quantity ?? p.qty ?? p.count ?? p.units ?? p.amount ?? 1;
       const qty = Number(rawQty);
+      const { modifiers, modifiersTruncated } = extractModifierLines(p.modifiers);
       return {
         name: typeof rawName === 'string' ? rawName.trim() : String(rawName || '').trim(),
-        quantity: Number.isFinite(qty) && qty > 0 ? qty : 1
+        quantity: Number.isFinite(qty) && qty > 0 ? qty : 1,
+        modifiers,
+        modifiersTruncated
       };
     })
     .filter((p) => p && p.name);
