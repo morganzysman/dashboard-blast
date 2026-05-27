@@ -1,6 +1,6 @@
 import cron from 'node-cron'
 import { pool } from '../database.js'
-import { fetchOlaClickData, getTimezoneAwareDate } from './olaClickService.js'
+import { fetchOlaClickData, fetchOrdersList, getTimezoneAwareDate } from './olaClickService.js'
 
 const FOOD_COST_RATE = 0.3
 
@@ -18,19 +18,46 @@ export async function computeAndStoreDailyGain(companyId, companyToken, apiToken
     'filter[timezone]': timezone
   }
 
-  // Fetch revenue from OlaClick API
+  // Fetch revenue from OlaClick's /by_payment_methods aggregator. This endpoint
+  // returns one row per payment method, so `sum` correctly aggregates revenue
+  // across split payments. It is NOT a valid source for distinct order count —
+  // a single order paid with cash + Yape would appear in both method rows, so
+  // summing `count` double-counts split-payment orders. We keep `methods` here
+  // for the payment-fees loop below and derive `ordersCount` from the /orders
+  // list (see next block).
   let gross = 0
-  let ordersCount = 0
   let methods = []
   try {
     const result = await fetchOlaClickData(account, filterParams)
     if (result.success && result.data?.data) {
       methods = result.data.data
       gross = methods.reduce((s, m) => s + (Number(m.sum) || 0), 0)
-      ordersCount = methods.reduce((s, m) => s + (Number(m.count) || 0), 0)
     }
   } catch (err) {
     console.error(`  ❌ OlaClick API error for ${companyToken} on ${date}:`, err.message)
+    return null
+  }
+
+  // Distinct-order count from the /orders list endpoint — same source the
+  // dashboard's "Daily ORDERS" card uses (via `meta.total`). We filter out
+  // CANCELLED to preserve the calendar's existing semantics: the
+  // `by_payment_methods` aggregator used above for `gross` also excludes
+  // CANCELLED by default (see fetchOlaClickData's default status filter), and
+  // the dashboard's status-filter difference (it INCLUDES cancelled) is
+  // intentional and out of scope for this fix.
+  let ordersCount = 0
+  try {
+    const orders = await fetchOrdersList(account, {
+      startDate: date,
+      endDate: date,
+      timezone
+    })
+    ordersCount = orders.filter((o) => {
+      const status = (o?.status || '').toString().toUpperCase()
+      return status !== 'CANCELLED'
+    }).length
+  } catch (err) {
+    console.error(`  ❌ OlaClick /orders fetch error for ${companyToken} on ${date}:`, err.message)
     return null
   }
 
