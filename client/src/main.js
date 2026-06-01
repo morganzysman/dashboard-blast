@@ -23,6 +23,7 @@ import CompaniesView from './views/CompaniesView.vue'
 import AdminHolidayView from './views/AdminHolidayView.vue'
 import GainCalendarView from './views/GainCalendarView.vue'
 import KitchenSlaView from './views/KitchenSlaView.vue'
+import AchievementsView from './views/AchievementsView.vue'
 
 // Import stores
 import { useAuthStore } from './stores/auth'
@@ -123,6 +124,12 @@ const routes = [
     path: '/kitchen-sla',
     name: 'KitchenSla',
     component: KitchenSlaView,
+    meta: { requiresAuth: true, excludeRoles: ['super-admin', 'employee'] }
+  },
+  {
+    path: '/achievements',
+    name: 'Achievements',
+    component: AchievementsView,
     meta: { requiresAuth: true, excludeRoles: ['super-admin', 'employee'] }
   }
 ]
