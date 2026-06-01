@@ -276,12 +276,12 @@ async function persistUnlocks(companyId, unlocks) {
     const values = []
     const params = []
     slice.forEach((u, idx) => {
-      const b = idx * 6
-      values.push(`($${b + 1}, $${b + 2}, $${b + 3}, $${b + 4}, $${b + 5}, $${b + 6})`)
-      params.push(companyId, u.scope, u.company_token, u.achievement_id, u.period_key, u.unlock_value)
+      const b = idx * 7
+      values.push(`($${b + 1}, $${b + 2}, $${b + 3}, $${b + 4}, $${b + 5}, $${b + 6}, $${b + 7})`)
+      params.push(companyId, u.scope, u.company_token, u.achievement_id, u.period, u.period_key, u.unlock_value)
     })
     const res = await pool.query(
-      `INSERT INTO achievements_unlocked (company_id, scope, company_token, achievement_id, period_key, unlock_value)
+      `INSERT INTO achievements_unlocked (company_id, scope, company_token, achievement_id, period, period_key, unlock_value)
        VALUES ${values.join(', ')}
        ON CONFLICT (company_id, scope, company_token, achievement_id, period_key) DO NOTHING`,
       params
@@ -427,6 +427,11 @@ async function evaluateAllCompanies(monthKeys) {
     }
   }
   return total
+}
+
+/** Evaluate every company across all stored history and await completion. */
+export async function backfillAllAchievements(startMonth = '2026-01') {
+  return evaluateAllCompanies(monthKeysSince(startMonth))
 }
 
 /** Daily cron — re-evaluate current + previous month after gains are finalized. */
