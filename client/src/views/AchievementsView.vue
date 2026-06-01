@@ -4,124 +4,53 @@
     <div class="card">
       <div class="card-body space-y-4">
         <div>
-          <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">🎉 {{ $t('achievements.title') }}</h1>
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">🎯 {{ $t('achievements.title') }}</h1>
           <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">{{ $t('achievements.subtitle') }}</p>
-          <p v-if="period === 'daily'" class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            {{ $t('achievements.todayLabel', { date: todayLabel }) }}
-          </p>
-          <p v-if="scope === 'company' && accountCount" class="text-xs text-indigo-600 dark:text-indigo-400 mt-1">
-            {{ $t('achievements.locationCount', { count: accountCount }) }}
-          </p>
         </div>
 
-        <div class="flex flex-wrap items-end gap-3">
-          <!-- Period toggle -->
-          <div>
-            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{{ $t('achievements.period') }}</label>
-            <div class="inline-flex rounded-md border border-gray-200 dark:border-gray-600 overflow-hidden">
-              <button
-                type="button"
-                class="px-3 py-1.5 text-sm transition-colors"
-                :class="period === 'daily' ? 'bg-blue-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50'"
-                @click="period = 'daily'"
-              >
-                {{ $t('achievements.daily') }}
-              </button>
-              <button
-                type="button"
-                class="px-3 py-1.5 text-sm border-l border-gray-200 dark:border-gray-600 transition-colors"
-                :class="period === 'monthly' ? 'bg-blue-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50'"
-                @click="period = 'monthly'"
-              >
-                {{ $t('achievements.monthly') }}
-              </button>
-            </div>
+        <div class="flex flex-wrap items-center gap-3">
+          <!-- View toggle: Company vs Per location -->
+          <div class="inline-flex rounded-md border border-gray-200 dark:border-gray-600 overflow-hidden">
+            <button
+              type="button"
+              class="px-4 py-1.5 text-sm transition-colors"
+              :class="scope === 'company' ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'"
+              @click="scope = 'company'"
+            >
+              {{ $t('achievements.company') }}
+            </button>
+            <button
+              type="button"
+              class="px-4 py-1.5 text-sm border-l border-gray-200 dark:border-gray-600 transition-colors"
+              :class="scope === 'account' ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'"
+              @click="scope = 'account'"
+            >
+              {{ $t('achievements.account') }}
+            </button>
           </div>
 
-          <!-- Scope toggle -->
-          <div>
-            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{{ $t('achievements.scope') }}</label>
-            <div class="inline-flex rounded-md border border-gray-200 dark:border-gray-600 overflow-hidden">
-              <button
-                type="button"
-                class="px-3 py-1.5 text-sm transition-colors"
-                :class="scope === 'company' ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50'"
-                @click="scope = 'company'"
-              >
-                {{ $t('achievements.company') }}
-              </button>
-              <button
-                type="button"
-                class="px-3 py-1.5 text-sm border-l border-gray-200 dark:border-gray-600 transition-colors"
-                :class="scope === 'account' ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50'"
-                @click="scope = 'account'"
-              >
-                {{ $t('achievements.account') }}
-              </button>
-            </div>
-          </div>
-
-          <!-- Account picker (per-account scope) -->
-          <div v-if="scope === 'account'">
-            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{{ $t('rentability.account') }}</label>
-            <select v-model="selectedToken" class="form-input min-w-[180px]" @change="loadData">
-              <option v-for="acc in accounts" :key="acc.company_token" :value="acc.company_token">
-                {{ acc.account_name || acc.company_token }}
-              </option>
-            </select>
-          </div>
-
-          <!-- Month nav (monthly period) -->
-          <div v-if="period === 'monthly'" class="flex items-center gap-2">
-            <button class="btn-secondary btn-sm" @click="prevMonth">{{ $t('common.previous') }}</button>
-            <span class="text-sm font-medium text-gray-700 dark:text-gray-300 min-w-[120px] text-center">{{ monthLabel }}</span>
-            <button class="btn-secondary btn-sm" @click="nextMonth">{{ $t('common.next') }}</button>
-          </div>
+          <!-- Account picker (per-location view) -->
+          <select
+            v-if="scope === 'account'"
+            v-model="selectedToken"
+            class="form-input min-w-[180px]"
+          >
+            <option v-for="acc in accounts" :key="acc.company_token" :value="acc.company_token">
+              {{ acc.account_name || acc.company_token }}
+            </option>
+          </select>
 
           <button class="btn-secondary btn-sm ml-auto" :disabled="loading" @click="loadData">
             {{ loading ? $t('common.loading') : $t('common.refresh') }}
           </button>
         </div>
-      </div>
-    </div>
 
-    <!-- Summary KPIs -->
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-      <div class="card">
-        <div class="card-body py-3">
-          <p class="text-xs text-gray-500">{{ $t('achievements.unlockedCount') }}</p>
-          <p class="text-2xl font-bold text-green-600">{{ unlockedCount }}<span class="text-sm text-gray-400 font-normal">/{{ visibleAchievements.length }}</span></p>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-body py-3">
-          <p class="text-xs text-gray-500">{{ $t('achievements.currentSales') }}</p>
-          <p class="text-lg font-bold text-gray-900 dark:text-gray-100 tabular-nums">{{ formatCurrency(metrics.gross_revenue) }}</p>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-body py-3">
-          <p class="text-xs text-gray-500">{{ $t('achievements.currentProfit') }}</p>
-          <p class="text-lg font-bold tabular-nums" :class="metrics.net_gain >= 0 ? 'text-green-600' : 'text-red-600'">{{ formatCurrency(metrics.net_gain) }}</p>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-body py-3">
-          <p class="text-xs text-gray-500">{{ $t('achievements.currentOrders') }}</p>
-          <p class="text-lg font-bold text-gray-900 dark:text-gray-100 tabular-nums">{{ metrics.orders_count }}</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Celebration banner when all visible goals unlocked -->
-    <div
-      v-if="!loading && visibleAchievements.length && unlockedCount === visibleAchievements.length"
-      class="card border-green-300 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20"
-    >
-      <div class="card-body text-center py-6">
-        <div class="text-4xl mb-2">🎊</div>
-        <h2 class="text-lg font-bold text-green-800 dark:text-green-300">{{ $t('achievements.allUnlockedTitle') }}</h2>
-        <p class="text-sm text-green-700 dark:text-green-400 mt-1">{{ $t('achievements.allUnlockedSubtitle') }}</p>
+        <p class="text-xs text-gray-500 dark:text-gray-400">
+          {{ $t('achievements.todayLabel', { date: todayLabel }) }}
+          <span v-if="scope === 'company' && accountCount" class="text-indigo-600 dark:text-indigo-400">
+            · {{ $t('achievements.locationCount', { count: accountCount }) }}
+          </span>
+        </p>
       </div>
     </div>
 
@@ -133,75 +62,66 @@
       </div>
     </div>
 
-    <!-- Category sections -->
     <template v-else>
-      <section v-for="cat in categoriesWithItems" :key="cat" class="card">
-        <div class="card-body">
-          <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">
-            {{ categoryIcon(cat) }} {{ $t(`achievements.categories.${cat}`) }}
-          </h2>
-          <p class="text-xs text-gray-500 mb-4">{{ $t(`achievements.categoriesDesc.${cat}`) }}</p>
+      <!-- Today -->
+      <section>
+        <h2 class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2 px-1">
+          {{ $t('achievements.todayGroup') }}
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <MilestoneTrack
+            v-for="track in dailyTracks"
+            :key="track.id"
+            :track="track"
+            :title="trackTitle(track)"
+            :symbol="currencySymbol"
+          />
+        </div>
+      </section>
 
-          <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-            <AchievementBadge
-              v-for="item in itemsByCategory[cat]"
-              :key="item.id"
-              :icon="item.icon"
-              :title="$t(`achievements.goals.${item.id}.title`)"
-              :description="$t(`achievements.goals.${item.id}.desc`)"
-              :unlocked="item.unlocked"
-              :tier-class="tierClass(item.tier)"
-              :current="item.current"
-              :target="item.target"
-              :progress="item.progress"
-              :progress-label="formatProgress(item)"
-              :progress-tooltip="formatProgress(item)"
-              :unlocked-label="item.unlocked ? $t('achievements.celebration') : ''"
-            />
+      <!-- This month -->
+      <section>
+        <h2 class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2 px-1">
+          {{ $t('achievements.monthGroup') }}
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <MilestoneTrack
+            v-for="track in monthlyTracks"
+            :key="track.id"
+            :track="track"
+            :title="trackTitle(track)"
+            :symbol="currencySymbol"
+          />
+        </div>
+      </section>
+
+      <!-- Team milestones (company view only) -->
+      <section v-if="scope === 'company' && teamResults.length">
+        <h2 class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2 px-1">
+          {{ $t('achievements.teamTitle') }}
+        </h2>
+        <div class="flex flex-wrap gap-2">
+          <div
+            v-for="item in teamResults"
+            :key="item.id"
+            class="flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm"
+            :class="item.unlocked
+              ? 'border-green-300 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300'
+              : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-500'"
+          >
+            <span>{{ item.icon }}</span>
+            <span class="font-medium">{{ $t(`achievements.goals.${item.id}.title`) }}</span>
+            <span class="text-xs">{{ item.unlocked ? '✓' : $t('achievements.teamPending') }}</span>
           </div>
         </div>
       </section>
 
-      <div v-if="!visibleAchievements.length" class="card">
+      <div v-if="scope === 'account' && !accounts.length" class="card">
         <div class="card-body py-10 text-center text-gray-500">
           {{ $t('achievements.noGoals') }}
         </div>
       </div>
     </template>
-
-    <!-- Goal catalog reference -->
-    <div class="card">
-      <div class="card-body">
-        <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">📋 {{ $t('achievements.catalogTitle') }}</h2>
-        <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">{{ $t('achievements.catalogSubtitle') }}</p>
-        <div class="overflow-x-auto">
-          <table class="w-full text-xs sm:text-sm">
-            <thead>
-              <tr class="bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
-                <th class="text-left px-3 py-2">{{ $t('achievements.catalogScope') }}</th>
-                <th class="text-left px-3 py-2">{{ $t('achievements.catalogPeriod') }}</th>
-                <th class="text-left px-3 py-2">{{ $t('common.category') }}</th>
-                <th class="text-left px-3 py-2">{{ $t('achievements.catalogGoal') }}</th>
-                <th class="text-left px-3 py-2">{{ $t('achievements.catalogTarget') }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="def in catalogRows"
-                :key="def.id"
-                class="border-t border-gray-100 dark:border-gray-700"
-              >
-                <td class="px-3 py-2">{{ $t(`achievements.scopes.${def.scope}`) }}</td>
-                <td class="px-3 py-2">{{ $t(`achievements.periods.${def.period}`) }}</td>
-                <td class="px-3 py-2">{{ $t(`achievements.categories.${def.category}`) }}</td>
-                <td class="px-3 py-2">{{ def.icon }} {{ $t(`achievements.goals.${def.id}.title`) }}</td>
-                <td class="px-3 py-2 tabular-nums">{{ catalogTargetLabel(def) }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -210,25 +130,21 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../stores/auth'
 import api from '../utils/api.js'
-import AchievementBadge from '../components/AchievementBadge.vue'
+import MilestoneTrack from '../components/MilestoneTrack.vue'
 import {
   ACHIEVEMENT_DEFINITIONS,
+  buildMilestoneTracks,
   buildAchievementResults,
   filterRowsByDate,
-  sumMetrics,
-  countDaysWithData,
-  tierClass,
-  COMPANY_DAILY_GAIN_GOAL,
-  COMPANY_DAILY_GAIN_STRETCH,
-  scaledByLocationCount
+  countDaysWithData
 } from '../composables/useAchievements'
-import { DAILY_GAIN_OBJECTIVE } from '../composables/useProfitability'
 
 const { t } = useI18n()
 const auth = useAuthStore()
 
+const TEAM_DEFS = ACHIEVEMENT_DEFINITIONS.filter((d) => d.teamType)
+
 const loading = ref(false)
-const period = ref('daily')
 const scope = ref('company')
 const selectedToken = ref('')
 const accounts = ref([])
@@ -236,20 +152,16 @@ const companyMonthRows = ref([])
 const accountMonthRows = ref([])
 const allAccountMonthRows = ref([])
 
-const currentYear = ref(new Date().getFullYear())
-const currentMonth = ref(new Date().getMonth() + 1)
+// Always the current month — no browsing past months.
+const currentYear = new Date().getFullYear()
+const currentMonth = new Date().getMonth() + 1
+const monthKey = `${currentYear}-${String(currentMonth).padStart(2, '0')}`
 
-const monthKey = computed(() => `${currentYear.value}-${String(currentMonth.value).padStart(2, '0')}`)
+const currencySymbol = computed(() => auth.user?.currencySymbol || 'S/')
 
 const todayStr = computed(() => {
   const tz = auth.user?.timezone || 'America/Lima'
   return new Date().toLocaleDateString('en-CA', { timeZone: tz })
-})
-
-const monthLabel = computed(() => {
-  const date = new Date(currentYear.value, currentMonth.value - 1, 1)
-  const tz = auth.user?.timezone || 'America/Lima'
-  return date.toLocaleDateString(auth.user?.language || 'en', { month: 'long', year: 'numeric', timeZone: tz })
 })
 
 const todayLabel = computed(() => {
@@ -258,137 +170,43 @@ const todayLabel = computed(() => {
     weekday: 'long',
     month: 'long',
     day: 'numeric',
-    year: 'numeric',
     timeZone: tz
   })
 })
 
-const activeRows = computed(() => {
-  if (period.value === 'daily') {
-    const source = scope.value === 'company' ? companyMonthRows.value : accountMonthRows.value
-    return filterRowsByDate(source, todayStr.value)
-  }
-  return scope.value === 'company' ? companyMonthRows.value : accountMonthRows.value
-})
-
-const metrics = computed(() => sumMetrics(activeRows.value))
-
 const accountTokens = computed(() => accounts.value.map((acc) => acc.company_token).filter(Boolean))
 const accountCount = computed(() => accountTokens.value.length)
 
-const evaluationContext = computed(() => {
-  const perAccountToday = filterRowsByDate(allAccountMonthRows.value, todayStr.value)
-  const tokens = accountTokens.value
-  const daysWithData = countDaysWithData(scope.value === 'company' ? companyMonthRows.value : accountMonthRows.value)
+const monthRows = computed(() => (scope.value === 'company' ? companyMonthRows.value : accountMonthRows.value))
+const todayRows = computed(() => filterRowsByDate(monthRows.value, todayStr.value))
 
-  return {
-    dailyRows: period.value === 'daily' ? activeRows.value : filterRowsByDate(scope.value === 'company' ? companyMonthRows.value : accountMonthRows.value, todayStr.value),
-    monthlyRows: scope.value === 'company' ? companyMonthRows.value : accountMonthRows.value,
-    accountCount: tokens.length,
-    accountTokens: tokens,
-    daysWithData,
-    companyDaysWithData: countDaysWithData(companyMonthRows.value),
+const trackContext = computed(() => ({
+  todayRows: todayRows.value,
+  monthRows: monthRows.value,
+  monthlyRows: monthRows.value,
+  accountCount: accountCount.value,
+  daysWithData: countDaysWithData(monthRows.value),
+  companyDaysWithData: countDaysWithData(companyMonthRows.value)
+}))
+
+const tracks = computed(() => buildMilestoneTracks(scope.value, trackContext.value))
+const dailyTracks = computed(() => tracks.value.filter((trk) => trk.period === 'daily'))
+const monthlyTracks = computed(() => tracks.value.filter((trk) => trk.period === 'monthly'))
+
+const teamResults = computed(() => {
+  const perAccountToday = filterRowsByDate(allAccountMonthRows.value, todayStr.value)
+  const context = {
+    dailyRows: [],
+    monthlyRows: [],
     perAccountToday,
     perAccountMonth: allAccountMonthRows.value,
-    allProfitableToday:
-      tokens.length > 0 &&
-      tokens.every((token) => perAccountToday.some((r) => r.company_token === token)) &&
-      perAccountToday.every((r) => parseFloat(r.net_gain) > 0)
+    accountTokens: accountTokens.value
   }
+  return buildAchievementResults(TEAM_DEFS, context)
 })
 
-const visibleDefinitions = computed(() =>
-  ACHIEVEMENT_DEFINITIONS.filter((d) => d.scope === scope.value && d.period === period.value)
-)
-
-const visibleAchievements = computed(() => buildAchievementResults(visibleDefinitions.value, evaluationContext.value))
-
-const unlockedCount = computed(() => visibleAchievements.value.filter((a) => a.unlocked).length)
-
-const itemsByCategory = computed(() => {
-  const map = {}
-  for (const item of visibleAchievements.value) {
-    if (!map[item.category]) map[item.category] = []
-    map[item.category].push(item)
-  }
-  return map
-})
-
-const categoriesWithItems = computed(() => Object.keys(itemsByCategory.value))
-
-const catalogRows = computed(() => [...ACHIEVEMENT_DEFINITIONS])
-
-function categoryIcon(cat) {
-  const icons = { sales: '💵', profit: '📈', orders: '📦', streak: '🔗', team: '🤝' }
-  return icons[cat] || '🏆'
-}
-
-function formatCurrency(n) {
-  const symbol = auth.user?.currencySymbol || 'S/'
-  const val = parseFloat(n)
-  if (!Number.isFinite(val)) return `${symbol} 0.00`
-  if (val < 0) return `-${symbol} ${Math.abs(val).toFixed(2)}`
-  return `${symbol} ${val.toFixed(2)}`
-}
-
-function formatProgress(item) {
-  if (item.metricLabel === 'streak') {
-    return t('achievements.streakProgress', { current: item.current, target: item.target })
-  }
-  if (item.metricLabel === 'team') {
-    return item.unlocked ? t('achievements.teamComplete') : t('achievements.teamPending')
-  }
-  if (item.metric === 'orders_count') {
-    return `${item.current} / ${item.target} ${t('achievements.orders')}`
-  }
-  return `${formatCurrency(item.current)} / ${formatCurrency(item.target)}`
-}
-
-function catalogTargetLabel(def) {
-  if (def.streakType) {
-    return t('achievements.streakDays', { count: def.streakLength })
-  }
-  if (def.teamType === 'all_profitable') return t('achievements.teamAllProfitable')
-  if (def.teamType === 'all_hit_objective_day') return t('achievements.teamAllGoalDay')
-  if (def.targetKey === 'monthly_gain_objective') {
-    return t('achievements.dynamicMonthlyObjective', { daily: formatCurrency(DAILY_GAIN_OBJECTIVE) })
-  }
-  if (def.targetKey === 'company_per_location') {
-    return t('achievements.scaledPerLocation', {
-      perLocation: formatCurrency(def.targetPerLocation),
-      count: accountCount.value || 1,
-      total: formatCurrency(scaledByLocationCount(def.targetPerLocation, accountCount.value))
-    })
-  }
-  if (def.targetKey === 'company_monthly_gain_floor') return formatCurrency(15000)
-  if (def.targetKey === 'company_monthly_gain_mid') return formatCurrency(30000)
-  if (def.targetKey === 'company_monthly_gain_objective') {
-    return t('achievements.dynamicCompanyMonthlyGain', { daily: formatCurrency(COMPANY_DAILY_GAIN_GOAL) })
-  }
-  if (def.id === 'co-d-profit-goal') return formatCurrency(COMPANY_DAILY_GAIN_GOAL)
-  if (def.id === 'co-d-profit-stretch') return formatCurrency(COMPANY_DAILY_GAIN_STRETCH)
-  if (def.metric === 'orders_count') return `${def.target} ${t('achievements.orders')}`
-  return formatCurrency(def.target)
-}
-
-function prevMonth() {
-  if (currentMonth.value === 1) {
-    currentMonth.value = 12
-    currentYear.value--
-  } else {
-    currentMonth.value--
-  }
-  loadData()
-}
-
-function nextMonth() {
-  if (currentMonth.value === 12) {
-    currentMonth.value = 1
-    currentYear.value++
-  } else {
-    currentMonth.value++
-  }
-  loadData()
+function trackTitle(track) {
+  return track.category === 'sales' ? t('achievements.currentSales') : t('achievements.currentProfit')
 }
 
 async function loadAccounts() {
@@ -405,8 +223,8 @@ async function loadData() {
   loading.value = true
   try {
     const [companyRes, ...accountResults] = await Promise.all([
-      api.getDailyGains(monthKey.value),
-      ...accounts.value.map((acc) => api.getDailyGains(monthKey.value, acc.company_token))
+      api.getDailyGains(monthKey),
+      ...accounts.value.map((acc) => api.getDailyGains(monthKey, acc.company_token))
     ])
     companyMonthRows.value = companyRes.data || []
 
@@ -434,7 +252,12 @@ async function loadData() {
 }
 
 watch(selectedToken, (token, prev) => {
-  if (token && token !== prev) loadData()
+  if (token && token !== prev) {
+    const idx = accounts.value.findIndex((a) => a.company_token === token)
+    accountMonthRows.value = allAccountMonthRows.value.filter((r) => r.company_token === token)
+    // Fall back to a fresh fetch if we have no cached rows yet.
+    if (idx >= 0 && !accountMonthRows.value.length) loadData()
+  }
 })
 
 onMounted(async () => {

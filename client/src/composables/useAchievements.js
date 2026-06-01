@@ -301,6 +301,65 @@ export function buildAchievementResults(definitions, context) {
   })
 }
 
+/** Metrics shown as milestone ladders on the simplified achievements page. */
+const MILESTONE_GROUPS = [
+  { period: 'daily', category: 'sales', metric: 'gross_revenue' },
+  { period: 'daily', category: 'profit', metric: 'net_gain' },
+  { period: 'monthly', category: 'sales', metric: 'gross_revenue' },
+  { period: 'monthly', category: 'profit', metric: 'net_gain' }
+]
+
+/**
+ * Build ordered milestone tracks for a scope. Each track lists its tiers from
+ * lowest to highest target, marks which are already reached, and reports the
+ * next target plus progress toward it. This is the "passed and coming up" view.
+ */
+export function buildMilestoneTracks(scope, context) {
+  return MILESTONE_GROUPS.map((g) => {
+    const tiers = ACHIEVEMENT_DEFINITIONS.filter(
+      (d) =>
+        d.scope === scope &&
+        d.period === g.period &&
+        d.category === g.category &&
+        d.metric === g.metric &&
+        !d.streakType &&
+        !d.teamType
+    )
+      .map((d) => ({ id: d.id, tier: d.tier, icon: d.icon, target: resolveTarget(d, context) }))
+      .sort((a, b) => a.target - b.target)
+
+    tiers.forEach((t, i) => { t.step = i + 1 })
+
+    const rows = g.period === 'daily' ? context.todayRows : context.monthRows
+    const current = num(sumMetrics(rows || [])[g.metric])
+    tiers.forEach((t) => { t.unlocked = current >= t.target })
+
+    const nextTier = tiers.find((t) => !t.unlocked) || null
+    const lastUnlocked = [...tiers].reverse().find((t) => t.unlocked) || null
+
+    let progressToNext = 100
+    if (nextTier) {
+      const base = lastUnlocked ? lastUnlocked.target : 0
+      const span = nextTier.target - base
+      progressToNext = span > 0 ? Math.min(100, Math.max(0, ((current - base) / span) * 100)) : 0
+    }
+
+    return {
+      id: `${scope}-${g.period}-${g.category}`,
+      period: g.period,
+      category: g.category,
+      metric: g.metric,
+      current,
+      tiers,
+      nextTier,
+      achievedCount: tiers.filter((t) => t.unlocked).length,
+      totalCount: tiers.length,
+      progressToNext,
+      complete: !nextTier
+    }
+  })
+}
+
 export function tierClass(tier) {
   const map = {
     bronze: 'achievement-tier-bronze',
