@@ -3,6 +3,7 @@ import { requireAuth, requireRole } from '../middleware/auth.js'
 import { pool } from '../database.js'
 import { fetchOlaClickData, fetchTipsData, getTimezoneAwareDate } from '../services/olaClickService.js'
 import { computeAndStoreDailyGain, backfillGains } from '../services/dailyGainService.js'
+import { getBadges, evaluateCompanyMonths } from '../services/achievementService.js'
 
 const router = Router()
 
@@ -569,6 +570,38 @@ router.post('/daily-gains/backfill', requireAuth, requireRole(['admin', 'super-a
     return res.json({ success: true, message: `Backfill started for ${daysDiff} days. Check server logs for progress.` })
   } catch (error) {
     console.error('❌ Daily gains backfill error:', error)
+    res.status(500).json({ success: false, error: error.message })
+  }
+})
+
+// GET /api/analytics/achievements?scope=company|account&company_token=xxx
+// Returns the mixed badge list (earned + upcoming) for the current period.
+router.get('/achievements', requireAuth, async (req, res) => {
+  try {
+    const scope = req.query.scope === 'account' ? 'account' : 'company'
+    const companyToken = req.query.company_token || null
+    if (scope === 'account' && !companyToken) {
+      return res.status(400).json({ success: false, error: 'company_token required for account scope' })
+    }
+    const badges = await getBadges(req.user.companyId, scope, companyToken)
+    return res.json({ success: true, data: badges })
+  } catch (error) {
+    console.error('❌ Achievements fetch error:', error)
+    res.status(500).json({ success: false, error: error.message })
+  }
+})
+
+// POST /api/analytics/achievements/evaluate
+// Force a re-evaluation of the trophy case for the given months (admin only).
+router.post('/achievements/evaluate', requireAuth, requireRole(['admin', 'super-admin']), async (req, res) => {
+  try {
+    const months = Array.isArray(req.body?.months) && req.body.months.length
+      ? req.body.months
+      : [`${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`]
+    const unlocked = await evaluateCompanyMonths(req.user.companyId, months)
+    return res.json({ success: true, unlocked })
+  } catch (error) {
+    console.error('❌ Achievements evaluate error:', error)
     res.status(500).json({ success: false, error: error.message })
   }
 })

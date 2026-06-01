@@ -243,6 +243,12 @@ export const api = {
   backfillDailyGains: (startDate, endDate) => {
     return apiRequest('/api/analytics/daily-gains/backfill', { method: 'POST', body: JSON.stringify({ start_date: startDate, end_date: endDate }) })
   },
+  // Achievements (persisted trophy case)
+  getAchievements: (scope = 'company', companyToken = null) => {
+    const params = new URLSearchParams({ scope })
+    if (companyToken) params.set('company_token', companyToken)
+    return apiRequest(`/api/analytics/achievements?${params.toString()}`, { method: 'GET' })
+  },
   // Companies (admin)
   listCompanies: () => apiRequest('/api/admin/companies', { method: 'GET' }),
   createCompany: (name, timezone, currency, language) => apiRequest('/api/admin/companies', { method: 'POST', body: JSON.stringify({ name, timezone, currency, language }) }),

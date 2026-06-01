@@ -9,6 +9,7 @@ import { config, checkConfiguration } from './config/index.js';
 import { configureWebPush, scheduleDailyReports } from './services/notificationService.js';
 import { scheduleDailyGainsCron, autoBackfillIfNeeded } from './services/dailyGainService.js';
 import { scheduleEmployeeSlaCron, autoBackfillEmployeeSlaIfNeeded } from './services/employeeSlaService.js';
+import { scheduleAchievementsCron, autoEvaluateAchievementsOnBoot } from './services/achievementService.js';
 
 // Import database module
 import {
@@ -225,6 +226,16 @@ try {
 }
 autoBackfillEmployeeSlaIfNeeded().catch(err => {
   console.error('❌ Employee-SLA auto-backfill startup error:', err.message);
+});
+
+// Achievements trophy case — daily cron + opportunistic backfill from history
+try {
+  scheduleAchievementsCron();
+} catch (err) {
+  console.error('❌ Failed to schedule achievements cron:', err.message);
+}
+autoEvaluateAchievementsOnBoot().catch(err => {
+  console.error('❌ Achievements boot evaluation error:', err.message);
 });
 
 // Cleanup database daily

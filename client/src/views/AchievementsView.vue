@@ -45,12 +45,18 @@
           </button>
         </div>
 
-        <p class="text-xs text-gray-500 dark:text-gray-400">
-          {{ $t('achievements.todayLabel', { date: todayLabel }) }}
-          <span v-if="scope === 'company' && accountCount" class="text-indigo-600 dark:text-indigo-400">
-            · {{ $t('achievements.locationCount', { count: accountCount }) }}
-          </span>
-        </p>
+        <!-- Progress summary -->
+        <div v-if="!loading && badges.length" class="space-y-1.5">
+          <div class="flex items-center justify-between text-sm">
+            <span class="text-gray-600 dark:text-gray-400">
+              {{ $t('achievements.earnedOfTotal', { earned: earnedCount, total: badges.length }) }}
+            </span>
+            <span class="text-xs text-gray-400">{{ $t('achievements.updatedDaily') }}</span>
+          </div>
+          <div class="h-2 w-full rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden">
+            <div class="h-full rounded-full bg-green-500 transition-all" :style="{ width: overallPct + '%' }"></div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -63,62 +69,55 @@
     </div>
 
     <template v-else>
-      <!-- Today -->
-      <section>
-        <h2 class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2 px-1">
-          {{ $t('achievements.todayGroup') }}
-        </h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <MilestoneTrack
-            v-for="track in dailyTracks"
-            :key="track.id"
-            :track="track"
-            :title="trackTitle(track)"
-            :symbol="currencySymbol"
-          />
-        </div>
-      </section>
-
-      <!-- This month -->
-      <section>
-        <h2 class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2 px-1">
-          {{ $t('achievements.monthGroup') }}
-        </h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <MilestoneTrack
-            v-for="track in monthlyTracks"
-            :key="track.id"
-            :track="track"
-            :title="trackTitle(track)"
-            :symbol="currencySymbol"
-          />
-        </div>
-      </section>
-
-      <!-- Team milestones (company view only) -->
-      <section v-if="scope === 'company' && teamResults.length">
-        <h2 class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2 px-1">
-          {{ $t('achievements.teamTitle') }}
-        </h2>
-        <div class="flex flex-wrap gap-2">
-          <div
-            v-for="item in teamResults"
-            :key="item.id"
-            class="flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm"
-            :class="item.unlocked
-              ? 'border-green-300 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300'
-              : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-500'"
-          >
-            <span>{{ item.icon }}</span>
-            <span class="font-medium">{{ $t(`achievements.goals.${item.id}.title`) }}</span>
-            <span class="text-xs">{{ item.unlocked ? '✓' : $t('achievements.teamPending') }}</span>
-          </div>
-        </div>
-      </section>
-
-      <div v-if="scope === 'account' && !accounts.length" class="card">
+      <div v-if="!badges.length" class="card">
         <div class="card-body py-10 text-center text-gray-500">
           {{ $t('achievements.noGoals') }}
+        </div>
+      </div>
+
+      <!-- Single mixed badge list: earned surfaced first, then upcoming -->
+      <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div
+          v-for="badge in sortedBadges"
+          :key="badge.id"
+          class="relative rounded-xl border p-4 flex gap-3 transition-colors"
+          :class="badge.unlocked
+            ? 'border-l-4 ' + tierBorder(badge.tier) + ' bg-white dark:bg-gray-800'
+            : 'border-gray-200 dark:border-gray-700 bg-gray-50/60 dark:bg-gray-800/40'"
+        >
+          <div
+            class="text-3xl leading-none flex-shrink-0 select-none"
+            :class="badge.unlocked ? '' : 'grayscale opacity-40'"
+          >
+            {{ badge.icon }}
+          </div>
+
+          <div class="min-w-0 flex-1">
+            <div class="flex items-start justify-between gap-2">
+              <p class="font-semibold text-gray-900 dark:text-gray-100 leading-tight truncate">
+                {{ badgeValue(badge) }}
+              </p>
+              <span v-if="badge.unlocked" class="text-green-600 dark:text-green-400 text-sm flex-shrink-0">✓</span>
+            </div>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ badgeLabel(badge) }}</p>
+
+            <!-- Earned -->
+            <p v-if="badge.unlocked" class="text-xs text-green-600 dark:text-green-400 mt-2 font-medium">
+              {{ $t('achievements.earnedOn', { date: formatDate(badge.unlockedAt) }) }}
+              <span v-if="badge.timesEarned > 1" class="text-gray-400 dark:text-gray-500 font-normal">· ×{{ badge.timesEarned }}</span>
+            </p>
+
+            <!-- Upcoming with progress hint -->
+            <div v-else class="mt-2">
+              <template v-if="badge.target != null">
+                <div class="h-1.5 w-full rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
+                  <div class="h-full rounded-full bg-indigo-400" :style="{ width: (badge.progress || 0) + '%' }"></div>
+                </div>
+                <p class="text-[11px] text-gray-400 mt-1">{{ progressHint(badge) }}</p>
+              </template>
+              <p v-else class="text-[11px] text-gray-400">{{ $t('achievements.locked') }}</p>
+            </div>
+          </div>
         </div>
       </div>
     </template>
@@ -130,134 +129,120 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../stores/auth'
 import api from '../utils/api.js'
-import MilestoneTrack from '../components/MilestoneTrack.vue'
-import {
-  ACHIEVEMENT_DEFINITIONS,
-  buildMilestoneTracks,
-  buildAchievementResults,
-  filterRowsByDate,
-  countDaysWithData
-} from '../composables/useAchievements'
 
 const { t } = useI18n()
 const auth = useAuthStore()
-
-const TEAM_DEFS = ACHIEVEMENT_DEFINITIONS.filter((d) => d.teamType)
 
 const loading = ref(false)
 const scope = ref('company')
 const selectedToken = ref('')
 const accounts = ref([])
-const companyMonthRows = ref([])
-const accountMonthRows = ref([])
-const allAccountMonthRows = ref([])
-
-// Always the current month — no browsing past months.
-const currentYear = new Date().getFullYear()
-const currentMonth = new Date().getMonth() + 1
-const monthKey = `${currentYear}-${String(currentMonth).padStart(2, '0')}`
+const badges = ref([])
 
 const currencySymbol = computed(() => auth.user?.currencySymbol || 'S/')
+const lang = computed(() => auth.user?.language || 'en')
 
-const todayStr = computed(() => {
-  const tz = auth.user?.timezone || 'America/Lima'
-  return new Date().toLocaleDateString('en-CA', { timeZone: tz })
+const earnedCount = computed(() => badges.value.filter((b) => b.unlocked).length)
+const overallPct = computed(() => (badges.value.length ? Math.round((earnedCount.value / badges.value.length) * 100) : 0))
+
+// Earned first (most recent on top), then upcoming sorted by closeness.
+const sortedBadges = computed(() => {
+  const earned = badges.value
+    .filter((b) => b.unlocked)
+    .sort((a, b) => new Date(b.unlockedAt || 0) - new Date(a.unlockedAt || 0))
+  const upcoming = badges.value
+    .filter((b) => !b.unlocked)
+    .sort((a, b) => (b.progress || 0) - (a.progress || 0))
+  return [...earned, ...upcoming]
 })
 
-const todayLabel = computed(() => {
-  const tz = auth.user?.timezone || 'America/Lima'
-  return new Date().toLocaleDateString(auth.user?.language || 'en', {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-    timeZone: tz
-  })
-})
+function formatMoney(n) {
+  const v = Math.round(Number(n) || 0)
+  const s = Math.abs(v).toLocaleString('en-US')
+  return v < 0 ? `-${currencySymbol.value} ${s}` : `${currencySymbol.value} ${s}`
+}
 
-const accountTokens = computed(() => accounts.value.map((acc) => acc.company_token).filter(Boolean))
-const accountCount = computed(() => accountTokens.value.length)
-
-const monthRows = computed(() => (scope.value === 'company' ? companyMonthRows.value : accountMonthRows.value))
-const todayRows = computed(() => filterRowsByDate(monthRows.value, todayStr.value))
-
-const trackContext = computed(() => ({
-  todayRows: todayRows.value,
-  monthRows: monthRows.value,
-  monthlyRows: monthRows.value,
-  accountCount: accountCount.value,
-  daysWithData: countDaysWithData(monthRows.value),
-  companyDaysWithData: countDaysWithData(companyMonthRows.value)
-}))
-
-const tracks = computed(() => buildMilestoneTracks(scope.value, trackContext.value))
-const dailyTracks = computed(() => tracks.value.filter((trk) => trk.period === 'daily'))
-const monthlyTracks = computed(() => tracks.value.filter((trk) => trk.period === 'monthly'))
-
-const teamResults = computed(() => {
-  const perAccountToday = filterRowsByDate(allAccountMonthRows.value, todayStr.value)
-  const context = {
-    dailyRows: [],
-    monthlyRows: [],
-    perAccountToday,
-    perAccountMonth: allAccountMonthRows.value,
-    accountTokens: accountTokens.value
+function formatDate(ts) {
+  if (!ts) return ''
+  try {
+    return new Date(ts).toLocaleDateString(lang.value, { month: 'short', day: 'numeric', year: 'numeric' })
+  } catch {
+    return ''
   }
-  return buildAchievementResults(TEAM_DEFS, context)
-})
+}
 
-function trackTitle(track) {
-  return track.category === 'sales' ? t('achievements.currentSales') : t('achievements.currentProfit')
+// Headline value shown big on the badge.
+function badgeValue(badge) {
+  if (badge.teamType) return t('achievements.teamValue')
+  if (badge.streakType) return t('achievements.daysValue', { n: badge.streakLength })
+  if (badge.category === 'orders') return t('achievements.ordersValue', { n: badge.target })
+  if (badge.category === 'profit' && badge.target != null && badge.target <= 1) return t('achievements.profitable')
+  return formatMoney(badge.target)
+}
+
+// Sub-label describing the kind of goal.
+function badgeLabel(badge) {
+  if (badge.teamType === 'all_profitable') return t('achievements.label.teamProfitable')
+  if (badge.teamType === 'all_hit_objective_day') return t('achievements.label.teamObjective')
+  if (badge.streakType === 'profitable_days') return t('achievements.label.streakProfit')
+  if (badge.streakType === 'objective_days') return t('achievements.label.streakObjective')
+  const key = `${badge.period}${badge.category.charAt(0).toUpperCase()}${badge.category.slice(1)}`
+  return t(`achievements.label.${key}`)
+}
+
+function progressHint(badge) {
+  if (badge.target == null) return ''
+  if (badge.category === 'orders') {
+    return `${Math.round(badge.current || 0)} / ${Math.round(badge.target)}`
+  }
+  return `${formatMoney(badge.current)} / ${formatMoney(badge.target)}`
+}
+
+function tierBorder(tier) {
+  const map = {
+    bronze: 'border-l-amber-500',
+    silver: 'border-l-slate-400',
+    gold: 'border-l-yellow-400',
+    platinum: 'border-l-indigo-500'
+  }
+  return map[tier] || 'border-l-green-500'
 }
 
 async function loadAccounts() {
   const companyId = auth.user?.company_id
   if (!companyId) return
-  const res = await api.listCompanyAccounts(companyId)
-  accounts.value = res.accounts || res.data || res || []
-  if (accounts.value.length && !selectedToken.value) {
-    selectedToken.value = accounts.value[0].company_token
+  try {
+    const res = await api.listCompanyAccounts(companyId)
+    accounts.value = res.accounts || res.data || res || []
+    if (accounts.value.length && !selectedToken.value) {
+      selectedToken.value = accounts.value[0].company_token
+    }
+  } catch (err) {
+    console.error('Failed to load accounts:', err)
   }
 }
 
 async function loadData() {
   loading.value = true
   try {
-    const [companyRes, ...accountResults] = await Promise.all([
-      api.getDailyGains(monthKey),
-      ...accounts.value.map((acc) => api.getDailyGains(monthKey, acc.company_token))
-    ])
-    companyMonthRows.value = companyRes.data || []
-
-    const tagged = []
-    accountResults.forEach((res, i) => {
-      const token = accounts.value[i]?.company_token
-      for (const row of res.data || []) {
-        tagged.push({ ...row, company_token: token })
-      }
-    })
-    allAccountMonthRows.value = tagged
-
-    if (selectedToken.value) {
-      const idx = accounts.value.findIndex((a) => a.company_token === selectedToken.value)
-      accountMonthRows.value = accountResults[idx]?.data || []
+    const token = scope.value === 'account' ? selectedToken.value : null
+    if (scope.value === 'account' && !token) {
+      badges.value = []
+      return
     }
+    const res = await api.getAchievements(scope.value, token)
+    badges.value = res.data || []
   } catch (err) {
-    console.error('Failed to load achievement data:', err)
-    companyMonthRows.value = []
-    accountMonthRows.value = []
-    allAccountMonthRows.value = []
+    console.error('Failed to load achievements:', err)
+    badges.value = []
   } finally {
     loading.value = false
   }
 }
 
+watch(scope, () => { loadData() })
 watch(selectedToken, (token, prev) => {
-  if (token && token !== prev) {
-    const idx = accounts.value.findIndex((a) => a.company_token === token)
-    accountMonthRows.value = allAccountMonthRows.value.filter((r) => r.company_token === token)
-    // Fall back to a fresh fetch if we have no cached rows yet.
-    if (idx >= 0 && !accountMonthRows.value.length) loadData()
-  }
+  if (scope.value === 'account' && token && token !== prev) loadData()
 })
 
 onMounted(async () => {
