@@ -574,6 +574,91 @@ router.post('/daily-gains/backfill', requireAuth, requireRole(['admin', 'super-a
   }
 })
 
+// GET /api/analytics/daily-record?date=YYYY-MM-DD&timezone=...
+// Returns the "record to beat" for the weekday of `date` (defaults to today),
+// based on the highest single-day sales (gross_revenue) observed for that same
+// weekday over the previous 3 months. The target day itself is excluded so an
+// in-progress day never becomes its own record. Returned both at company level
+// (sum across accounts per day) and per account.
+router.get('/daily-record', requireAuth, async (req, res) => {
+  try {
+    const companyId = req.user.companyId
+
+    let timezone = req.query.timezone || req.query?.filter?.timezone
+    if (!timezone) {
+      const tzQ = await pool.query('SELECT timezone FROM companies WHERE id = $1', [companyId])
+      timezone = tzQ.rows[0]?.timezone || 'America/Lima'
+    }
+
+    let date = req.query.date
+    date = (date && /^\d{4}-\d{2}-\d{2}$/.test(date))
+      ? getTimezoneAwareDate(date, timezone)
+      : getTimezoneAwareDate(null, timezone)
+
+    // 3-month look-back window, excluding the target day itself
+    const windowRes = await pool.query(
+      `SELECT to_char(($1::date - INTERVAL '3 months')::date, 'YYYY-MM-DD') AS start,
+              to_char(($1::date - INTERVAL '1 day')::date, 'YYYY-MM-DD') AS "end"`,
+      [date]
+    )
+    const windowStart = windowRes.rows[0].start
+    const windowEnd = windowRes.rows[0].end
+
+    // Company-level record: highest single-day total sales among matching weekdays
+    const companyRes = await pool.query(
+      `SELECT to_char(date, 'YYYY-MM-DD') AS date, SUM(gross_revenue) AS gross
+       FROM daily_gains
+       WHERE company_id = $1
+         AND date >= $2 AND date <= $3
+         AND EXTRACT(DOW FROM date) = EXTRACT(DOW FROM $4::date)
+       GROUP BY date
+       ORDER BY gross DESC
+       LIMIT 1`,
+      [companyId, windowStart, windowEnd, date]
+    )
+    const companyRecord = companyRes.rows[0]
+      ? { record: Number(companyRes.rows[0].gross) || 0, date: companyRes.rows[0].date }
+      : { record: 0, date: null }
+
+    // Per-account record: highest single-day sales per account among matching weekdays
+    const accountsRes = await pool.query(
+      `SELECT DISTINCT ON (dg.company_token)
+              dg.company_token,
+              ca.account_name,
+              to_char(dg.date, 'YYYY-MM-DD') AS date,
+              dg.gross_revenue AS gross
+       FROM daily_gains dg
+       LEFT JOIN company_accounts ca
+         ON ca.company_id = dg.company_id AND ca.company_token = dg.company_token
+       WHERE dg.company_id = $1
+         AND dg.date >= $2 AND dg.date <= $3
+         AND EXTRACT(DOW FROM dg.date) = EXTRACT(DOW FROM $4::date)
+       ORDER BY dg.company_token, dg.gross_revenue DESC`,
+      [companyId, windowStart, windowEnd, date]
+    )
+    const accounts = accountsRes.rows.map(r => ({
+      accountKey: r.company_token,
+      account: r.account_name || r.company_token,
+      record: Number(r.gross) || 0,
+      date: r.date
+    }))
+
+    return res.json({
+      success: true,
+      data: {
+        date,
+        weekday: new Date(date + 'T00:00:00').getDay(), // 0=Sun..6=Sat
+        window: { start: windowStart, end: windowEnd },
+        company: companyRecord,
+        accounts
+      }
+    })
+  } catch (error) {
+    console.error('❌ Daily record fetch error:', error)
+    res.status(500).json({ success: false, error: error.message })
+  }
+})
+
 // GET /api/analytics/achievements?scope=company|account&company_token=xxx
 // Returns the mixed badge list (earned + upcoming) for the current period.
 router.get('/achievements', requireAuth, async (req, res) => {

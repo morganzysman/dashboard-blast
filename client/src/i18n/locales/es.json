@@ -219,6 +219,20 @@
     "switchDateRangeMessage": "Cambie a un rango de fechas predefinido para ver métricas de servicio detalladas",
     "tips": "Propinas"
   },
+  "dailyGoal": {
+    "todayTitle": "Meta de hoy",
+    "dayTitle": "Meta del {day}",
+    "subtitle": "Supera tu mejor venta de {day} de los últimos 3 meses",
+    "newRecord": "¡Nuevo récord!",
+    "currentlySelling": "Vendiendo ahora",
+    "recordToBeat": "Récord a superar",
+    "progressLabel": "Progreso hacia el récord",
+    "noRecordYet": "Aún no hay récord de {day} — hoy marcas la pauta.",
+    "beatBy": "¡Récord superado por {amount}! 🎉",
+    "remaining": "Faltan {amount} para un nuevo récord",
+    "perAccount": "Por cuenta",
+    "goalShort": "Meta"
+  },
   "companyKitchen": {
     "title": "Cocina y SLA — todas las cuentas",
     "tapToExpand": "(toca para expandir)",

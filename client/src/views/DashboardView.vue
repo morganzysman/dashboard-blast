@@ -16,6 +16,14 @@
               @refresh-data="refreshData"
             />
 
+    <!-- Daily Sales Goal — beat the same-weekday record (single-day view only) -->
+    <DailySalesGoal
+      :record-data="dailyRecordData"
+      :profitability-data="profitabilityData"
+      :current-date-range="currentDateRange"
+      :loading="loading"
+    />
+
     <!-- Company-wide kitchen (all accounts) -->
     <CompanyKitchenSummary :company-kitchen="ordersData?.aggregated?.companyKitchen" />
 
@@ -111,6 +119,7 @@ import DashboardOverview from '../components/DashboardOverview.vue'
 import AccountDetails from '../components/AccountDetails.vue'
 import CompanyKitchenSummary from '../components/CompanyKitchenSummary.vue'
 import OrderEvolutionChart from '../components/OrderEvolutionChart.vue'
+import DailySalesGoal from '../components/DailySalesGoal.vue'
 import api from '../utils/api'
 
 const authStore = useAuthStore()
@@ -119,6 +128,7 @@ const analyticsData = ref(null)
 const ordersData = ref(null)
 const profitabilityData = ref(null)
 const serviceMetricsData = ref(null)
+const dailyRecordData = ref(null)
 const loading = ref(false)
 const error = ref('')
 
@@ -270,6 +280,7 @@ const onDateRangeChange = () => {
   fetchOrdersData(currentDateRange.value)
   fetchServiceMetricsData()
   fetchProfitabilityData()
+  fetchDailyRecord()
 }
 
 const onCustomDateChange = () => {
@@ -283,6 +294,7 @@ const onCustomDateChange = () => {
     fetchOrdersData(currentDateRange.value)
     fetchServiceMetricsData()
     fetchProfitabilityData()
+    fetchDailyRecord()
   }
 }
 
@@ -296,6 +308,7 @@ const applyCustomDateRange = () => {
     fetchOrdersData(currentDateRange.value)
     fetchServiceMetricsData()
     fetchProfitabilityData()
+    fetchDailyRecord()
   }
 }
 
@@ -485,11 +498,34 @@ const fetchProfitabilityData = async () => {
   }
 }
 
+// Fetch the same-weekday "record to beat" for the selected day (single-day only)
+const fetchDailyRecord = async () => {
+  const range = currentDateRange.value
+  // Only relevant for a single-day view (today, yesterday, or a custom single day)
+  if (!range.start || range.start !== range.end) {
+    dailyRecordData.value = null
+    return
+  }
+  try {
+    const timezone = authStore.user?.timezone || 'America/Lima'
+    const data = await api.getDailyRecord(range.start, timezone)
+    if (data.success) {
+      dailyRecordData.value = data.data
+    } else {
+      dailyRecordData.value = null
+    }
+  } catch (err) {
+    console.warn('⚠️ Daily record fetch failed:', err)
+    dailyRecordData.value = null
+  }
+}
+
 const refreshData = () => {
   fetchAnalyticsData()
   fetchOrdersData(currentDateRange.value)
   fetchServiceMetricsData()
   fetchProfitabilityData()
+  fetchDailyRecord()
 }
 
 onMounted(() => {
@@ -498,6 +534,7 @@ onMounted(() => {
   fetchOrdersData(currentDateRange.value)
   fetchServiceMetricsData()
   fetchProfitabilityData()
+  fetchDailyRecord()
 })
 </script>
 

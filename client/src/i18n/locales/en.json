@@ -218,6 +218,20 @@
     "switchDateRangeMessage": "Switch to a predefined date range to view detailed service metrics",
     "tips": "Tips"
   },
+  "dailyGoal": {
+    "todayTitle": "Today's Goal",
+    "dayTitle": "{day} Goal",
+    "subtitle": "Beat your best {day} sales from the last 3 months",
+    "newRecord": "New record!",
+    "currentlySelling": "Currently selling",
+    "recordToBeat": "Record to beat",
+    "progressLabel": "Progress to record",
+    "noRecordYet": "No {day} record yet — today sets the bar.",
+    "beatBy": "Record beaten by {amount}! 🎉",
+    "remaining": "{amount} to go to set a new record",
+    "perAccount": "Per account",
+    "goalShort": "Goal"
+  },
   "companyKitchen": {
     "title": "Kitchen & SLA — all accounts",
     "tapToExpand": "(tap to expand)",

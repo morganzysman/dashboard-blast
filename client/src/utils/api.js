@@ -243,6 +243,14 @@ export const api = {
   backfillDailyGains: (startDate, endDate) => {
     return apiRequest('/api/analytics/daily-gains/backfill', { method: 'POST', body: JSON.stringify({ start_date: startDate, end_date: endDate }) })
   },
+  // Daily record / goal-to-beat for the weekday of `date` (defaults to today)
+  getDailyRecord: (date = null, timezone = null) => {
+    const params = new URLSearchParams()
+    if (date) params.set('date', date)
+    if (timezone) params.set('timezone', timezone)
+    const qs = params.toString()
+    return apiRequest(`/api/analytics/daily-record${qs ? `?${qs}` : ''}`, { method: 'GET' })
+  },
   // Achievements (persisted trophy case)
   getAchievements: (scope = 'company', companyToken = null) => {
     const params = new URLSearchParams({ scope })
