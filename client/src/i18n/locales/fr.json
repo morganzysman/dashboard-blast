@@ -229,6 +229,7 @@
     "beatBy": "Record battu de {amount} ! 🎉",
     "remaining": "Encore {amount} pour un nouveau record",
     "perAccount": "Par compte",
+    "perAccountHint": "Le meilleur {day} de chaque compte — la date du record peut varier selon le compte",
     "goalShort": "Objectif"
   },
   "companyKitchen": {

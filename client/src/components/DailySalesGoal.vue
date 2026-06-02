@@ -53,7 +53,10 @@
 
       <!-- Per-account goals -->
       <div v-if="accountRows.length > 1" class="space-y-3">
-        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">{{ $t('dailyGoal.perAccount') }}</p>
+        <div>
+          <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">{{ $t('dailyGoal.perAccount') }}</p>
+          <p class="text-[11px] text-gray-400">{{ $t('dailyGoal.perAccountHint', { day: weekdayName }) }}</p>
+        </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div
             v-for="row in accountRows"
@@ -65,13 +68,16 @@
               <span class="text-sm font-medium text-gray-800 truncate" :title="row.account">{{ row.account }}</span>
               <span v-if="row.isNewRecord" class="text-xs flex-shrink-0">🏆</span>
             </div>
-            <div class="flex items-baseline justify-between gap-2 mb-2">
+            <div class="flex items-end justify-between gap-2 mb-2">
               <span class="text-base font-bold" :class="row.isNewRecord ? 'text-green-600' : 'text-gray-900'">
                 {{ formatCurrency(row.current) }}
               </span>
-              <span class="text-xs text-gray-500">
-                {{ $t('dailyGoal.goalShort') }}: {{ row.record > 0 ? formatCurrency(row.record) : '—' }}
-              </span>
+              <div class="text-right flex-shrink-0">
+                <span class="text-xs text-gray-500">
+                  {{ $t('dailyGoal.goalShort') }}: {{ row.record > 0 ? formatCurrency(row.record) : '—' }}
+                </span>
+                <p v-if="row.recordDate" class="text-[10px] text-gray-400 leading-none">{{ formatDisplayDate(row.recordDate) }}</p>
+              </div>
             </div>
             <ObjectiveProgress compact :value="row.current" :objective="row.record" />
           </div>
@@ -155,6 +161,7 @@ const accountRows = computed(() => {
         account: rec?.account || acc.account || acc.accountKey,
         current,
         record,
+        recordDate: rec?.date || null,
         isNewRecord: record > 0 && current > record
       }
     })
