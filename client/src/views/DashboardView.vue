@@ -1,5 +1,13 @@
 <template>
   <div class="space-y-4 lg:space-y-6">
+    <!-- Daily Sales Goal — beat the same-weekday record (single-day view only) -->
+    <DailySalesGoal
+      :record-data="dailyRecordData"
+      :profitability-data="profitabilityData"
+      :current-date-range="currentDateRange"
+      :loading="loading"
+    />
+
     <!-- Dashboard Overview Component -->
                 <DashboardOverview
               :analytics-data="analyticsDataWithServiceMetrics"
@@ -15,14 +23,6 @@
               @apply-custom-date-range="applyCustomDateRange"
               @refresh-data="refreshData"
             />
-
-    <!-- Daily Sales Goal — beat the same-weekday record (single-day view only) -->
-    <DailySalesGoal
-      :record-data="dailyRecordData"
-      :profitability-data="profitabilityData"
-      :current-date-range="currentDateRange"
-      :loading="loading"
-    />
 
     <!-- Company-wide kitchen (all accounts) -->
     <CompanyKitchenSummary :company-kitchen="ordersData?.aggregated?.companyKitchen" />
