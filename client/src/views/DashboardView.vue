@@ -1,18 +1,11 @@
 <template>
   <div class="space-y-4 lg:space-y-6">
-    <!-- Daily Sales Goal — beat the same-weekday record (single-day view only) -->
-    <DailySalesGoal
-      :record-data="dailyRecordData"
-      :profitability-data="profitabilityData"
-      :current-date-range="currentDateRange"
-      :loading="loading"
-    />
-
-    <!-- Dashboard Overview Component -->
+    <!-- Dashboard Overview Component (includes date picker + daily goal + KPIs) -->
                 <DashboardOverview
               :analytics-data="analyticsDataWithServiceMetrics"
               :orders-data="ordersData"
               :profitability-data="profitabilityData"
+              :record-data="dailyRecordData"
               :loading="loading"
               v-model:selected-date-range="selectedDateRange"
               v-model:custom-start-date="customStartDate"
@@ -119,7 +112,6 @@ import DashboardOverview from '../components/DashboardOverview.vue'
 import AccountDetails from '../components/AccountDetails.vue'
 import CompanyKitchenSummary from '../components/CompanyKitchenSummary.vue'
 import OrderEvolutionChart from '../components/OrderEvolutionChart.vue'
-import DailySalesGoal from '../components/DailySalesGoal.vue'
 import api from '../utils/api'
 
 const authStore = useAuthStore()

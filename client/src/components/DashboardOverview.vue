@@ -96,6 +96,14 @@
         </div>
       </div>
 
+    <!-- Daily Sales Goal — beat the same-weekday record (single-day view only) -->
+    <DailySalesGoal
+      :record-data="recordData"
+      :profitability-data="profitabilityData"
+      :current-date-range="currentDateRange"
+      :loading="loading"
+    />
+
     <!-- Overall Performance Cards -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6" v-if="analyticsData">
       <!-- TOTAL ORDERS KPI with embedded chart -->
@@ -329,6 +337,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import KpiCard from './ui/KpiCard.vue'
 import ObjectiveProgress from './ui/ObjectiveProgress.vue'
 import OrderEvolutionChart from './OrderEvolutionChart.vue'
+import DailySalesGoal from './DailySalesGoal.vue'
 import { useAuthStore } from '../stores/auth'
 import { calculateDaysInPeriod as calcDays, DAILY_GAIN_OBJECTIVE } from '../composables/useProfitability'
 
@@ -336,6 +345,7 @@ const props = defineProps({
   analyticsData: Object,
   ordersData: Object,
   profitabilityData: Object,
+  recordData: Object,
   loading: Boolean,
   selectedDateRange: String,
   customStartDate: String,
