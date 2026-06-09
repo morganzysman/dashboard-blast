@@ -568,7 +568,8 @@
     "defineWeeklyShifts": "Definir turnos semanais por conta. Horários são locais (HH:MM, 24h).",
     "showsCurrentSelections": "Mostra as seleções atuais por dia da semana",
     "previewThisWeek": "Pré-visualização (Esta semana)",
-    "totalWeeklyHours": "Total horas / semana"
+    "totalWeeklyHours": "Total horas / semana",
+    "addShift": "Adicionar turno"
   },
   "rentability": {
     "title": "Análise de Rentabilidade",

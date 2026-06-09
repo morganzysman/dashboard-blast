@@ -26,10 +26,12 @@
               <!-- Mobile: show weekday label inside each cell -->
               <div class="text-[10px] text-gray-400 text-center lg:hidden">{{ day.wdLabel }}</div>
               <div class="text-[10px] text-gray-500 text-center">{{ day.label }}</div>
-              <div class="mt-1 space-y-1" v-if="day.shift">
-                <div class="text-gray-900 font-medium truncate lg:whitespace-normal text-center">{{ day.shift.account_name || day.shift.company_token }}</div>
-                <div class="text-gray-600 text-[10px] text-center">{{ formatTimeShort(day.shift.start_time) }} – {{ formatTimeShort(day.shift.end_time) }}</div>
-              </div>
+              <template v-if="day.shifts && day.shifts.length">
+                <div class="mt-1 space-y-0.5" v-for="(s, i) in day.shifts" :key="i">
+                  <div class="text-gray-900 font-medium truncate lg:whitespace-normal text-center">{{ s.account_name || s.company_token }}</div>
+                  <div class="text-gray-600 text-[10px] text-center">{{ formatTimeShort(s.start_time) }} – {{ formatTimeShort(s.end_time) }}</div>
+                </div>
+              </template>
               <div v-else class="text-gray-400">—</div>
             </div>
           </template>
@@ -212,7 +214,7 @@ const buildWeek = async () => {
     const dd = String(d.getDate()).padStart(2, '0')
     const dateStr = `${yyyy}-${mm}-${dd}`
     const wdLabel = d.toLocaleDateString(undefined, { weekday: 'short' })
-    list.push({ date: d, dateStr, label: d.getDate(), wdLabel, shift: null })
+    list.push({ date: d, dateStr, label: d.getDate(), wdLabel, shifts: [] })
   }
   // Fetch shifts assigned to this user
   try {
@@ -221,13 +223,21 @@ const buildWeek = async () => {
     for (let i = 0; i < list.length; i++) {
       const day = list[i]
       const s = shifts.find(x => x.date === day.dateStr)
-      if (s && s.shift) {
-        day.shift = {
+      // Prefer the new `shifts` array; fall back to legacy single `shift`
+      if (s && Array.isArray(s.shifts) && s.shifts.length) {
+        day.shifts = s.shifts.map(x => ({
+          company_token: x.company_token,
+          account_name: x.account_name,
+          start_time: x.start_time,
+          end_time: x.end_time
+        }))
+      } else if (s && s.shift) {
+        day.shifts = [{
           company_token: s.shift.company_token,
           account_name: s.shift.account_name,
           start_time: s.shift.start_time,
           end_time: s.shift.end_time
-        }
+        }]
       }
     }
   } catch {}

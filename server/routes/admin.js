@@ -652,7 +652,9 @@ router.get('/users/:userId/shifts', requireAuth, requireRole(['admin', 'super-ad
 router.post('/users/:userId/shifts', requireAuth, requireRole(['admin', 'super-admin']), async (req, res) => {
   try {
     const { userId } = req.params
-    const { company_token, weekday, start_time, end_time } = req.body || {}
+    // `id` is optional: when provided we update that specific shift row, otherwise
+    // we create a new one. Multiple shifts per user/weekday are allowed (split shifts).
+    const { id, company_token, weekday, start_time, end_time } = req.body || {}
     if (!company_token || typeof weekday !== 'number' || !start_time || !end_time) {
       return res.status(400).json({ success: false, error: 'company_token, weekday, start_time, end_time required' })
     }
@@ -665,42 +667,28 @@ router.post('/users/:userId/shifts', requireAuth, requireRole(['admin', 'super-a
       const aq = await pool.query('SELECT company_id FROM company_accounts WHERE company_token = $1', [company_token])
       if ((aq.rows[0]?.company_id || null) !== req.user.companyId) return res.status(403).json({ success: false, error: 'Forbidden' })
     }
-    
-    // Check if a shift already exists for this user/weekday combination
-    const existing = await pool.query(
-      'SELECT id, company_token FROM employee_shifts WHERE user_id = $1 AND weekday = $2',
-      [userId, weekday]
-    )
-    
-    if (existing.rowCount > 0) {
-      // Shift exists - prevent changing company_token
-      const existingCompanyToken = existing.rows[0].company_token
-      if (existingCompanyToken !== company_token) {
-        return res.status(400).json({ 
-          success: false, 
-          error: 'Cannot change company_token for existing shift. Delete the shift first if needed.' 
-        })
-      }
-      
-      // Update only time fields, keeping the same company_token
+
+    if (id) {
+      // Update an existing shift row (verify it belongs to this user)
       const upd = await pool.query(
-        `UPDATE employee_shifts 
-         SET start_time = $3, end_time = $4, updated_at = NOW()
-         WHERE user_id = $1 AND weekday = $2
+        `UPDATE employee_shifts
+         SET company_token = $3, weekday = $4, start_time = $5, end_time = $6, updated_at = NOW()
+         WHERE id = $1 AND user_id = $2
          RETURNING *`,
-        [userId, weekday, start_time, end_time]
+        [id, userId, company_token, weekday, start_time, end_time]
       )
-      res.json({ success: true, data: upd.rows[0] })
-    } else {
-      // No existing shift - create new one
-      const ins = await pool.query(
-        `INSERT INTO employee_shifts(user_id, company_token, weekday, start_time, end_time)
-         VALUES ($1,$2,$3,$4,$5)
-         RETURNING *`,
-        [userId, company_token, weekday, start_time, end_time]
-      )
-      res.json({ success: true, data: ins.rows[0] })
+      if (upd.rowCount === 0) return res.status(404).json({ success: false, error: 'Shift not found' })
+      return res.json({ success: true, data: upd.rows[0] })
     }
+
+    // No id provided - create a new shift block
+    const ins = await pool.query(
+      `INSERT INTO employee_shifts(user_id, company_token, weekday, start_time, end_time)
+       VALUES ($1,$2,$3,$4,$5)
+       RETURNING *`,
+      [userId, company_token, weekday, start_time, end_time]
+    )
+    res.json({ success: true, data: ins.rows[0] })
   } catch (e) {
     res.status(500).json({ success: false, error: 'Failed to upsert shift' })
   }

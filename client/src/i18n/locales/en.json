@@ -483,7 +483,8 @@
     "defineWeeklyShifts": "Define weekly shifts per account. Times are local (HH:MM, 24h).",
     "showsCurrentSelections": "Shows current selections per weekday",
     "previewThisWeek": "Preview (This Week)",
-    "totalWeeklyHours": "Total hours / week"
+    "totalWeeklyHours": "Total hours / week",
+    "addShift": "Add shift"
   },
   "rentability": {
     "title": "Profitability Analysis",
@@ -763,6 +764,8 @@
     "defineWeeklyShifts": "Define weekly shifts per account. Times are local (HH:MM, 24h).",
     "showsCurrentSelections": "Shows current selections per weekday",
     "previewThisWeek": "Preview (This week)",
+    "totalWeeklyHours": "Total hours / week",
+    "addShift": "Add shift",
     "weekdays": {
       "0": "Sun",
       "1": "Mon",

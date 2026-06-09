@@ -302,30 +302,41 @@ router.post('/clock', requireAuth, async (req, res) => {
       let shiftStart = null
       let shiftEnd = null
       if (qShift.rowCount > 0) {
-        // Extract TIME portion from TIMESTAMPTZ shift times and store as local time
-        const startTimestamp = new Date(qShift.rows[0].start_time)
-        const endTimestamp = new Date(qShift.rows[0].end_time)
-        
-        // Format as TIME in company timezone (HH:MM:SS format)
-        shiftStart = startTimestamp.toLocaleTimeString('en-GB', {
+        // Helper: format a TIMESTAMPTZ as HH:MM:SS in the company timezone
+        const toLocalTime = (ts) => new Date(ts).toLocaleTimeString('en-GB', {
           timeZone: companyTimezone,
           hour12: false,
           hour: '2-digit',
           minute: '2-digit',
           second: '2-digit'
         })
-        
-        shiftEnd = endTimestamp.toLocaleTimeString('en-GB', {
-          timeZone: companyTimezone,
-          hour12: false,
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit'
-        })
-        
+        const toMinutes = (hhmmss) => {
+          const [h, m] = hhmmss.split(':').map(Number)
+          return h * 60 + m
+        }
+
+        // A user may have several shift blocks on the same weekday (e.g. split
+        // morning/evening). Pick the block whose start time is closest to now so
+        // clock-in is attributed to the shift the employee is actually starting.
+        const nowMinutes = toMinutes(toLocalTime(new Date()))
+        let best = null
+        let bestDiff = Infinity
+        for (const row of qShift.rows) {
+          const startLocal = toLocalTime(row.start_time)
+          const diff = Math.abs(toMinutes(startLocal) - nowMinutes)
+          if (diff < bestDiff) {
+            bestDiff = diff
+            best = { startLocal, endLocal: toLocalTime(row.end_time), row }
+          }
+        }
+
+        shiftStart = best.startLocal
+        shiftEnd = best.endLocal
+
         console.log(`🕐 Using shift times for ${companyTimezone}:`, {
-          originalStart: qShift.rows[0].start_time,
-          originalEnd: qShift.rows[0].end_time,
+          matchedShifts: qShift.rowCount,
+          originalStart: best.row.start_time,
+          originalEnd: best.row.end_time,
           shiftStart,
           shiftEnd
         })
@@ -519,23 +530,32 @@ router.get('/me/shifts', requireAuth, async (req, res) => {
       `SELECT es.weekday, es.company_token, es.start_time, es.end_time, ca.account_name
        FROM employee_shifts es
        LEFT JOIN company_accounts ca ON ca.company_token = es.company_token
-       WHERE es.user_id = $1`,
+       WHERE es.user_id = $1
+       ORDER BY es.weekday, es.start_time`,
       [userId]
     )
+    // A weekday can have multiple shift blocks (split shifts), so group into arrays
     const byWeekday = new Map()
-    for (const r of q.rows) byWeekday.set(Number(r.weekday), r)
-    const result = days.map(d => ({
-      date: d.date,
-      weekday: d.weekday,
-      shift: byWeekday.has(d.weekday)
-        ? {
-            company_token: byWeekday.get(d.weekday).company_token,
-            account_name: byWeekday.get(d.weekday).account_name || null,
-            start_time: byWeekday.get(d.weekday).start_time,
-            end_time: byWeekday.get(d.weekday).end_time
-          }
-        : null
-    }))
+    for (const r of q.rows) {
+      const wd = Number(r.weekday)
+      if (!byWeekday.has(wd)) byWeekday.set(wd, [])
+      byWeekday.get(wd).push({
+        company_token: r.company_token,
+        account_name: r.account_name || null,
+        start_time: r.start_time,
+        end_time: r.end_time
+      })
+    }
+    const result = days.map(d => {
+      const shifts = byWeekday.get(d.weekday) || []
+      return {
+        date: d.date,
+        weekday: d.weekday,
+        shifts,
+        // Keep `shift` for backward compatibility (first block of the day or null)
+        shift: shifts.length > 0 ? shifts[0] : null
+      }
+    })
     res.json({ success: true, data: result })
   } catch (e) {
     res.status(500).json({ success: false, error: 'Failed to fetch shifts' })

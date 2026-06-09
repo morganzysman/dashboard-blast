@@ -25,26 +25,49 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="wd in displayOrder" :key="wd" class="border-t hover:bg-gray-50 odd:bg-white even:bg-gray-50 dark:odd:bg-gray-900 dark:even:bg-gray-800 dark:hover:bg-gray-700">
-                    <td class="py-2 pr-2 w-28">{{ weekdayLabel(wd) }}</td>
-                    <td class="py-2 pr-2">
-                      <select v-model="form[wd].company_token" class="form-input w-full">
-                        <option value="">—</option>
-                        <option v-for="acc in accounts" :key="acc.company_token" :value="acc.company_token">
-                          {{ acc.account_name || acc.company_token }}
-                        </option>
-                      </select>
-                    </td>
-                    <td class="py-2 pr-2 w-28">
-                      <input v-model="form[wd].start_time" type="time" class="form-input w-full" />
-                    </td>
-                    <td class="py-2 pr-2 w-28">
-                      <input v-model="form[wd].end_time" type="time" class="form-input w-full" />
-                    </td>
-                    <td class="py-2 pr-2 w-24">
-                      <button class="btn-danger btn-xs" @click="clearDay(wd)" :disabled="!form[wd].company_token && !form[wd].start_time && !form[wd].end_time">{{ $t('common.clear') }}</button>
-                    </td>
-                  </tr>
+                  <template v-for="wd in displayOrder" :key="wd">
+                    <tr
+                      v-for="(shift, idx) in form[wd]"
+                      :key="wd + '-' + idx"
+                      :class="['hover:bg-gray-50 dark:hover:bg-gray-700', idx === 0 ? 'border-t border-gray-200 dark:border-gray-700' : '']"
+                    >
+                      <td class="py-2 pr-2 w-28 align-top font-medium text-gray-700 dark:text-gray-300">
+                        <span v-if="idx === 0">{{ weekdayLabel(wd) }}</span>
+                      </td>
+                      <td class="py-2 pr-2">
+                        <select v-model="shift.company_token" class="form-input w-full">
+                          <option value="">—</option>
+                          <option v-for="acc in accounts" :key="acc.company_token" :value="acc.company_token">
+                            {{ acc.account_name || acc.company_token }}
+                          </option>
+                        </select>
+                      </td>
+                      <td class="py-2 pr-2 w-28">
+                        <input v-model="shift.start_time" type="time" class="form-input w-full" />
+                      </td>
+                      <td class="py-2 pr-2 w-28">
+                        <input v-model="shift.end_time" type="time" class="form-input w-full" />
+                      </td>
+                      <td class="py-2 pr-2 w-44">
+                        <div class="flex items-center gap-1">
+                          <button
+                            class="btn-danger btn-xs"
+                            @click="removeShift(wd, idx)"
+                            :disabled="form[wd].length === 1 && !shift.company_token && !shift.start_time && !shift.end_time"
+                          >
+                            {{ form[wd].length > 1 ? $t('common.remove') : $t('common.clear') }}
+                          </button>
+                          <button
+                            v-if="idx === form[wd].length - 1"
+                            class="btn-secondary btn-xs whitespace-nowrap"
+                            @click="addShift(wd)"
+                          >
+                            + {{ $t('shifts.addShift') }}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  </template>
                 </tbody>
               </table>
             </div>
@@ -64,10 +87,12 @@
                 <template v-for="day in weekDays" :key="day.dateStr">
                   <div class="border rounded p-2 min-h-[80px]">
                     <div class="text-[10px] text-gray-500">{{ day.label }}</div>
-                    <div class="mt-1 space-y-1" v-if="form[day.weekday].company_token && form[day.weekday].start_time && form[day.weekday].end_time">
-                      <div class="text-gray-900 font-medium">{{ accountNameFor(form[day.weekday].company_token) }}</div>
-                      <div class="text-gray-600">{{ form[day.weekday].start_time }} - {{ form[day.weekday].end_time }}</div>
-                    </div>
+                    <template v-if="filledShifts(day.weekday).length">
+                      <div class="mt-1 space-y-1" v-for="(s, i) in filledShifts(day.weekday)" :key="i">
+                        <div class="text-gray-900 font-medium">{{ accountNameFor(s.company_token) }}</div>
+                        <div class="text-gray-600">{{ s.start_time }} - {{ s.end_time }}</div>
+                      </div>
+                    </template>
                     <div v-else class="text-gray-400">—</div>
                   </div>
                 </template>
@@ -77,7 +102,7 @@
           <div class="modal-footer">
             <div class="flex justify-end gap-2">
               <button class="btn-secondary btn-sm" @click="$emit('close')">{{ $t('common.close') }}</button>
-              <button class="btn-primary btn-sm" :disabled="saving" @click="saveAll">{{ saving ? 'Saving...' : 'Save' }}</button>
+              <button class="btn-primary btn-sm" :disabled="saving" @click="saveAll">{{ saving ? $t('common.loading') : $t('common.save') }}</button>
             </div>
           </div>
         </div>
@@ -98,16 +123,24 @@ const props = defineProps({
 const accounts = ref([])
 const saving = ref(false)
 
-// internal form state keyed by weekday number (0..6)
+// Helper to create an empty shift row
+const emptyShift = () => ({ id: null, company_token: '', start_time: '', end_time: '' })
+
+// internal form state keyed by weekday number (0..6); each day holds one or
+// more shift blocks (split shifts). Every day always keeps at least one row so
+// there is something to fill in.
 const form = ref({
-  0: { id: null, company_token: '', start_time: '', end_time: '' },
-  1: { id: null, company_token: '', start_time: '', end_time: '' },
-  2: { id: null, company_token: '', start_time: '', end_time: '' },
-  3: { id: null, company_token: '', start_time: '', end_time: '' },
-  4: { id: null, company_token: '', start_time: '', end_time: '' },
-  5: { id: null, company_token: '', start_time: '', end_time: '' },
-  6: { id: null, company_token: '', start_time: '', end_time: '' },
+  0: [emptyShift()],
+  1: [emptyShift()],
+  2: [emptyShift()],
+  3: [emptyShift()],
+  4: [emptyShift()],
+  5: [emptyShift()],
+  6: [emptyShift()],
 })
+
+// Track ids that exist on the server so removed shifts get deleted on save
+let originalIds = new Set()
 
 // Show Monday first: 1..6 then 0
 const displayOrder = [1,2,3,4,5,6,0]
@@ -136,16 +169,20 @@ const accountNameFor = (token) => {
   return acc?.account_name || token || '—'
 }
 
+// Shifts of a given weekday that have all fields filled
+const filledShifts = (wd) => (form.value[wd] || []).filter(s => s.company_token && s.start_time && s.end_time)
+
 const totalWeeklyHours = computed(() => {
   let totalMinutes = 0
   for (let wd = 0; wd < 7; wd++) {
-    const row = form.value[wd]
-    if (row.company_token && row.start_time && row.end_time) {
-      const [sh, sm] = row.start_time.split(':').map(Number)
-      const [eh, em] = row.end_time.split(':').map(Number)
-      let diff = (eh * 60 + em) - (sh * 60 + sm)
-      if (diff < 0) diff += 24 * 60 // overnight shift
-      totalMinutes += diff
+    for (const row of form.value[wd]) {
+      if (row.company_token && row.start_time && row.end_time) {
+        const [sh, sm] = row.start_time.split(':').map(Number)
+        const [eh, em] = row.end_time.split(':').map(Number)
+        let diff = (eh * 60 + em) - (sh * 60 + sm)
+        if (diff < 0) diff += 24 * 60 // overnight shift
+        totalMinutes += diff
+      }
     }
   }
   const hours = Math.floor(totalMinutes / 60)
@@ -165,89 +202,90 @@ const loadAccounts = async () => {
   }
 }
 
+// Convert a UTC timestamp to a local "HH:MM" string for the time inputs
+const toLocalTimeInput = (ts) => {
+  if (!ts) return ''
+  return new Date(ts).toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  })
+}
+
 const loadShifts = async () => {
   try {
     const res = await api.getUserShifts(props.user.id)
     const shifts = res?.data || []
+    // Reset to empty days, then group server shifts by weekday
+    const next = { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [] }
+    const ids = new Set()
     for (const s of shifts) {
-      // Convert UTC timestamps to local time strings
-      let startTime = ''
-      let endTime = ''
-      
-      if (s.start_time) {
-        const startDate = new Date(s.start_time)
-        startTime = startDate.toLocaleTimeString('en-US', {
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: false
-        })
-      }
-      
-      if (s.end_time) {
-        const endDate = new Date(s.end_time)
-        endTime = endDate.toLocaleTimeString('en-US', {
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: false
-        })
-      }
-      
-      console.log(`🕐 Converting shift times for weekday ${s.weekday}:`, {
-        start: { utc: s.start_time, local: startTime },
-        end: { utc: s.end_time, local: endTime }
-      })
-      
-      form.value[s.weekday] = {
+      const wd = Number(s.weekday)
+      if (!next[wd]) next[wd] = []
+      next[wd].push({
         id: s.id,
         company_token: s.company_token || '',
-        start_time: startTime,
-        end_time: endTime
-      }
+        start_time: toLocalTimeInput(s.start_time),
+        end_time: toLocalTimeInput(s.end_time)
+      })
+      if (s.id) ids.add(s.id)
     }
+    // Ensure every day has at least one (empty) row to fill in
+    for (let wd = 0; wd < 7; wd++) {
+      if (!next[wd] || next[wd].length === 0) next[wd] = [emptyShift()]
+    }
+    form.value = next
+    originalIds = ids
   } catch (error) {
     console.error('❌ Error loading shifts:', error)
   }
 }
 
-const clearDay = (wd) => {
-  form.value[wd] = { id: form.value[wd].id, company_token: '', start_time: '', end_time: '' }
+const addShift = (wd) => {
+  form.value[wd].push(emptyShift())
+}
+
+const removeShift = (wd, idx) => {
+  if (form.value[wd].length > 1) {
+    form.value[wd].splice(idx, 1)
+  } else {
+    // Last row of the day: just clear it (deletion handled on save)
+    form.value[wd].splice(idx, 1, emptyShift())
+  }
 }
 
 const saveAll = async () => {
   try {
     saving.value = true
-    // Upsert or delete per weekday
+    const keptIds = new Set()
+    // Upsert every filled shift across all days
     for (const wd of displayOrder) {
-      const row = form.value[wd]
-      const hasValues = !!row.company_token && !!row.start_time && !!row.end_time
-      if (hasValues) {
-        // Convert local time strings to UTC timestamps
-        // Use a base date (e.g., 2000-01-01) since we only care about the time
+      for (const row of form.value[wd]) {
+        const hasValues = !!row.company_token && !!row.start_time && !!row.end_time
+        if (!hasValues) continue
+        // Convert local time strings to UTC timestamps (only the time matters)
         const baseDate = '2000-01-01'
-        const startLocal = `${baseDate}T${row.start_time}:00`
-        const endLocal = `${baseDate}T${row.end_time}:00`
-        
-        // Create Date objects in local timezone
-        const startDate = new Date(startLocal)
-        const endDate = new Date(endLocal)
-        
-        // Convert to UTC ISO strings
-        const startUtc = startDate.toISOString()
-        const endUtc = endDate.toISOString()
-        
-        console.log(`🕐 Converting shift times for weekday ${wd}:`, {
-          start: { local: row.start_time, utc: startUtc },
-          end: { local: row.end_time, utc: endUtc }
-        })
-        
-        await api.upsertUserShift(props.user.id, {
+        const startUtc = new Date(`${baseDate}T${row.start_time}:00`).toISOString()
+        const endUtc = new Date(`${baseDate}T${row.end_time}:00`).toISOString()
+        const payload = {
           company_token: row.company_token,
           weekday: wd,
           start_time: startUtc,
           end_time: endUtc
-        })
-      } else if (row.id) {
-        await api.deleteUserShift(props.user.id, row.id)
+        }
+        if (row.id) payload.id = row.id
+        const res = await api.upsertUserShift(props.user.id, payload)
+        const savedId = res?.data?.id
+        if (savedId) {
+          row.id = savedId
+          keptIds.add(savedId)
+        }
+      }
+    }
+    // Delete shifts that existed on the server but were removed/cleared
+    for (const id of originalIds) {
+      if (!keptIds.has(id)) {
+        try { await api.deleteUserShift(props.user.id, id) } catch {}
       }
     }
     // Send a single notify call after all saves/deletes are done
@@ -271,6 +309,3 @@ onMounted(async () => {
 
 <style scoped>
 </style>
-
-
-

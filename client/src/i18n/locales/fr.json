@@ -567,7 +567,8 @@
     "defineWeeklyShifts": "Définir les équipes hebdomadaires par compte. Les heures sont locales (HH:MM, 24h).",
     "showsCurrentSelections": "Affiche les sélections actuelles par jour de la semaine",
     "previewThisWeek": "Aperçu (Cette semaine)",
-    "totalWeeklyHours": "Total heures / semaine"
+    "totalWeeklyHours": "Total heures / semaine",
+    "addShift": "Ajouter un quart"
   },
   "rentability": {
     "title": "Analyse de rentabilité",
