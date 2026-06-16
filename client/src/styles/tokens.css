@@ -1,0 +1,168 @@
+/* ============================================================
+   OlaClick Design System — Design Tokens (source of truth)
+   Mirrors ~/ola-click-ds/colors_and_type.css
+   Light mode on :root, dark mode on [data-theme="dark"].
+   Consumed by Tailwind via var() and by component classes.
+   ============================================================ */
+
+:root {
+  /* ---- Brand ---- */
+  --brand-blue: #006FFF;
+  --brand-blue-alt: #006AFF;
+  --brand-blue-press: #0058CC;
+  --brand-blue-active: #004BA8;
+  --brand-green: #00FFA8; /* logo spark only — never a UI fill */
+  --brand-orange: #FF9F00;
+  --brand-orange-deep: #FF961F;
+  --brand-teal: #0190E0;
+  --brand-active-green: #28B84F;
+
+  /* ---- Neutrals / text ---- */
+  --fg1: #1D252F;
+  --fg2: #242424;
+  --fg3: #6B7280;
+  --fg-muted: #9CA3AF;
+  --ink: #1A1A1A;
+  --white: #FFFFFF;
+
+  /* ---- Surfaces ---- */
+  --bg: #FFFFFF;
+  --canvas: #F5F6F8;      /* content area background under header */
+  --surface-1: #F9F9F9;
+  --surface-2: #F5F5F5;
+  --tint-blue: #EBF2FF;
+
+  /* ---- Borders ---- */
+  --border: #EBEBEB;
+  --border-input: #D4D4D4;
+  --border-strong: #3D3D3D;
+
+  /* ---- Feedback / state ---- */
+  --danger: #DC2626;
+  --danger-bg: #FEE2E2;
+  --danger-fg: #991B1B;
+  --success-bg: #DCFCE7;
+  --success-fg: #157A3D;
+  --warning-bg: #FEF9C3;
+  --warning-fg: #A16207;
+  --pending-bg: #FFEDD5;
+  --pending-fg: #C2410C;
+  --info-bg: #EBF2FF;
+  --info-fg: #1E40AF;
+
+  /* ---- Semantic tag palette ---- */
+  --tag-default-bg: #F5F5F5;  --tag-default-fg: #1D252F;
+  --tag-blue-bg: #EBF2FF;     --tag-blue-fg: #1E40AF;
+  --tag-green-bg: #DCFCE7;    --tag-green-fg: #157A3D;
+  --tag-red-bg: #FEE2E2;      --tag-red-fg: #991B1B;
+  --tag-orange-bg: #FFEDD5;   --tag-orange-fg: #C2410C;
+  --tag-yellow-bg: #FEF9C3;   --tag-yellow-fg: #A16207;
+  --tag-purple-bg: #F3E8FF;   --tag-purple-fg: #7E22CE;
+  --tag-cyan-bg: #CFFAFE;     --tag-cyan-fg: #0E7490;
+
+  /* ---- Sidebar / nav ---- */
+  --nav-text: #141B26;
+  --nav-muted: #5A6472;
+  --nav-bg: #FFFFFF;
+  --nav-hover: #F1F2F4;
+  --nav-active-bg: #EBF2FF;
+  --nav-active-fg: #006FFF;
+  --nav-border: #DFE3EA;
+
+  /* ---- Radii ---- */
+  --r-xs: 5px;
+  --r-sm: 6px;
+  --r-md: 8px;
+  --r-lg: 12px;
+  --r-full: 9999px;
+  --r-btn: 8px;
+
+  /* ---- Shadows (border-led system, subtle) ---- */
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, .05);
+  --shadow-pop: 0 4px 12px rgba(0, 0, 0, .10);
+  --shadow-thumb: 0 1px 3px rgba(0, 0, 0, .15);
+  --shadow-sidebar: 0 2px 12px rgba(0, 0, 0, .08);
+
+  /* ---- Spacing (4px scale) ---- */
+  --sp-1: 2px;
+  --sp-2: 4px;
+  --sp-3: 8px;
+  --sp-4: 10px;
+  --sp-5: 12px;
+  --sp-6: 16px;
+  --sp-7: 20px;
+  --sp-8: 24px;
+  --sp-9: 32px;
+
+  /* ---- Motion ---- */
+  --motion-fast: 150ms;
+  --motion-base: 200ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* ---- Focus ---- */
+  --focus-ring: 0 0 0 3px rgba(0, 106, 255, .3);
+
+  /* ---- Scrim ---- */
+  --scrim: rgba(0, 0, 0, 0.4);
+
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  /* ---- Surfaces ---- */
+  --bg: #1A1D23;
+  --canvas: #16181D;
+  --surface-1: #22262E;
+  --surface-2: #2A2F38;
+  --tint-blue: #1A2744;
+
+  /* ---- Brand ---- */
+  --brand-blue: #006FFF;
+  --brand-blue-alt: #4DA3FF;
+  --brand-blue-press: #3D8FFF;
+  --brand-blue-active: #0058CC;
+
+  /* ---- Text ---- */
+  --fg1: #F0F2F5;
+  --fg2: #F0F2F5;
+  --fg3: #9CA3AF;
+  --fg-muted: #6B7280;
+  --ink: #F0F2F5;
+
+  /* ---- Borders ---- */
+  --border: #2E333D;
+  --border-input: #3A3F4A;
+  --border-strong: #5A6472;
+
+  /* ---- Feedback ---- */
+  --danger: #EF4444;
+
+  /* ---- Tag palette (dark) ---- */
+  --tag-default-bg: #2A2F38;  --tag-default-fg: #E4E6EB;
+  --tag-blue-bg: #1A2744;     --tag-blue-fg: #93C5FD;
+  --tag-green-bg: #1A2E22;    --tag-green-fg: #6EE7B7;
+  --tag-red-bg: #2E1414;      --tag-red-fg: #FCA5A5;
+  --tag-orange-bg: #2E1F0E;   --tag-orange-fg: #FDBA74;
+  --tag-yellow-bg: #2E2A0E;   --tag-yellow-fg: #FDE047;
+  --tag-purple-bg: #2A1A3A;   --tag-purple-fg: #D8B4FE;
+  --tag-cyan-bg: #0E2A2E;     --tag-cyan-fg: #67E8F9;
+
+  /* ---- Sidebar / nav (dark) ---- */
+  --nav-text: #E4E6EB;
+  --nav-muted: #9CA3AF;
+  --nav-bg: #22262E;
+  --nav-hover: #2A2F38;
+  --nav-active-bg: #1A2744;
+  --nav-active-fg: #4DA3FF;
+  --nav-border: #2E333D;
+
+  /* ---- Shadows (stronger in dark) ---- */
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, .30);
+  --shadow-pop: 0 4px 12px rgba(0, 0, 0, .40);
+  --shadow-sidebar: 0 2px 12px rgba(0, 0, 0, .40);
+
+  /* ---- Focus ---- */
+  --focus-ring: 0 0 0 3px rgba(77, 163, 255, .35);
+
+  color-scheme: dark;
+}

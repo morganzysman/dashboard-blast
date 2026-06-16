@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="companyKitchen && companyKitchen.ordersWithPrepTime > 0"
-    class="card border-teal-100/80 bg-gradient-to-br from-white to-teal-50/30"
+    class="card"
   >
     <details :open="isDesktop" class="group">
       <summary

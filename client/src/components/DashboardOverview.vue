@@ -197,13 +197,13 @@
           
 
       <!-- Payment Methods Distribution -->
-      <div class="card bg-gradient-to-r from-purple-500 to-indigo-600 text-white">
+      <div class="card text-white" style="background: var(--brand-blue); border-color: var(--brand-blue);">
         <div class="card-body p-3 sm:p-4">
           <div class="flex items-center justify-between mb-2">
             <div class="min-w-0 flex-1">
-              <p class="text-purple-100 text-xs sm:text-sm font-medium">{{ $t('rentability.paymentMethods').toUpperCase() }}</p>
+              <p class="text-white/80 text-xs sm:text-sm font-medium">{{ $t('rentability.paymentMethods') }}</p>
             </div>
-            <div class="w-8 h-8 sm:w-10 sm:h-10 bg-purple-400 bg-opacity-30 rounded-lg flex items-center justify-center flex-shrink-0">
+            <div class="w-8 h-8 sm:w-10 sm:h-10 bg-white/20 rounded-md flex items-center justify-center flex-shrink-0">
               <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
               </svg>
@@ -215,7 +215,7 @@
             <div class="flex items-center">
               <div class="relative w-12 h-12 sm:w-16 sm:h-16 flex-shrink-0">
                 <div class="w-full h-full rounded-full" :style="{ background: getPaymentMethodsPieChart }"></div>
-                <div class="absolute inset-1.5 sm:inset-2 bg-purple-600 rounded-full flex items-center justify-center">
+                <div class="absolute inset-1.5 sm:inset-2 rounded-full flex items-center justify-center" style="background: var(--brand-blue);">
                   <span class="text-white text-xs font-bold">{{ analyticsData.aggregated.paymentMethods.length }}</span>
                 </div>
               </div>
@@ -224,11 +224,11 @@
                   <div class="flex items-center justify-between min-w-0">
                     <div class="flex items-center space-x-1 min-w-0 flex-1">
                       <div class="w-2 h-2 rounded-full flex-shrink-0" :style="{ backgroundColor: getPaymentMethodColor(method.name) }"></div>
-                      <span class="text-purple-100 capitalize truncate text-xs">{{ method.name }}</span>
+                      <span class="text-white/80 capitalize truncate text-xs">{{ method.name }}</span>
                     </div>
-                    <div class="text-purple-200 text-xs flex-shrink-0 ml-1">
+                    <div class="text-white/70 text-xs flex-shrink-0 ml-1">
                       <span class="font-medium">{{ method.percent.toFixed(0) }}%</span>
-                      <span class="text-purple-100 ml-1">{{ formatCurrency(method.sum) }}</span>
+                      <span class="text-white/80 ml-1">{{ formatCurrency(method.sum) }}</span>
                     </div>
                   </div>
                 </div>

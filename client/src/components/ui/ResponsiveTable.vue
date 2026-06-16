@@ -3,21 +3,21 @@
   <div class="hidden md:block">
     <div class="overflow-x-auto">
       <table class="min-w-full w-full text-sm">
-        <thead :class="stickyHeader ? 'sticky top-0 z-10' : ''" style="background: rgba(249,250,251,0.6); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);">
-          <tr class="text-left text-gray-600 dark:text-gray-300">
+        <thead :class="stickyHeader ? 'sticky top-0 z-10' : ''" style="background: var(--surface-1);">
+          <tr class="text-left" style="color: var(--fg3);">
             <th v-for="col in columns" :key="col.key" class="py-3 px-2" :class="col.headerClass">{{ col.label }}</th>
           </tr>
         </thead>
         <tbody>
           <template v-if="loading">
-            <tr v-for="n in skeletonCount" :key="`sk-${n}`" class="border-t animate-pulse">
+            <tr v-for="n in skeletonCount" :key="`sk-${n}`" class="animate-pulse" style="border-top: 1px solid var(--border);">
               <td v-for="col in columns" :key="col.key" class="py-2">
-                <div class="h-3 bg-gray-200 rounded" :class="col.skeletonWidth || 'w-24'"></div>
+                <div class="h-3 rounded" style="background: var(--surface-2);" :class="col.skeletonWidth || 'w-24'"></div>
               </td>
             </tr>
           </template>
           <template v-else>
-            <tr v-for="item in items" :key="rowKey(item)" class="border-t border-gray-200/40 transition-colors duration-150 hover:bg-white/60 even:bg-gray-50/30 dark:odd:bg-gray-900/50 dark:even:bg-gray-800/50 dark:hover:bg-gray-700/50">
+            <tr v-for="item in items" :key="rowKey(item)" class="transition-colors duration-150 hover:bg-surface-2" style="border-top: 1px solid var(--border);">
               <td v-for="col in columns" :key="col.key" class="py-2" :class="col.cellClass">
                 <slot :name="`cell-${col.key}`" :item="item">{{ formatDefaultCell(item, col.key) }}</slot>
               </td>
@@ -31,21 +31,21 @@
   <!-- Mobile card list -->
   <div class="md:hidden space-y-2">
     <template v-if="loading">
-      <div v-for="n in skeletonCount" :key="`skm-${n}`" class="rounded-xl p-3 animate-pulse" style="background: rgba(255,255,255,0.5); border: 1px solid rgba(255,255,255,0.4);">
-        <div class="h-4 bg-gray-200 rounded w-32 mb-2"></div>
+      <div v-for="n in skeletonCount" :key="`skm-${n}`" class="p-3 animate-pulse" style="background: var(--bg); border: 1px solid var(--border); border-radius: var(--r-md);">
+        <div class="h-4 rounded w-32 mb-2" style="background: var(--surface-2);"></div>
         <div class="space-y-2">
-          <div v-for="m in 3" :key="m" class="h-3 bg-gray-200 rounded"></div>
+          <div v-for="m in 3" :key="m" class="h-3 rounded" style="background: var(--surface-2);"></div>
         </div>
       </div>
     </template>
     <template v-else>
-      <div v-for="item in items" :key="rowKey(item)" class="rounded-xl p-3 transition-all duration-200" style="background: rgba(255,255,255,0.6); border: 1px solid rgba(255,255,255,0.4); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);">
+      <div v-for="item in items" :key="rowKey(item)" class="p-3" style="background: var(--bg); border: 1px solid var(--border); border-radius: var(--r-md);">
         <slot name="mobile-card" :item="item">
-          <div class="font-medium text-gray-900 dark:text-gray-100 mb-2">{{ mobileTitle(item) }}</div>
+          <div class="font-medium mb-2" style="color: var(--fg1);">{{ mobileTitle(item) }}</div>
           <div class="space-y-1 text-xs">
             <div v-for="col in columns" :key="col.key" class="flex justify-between gap-2">
-              <span class="text-gray-500">{{ col.label }}</span>
-              <span class="text-gray-900 dark:text-gray-100 truncate">
+              <span style="color: var(--fg3);">{{ col.label }}</span>
+              <span class="truncate" style="color: var(--fg1);">
                 <slot :name="`cell-${col.key}`" :item="item">{{ formatDefaultCell(item, col.key) }}</slot>
               </span>
             </div>

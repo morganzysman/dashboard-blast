@@ -147,7 +147,7 @@
           </div>
           
           <!-- Add Warning Form -->
-          <div v-if="showAddWarningForm" class="bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-950/20 dark:to-orange-950/20 border border-red-200 dark:border-red-800 rounded-xl mx-4 mb-8 shadow-sm">
+          <div v-if="showAddWarningForm" class="bg-error-50 border border-error-200 dark:border-error-800 rounded-lg mx-4 mb-8">
             <div class="p-6">
               <div class="flex items-center gap-2 mb-6">
                 <svg class="w-5 h-5 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -619,21 +619,4 @@ button:active {
   @apply scale-95;
 }
 
-/* Gradient animation for the warning form */
-.bg-gradient-to-r {
-  background-size: 200% 200%;
-  animation: gradient 3s ease infinite;
-}
-
-@keyframes gradient {
-  0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
-  }
-}
 </style>

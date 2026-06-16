@@ -1,35 +1,52 @@
 <template>
-  <button :type="type" :class="classes" :disabled="disabled">
+  <button :type="type" :class="classes" :disabled="disabled || loading">
+    <span v-if="loading" class="loading-spinner !w-4 !h-4 !border-white/40 !border-t-white"></span>
     <slot />
   </button>
 </template>
 
 <script setup>
+import { computed } from 'vue'
+
+/**
+ * OlaClick DS Button.
+ * Variants: primary, secondary, outline, ghost, plain, danger, success, warning
+ * Sizes: xs, sm, md, lg, xl
+ */
 const props = defineProps({
   variant: { type: String, default: 'primary' },
   size: { type: String, default: 'md' },
   type: { type: String, default: 'button' },
-  disabled: { type: Boolean, default: false }
+  disabled: { type: Boolean, default: false },
+  loading: { type: Boolean, default: false }
 })
 
-const variantClasses = {
-  primary: 'bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500',
-  secondary: 'bg-gray-200 text-gray-900 hover:bg-gray-300 focus:ring-gray-500',
-  danger: 'bg-error-600 text-white hover:bg-error-700 focus:ring-error-500',
-  ghost: 'bg-transparent text-gray-700 hover:bg-gray-100 focus:ring-gray-500'
+const variantClass = {
+  primary: 'btn-primary',
+  secondary: 'btn-secondary',
+  outline: 'btn-outline',
+  ghost: 'btn-ghost',
+  plain: 'btn-plain',
+  danger: 'btn-danger',
+  success: 'btn-success',
+  warning: 'btn-warning'
 }
 
-const sizeClasses = {
-  sm: 'px-2 py-1 text-xs',
-  md: 'px-3 py-2 text-sm',
-  lg: 'px-4 py-3 text-base'
+const sizeClass = {
+  xs: 'h-6 px-2.5 text-[11px] rounded-xs',
+  sm: 'btn-sm',
+  md: '',
+  lg: 'btn-lg',
+  xl: 'h-14 px-6 text-base'
 }
 
-const base = 'inline-flex items-center justify-center border border-transparent font-medium rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-glass-sm'
-const classes = `${base} ${variantClasses[props.variant] || variantClasses.primary} ${sizeClasses[props.size] || sizeClasses.md}`
+const classes = computed(() => [
+  'btn',
+  variantClass[props.variant] || variantClass.primary,
+  sizeClass[props.size] || '',
+  props.loading ? 'opacity-65' : ''
+])
 </script>
 
 <style scoped>
 </style>
-
-

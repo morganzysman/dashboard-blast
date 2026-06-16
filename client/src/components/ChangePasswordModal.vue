@@ -1,8 +1,8 @@
 <template>
-  <div v-if="isOpen" class="fixed inset-0 flex items-center justify-center z-50" style="background: rgba(15,23,42,0.4); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);">
-    <div class="w-full max-w-md mx-4 rounded-2xl" style="background: rgba(255,255,255,0.85); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid rgba(255,255,255,0.4); box-shadow: 0 25px 60px rgba(0,0,0,0.12);">
-      <div class="px-6 py-4 border-b" style="border-color: rgba(229,231,235,0.4);">
-        <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">
+  <div v-if="isOpen" class="fixed inset-0 flex items-center justify-center z-50 p-4" style="background: var(--scrim);">
+    <div class="w-full max-w-md mx-4 rounded-lg" style="background: var(--bg); border: 1px solid var(--border); box-shadow: var(--shadow-pop);">
+      <div class="px-6 py-4" style="border-bottom: 1px solid var(--border);">
+        <h3 class="text-lg font-medium" style="color: var(--fg1);">
           {{ $t('modals.changePassword.title') }}
         </h3>
       </div>

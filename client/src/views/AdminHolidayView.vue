@@ -107,8 +107,8 @@
     </div>
 
     <!-- Register Holiday Modal -->
-    <div v-if="registerModal" class="fixed inset-0 flex items-center justify-center z-50 p-4" style="background: rgba(15,23,42,0.4); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);">
-      <div class="rounded-2xl p-5 w-full max-w-md" style="background: rgba(255,255,255,0.85); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid rgba(255,255,255,0.5); box-shadow: 0 25px 60px rgba(0,0,0,0.12);">
+    <div v-if="registerModal" class="fixed inset-0 flex items-center justify-center z-50 p-4" style="background: var(--scrim);">
+      <div class="rounded-lg p-5 w-full max-w-md" style="background: var(--bg); border: 1px solid var(--border); box-shadow: var(--shadow-pop);">
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-lg font-semibold">{{ $t('holidays.registerHoliday') }}</h3>
           <button @click="registerModal = null" class="text-gray-400 hover:text-gray-600">
@@ -159,8 +159,8 @@
     </div>
 
     <!-- Employee History Modal -->
-    <div v-if="historyModal" class="fixed inset-0 flex items-center justify-center z-50 p-4" style="background: rgba(15,23,42,0.4); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);">
-      <div class="rounded-2xl p-5 w-full max-w-2xl max-h-[80vh] overflow-y-auto" style="background: rgba(255,255,255,0.85); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid rgba(255,255,255,0.5); box-shadow: 0 25px 60px rgba(0,0,0,0.12);">
+    <div v-if="historyModal" class="fixed inset-0 flex items-center justify-center z-50 p-4" style="background: var(--scrim);">
+      <div class="rounded-lg p-5 w-full max-w-2xl max-h-[80vh] overflow-y-auto" style="background: var(--bg); border: 1px solid var(--border); box-shadow: var(--shadow-pop);">
         <div class="flex items-center justify-between mb-4">
           <div>
             <h3 class="text-lg font-semibold">{{ historyModal.employee.name }}</h3>
@@ -181,7 +181,7 @@
 
         <table v-else class="w-full text-sm">
           <thead>
-            <tr class="border-b text-left text-xs text-gray-500 uppercase">
+            <tr class="border-b text-left text-xs text-gray-500">
               <th class="py-2 pr-2">{{ $t('holidays.startDate') }}</th>
               <th class="py-2 pr-2">{{ $t('holidays.endDate') }}</th>
               <th class="py-2 pr-2 text-right">{{ $t('holidays.days') }}</th>

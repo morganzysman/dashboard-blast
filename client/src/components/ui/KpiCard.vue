@@ -1,13 +1,13 @@
 <template>
-  <div class="card relative overflow-hidden transition-all duration-200 hover:shadow-glass-lg dark:bg-gray-800/70 dark:border-gray-700/40">
-    <div class="card-body p-3 sm:p-4">
+  <div class="card relative overflow-hidden">
+    <div class="card-body !p-3 sm:!p-4">
       <!-- Header with icon next to title -->
       <div class="flex items-center justify-between mb-2">
         <div class="flex items-center gap-2">
-          <div class="shrink-0 rounded-lg p-1.5 sm:p-2" :class="iconBg">
+          <div class="shrink-0 rounded-md p-1.5 sm:p-2" :class="iconBg">
             <slot name="icon" />
           </div>
-          <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 font-medium truncate" :title="label">{{ label }}</p>
+          <p class="text-xs sm:text-sm font-medium truncate" style="color: var(--fg3);" :title="label">{{ label }}</p>
         </div>
         <div class="ml-auto">
           <slot name="action" />
@@ -16,8 +16,8 @@
       
       <!-- Value -->
       <div class="mb-2">
-        <p class="text-xl sm:text-2xl lg:text-3xl font-bold" :class="valueClass">{{ value }}</p>
-        <p v-if="subtext" class="text-xs text-gray-400 mt-0.5 dark:text-gray-500 leading-tight">{{ subtext }}</p>
+        <p class="text-xl sm:text-2xl lg:text-3xl font-bold tabular-nums" :class="valueClass">{{ value }}</p>
+        <p v-if="subtext" class="text-xs mt-0.5 leading-tight" style="color: var(--fg-muted);">{{ subtext }}</p>
       </div>
       
       <!-- Chart area - takes full width -->
@@ -35,15 +35,15 @@ import { computed } from 'vue'
 const props = defineProps({ label: String, value: [String, Number], subtext: String, tone: { type: String, default: 'neutral' } })
 
 const toneToClasses = {
-  positive: 'text-green-600 dark:text-green-400',
-  negative: 'text-red-600 dark:text-red-400',
-  neutral: 'text-gray-900 dark:text-gray-100'
+  positive: 'text-success-700 dark:text-success-400',
+  negative: 'text-error-600 dark:text-error-400',
+  neutral: 'text-fg'
 }
 
 const iconToBg = {
-  positive: 'bg-green-50 text-green-600 dark:bg-green-950/40 dark:text-green-300',
-  negative: 'bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-300',
-  neutral: 'bg-gray-100 text-gray-600 dark:bg-gray-900 dark:text-gray-300'
+  positive: 'bg-success-100 text-success-700',
+  negative: 'bg-error-100 text-error-600',
+  neutral: 'bg-surface-2 text-fg-muted'
 }
 
 const valueClass = computed(() => toneToClasses[props.tone] || toneToClasses.neutral)

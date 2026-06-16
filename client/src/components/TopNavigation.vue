@@ -7,9 +7,7 @@
         <!-- Mobile menu button -->
         <button @click="$emit('toggle-mobile-menu')" 
                 class="mobile-menu-button">
-          <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-          </svg>
+          <MaterialIcon name="menu" :size="24" />
         </button>
         
         <!-- Page title -->
@@ -28,26 +26,25 @@
         <!-- Language selector -->
         <div class="relative" ref="langDropdownRef">
           <button
-            class="touch-target rounded-xl px-2 sm:px-3 py-2 text-gray-700 transition-all duration-200 hover:shadow-glass-sm dark:bg-gray-800/60 dark:text-gray-200 dark:hover:bg-gray-700/60 flex items-center gap-1 text-sm font-medium"
-            style="background: rgba(255,255,255,0.5); border: 1px solid rgba(229,231,235,0.4);"
+            class="touch-target rounded-md px-2 sm:px-3 py-2 transition-colors duration-150 flex items-center gap-1 text-sm font-medium"
+            style="color: var(--nav-text); border: 1px solid var(--border);"
             @click="toggleLangMenu"
             :title="$t('navigation.language')"
           >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"/>
-            </svg>
+            <MaterialIcon name="language" :size="18" />
             <span class="hidden sm:inline uppercase">{{ currentLocale }}</span>
           </button>
           <Teleport to="body">
-            <div v-if="showLangMenu" class="fixed w-36 rounded-xl shadow-lg overflow-hidden" style="z-index: 9999; background: rgba(255,255,255,0.95); backdrop-filter: blur(12px); border: 1px solid rgba(229,231,235,0.4);" :style="langDropdownPosition">
+            <div v-if="showLangMenu" class="fixed w-40 overflow-hidden" style="z-index: 9999; background: var(--bg); border: 1px solid var(--border); border-radius: var(--r-lg); box-shadow: var(--shadow-pop);" :style="langDropdownPosition">
               <button
                 v-for="lang in languages"
                 :key="lang.code"
-                class="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 transition-colors"
-                :class="currentLocale === lang.code ? 'text-primary-600 font-medium bg-primary-50' : 'text-gray-700 dark:text-gray-200'"
+                class="w-full text-left px-3 py-2 text-sm flex items-center gap-2 transition-colors hover:bg-surface-2"
+                :class="currentLocale === lang.code ? 'font-medium' : ''"
+                :style="currentLocale === lang.code ? 'color: var(--brand-blue); background: var(--tint-blue);' : 'color: var(--fg1);'"
                 @click="switchLanguage(lang.code)"
               >
-                <span>{{ lang.flag }}</span>
+                <span class="uppercase text-xs font-semibold w-6" style="color: var(--fg3);">{{ lang.code }}</span>
                 <span>{{ lang.label }}</span>
               </button>
             </div>
@@ -56,17 +53,13 @@
 
         <!-- Dark mode toggle -->
         <button
-          class="touch-target rounded-xl px-2 sm:px-3 py-2 text-gray-700 transition-all duration-200 hover:shadow-glass-sm dark:bg-gray-800/60 dark:text-gray-200 dark:hover:bg-gray-700/60" style="background: rgba(255,255,255,0.5); border: 1px solid rgba(229,231,235,0.4);"
+          class="touch-target rounded-md px-2 sm:px-3 py-2 transition-colors duration-150"
+          style="color: var(--nav-text); border: 1px solid var(--border);"
           @click="toggleDarkMode"
           :aria-pressed="isDark"
           :title="$t('navigation.toggleDarkMode')"
         >
-          <svg v-if="!isDark" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M12 8a4 4 0 100 8 4 4 0 000-8z"/>
-          </svg>
-          <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
-          </svg>
+          <MaterialIcon :name="isDark ? 'dark_mode' : 'light_mode'" :size="20" :filled="isDark" />
         </button>
 
 
@@ -74,16 +67,17 @@
         <div class="dropdown">
           <button
             @click="toggleUserMenu"
-            class="flex items-center space-x-2 sm:space-x-3 rounded-xl px-2 sm:px-3 py-2 transition-all duration-200 hover:shadow-glass-sm" style="background: rgba(255,255,255,0.5); border: 1px solid rgba(229,231,235,0.4);"
+            class="flex items-center space-x-2 sm:space-x-3 rounded-md px-2 sm:px-3 py-2 transition-colors duration-150"
+            style="border: 1px solid var(--border);"
           >
-            <div class="h-8 w-8 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
-              <span class="text-sm font-medium text-primary-600">
+            <div class="h-8 w-8 rounded-full flex items-center justify-center flex-shrink-0" style="background: var(--tint-blue);">
+              <span class="text-sm font-medium" style="color: var(--brand-blue);">
                 {{ authStore.user?.name?.charAt(0).toUpperCase() }}
               </span>
             </div>
             <div class="text-left hidden sm:block">
               <div class="flex items-center space-x-2">
-                <p class="text-sm font-medium text-gray-900">
+                <p class="text-sm font-medium" style="color: var(--fg1);">
                   {{ authStore.user?.name }}
                 </p>
                 <span 
@@ -98,30 +92,24 @@
                   {{ authStore.user?.role?.replace('-', ' ') || $t('common.user') }}
                 </span>
               </div>
-              <p class="text-xs text-gray-500 hidden md:block">
+              <p class="text-xs hidden md:block" style="color: var(--fg3);">
                 {{ authStore.user?.email }}
               </p>
             </div>
-            <svg class="w-4 h-4 text-gray-400 hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-            </svg>
+            <MaterialIcon name="expand_more" :size="18" class="hidden sm:block" style="color: var(--fg-muted);" />
           </button>
 
           <!-- Dropdown menu -->
           <div v-if="showUserMenu" class="dropdown-menu">
             <button @click="openChangePasswordModal" class="dropdown-item w-full text-left">
-              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-6 6H6a6 6 0 01-6-6 6 6 0 016-6h7m1 0V3a2 2 0 014 0v4M9 12l2 2 4-4"></path>
-              </svg>
+              <MaterialIcon name="lock" :size="18" class="mr-2" />
               {{ $t('auth.changePassword') }}
             </button>
             
-            <div class="border-t border-gray-200/40 my-1 mx-1"></div>
+            <div class="my-1 mx-1" style="border-top: 1px solid var(--border);"></div>
 
-            <button @click="handleLogout" class="dropdown-item w-full text-left">
-              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
-              </svg>
+            <button @click="handleLogout" class="dropdown-item w-full text-left" style="color: var(--danger);">
+              <MaterialIcon name="logout" :size="18" class="mr-2" />
               {{ $t('common.logout') }}
             </button>
           </div>
@@ -144,6 +132,7 @@ import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import ChangePasswordModal from './ChangePasswordModal.vue'
+import MaterialIcon from './ui/MaterialIcon.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -236,23 +225,25 @@ const handleLogout = async () => {
   }
 }
 
-// Dark mode handling
-const isDark = computed(() => document.documentElement.classList.contains('dark'))
+// Dark mode handling — driven by [data-theme="dark"] (OlaClick DS)
+const isDark = ref(document.documentElement.getAttribute('data-theme') === 'dark')
 const toggleDarkMode = () => {
   const root = document.documentElement
-  const next = !root.classList.contains('dark')
-  root.classList.toggle('dark', next)
+  const next = root.getAttribute('data-theme') !== 'dark'
+  if (next) {
+    root.setAttribute('data-theme', 'dark')
+  } else {
+    root.removeAttribute('data-theme')
+  }
+  isDark.value = next
   try {
     localStorage.setItem('theme', next ? 'dark' : 'light')
   } catch {}
 }
 
 onMounted(() => {
-  // Initialize theme from localStorage
-  try {
-    const saved = localStorage.getItem('theme')
-    if (saved === 'dark') document.documentElement.classList.add('dark')
-  } catch {}
+  // Sync indicator with the attribute set pre-paint in index.html
+  isDark.value = document.documentElement.getAttribute('data-theme') === 'dark'
 })
 
 

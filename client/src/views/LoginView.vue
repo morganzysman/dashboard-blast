@@ -1,14 +1,14 @@
 <template>
   <div class="login-bg min-h-screen w-screen flex items-center justify-center">
     <div class="max-w-md w-full login-container">
-      <div class="rounded-3xl p-8" style="background: rgba(255,255,255,0.80); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid rgba(255,255,255,0.5); box-shadow: 0 25px 60px rgba(0,0,0,0.15);">
+      <div class="p-8" style="background: var(--bg); border: 1px solid var(--border); border-radius: var(--r-lg); box-shadow: var(--shadow-pop);">
         <!-- Logo and title -->
         <div class="text-center">
           <div class="flex justify-center mb-6">
             <img class="h-12 w-12" src="/icons/icon-192x192.png" alt="OlaClick">
           </div>
-          <h1 class="text-3xl font-bold text-gray-900 mb-2">{{ $t('login.appTitle') }}</h1>
-          <p class="text-gray-600 text-sm">{{ $t('auth.loginTitle') }}</p>
+          <h1 class="font-display text-3xl font-bold mb-2" style="color: var(--fg1);">{{ $t('login.appTitle') }}</h1>
+          <p class="text-sm" style="color: var(--fg3);">{{ $t('auth.loginTitle') }}</p>
         </div>
 
         <!-- Error message -->
@@ -44,13 +44,13 @@
               <span v-else>{{ $t('auth.loginButton') }}</span>
             </Button>
           </div>
-          <span class="text-sm text-gray-600 text-center">v1.0.3</span>
+          <span class="text-sm text-center" style="color: var(--fg3);">v1.0.3</span>
         </form>
         
         <!-- PWA Install Section -->
-        <div class="mt-6 border-t border-gray-200/40 pt-6">
+        <div class="mt-6 pt-6" style="border-top: 1px solid var(--border);">
           <div class="text-center">
-            <h3 class="text-sm font-semibold text-gray-900 mb-2">{{ $t('pwa.installApp') }}</h3>
+            <h3 class="text-sm font-semibold mb-2" style="color: var(--fg1);">{{ $t('pwa.installApp') }}</h3>
             <div v-if="canInstallPwa">
               <Button variant="secondary" @click="installPwa" :disabled="installing">{{ installing ? $t('pwa.preparing') : $t('pwa.installApp') }}</Button>
               <p class="text-xs text-gray-500 mt-2">{{ $t('pwa.installDescription') }}</p>
@@ -203,7 +203,7 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 30%, #312e81 60%, #1e1b4b 100%);
+  background: var(--canvas);
   margin: 0;
   padding: 0;
   position: fixed;

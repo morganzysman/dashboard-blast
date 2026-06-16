@@ -6,233 +6,50 @@
     <!-- Logo section -->
     <div class="sidebar-header">
       <div class="flex items-center justify-between">
-        <div class="flex items-center">
-          <div class="flex-shrink-0">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <div class="flex-shrink-0 flex items-center justify-center rounded-md" style="width: 28px; height: 28px; background: var(--brand-blue);">
+            <span class="font-display font-bold text-white text-base leading-none">O</span>
           </div>
-          <div class="ml-3">
-            <h1 class="text-xl font-bold text-gray-900 dark:text-gray-100">{{ $t('app.name') }}</h1>
-            <p class="text-sm text-gray-500 dark:text-gray-400">{{ $t('dashboard.analytics') }}</p>
+          <div class="min-w-0">
+            <h1 class="font-bold truncate" style="font-size: 15px; color: var(--nav-text);">{{ $t('app.name') }}</h1>
+            <p class="truncate" style="font-size: 11px; color: var(--nav-muted);">{{ $t('dashboard.analytics') }}</p>
           </div>
         </div>
         <!-- Mobile close button -->
-        <button @click="$emit('close')" 
-                class="md:hidden p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800">
-          <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-          </svg>
+        <button @click="$emit('close')"
+                class="md:hidden p-2 rounded-md transition-colors"
+                style="color: var(--nav-muted);">
+          <MaterialIcon name="close" :size="22" />
         </button>
       </div>
     </div>
 
     <!-- Navigation items -->
     <nav class="sidebar-nav">
-      <!-- Dashboard - Hidden from super-admin and employees -->
       <router-link
-        v-if="!authStore.isSuperAdmin && authStore.user?.role !== 'employee'"
-        to="/"
+        v-for="link in visibleLinks"
+        :key="link.name"
+        :to="link.to"
         class="sidebar-nav-item"
-        :class="{ active: $route.name === 'Dashboard' }"
+        :class="{ active: $route.name === link.name }"
         @click="$emit('close')"
       >
-        <svg class="sidebar-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5a2 2 0 012-2h4a2 2 0 012 2v6H8V5z"></path>
-        </svg>
-        {{ $t('navigation.dashboard') }}
-      </router-link>
-
-      <!-- Setup (per-account rentability, payments, SLA) - Hidden from super-admin and employees -->
-      <router-link
-        v-if="!authStore.isSuperAdmin && authStore.user?.role !== 'employee'"
-        to="/setup"
-        class="sidebar-nav-item"
-        :class="{ active: $route.name === 'Setup' }"
-        @click="$emit('close')"
-      >
-        <svg class="sidebar-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-        </svg>
-        {{ $t('navigation.setup') }}
-      </router-link>
-
-      <!-- Kitchen SLA leaderboard - admin only -->
-      <router-link
-        v-if="!authStore.isSuperAdmin && authStore.user?.role !== 'employee'"
-        to="/kitchen-sla"
-        class="sidebar-nav-item"
-        :class="{ active: $route.name === 'KitchenSla' }"
-        @click="$emit('close')"
-      >
-        <svg class="sidebar-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 2M12 22a10 10 0 110-20 10 10 0 010 20z" />
-        </svg>
-        {{ $t('navigation.kitchenSla') }}
-      </router-link>
-
-      <!-- Employee: Clock -->
-      <router-link
-        v-if="authStore.user?.role === 'employee'"
-        to="/clock"
-        class="sidebar-nav-item"
-        :class="{ active: $route.name === 'EmployeeClock' }"
-        @click="$emit('close')"
-      >
-        <svg class="sidebar-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6l4 2M12 22a10 10 0 110-20 10 10 0 010 20z" />
-        </svg>
-        {{ $t('navigation.clock') }}
-      </router-link>
-
-      <!-- Employee: Timesheet -->
-      <router-link
-        v-if="authStore.user?.role === 'employee'"
-        to="/timesheet"
-        class="sidebar-nav-item"
-        :class="{ active: $route.name === 'EmployeeTimesheet' }"
-        @click="$emit('close')"
-      >
-        <svg class="sidebar-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3M5 11h14M5 19h14M5 7h14M7 15h10" />
-        </svg>
-        {{ $t('navigation.timesheet') }}
-      </router-link>
-
-
-      <!-- Notifications - Hidden from super-admin only -->
-      <router-link
-        v-if="!authStore.isSuperAdmin"
-        to="/notifications"
-        class="sidebar-nav-item"
-        :class="{ active: $route.name === 'Notifications' }"
-        @click="$emit('close')"
-      >
-        <svg class="sidebar-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5v-5zm-5-6h5l-5 5v-5zm-5-6h5l-5 5v-5z"></path>
-        </svg>
-        {{ $t('navigation.notifications') }}
-      </router-link>
-
-      <!-- Employee: Warnings - Temporarily hidden -->
-      <!-- 
-      <router-link
-        v-if="authStore.user?.role === 'employee'"
-        to="/warnings"
-        class="sidebar-nav-item"
-        :class="{ active: $route.name === 'EmployeeWarnings' }"
-        @click="$emit('close')"
-      >
-        <svg class="sidebar-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
-        </svg>
-        My Warnings
-      </router-link>
-      -->
-
-      <!-- Gain Calendar - Hidden from super-admin and employees -->
-      <router-link
-        v-if="!authStore.isSuperAdmin && authStore.user?.role !== 'employee'"
-        to="/gain-calendar"
-        class="sidebar-nav-item"
-        :class="{ active: $route.name === 'GainCalendar' }"
-        @click="$emit('close')"
-      >
-        <svg class="sidebar-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11v4m0 0l-2-2m2 2l2-2" />
-        </svg>
-        {{ $t('navigation.gainCalendar') }}
-      </router-link>
-
-      <!-- Achievements - Hidden from super-admin and employees -->
-      <router-link
-        v-if="!authStore.isSuperAdmin && authStore.user?.role !== 'employee'"
-        to="/achievements"
-        class="sidebar-nav-item"
-        :class="{ active: $route.name === 'Achievements' }"
-        @click="$emit('close')"
-      >
-        <svg class="sidebar-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-        </svg>
-        {{ $t('navigation.achievements') }}
-      </router-link>
-
-      <!-- Admin: Payroll (hidden for super-admin) -->
-      <router-link
-        v-if="authStore.user?.role === 'admin'"
-        to="/admin/payroll"
-        class="sidebar-nav-item"
-        :class="{ active: $route.name === 'AdminPayroll' }"
-        @click="$emit('close')"
-      >
-        <svg class="sidebar-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h10M7 20h10M7 5h10" />
-        </svg>
-        {{ $t('navigation.payroll') }}
-      </router-link>
-
-      <!-- Admin only: Holidays -->
-      <router-link
-        v-if="authStore.user?.role === 'admin'"
-        to="/admin/holidays"
-        class="sidebar-nav-item"
-        :class="{ active: $route.name === 'AdminHolidays' }"
-        @click="$emit('close')"
-      >
-        <svg class="sidebar-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-        </svg>
-        {{ $t('navigation.holidays') }}
-      </router-link>
-
-      <!-- Admin only: Shifts Calendar -->
-      <router-link
-        v-if="authStore.user?.role === 'admin'"
-        to="/admin/shifts"
-        class="sidebar-nav-item"
-        :class="{ active: $route.name === 'AdminShiftsCalendar' }"
-        @click="$emit('close')"
-      >
-        <svg class="sidebar-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3M5 11h14M5 19h14M5 7h14M7 15h10" />
-        </svg>
-        {{ $t('navigation.shiftsCalendar') }}
-      </router-link>
-
-      <!-- Admin and Super Admin - User Management -->
-      <router-link
-        v-if="authStore.isSuperAdmin || authStore.user?.role === 'admin'"
-        to="/admin"
-        class="sidebar-nav-item"
-        :class="{ active: $route.name === 'Admin' }"
-        @click="$emit('close')"
-      >
-        <svg class="sidebar-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z"></path>
-        </svg>
-        {{ $t('navigation.userManagement') }}
-      </router-link>
-
-      <!-- Super Admin - Companies -->
-      <router-link
-        v-if="authStore.isSuperAdmin"
-        to="/companies"
-        class="sidebar-nav-item"
-        :class="{ active: $route.name === 'Companies' }"
-        @click="$emit('close')"
-      >
-        <svg class="sidebar-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h10M7 20h10M7 5h10" />
-        </svg>
-        {{ $t('navigation.companies') }}
+        <MaterialIcon
+          class="sidebar-nav-icon"
+          :name="link.icon"
+          :size="18"
+          :filled="$route.name === link.name"
+        />
+        {{ $t(link.label) }}
       </router-link>
     </nav>
   </nav>
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import { useAuthStore } from '../stores/auth'
+import MaterialIcon from './ui/MaterialIcon.vue'
 
 const props = defineProps({
   isMobileOpen: {
@@ -244,8 +61,33 @@ const props = defineProps({
 const emit = defineEmits(['close'])
 
 const authStore = useAuthStore()
+
+const isEmployee = computed(() => authStore.user?.role === 'employee')
+const isAdmin = computed(() => authStore.user?.role === 'admin')
+const isSuperAdmin = computed(() => authStore.isSuperAdmin)
+
+const links = computed(() => [
+  { name: 'Dashboard', to: '/', icon: 'dashboard', label: 'navigation.dashboard', show: !isSuperAdmin.value && !isEmployee.value },
+  { name: 'Setup', to: '/setup', icon: 'settings', label: 'navigation.setup', show: !isSuperAdmin.value && !isEmployee.value },
+  { name: 'KitchenSla', to: '/kitchen-sla', icon: 'timer', label: 'navigation.kitchenSla', show: !isSuperAdmin.value && !isEmployee.value },
+  { name: 'EmployeeClock', to: '/clock', icon: 'schedule', label: 'navigation.clock', show: isEmployee.value },
+  { name: 'EmployeeTimesheet', to: '/timesheet', icon: 'event_note', label: 'navigation.timesheet', show: isEmployee.value },
+  { name: 'Notifications', to: '/notifications', icon: 'notifications', label: 'navigation.notifications', show: !isSuperAdmin.value },
+  { name: 'GainCalendar', to: '/gain-calendar', icon: 'savings', label: 'navigation.gainCalendar', show: !isSuperAdmin.value && !isEmployee.value },
+  { name: 'Achievements', to: '/achievements', icon: 'emoji_events', label: 'navigation.achievements', show: !isSuperAdmin.value && !isEmployee.value },
+  { name: 'AdminPayroll', to: '/admin/payroll', icon: 'payments', label: 'navigation.payroll', show: isAdmin.value },
+  { name: 'AdminHolidays', to: '/admin/holidays', icon: 'event', label: 'navigation.holidays', show: isAdmin.value },
+  { name: 'AdminShiftsCalendar', to: '/admin/shifts', icon: 'calendar_month', label: 'navigation.shiftsCalendar', show: isAdmin.value },
+  { name: 'Admin', to: '/admin', icon: 'group', label: 'navigation.userManagement', show: isSuperAdmin.value || isAdmin.value },
+  { name: 'Companies', to: '/companies', icon: 'apartment', label: 'navigation.companies', show: isSuperAdmin.value },
+])
+
+const visibleLinks = computed(() => links.value.filter(l => l.show))
 </script>
 
 <style scoped>
-/* Component-specific styles if needed */
-</style> 
+.sidebar-nav-icon {
+  width: auto;
+  height: auto;
+}
+</style>

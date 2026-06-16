@@ -119,10 +119,10 @@
         <table class="min-w-full divide-y divide-gray-200 text-left">
           <thead :class="compact ? 'bg-gray-50 text-[10px]' : 'bg-gray-50/50'">
             <tr>
-              <th class="px-2 py-2 font-medium text-gray-500 uppercase">{{ $t('rentability.paymentMethod') }}</th>
-              <th class="px-2 py-2 font-medium text-gray-500 uppercase">{{ $t('rentability.percentage') }} (%)</th>
-              <th class="px-2 py-2 font-medium text-gray-500 uppercase">{{ $t('rentability.fixedCost') }}</th>
-              <th class="px-2 py-2 font-medium text-gray-500 uppercase">{{ $t('companies.actions') }}</th>
+              <th class="px-2 py-2 font-medium text-gray-500">{{ $t('rentability.paymentMethod') }}</th>
+              <th class="px-2 py-2 font-medium text-gray-500">{{ $t('rentability.percentage') }} (%)</th>
+              <th class="px-2 py-2 font-medium text-gray-500">{{ $t('rentability.fixedCost') }}</th>
+              <th class="px-2 py-2 font-medium text-gray-500">{{ $t('companies.actions') }}</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-100">
@@ -585,15 +585,16 @@ const saveAllPaymentMethodCosts = async () => {
 
 <style scoped>
 .embedded-account-label {
-  background: rgba(249, 250, 251, 0.5);
-  border: 1px solid rgba(229, 231, 235, 0.4);
+  background: var(--surface-1);
+  border: 1px solid var(--border);
 }
 
 .ars-input,
 .ars-input-compact {
-  @apply w-full rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500;
-  background: rgba(255, 255, 255, 0.7);
-  border: 1px solid rgba(209, 213, 219, 0.7);
+  @apply w-full rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500;
+  background: var(--bg);
+  color: var(--fg1);
+  border: 1px solid var(--border-input);
 }
 
 .ars-input {
@@ -604,9 +605,10 @@ const saveAllPaymentMethodCosts = async () => {
 }
 
 .ars-select {
-  @apply rounded-lg py-1 px-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20;
-  background: rgba(255, 255, 255, 0.7);
-  border: 1px solid rgba(209, 213, 219, 0.7);
+  @apply rounded-md py-1 px-2 focus:outline-none focus:ring-2 focus:ring-primary-500/20;
+  background: var(--bg);
+  color: var(--fg1);
+  border: 1px solid var(--border-input);
 }
 
 .btn-primary-modal {
@@ -618,14 +620,16 @@ const saveAllPaymentMethodCosts = async () => {
 }
 
 .btn-secondary-sm {
-  @apply px-2 py-1 text-sm text-gray-700 rounded-xl;
-  background: rgba(255, 255, 255, 0.5);
-  border: 1px solid rgba(209, 213, 219, 0.4);
+  @apply px-2 py-1 text-sm rounded-md;
+  color: var(--fg2);
+  background: var(--bg);
+  border: 1px solid var(--border-input);
 }
 .btn-secondary-xs {
-  @apply px-2 py-0.5 text-[10px] text-gray-700 rounded-lg;
-  background: rgba(255, 255, 255, 0.6);
-  border: 1px solid rgba(209, 213, 219, 0.4);
+  @apply px-2 py-0.5 text-[10px] rounded-md;
+  color: var(--fg2);
+  background: var(--bg);
+  border: 1px solid var(--border-input);
 }
 
 .btn-danger-text {

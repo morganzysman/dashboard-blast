@@ -300,14 +300,14 @@
     <!-- Tooltip for calendar entries -->
     <div
       v-if="entryTooltip.show"
-      class="fixed z-50 rounded-xl p-3 pointer-events-none max-w-xs" style="background: rgba(255,255,255,0.90); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.5); box-shadow: 0 8px 32px rgba(0,0,0,0.1);"
+      class="fixed z-50 rounded-md p-3 pointer-events-none max-w-xs" style="background: var(--bg); border: 1px solid var(--border); box-shadow: var(--shadow-pop);"
       :style="{ left: entryTooltip.x + 'px', top: entryTooltip.y + 'px' }"
       v-html="entryTooltip.content"
     ></div>
 
     <!-- Edit Modal -->
-    <div v-if="editEntry" class="fixed inset-0 flex items-center justify-center z-50" style="background: rgba(15,23,42,0.4); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);">
-      <div class="rounded-2xl p-5 w-full max-w-2xl mx-4" style="background: rgba(255,255,255,0.85); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid rgba(255,255,255,0.5); box-shadow: 0 25px 60px rgba(0,0,0,0.12);">
+    <div v-if="editEntry" class="fixed inset-0 flex items-center justify-center z-50 p-4" style="background: var(--scrim);">
+      <div class="rounded-lg p-5 w-full max-w-2xl mx-4" style="background: var(--bg); border: 1px solid var(--border); box-shadow: var(--shadow-pop);">
         <div class="flex items-center justify-between mb-1">
           <h3 class="text-md font-semibold">{{ $t('payroll.editEntries') }} - {{ userName(editEntry.user_id) }}</h3>
           <button class="btn-secondary btn-xs" @click="addNewEntry">{{ $t('payroll.addEntry') }}</button>
@@ -389,8 +389,8 @@
     </div>
 
     <!-- Delete Confirmation Modal -->
-    <div v-if="deleteConfirmation" class="fixed inset-0 flex items-center justify-center z-50" style="background: rgba(15,23,42,0.4); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);">
-      <div class="rounded-2xl p-6 w-full max-w-md mx-4" style="background: rgba(255,255,255,0.85); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid rgba(255,255,255,0.5); box-shadow: 0 25px 60px rgba(0,0,0,0.12);">
+    <div v-if="deleteConfirmation" class="fixed inset-0 flex items-center justify-center z-50 p-4" style="background: var(--scrim);">
+      <div class="rounded-lg p-6 w-full max-w-md mx-4" style="background: var(--bg); border: 1px solid var(--border); box-shadow: var(--shadow-pop);">
         <div class="mb-4">
           <h3 class="text-lg font-semibold text-gray-900">{{ $t('payroll.confirmDeletion') }}</h3>
           <p class="text-sm text-gray-600 mt-2">

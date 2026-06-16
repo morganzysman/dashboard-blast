@@ -128,11 +128,11 @@
               <!-- Hover tooltip with breakdown -->
               <div
                 v-if="hoveredDay === day.date && day.gain !== null"
-                class="absolute z-50 left-1/2 -translate-x-1/2 bottom-full mb-2 w-48 p-2 rounded-lg shadow-lg text-[10px] border"
-                style="background: rgba(255,255,255,0.95); backdrop-filter: blur(8px); border-color: rgba(0,0,0,0.1);"
+                class="absolute z-50 left-1/2 -translate-x-1/2 bottom-full mb-2 w-48 p-2 rounded-md text-[10px]"
+                style="background: var(--bg); border: 1px solid var(--border); box-shadow: var(--shadow-pop);"
               >
-                <div class="font-bold text-gray-900 mb-1">{{ day.date }}</div>
-                <div class="space-y-0.5 text-gray-700">
+                <div class="font-bold mb-1" style="color: var(--fg1);">{{ day.date }}</div>
+                <div class="space-y-0.5" style="color: var(--fg2);">
                   <div class="flex justify-between"><span>{{ $t('gainCalendar.grossRevenue') }}</span><span>{{ formatCurrency(day.grossRevenue) }}</span></div>
                   <div class="flex justify-between text-red-600"><span>{{ $t('gainCalendar.paymentFees') }}</span><span>-{{ formatCurrency(day.paymentFees) }}</span></div>
                   <div class="flex justify-between text-red-600"><span>{{ $t('gainCalendar.foodCosts') }}</span><span>-{{ formatCurrency(day.foodCosts) }}</span></div>
