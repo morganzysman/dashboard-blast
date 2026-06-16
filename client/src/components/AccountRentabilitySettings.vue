@@ -8,23 +8,23 @@
           @click="activeTab = 'utility'"
           :class="tabBtnClass('utility')"
         >
-          🏠 {{ $t('rentability.utilityCosts') }}
+          {{ $t('rentability.utilityCosts') }}
         </button>
         <button
           type="button"
           @click="activeTab = 'payment'"
           :class="tabBtnClass('payment')"
         >
-          💳 {{ $t('rentability.paymentMethodCosts') }}
+          {{ $t('rentability.paymentMethodCosts') }}
         </button>
       </nav>
     </div>
     <div v-else-if="showTabs && compact" class="flex flex-wrap gap-1.5 mb-3">
       <button type="button" @click="activeTab = 'utility'" :class="pillClass('utility')">
-        🏠 {{ $t('rentability.utilityCosts') }}
+        {{ $t('rentability.utilityCosts') }}
       </button>
       <button type="button" @click="activeTab = 'payment'" :class="pillClass('payment')">
-        💳 {{ $t('rentability.paymentMethodCosts') }}
+        {{ $t('rentability.paymentMethodCosts') }}
       </button>
     </div>
 

@@ -2,7 +2,7 @@
   <div class="space-y-6">
     <!-- Page Header -->
     <div>
-      <h1 class="text-2xl font-bold text-gray-900">💰 {{ $t('rentability.title') }}</h1>
+      <h1 class="text-2xl font-bold text-gray-900">{{ $t('rentability.title') }}</h1>
       <p class="text-sm text-gray-600 mt-1">{{ $t('rentability.subtitle') }}</p>
       <p class="text-xs text-gray-500 mt-2 max-w-2xl leading-relaxed">{{ $t('rentability.perAccountNote') }}</p>
     </div>
@@ -39,9 +39,9 @@
           </div>
 
           <!-- Module: Rentability (utility / fixed costs) -->
-          <section class="rounded-xl border border-gray-100 bg-white/80 p-3 space-y-2">
+          <section class="rounded-md border border-gray-200 p-3 space-y-2" style="background: var(--surface-1);">
             <h3 class="text-xs font-semibold text-gray-600 uppercase tracking-wider flex items-center gap-1.5">
-              🏠 {{ $t('rentability.moduleRentability') }}
+              {{ $t('rentability.moduleRentability') }}
             </h3>
             <AccountRentabilitySettings
               section="utility"
@@ -55,9 +55,9 @@
           </section>
 
           <!-- Module: Payments -->
-          <section class="rounded-xl border border-gray-100 bg-white/80 p-3 space-y-2">
+          <section class="rounded-md border border-gray-200 p-3 space-y-2" style="background: var(--surface-1);">
             <h3 class="text-xs font-semibold text-gray-600 uppercase tracking-wider flex items-center gap-1.5">
-              💳 {{ $t('rentability.modulePayments') }}
+              {{ $t('rentability.modulePayments') }}
             </h3>
             <AccountRentabilitySettings
               section="payment"
@@ -69,9 +69,9 @@
           </section>
 
           <!-- Module: SLA -->
-          <section class="rounded-xl border border-gray-100 bg-white/80 p-3 space-y-2">
+          <section class="rounded-md border border-gray-200 p-3 space-y-2" style="background: var(--surface-1);">
             <h3 class="text-xs font-semibold text-gray-600 uppercase tracking-wider flex items-center gap-1.5">
-              ⏱ {{ $t('rentability.moduleSla') }}
+              {{ $t('rentability.moduleSla') }}
             </h3>
             <AccountSlaGoalsForm
               :company-token="row.company_token"

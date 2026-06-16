@@ -10,7 +10,7 @@
         <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
           <div class="min-w-0">
             <h3 class="text-base font-semibold text-gray-900 flex items-center gap-2">
-              <span>🏢</span> {{ $t('companyKitchen.title') }}
+              {{ $t('companyKitchen.title') }}
               <span
                 class="lg:hidden text-xs font-normal text-teal-600 ml-1"
               >{{ $t('companyKitchen.tapToExpand') }}</span>
@@ -33,7 +33,7 @@
                 :class="b.tone"
                 :title="$t(`account.causePill.${b.id}Tooltip`)"
               >
-                <span class="text-sm leading-none" aria-hidden="true">{{ b.icon }}</span>
+                <span class="material-symbols-rounded leading-none" style="font-size: 18px;" aria-hidden="true">{{ b.icon }}</span>
                 <div class="leading-tight">
                   <div class="text-xs font-semibold">
                     {{ b.count }}
@@ -232,9 +232,9 @@ const CAUSE_PILL_TONES = {
   kitchenDelay: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
 }
 const CAUSE_PILL_ICONS = {
-  kitchenDelay: '🍳',
-  waiterMissed: '⏰',
-  slowDelivery: '🛵'
+  kitchenDelay: 'cooking',
+  waiterMissed: 'room_service',
+  slowDelivery: 'delivery_dining'
 }
 
 const causePills = computed(() => {

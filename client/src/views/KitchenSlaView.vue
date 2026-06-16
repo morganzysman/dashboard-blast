@@ -46,7 +46,7 @@
       <div class="card-body">
         <div class="flex items-center justify-between mb-3">
           <div>
-            <h2 class="text-lg font-medium text-gray-900">📊 {{ $t('kitchenSla.matrixTitle') }}</h2>
+            <h2 class="text-lg font-medium text-gray-900">{{ $t('kitchenSla.matrixTitle') }}</h2>
             <p class="text-xs text-gray-500 mt-0.5">{{ $t('kitchenSla.matrixSubtitle') }}</p>
           </div>
         </div>
@@ -128,7 +128,7 @@
       <div class="card-body">
         <div class="flex items-start justify-between mb-3 gap-3 flex-wrap">
           <div>
-            <h2 class="text-lg font-medium text-gray-900">🍳 {{ $t('kitchenSla.leaderboardTitle') }}</h2>
+            <h2 class="text-lg font-medium text-gray-900">{{ $t('kitchenSla.leaderboardTitle') }}</h2>
             <p class="text-xs text-gray-500 mt-0.5">{{ $t('kitchenSla.leaderboardSubtitle') }}</p>
           </div>
           <div>

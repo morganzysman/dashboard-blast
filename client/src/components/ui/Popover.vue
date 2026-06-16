@@ -20,8 +20,8 @@
       >
         <div class="flex justify-between items-start gap-2 mb-2">
           <slot name="title" />
-          <button class="text-gray-400 hover:text-white focus:ring-2 focus:ring-primary-500 rounded" @click="close" :aria-label="$t('common.close')">
-            ✕
+          <button class="text-gray-400 hover:text-white focus:ring-2 focus:ring-primary-500 rounded inline-flex" @click="close" :aria-label="$t('common.close')">
+            <MaterialIcon name="close" :size="18" />
           </button>
         </div>
         <div class="max-h-[60vh] overflow-auto">
@@ -34,6 +34,7 @@
 
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue'
+import MaterialIcon from './MaterialIcon.vue'
 
 const props = defineProps({ id: { type: String, default: () => `popover-${Math.random().toString(36).slice(2)}` }, panelClass: { type: String, default: '' } })
 const open = ref(false)

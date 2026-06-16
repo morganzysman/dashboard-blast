@@ -206,10 +206,10 @@
                       <!-- Edit button -->
                       <button
                         @click.stop="openEditEntry(e)"
-                        class="btn-secondary btn-sm flex-1 !px-1 !py-0.5"
+                        class="btn-secondary btn-sm flex-1 !px-1 !py-0.5 inline-flex items-center justify-center"
                         :aria-label="$t('payroll.editEntry')"
                       >
-                        ✏️
+                        <MaterialIcon name="edit" :size="16" />
                       </button>
                       
                       <!-- Quick approve button for pending entries -->
@@ -217,28 +217,29 @@
                         v-if="!e.approved_by && !e.paid"
                         @click.stop="quickApproveEntry(e.id)"
                         :disabled="approvingEntry === e.id"
-                        class="btn-success btn-sm flex-1 disabled:opacity-50 !px-1 !py-0.5"
+                        class="btn-success btn-sm flex-1 disabled:opacity-50 !px-1 !py-0.5 inline-flex items-center justify-center"
                         :aria-label="approvingEntry === e.id ? $t('payroll.approving') : $t('payroll.quickApprove')"
                       >
-                        {{ approvingEntry === e.id ? '⏳' : '✓' }}
+                        <span v-if="approvingEntry === e.id" class="loading-spinner !w-3.5 !h-3.5 !border-white/40 !border-t-white"></span>
+                        <MaterialIcon v-else name="check" :size="16" />
                       </button>
                       
                       <!-- Edit & Approve button for complex cases -->
                       <button 
                         v-if="!e.approved_by && !e.paid && isComplexEntry(e)"
                         @click.stop="editBeforeApprove(e)"
-                        class="btn-warning btn-sm flex-1 !px-1 !py-0.5"
+                        class="btn-warning btn-sm flex-1 !px-1 !py-0.5 inline-flex items-center justify-center"
                         :aria-label="$t('payroll.reviewAndApprove')"
                       >
-                        🔍
+                        <MaterialIcon name="fact_check" :size="16" />
                       </button>
                       
                       <!-- Already approved indicator -->
                       <div 
                         v-if="e.approved_by"
-                        class="flex-1 px-1 py-0.5 bg-green-800 text-white rounded text-[8px] font-medium text-center"
+                        class="flex-1 px-1 py-0.5 bg-green-800 text-white rounded text-[8px] font-medium text-center inline-flex items-center justify-center"
                       >
-                        ✅
+                        <MaterialIcon name="check_circle" :size="14" :filled="true" />
                       </div>
                     </div>
                     
@@ -254,7 +255,7 @@
                         class="btn-secondary btn-sm inline-flex items-center"
                         :aria-label="$t('payroll.editEntryTimesAndAmount')"
                       >
-                        <span class="mr-0.5">✏️</span> {{ $t('common.edit') }}
+                        <MaterialIcon name="edit" :size="15" class="mr-0.5" /> {{ $t('common.edit') }}
                       </button>
                       
                       <!-- Quick approve button for pending entries -->
@@ -265,7 +266,8 @@
                         class="btn-success btn-sm inline-flex items-center disabled:opacity-50"
                         :aria-label="approvingEntry === e.id ? $t('payroll.approving') : $t('payroll.quickApproveEntry')"
                       >
-                        <span class="mr-0.5">{{ approvingEntry === e.id ? '⏳' : '✓' }}</span>
+                        <span v-if="approvingEntry === e.id" class="loading-spinner !w-3.5 !h-3.5 !border-white/40 !border-t-white mr-0.5"></span>
+                        <MaterialIcon v-else name="check" :size="15" class="mr-0.5" />
                         {{ approvingEntry === e.id ? $t('payroll.approving') : $t('payroll.approveEntry') }}
                       </button>
                       
@@ -276,7 +278,7 @@
                         class="btn-warning btn-sm inline-flex items-center"
                         :aria-label="$t('payroll.reviewAndApproveEntry')"
                       >
-                        <span class="mr-0.5">🔍</span> {{ $t('payroll.review') }}
+                        <MaterialIcon name="fact_check" :size="15" class="mr-0.5" /> {{ $t('payroll.review') }}
                       </button>
                       
                       <!-- Already approved indicator -->
@@ -284,7 +286,7 @@
                         v-if="e.approved_by"
                         class="inline-flex items-center px-2 py-1 bg-green-800 text-white rounded text-[8px] font-medium"
                       >
-                        <span class="mr-0.5">✅</span> {{ $t('payroll.approved') }}
+                        <MaterialIcon name="check_circle" :size="14" :filled="true" class="mr-0.5" /> {{ $t('payroll.approved') }}
                       </div>
                     </div>
                   </div>
@@ -323,7 +325,7 @@
             <!-- AI Smart Detection Warning -->
             <div v-if="!e.paid && !e.approved_by && isComplexEntry(e)" class="col-span-full mb-2 p-2 bg-yellow-50 border border-yellow-200 rounded-md">
               <div class="flex items-center gap-2 text-xs text-yellow-800">
-                <span class="text-yellow-600">🤖</span>
+                <MaterialIcon name="smart_toy" :size="16" class="text-yellow-600" />
                 <span class="font-medium">{{ $t('payroll.aiReviewRequired') }}:</span>
                 <span>{{ getSmartDetectionReason(e) }}</span>
               </div>
@@ -359,8 +361,8 @@
         <div class="mt-3 text-right text-sm text-gray-600">{{ $t('payroll.totalSelected') }}: {{ editEntry.list.length }} • {{ $t('payroll.editable') }}: {{ editableCount }} • {{ $t('payroll.sum') }}: {{ formatCurrency(editableSum) }}</div>
         <div class="mt-4 flex justify-between">
           <div class="flex items-center gap-2">
-            <span v-if="editEntry.approveAfterSave" class="text-xs text-green-600 font-medium">
-              ✅ {{ $t('payroll.willApproveAfterSaving') }}
+            <span v-if="editEntry.approveAfterSave" class="text-xs text-green-600 font-medium inline-flex items-center gap-1">
+              <MaterialIcon name="check_circle" :size="14" :filled="true" /> {{ $t('payroll.willApproveAfterSaving') }}
             </span>
           </div>
           <div class="flex gap-2">
@@ -432,6 +434,7 @@ import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../stores/auth'
 import api from '../utils/api'
 import ResponsiveTable from '../components/ui/ResponsiveTable.vue'
+import MaterialIcon from '../components/ui/MaterialIcon.vue'
 
 const auth = useAuthStore()
 const { t } = useI18n()
@@ -1337,15 +1340,16 @@ const showEntryTooltip = (entry, event) => {
   const clockOutTime = entry.clock_out_at ? formatTime(entry.clock_out_at) : t('payroll.stillWorking')
   const duration = entry.clock_out_at ? formatDurationHours(entry.clock_in_at, entry.clock_out_at) : t('payroll.inProgress')
   
+  const msIcon = (name) => `<span class="material-symbols-rounded" style="font-size:14px;vertical-align:-2px;">${name}</span>`
   let statusText = ''
   if (entry.paid) {
-    statusText = '✅ Paid'
+    statusText = `${msIcon('check_circle')} Paid`
   } else if (entry.approved_by) {
-    statusText = `✅ ${t('payroll.approvedBy')} ${entry.approved_by_name || t('payroll.manager')}`
+    statusText = `${msIcon('check_circle')} ${t('payroll.approvedBy')} ${entry.approved_by_name || t('payroll.manager')}`
   } else if (entry.clock_out_at) {
-            statusText = '⋯ Pending approval'
+    statusText = `${msIcon('schedule')} Pending approval`
   } else {
-    statusText = '🕒 Working'
+    statusText = `${msIcon('work')} Working`
   }
   
   const content = `

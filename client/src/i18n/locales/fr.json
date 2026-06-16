@@ -226,7 +226,7 @@
     "recordToBeat": "Record à battre",
     "progressLabel": "Progression vers le record",
     "noRecordYet": "Pas encore de record du {day} — c'est aujourd'hui que tout commence.",
-    "beatBy": "Record battu de {amount} ! 🎉",
+    "beatBy": "Record battu de {amount} !",
     "remaining": "Encore {amount} pour un nouveau record",
     "perAccount": "Par compte",
     "perAccountHint": "Le meilleur {day} de chaque compte — la date du record peut varier selon le compte",

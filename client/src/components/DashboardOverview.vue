@@ -6,13 +6,13 @@
         <!-- Header and Date Range on same line -->
         <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-4">
           <div class="min-w-0">
-            <h2 class="text-lg sm:text-xl font-bold text-gray-900">📊 {{ $t('dashboard.overview') }}</h2>
+            <h2 class="text-lg sm:text-xl font-bold text-gray-900">{{ $t('dashboard.overview') }}</h2>
             <p class="text-xs sm:text-sm text-gray-600">{{ $t('dashboard.realtimeAnalytics') }}</p>
           </div>
           
           <!-- Date Range Picker -->
           <div class="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-2 flex-shrink-0">
-            <label class="text-xs sm:text-sm font-medium text-gray-700">📅 {{ $t('common.dateRange') }}:</label>
+            <label class="text-xs sm:text-sm font-medium text-gray-700">{{ $t('common.dateRange') }}:</label>
             <select 
               :value="selectedDateRange" 
               @input="$emit('update:selectedDateRange', $event.target.value)"
@@ -67,10 +67,10 @@
           <!-- Current Range Display -->
           <div class="flex items-center text-xs sm:text-sm text-gray-600">
             <span v-if="currentDateRange.start === currentDateRange.end">
-              📊 {{ formatDisplayDate(currentDateRange.start) }}
+              {{ formatDisplayDate(currentDateRange.start) }}
             </span>
             <span v-else>
-              📊 {{ formatDisplayDate(currentDateRange.start) }} → {{ formatDisplayDate(currentDateRange.end) }}
+              {{ formatDisplayDate(currentDateRange.start) }} → {{ formatDisplayDate(currentDateRange.end) }}
             </span>
           </div>
 
@@ -107,7 +107,7 @@
     <!-- Overall Performance Cards -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6" v-if="analyticsData">
       <!-- TOTAL ORDERS KPI with embedded chart -->
-      <KpiCard :label="`${formatGainPeriodLabel()} ORDERS`" :value="String(totalOrders)" tone="neutral" :key="`total-orders-${forceRecompute}`">
+      <KpiCard :label="`${formatGainPeriodLabel()} orders`" :value="String(totalOrders)" tone="neutral" :key="`total-orders-${forceRecompute}`">
         <template #icon>
           <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
@@ -152,7 +152,7 @@
           
 
       <!-- TOTAL AMOUNT KPI with embedded chart --> 
-      <KpiCard :label="`${formatGainPeriodLabel()} AMOUNT`" :value="formatCurrency(aggregatedGrossSales)" tone="neutral" :key="`total-amount-${forceRecompute}`">
+      <KpiCard :label="`${formatGainPeriodLabel()} amount`" :value="formatCurrency(aggregatedGrossSales)" tone="neutral" :key="`total-amount-${forceRecompute}`">
         <template #icon>
           <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
@@ -240,7 +240,7 @@
       
       <!-- Aggregated Daily Gain using KpiCard -->
       <KpiCard
-        :label="`${formatGainPeriodLabel()} GAIN`"
+        :label="`${formatGainPeriodLabel()} gain`"
         :value="formatCurrency(aggregatedDailyGain)"
         :tone="aggregatedDailyGain > 0 ? 'positive' : (aggregatedDailyGain < 0 ? 'negative' : 'neutral')"
         subtext="Includes fees, 30% food costs, utility costs, and payroll (closed + projected open entries when end date is today)"

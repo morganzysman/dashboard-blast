@@ -227,7 +227,7 @@
     "recordToBeat": "Record to beat",
     "progressLabel": "Progress to record",
     "noRecordYet": "No {day} record yet — today sets the bar.",
-    "beatBy": "Record beaten by {amount}! 🎉",
+    "beatBy": "Record beaten by {amount}!",
     "remaining": "{amount} to go to set a new record",
     "perAccount": "Per account",
     "perAccountHint": "Each account's own best {day} — the record date can differ per account",

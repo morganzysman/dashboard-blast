@@ -5,7 +5,7 @@
       <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
         <div class="min-w-0">
           <h2 class="text-lg sm:text-xl font-bold text-gray-900">
-            🎯 {{ isToday ? $t('dailyGoal.todayTitle') : $t('dailyGoal.dayTitle', { day: weekdayName }) }}
+            {{ isToday ? $t('dailyGoal.todayTitle') : $t('dailyGoal.dayTitle', { day: weekdayName }) }}
           </h2>
           <p class="text-xs sm:text-sm text-gray-600">
             {{ $t('dailyGoal.subtitle', { day: weekdayName }) }}
@@ -15,7 +15,7 @@
           v-if="isNewCompanyRecord"
           class="inline-flex items-center self-start px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700 animate-pulse"
         >
-          🏆 {{ $t('dailyGoal.newRecord') }}
+          <MaterialIcon name="emoji_events" :size="14" :filled="true" class="mr-1" />{{ $t('dailyGoal.newRecord') }}
         </span>
       </div>
 
@@ -23,13 +23,13 @@
       <div class="rounded-lg bg-gray-50 p-4">
         <div class="flex flex-wrap items-end justify-between gap-3 mb-3">
           <div class="min-w-0">
-            <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">{{ $t('dailyGoal.currentlySelling') }}</p>
+            <p class="text-xs font-medium text-gray-500">{{ $t('dailyGoal.currentlySelling') }}</p>
             <p class="text-2xl sm:text-3xl font-bold" :class="isNewCompanyRecord ? 'text-green-600' : 'text-gray-900'">
               {{ formatCurrency(companyCurrent) }}
             </p>
           </div>
           <div class="text-right min-w-0">
-            <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">{{ $t('dailyGoal.recordToBeat') }}</p>
+            <p class="text-xs font-medium text-gray-500">{{ $t('dailyGoal.recordToBeat') }}</p>
             <p class="text-xl sm:text-2xl font-bold text-gray-700">
               {{ companyRecord > 0 ? formatCurrency(companyRecord) : '—' }}
             </p>
@@ -54,7 +54,7 @@
       <!-- Per-account goals -->
       <div v-if="accountRows.length > 1" class="space-y-3">
         <div>
-          <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">{{ $t('dailyGoal.perAccount') }}</p>
+          <p class="text-xs font-semibold text-gray-500">{{ $t('dailyGoal.perAccount') }}</p>
           <p class="text-[11px] text-gray-400">{{ $t('dailyGoal.perAccountHint', { day: weekdayName }) }}</p>
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -66,7 +66,7 @@
           >
             <div class="flex items-center justify-between gap-2 mb-1 min-w-0">
               <span class="text-sm font-medium text-gray-800 truncate" :title="row.account">{{ row.account }}</span>
-              <span v-if="row.isNewRecord" class="text-xs flex-shrink-0">🏆</span>
+              <MaterialIcon v-if="row.isNewRecord" name="emoji_events" :size="16" :filled="true" class="flex-shrink-0 text-green-600" />
             </div>
             <div class="flex items-end justify-between gap-2 mb-2">
               <span class="text-base font-bold" :class="row.isNewRecord ? 'text-green-600' : 'text-gray-900'">
@@ -91,6 +91,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import ObjectiveProgress from './ui/ObjectiveProgress.vue'
+import MaterialIcon from './ui/MaterialIcon.vue'
 import { useAuthStore } from '../stores/auth'
 
 const props = defineProps({

@@ -3,7 +3,7 @@
     <!-- Page Header -->
     <div class="flex justify-between items-center mb-6">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">⚠️ {{ $t('employee.warnings.title') }}</h1>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ $t('employee.warnings.title') }}</h1>
         <p class="text-gray-600 dark:text-gray-400 mt-1">
           {{ $t('employee.warnings.subtitle') }}
         </p>
@@ -157,7 +157,7 @@
     <!-- Warning Categories Information -->
     <div class="card mt-6">
       <div class="card-header">
-        <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">📋 {{ $t('employee.warnings.warningCategories') }}</h2>
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $t('employee.warnings.warningCategories') }}</h2>
       </div>
       <div class="card-body">
         <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
@@ -288,15 +288,7 @@ const getSeverityClass = (severity) => {
   return classes[severity] || classes.low
 }
 
-const getSeverityIcon = (severity) => {
-  const icons = {
-    low: '🟡',
-    medium: '🟠',
-    high: '🔴',
-    critical: '⚫'
-  }
-  return icons[severity] || '🟡'
-}
+const getSeverityIcon = () => '●'
 
 const getWarningCategoryName = (categoryKey) => {
   return warningCategories.value[categoryKey]?.name || categoryKey

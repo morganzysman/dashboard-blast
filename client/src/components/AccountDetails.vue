@@ -1,6 +1,6 @@
 <template>
   <div class="space-y-4">
-    <h3 class="text-base sm:text-lg font-medium text-gray-900">🏪 {{ $t('dashboard.accountDetails') }}</h3>
+    <h3 class="text-base sm:text-lg font-medium text-gray-900">{{ $t('dashboard.accountDetails') }}</h3>
 
     <!-- Loading skeletons -->
     <div v-if="loading" class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
@@ -108,12 +108,12 @@
                     <span class="text-xs text-purple-600 hover:text-purple-800 underline">{{ $t('dashboard.viewBreakdown') }}</span>
                   </template>
                   <template #title>
-                    <h4 class="font-bold text-purple-300 text-sm">💰 {{ $t('account.gainBreakdown') }} ({{ formatGainPeriodLabel() }})</h4>
+                    <h4 class="font-bold text-purple-300 text-sm">{{ $t('account.gainBreakdown') }} ({{ formatGainPeriodLabel() }})</h4>
                   </template>
                   <div v-if="account.success && account.data?.data" class="space-y-4">
                     <!-- Revenue by Payment Method -->
                     <div>
-                      <h5 class="font-semibold text-blue-300 mb-3 text-sm">📊 {{ $t('account.revenueByMethod') }}:</h5>
+                      <h5 class="font-semibold text-blue-300 mb-3 text-sm">{{ $t('account.revenueByMethod') }}:</h5>
                       <div v-for="method in accountBreakdowns.get(account.accountKey)?.paymentMethodBreakdown || []" :key="method.method" class="mb-2">
                         <div class="flex justify-between items-center mb-1">
                           <span class="capitalize text-sm font-medium">{{ method.method }}:</span>
@@ -135,7 +135,7 @@
                     
                     <!-- Cost Breakdown -->
                     <div class="border-t border-gray-700 pt-3">
-                      <h5 class="font-semibold text-red-300 mb-3 text-sm">📉 {{ $t('account.costs') }}:</h5>
+                      <h5 class="font-semibold text-red-300 mb-3 text-sm">{{ $t('account.costs') }}:</h5>
                       <div class="space-y-2">
                         <div class="flex justify-between items-center">
                           <span class="text-sm">{{ $t('account.paymentFees') }}:</span>
@@ -248,7 +248,7 @@
                       :class="b.tone"
                       :title="$t(`account.causePill.${b.id}Tooltip`)"
                     >
-                      <span class="text-sm leading-none" aria-hidden="true">{{ b.icon }}</span>
+                      <span class="material-symbols-rounded leading-none" style="font-size: 18px;" aria-hidden="true">{{ b.icon }}</span>
                       <div class="leading-tight">
                         <div class="text-xs font-semibold">
                           {{ b.count }}
@@ -1198,9 +1198,9 @@ const CAUSE_PILL_TONES = {
   kitchenDelay: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
 }
 const CAUSE_PILL_ICONS = {
-  kitchenDelay: '🍳',
-  waiterMissed: '⏰',
-  slowDelivery: '🛵'
+  kitchenDelay: 'cooking',
+  waiterMissed: 'room_service',
+  slowDelivery: 'delivery_dining'
 }
 
 // Build the sorted pill array for one account. Returns `[]` when there's

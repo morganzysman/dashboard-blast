@@ -174,10 +174,10 @@
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ $t('employee.warnings.severity') }}</label>
                     <select v-model="warningForm.severity" 
                             class="w-full max-w-sm rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm focus:border-red-500 focus:ring-red-500 dark:focus:border-red-400 dark:focus:ring-red-400">
-                      <option value="low">🟡 Low - Minor infraction</option>
-                      <option value="medium">🟠 Medium - Moderate concern</option>
-                      <option value="high">🔴 High - Serious violation</option>
-                      <option value="critical">⚫ Critical - Major infraction</option>
+                      <option value="low">Low - Minor infraction</option>
+                      <option value="medium">Medium - Moderate concern</option>
+                      <option value="high">High - Serious violation</option>
+                      <option value="critical">Critical - Major infraction</option>
                     </select>
                   </div>
                 </div>
@@ -238,7 +238,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                   </svg>
                 </div>
-                <p class="text-sm text-green-600 dark:text-green-400 font-medium">✅ No warnings on record</p>
+                <p class="text-sm text-green-600 dark:text-green-400 font-medium">No warnings on record</p>
                 <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ $t('employee.warnings.cleanRecord') }}</p>
               </div>
               
@@ -524,15 +524,7 @@ const getSeverityClass = (severity) => {
   return classes[severity] || classes.low
 }
 
-const getSeverityIcon = (severity) => {
-  const icons = {
-    low: '🟡',
-    medium: '🟠',
-    high: '🔴',
-    critical: '⚫'
-  }
-  return icons[severity] || '🟡'
-}
+const getSeverityIcon = () => '●'
 
 const getWarningCategoryName = (categoryKey) => {
   return warningCategories.value[categoryKey]?.name || categoryKey
