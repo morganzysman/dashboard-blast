@@ -41,19 +41,16 @@
         <div :class="compact ? 'grid grid-cols-1 sm:grid-cols-2 gap-2' : 'grid grid-cols-1 md:grid-cols-2 gap-4'">
           <div v-for="field in costFields" :key="field.key" :class="compact ? 'mb-0' : 'mb-4'">
             <label class="block font-medium text-gray-700 mb-1" :class="compact ? 'text-[10px]' : 'text-sm'">
-              {{ $t(`rentability.costFields.${field.key}`) }} ({{ $t('common.monthly') }})
+              {{ $t(`rentability.costFields.${field.key}`) }} ({{ $t('common.monthly') }}, {{ currencySymbol }})
             </label>
-            <div class="relative">
-              <span class="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs">{{ currencySymbol }}</span>
-              <input
-                type="number"
-                v-model.number="formData[field.key]"
-                :class="compact ? 'ars-input-compact pl-8' : 'ars-input pl-10'"
-                min="0"
-                step="0.01"
-                :placeholder="field.placeholder"
-              />
-            </div>
+            <input
+              type="number"
+              v-model.number="formData[field.key]"
+              :class="compact ? 'ars-input-compact' : 'ars-input'"
+              min="0"
+              step="0.01"
+              :placeholder="field.placeholder"
+            />
           </div>
         </div>
 
@@ -144,7 +141,6 @@
               </td>
               <td class="px-2 py-2">
                 <div class="flex items-center gap-0.5">
-                  <span class="text-gray-400 text-xs">{{ currencySymbol }}</span>
                   <input
                     type="number"
                     v-model.number="cost.fixed_cost"
@@ -189,11 +185,8 @@
             <input type="number" v-model.number="newPaymentMethod.percentage" class="ars-input-compact w-full" min="0" max="100" step="0.01" placeholder="0" />
           </div>
           <div>
-            <label class="block text-[10px] font-medium text-gray-600 mb-0.5">{{ $t('rentability.fixedCost') }}</label>
-            <div class="relative">
-              <span class="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs">{{ currencySymbol }}</span>
-              <input type="number" v-model.number="newPaymentMethod.fixedCost" class="ars-input-compact w-full pl-7" min="0" step="0.01" placeholder="0" />
-            </div>
+            <label class="block text-[10px] font-medium text-gray-600 mb-0.5">{{ $t('rentability.fixedCost') }} ({{ currencySymbol }})</label>
+            <input type="number" v-model.number="newPaymentMethod.fixedCost" class="ars-input-compact w-full" min="0" step="0.01" placeholder="0" />
           </div>
           <div>
             <button type="button" @click="addPaymentMethodCost" :disabled="!newPaymentMethod.code" class="btn-teal-xs w-full">

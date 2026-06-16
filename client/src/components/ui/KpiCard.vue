@@ -1,6 +1,6 @@
 <template>
   <div class="card relative overflow-hidden">
-    <div class="card-body !p-3 sm:!p-4">
+    <div class="card-body !p-4 md:!p-6">
       <!-- Header with icon next to title -->
       <div class="flex items-center justify-between mb-2">
         <div class="flex items-center gap-2">
