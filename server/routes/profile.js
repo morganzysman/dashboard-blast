@@ -7,7 +7,7 @@
 import { Router } from 'express'
 import { requireAuth } from '../middleware/auth.js'
 import { pool } from '../database.js'
-import { getCountryConfig, DEFAULT_COUNTRY } from '../config/contractCountries.js'
+import { getCountryConfig, getContractType, DEFAULT_COUNTRY } from '../config/contractCountries.js'
 import {
   contractStatusFor,
   isExpiringSoon,
@@ -179,11 +179,15 @@ router.get('/contracts', requireAuth, async (req, res) => {
       .map((r) => {
         const roles = r.signer_roles || []
         const status = contractStatusFor(r, roles)
+        const type = getContractType(r.country, r.contract_type)
         return {
           id: r.id,
           company_token: r.company_token,
           country: r.country,
           contract_type: r.contract_type,
+          // i18n suffix under `contract.types.` so the worker UI can localize
+          // the contract type without the admin-only contract-config endpoint.
+          type_label_key: type?.labelKey || null,
           params: r.params,
           start_date: r.start_date,
           end_date: r.end_date,

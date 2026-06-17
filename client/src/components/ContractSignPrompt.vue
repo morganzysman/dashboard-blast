@@ -21,12 +21,28 @@
           </div>
 
           <!-- PDF review -->
-          <div class="mb-4 rounded-lg border border-gray-200 overflow-hidden bg-gray-100" style="height: 45vh;">
+          <div class="mb-2 rounded-lg border border-gray-200 overflow-hidden bg-gray-100" style="height: 45vh;">
             <iframe v-if="pdfUrl" :src="pdfUrl" class="w-full h-full" :title="$t('contract.reviewPdf')"></iframe>
             <div v-else class="w-full h-full flex items-center justify-center text-sm text-gray-400">
               {{ $t('common.loading') }}
             </div>
           </div>
+
+          <!-- Mobile-friendly fallback: embedded PDFs often can't be scrolled on
+               phones, so always offer opening it in the native full-screen viewer. -->
+          <a
+            v-if="pdfUrl"
+            :href="pdfUrl"
+            target="_blank"
+            rel="noopener"
+            class="inline-flex items-center gap-1.5 text-sm font-medium text-primary-600 hover:text-primary-700 mb-2"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+            </svg>
+            {{ $t('contract.openFullPdf') }}
+          </a>
+          <p class="text-xs text-gray-400 mb-4">{{ $t('contract.pdfMobileHint') }}</p>
 
           <!-- Signature -->
           <label class="form-label">{{ $t('contract.signAsWorker') }}</label>
@@ -60,6 +76,8 @@ import SignaturePad from './SignaturePad.vue'
 
 const { t, locale } = useI18n()
 const authStore = useAuthStore()
+
+const emit = defineEmits(['signed'])
 
 const show = ref(false)
 const submitting = ref(false)
@@ -117,6 +135,7 @@ const submit = async () => {
   try {
     await api.signMyContract(current.value.id, { signature_png: dataUrl })
     window.showNotification?.({ type: 'success', title: 'Success', message: t('contract.signSuccess') })
+    emit('signed')
     await advance()
   } catch (e) {
     window.showNotification?.({ type: 'error', title: 'Error', message: e.message || 'Failed to sign' })
@@ -130,6 +149,20 @@ const later = () => {
   show.value = false
   revokePdf()
 }
+
+// Open the modal for a single contract on demand (e.g. from the contracts list),
+// independent of the login auto-prompt queue.
+const openFor = async (contract) => {
+  if (!contract) return
+  queue.value = []
+  consent.value = false
+  pad.value?.clear()
+  current.value = contract
+  show.value = true
+  await loadPdf()
+}
+
+defineExpose({ openFor })
 
 watch(current, () => { consent.value = false })
 

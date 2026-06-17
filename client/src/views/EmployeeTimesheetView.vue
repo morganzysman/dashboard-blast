@@ -2,7 +2,10 @@
   <div class="space-y-4 lg:space-y-6 max-w-3xl mx-auto">
     <!-- Prompt employee to complete contract identity data if missing -->
     <ContractInfoPrompt />
-    <ContractSignPrompt />
+    <ContractSignPrompt ref="signPrompt" @signed="contractsCard?.reload()" />
+
+    <!-- Employee's own contracts (signed/valid + pending signature) -->
+    <MyContractsCard ref="contractsCard" @sign="onSignContract" />
     <!-- Shifts calendar view -->
     <div class="card" v-if="$route.query.greeted === '1'">
       <div class="card-body">
@@ -134,6 +137,11 @@ import ResponsiveTable from '../components/ui/ResponsiveTable.vue'
 import MaterialIcon from '../components/ui/MaterialIcon.vue'
 import ContractInfoPrompt from '../components/ContractInfoPrompt.vue'
 import ContractSignPrompt from '../components/ContractSignPrompt.vue'
+import MyContractsCard from '../components/MyContractsCard.vue'
+
+const signPrompt = ref(null)
+const contractsCard = ref(null)
+const onSignContract = (c) => signPrompt.value?.openFor(c)
 
 const entries = ref([])
 const loading = ref(false)
