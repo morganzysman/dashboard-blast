@@ -1131,7 +1131,7 @@ router.put('/companies/:companyId/accounts/:companyToken/contract-info', require
 
     const upd = await pool.query(
       `UPDATE company_accounts
-       SET country = $3, contract_employer_info = $4::jsonb, updated_at = NOW()
+       SET country = $3, contract_employer_info = $4::jsonb
        WHERE company_id = $1 AND company_token = $2
        RETURNING company_id, company_token, account_name, country, contract_employer_info`,
       [companyId, companyToken, code, JSON.stringify(clean)]
