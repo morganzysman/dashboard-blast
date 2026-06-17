@@ -64,6 +64,13 @@
               <input v-model.trim="form.address" type="text" class="form-input" />
             </div>
           </div>
+          <div>
+            <label class="form-label">{{ $t('contract.idDocumentImage') }}</label>
+            <div v-if="idDocumentUrl" class="mt-1">
+              <img :src="idDocumentUrl" alt="ID document" class="max-h-48 rounded border border-gray-200 object-contain" />
+            </div>
+            <p v-else class="text-sm text-gray-400">{{ $t('common.none') }}</p>
+          </div>
           <div class="flex justify-end">
             <button class="btn-primary" :disabled="savingContractInfo" @click="saveContractInfo">{{ $t('common.save') }}</button>
           </div>
@@ -146,6 +153,7 @@ const router = useRouter()
 const loading = ref(true)
 const user = ref(null)
 const accounts = ref([])
+const idDocumentUrl = ref('')
 const countries = ref([])
 const savingPayroll = ref(false)
 const savingContractInfo = ref(false)
@@ -259,6 +267,11 @@ const load = async () => {
       // Generate panel prefill
       gen.hourly_rate = user.value.hourly_rate ?? null
       gen.area_servicio = AREA_BY_JOB[user.value.job_type] || ''
+      if (user.value.has_id_document) {
+        api.fetchImageObjectUrl(`/api/admin/users/${userId.value}/id-document`)
+          .then((url) => { idDocumentUrl.value = url })
+          .catch(() => { idDocumentUrl.value = '' })
+      }
     }
     if (accounts.value.length) gen.company_token = accounts.value[0].company_token
   } catch (e) {

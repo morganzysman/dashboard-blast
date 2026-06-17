@@ -1016,6 +1016,7 @@ router.get('/users/:userId/detail', requireAuth, requireRole(['admin', 'super-ad
       `SELECT u.id, u.email, u.name, u.role, u.is_active, u.company_id,
               u.hourly_rate, u.hired_at, u.job_type,
               u.document_type, u.document_number, u.address,
+              (u.id_document_image IS NOT NULL) AS has_id_document,
               c.name AS company_name
        FROM users u
        LEFT JOIN companies c ON c.id = u.company_id
@@ -1054,6 +1055,31 @@ router.get('/users/:userId/detail', requireAuth, requireRole(['admin', 'super-ad
   } catch (e) {
     console.error('Error fetching user detail:', e)
     res.status(500).json({ success: false, error: 'Failed to fetch user detail' })
+  }
+})
+
+// Stream an employee's ID document image (admin/super-admin, own company scope)
+router.get('/users/:userId/id-document', requireAuth, requireRole(['admin', 'super-admin']), async (req, res) => {
+  try {
+    const { userId } = req.params
+    const q = await pool.query(
+      `SELECT company_id, id_document_image, id_document_mime FROM users WHERE id = $1`,
+      [userId]
+    )
+    if (q.rowCount === 0) return res.status(404).json({ success: false, error: 'User not found' })
+    const row = q.rows[0]
+    if (req.user.role === 'admin' && row.company_id !== req.user.companyId) {
+      return res.status(403).json({ success: false, error: 'Forbidden' })
+    }
+    if (!row.id_document_image) {
+      return res.status(404).json({ success: false, error: 'No ID document on file' })
+    }
+    res.setHeader('Content-Type', row.id_document_mime || 'application/octet-stream')
+    res.setHeader('Cache-Control', 'private, no-store')
+    res.send(row.id_document_image)
+  } catch (e) {
+    console.error('Error fetching ID document:', e)
+    res.status(500).json({ success: false, error: 'Failed to fetch ID document' })
   }
 })
 

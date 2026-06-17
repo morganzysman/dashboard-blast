@@ -1,5 +1,7 @@
 <template>
   <div class="space-y-4 lg:space-y-6 max-w-3xl mx-auto">
+    <!-- Prompt employee to complete contract identity data if missing -->
+    <ContractInfoPrompt />
     <!-- Shifts calendar view -->
     <div class="card" v-if="$route.query.greeted === '1'">
       <div class="card-body">
@@ -129,6 +131,7 @@ import { useAuthStore } from '../stores/auth'
 import api from '../utils/api'
 import ResponsiveTable from '../components/ui/ResponsiveTable.vue'
 import MaterialIcon from '../components/ui/MaterialIcon.vue'
+import ContractInfoPrompt from '../components/ContractInfoPrompt.vue'
 
 const entries = ref([])
 const loading = ref(false)

@@ -268,6 +268,24 @@ export const api = {
   getAccountSettings: () => apiRequest('/api/admin/account-settings', { method: 'GET' }),
   updateAccountApiKey: (companyToken, apiToken) => apiRequest(`/api/admin/account-settings/${encodeURIComponent(companyToken)}`, { method: 'PUT', body: JSON.stringify({ api_token: apiToken }) }),
 
+  // Self-service contract identity (employee)
+  getMyContractInfo: () => apiRequest('/api/profile/contract-info', { method: 'GET' }),
+  updateMyContractInfo: (payload) => apiRequest('/api/profile/contract-info', { method: 'PUT', body: JSON.stringify(payload) }),
+  uploadMyIdDocument: (payload) => apiRequest('/api/profile/id-document', { method: 'POST', body: JSON.stringify(payload) }),
+
+  // Fetch an authenticated image endpoint as an object URL (for <img> tags).
+  fetchImageObjectUrl: async (url) => {
+    const authStore = useAuthStore()
+    const response = await fetch(url, {
+      headers: { ...(authStore.sessionId ? { 'X-Session-ID': authStore.sessionId } : {}) },
+    })
+    if (!response.ok) {
+      throw new ApiError('Failed to fetch image', response.status)
+    }
+    const blob = await response.blob()
+    return URL.createObjectURL(blob)
+  },
+
   // Work contracts (admin)
   getContractConfig: () => apiRequest('/api/admin/contract-config', { method: 'GET' }),
   getUserDetail: (userId) => apiRequest(`/api/admin/users/${userId}/detail`, { method: 'GET' }),

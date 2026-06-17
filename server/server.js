@@ -34,6 +34,7 @@ import payrollRoutes from './routes/payroll.js';
 import warningsRoutes from './routes/warnings.js';
 import holidayRoutes from './routes/holidays.js';
 import employeeSlaRoutes from './routes/employee-sla.js';
+import profileRoutes from './routes/profile.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -65,7 +66,8 @@ if (config.nodeEnv === 'production') {
 
 // Middleware
 app.use(cors());
-app.use(express.json());
+// 5mb accommodates base64-encoded, client-compressed ID document images.
+app.use(express.json({ limit: '5mb' }));
 
 // Resolve the static-asset root defensively. We *always* prefer the built
 // `dist/` output when it exists on disk, regardless of NODE_ENV. This survives
@@ -148,6 +150,7 @@ app.use('/api/payroll', payrollRoutes);
 app.use('/api/warnings', warningsRoutes);
 app.use('/api/holidays', holidayRoutes);
 app.use('/api/employee-sla', employeeSlaRoutes);
+app.use('/api/profile', profileRoutes);
 
 // Serve notifications debug page
 app.get('/notifications-debug', (req, res) => {
