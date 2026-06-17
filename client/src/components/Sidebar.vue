@@ -5,7 +5,7 @@
   ]">
     <!-- Logo section -->
     <div class="sidebar-header">
-      <div class="flex items-center justify-between">
+      <div class="flex items-center justify-between w-full">
         <div class="flex items-center gap-2.5 min-w-0">
           <div class="flex-shrink-0 flex items-center justify-center rounded-md" style="width: 28px; height: 28px; background: var(--brand-blue);">
             <span class="font-display font-bold text-white text-base leading-none">O</span>

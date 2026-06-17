@@ -76,13 +76,13 @@
             v-if="initialUtilityRecord && showDeleteUtility"
             type="button"
             @click="deleteUtilityCosts"
-            class="btn-danger-text"
-            :class="compact ? 'text-[11px]' : 'text-sm'"
+            class="btn btn-danger"
+            :class="compact ? 'btn-xs' : 'btn-sm'"
             :disabled="saving"
           >
             {{ $t('common.delete') }}
           </button>
-          <button type="submit" :disabled="saving || !companyToken" :class="compact ? 'btn-teal-xs' : 'btn-primary-modal'">
+          <button type="submit" :disabled="saving || !companyToken" class="btn btn-primary" :class="compact ? 'btn-xs' : ''">
             <span v-if="saving" class="inline-flex items-center gap-1">
               <span class="loading-spinner-sm" />
               {{ $t('common.saving') }}
@@ -102,7 +102,8 @@
         <button
           type="button"
           @click="addDefaultPaymentMethods"
-          :class="compact ? 'btn-secondary-xs' : 'btn-secondary-sm'"
+          class="btn btn-outline"
+          :class="compact ? 'btn-xs' : 'btn-sm'"
           :disabled="accountPaymentCosts.length > 0"
           :title="
             accountPaymentCosts.length > 0 ? $t('rentability.clearExistingFirst') : $t('rentability.addDefaultMethodsTooltip')
@@ -189,7 +190,7 @@
             <input type="number" v-model.number="newPaymentMethod.fixedCost" class="ars-input-compact w-full" min="0" step="0.01" placeholder="0" />
           </div>
           <div>
-            <button type="button" @click="addPaymentMethodCost" :disabled="!newPaymentMethod.code" class="btn-teal-xs w-full">
+            <button type="button" @click="addPaymentMethodCost" :disabled="!newPaymentMethod.code" class="btn btn-secondary btn-xs w-full">
               {{ $t('common.add') }}
             </button>
           </div>
@@ -201,7 +202,8 @@
           type="button"
           @click="saveAllPaymentMethodCosts"
           :disabled="!companyToken || savingPaymentCosts || !hasUnsavedChanges"
-          :class="[compact ? 'btn-teal-xs' : 'btn-primary-modal', { 'opacity-50': !hasUnsavedChanges }]"
+          class="btn btn-primary"
+          :class="[compact ? 'btn-xs' : '', { 'opacity-50': !hasUnsavedChanges }]"
         >
           <span v-if="savingPaymentCosts" class="inline-flex items-center gap-1">
             <span class="loading-spinner-sm" />
@@ -373,7 +375,7 @@ function pillClass(id) {
   return [
     'px-2 py-1 rounded-lg text-[10px] font-medium border transition-colors',
     activeTab.value === id
-      ? 'border-teal-500 bg-teal-50 text-teal-800'
+      ? 'border-[#006AFF] bg-[#EBF2FF] text-[#006AFF]'
       : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
   ]
 }

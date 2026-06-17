@@ -6,7 +6,7 @@
         <h2 class="text-xl sm:text-2xl font-bold text-gray-900">{{ $t('admin.title') }}</h2>
         <p class="text-sm sm:text-base text-gray-600">{{ $t('admin.subtitle') }}</p>
       </div>
-      <button @click="openCreateUserModal" class="btn-primary text-sm sm:text-base">
+      <button @click="openCreateUserModal" class="btn btn-primary text-sm sm:text-base">
         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
         </svg>
@@ -151,12 +151,12 @@
             </div>
             
             <div class="grid grid-cols-2 gap-2 mt-2">
-              <button @click="editUser(user)" class="btn-sm btn-secondary text-xs">{{ $t('common.edit') }}</button>
-              <button v-if="user.role === 'employee'" @click="openEmployeeDetail(user)" class="btn-sm btn-secondary text-xs">{{ $t('contract.contract') }}</button>
-              <button @click="toggleUserStatus(user)" :class="user.is_active ? 'btn-sm btn-warning text-xs' : 'btn-sm btn-success text-xs'">{{ user.is_active ? $t('common.deactivate') : $t('common.activate') }}</button>
-              <button v-if="!isSuperAdmin" @click="manageShifts(user)" class="btn-sm btn-secondary text-xs col-span-2">{{ $t('navigation.shifts') }}</button>
-              <button @click="resetPassword(user)" class="btn-sm btn-warning text-xs col-span-2">{{ $t('admin.resetPassword') }}</button>
-              <button v-if="isSuperAdmin" @click="confirmDeleteUser(user)" class="btn-sm btn-danger text-xs col-span-2">{{ $t('common.delete') }}</button>
+              <button @click="editUser(user)" class="btn btn-ghost btn-sm text-xs">{{ $t('common.edit') }}</button>
+              <button v-if="user.role === 'employee'" @click="openEmployeeDetail(user)" class="btn btn-ghost btn-sm text-xs">{{ $t('contract.contract') }}</button>
+              <button @click="toggleUserStatus(user)" :class="user.is_active ? 'btn btn-danger btn-sm text-xs' : 'btn btn-primary btn-sm text-xs'">{{ user.is_active ? $t('common.deactivate') : $t('common.activate') }}</button>
+              <button v-if="!isSuperAdmin" @click="manageShifts(user)" class="btn btn-ghost btn-sm text-xs col-span-2">{{ $t('navigation.shifts') }}</button>
+              <button @click="resetPassword(user)" class="btn btn-ghost btn-sm text-xs col-span-2">{{ $t('admin.resetPassword') }}</button>
+              <button v-if="isSuperAdmin" @click="confirmDeleteUser(user)" class="btn btn-danger btn-sm text-xs col-span-2">{{ $t('common.delete') }}</button>
             </div>
           </div>
         </div>
@@ -233,40 +233,40 @@
                   <div class="flex items-center space-x-2">
                     <button
                       @click="editUser(user)"
-                      class="btn-sm btn-secondary"
+                      class="btn btn-ghost btn-sm"
                     >
                       {{ $t('common.edit') }}
                     </button>
                     <button
                       v-if="user.role === 'employee'"
                       @click="openEmployeeDetail(user)"
-                      class="btn-sm btn-secondary"
+                      class="btn btn-ghost btn-sm"
                     >
                       {{ $t('contract.contract') }}
                     </button>
                     <button
                       v-if="!isSuperAdmin"
                       @click="manageShifts(user)"
-                      class="btn-sm btn-secondary"
+                      class="btn btn-ghost btn-sm"
                     >
                       {{ $t('navigation.shifts') }}
                     </button>
                     <button
                       @click="resetPassword(user)"
-                      class="btn-sm btn-warning"
+                      class="btn btn-ghost btn-sm"
                     >
                       {{ $t('admin.resetPassword') }}
                     </button>
                     <button
                       @click="toggleUserStatus(user)"
-                      :class="user.is_active ? 'btn-sm btn-warning' : 'btn-sm btn-success'"
+                      :class="user.is_active ? 'btn btn-danger btn-sm' : 'btn btn-primary btn-sm'"
                     >
                       {{ user.is_active ? $t('common.deactivate') : $t('common.activate') }}
                     </button>
                     <button
                       v-if="isSuperAdmin"
                       @click="confirmDeleteUser(user)"
-                      class="btn-sm btn-danger"
+                      class="btn btn-danger btn-sm"
                     >
                       {{ $t('common.delete') }}
                     </button>

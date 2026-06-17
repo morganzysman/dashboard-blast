@@ -19,7 +19,7 @@
               </button>
             </div>
             <div class="inline-flex gap-2">
-              <button class="btn-primary btn-sm" :disabled="paying || !companyToken" @click="markPaid">{{ paying ? $t('payroll.marking') : $t('payroll.markAsPaid') }}</button>
+              <button class="btn btn-primary btn-sm" :disabled="paying || !companyToken" @click="markPaid">{{ paying ? $t('payroll.marking') : $t('payroll.markAsPaid') }}</button>
             </div>
           </div>
         </div>
@@ -38,8 +38,8 @@
             <select v-model="companyToken" class="form-input" @change="loadEntries">
               <option v-for="acc in accounts" :key="acc.company_token" :value="acc.company_token">{{ acc.account_name || acc.company_token }}</option>
             </select>
-            <button class="btn-secondary btn-sm" @click="loadEntries">{{ $t('common.load') }}</button>
-            <button v-if="companyToken" class="btn-secondary btn-sm" @click="downloadQr">{{ $t('payroll.downloadQR') }}</button>
+            <button class="btn btn-secondary btn-sm" @click="loadEntries">{{ $t('common.load') }}</button>
+            <button v-if="companyToken" class="btn btn-outline btn-sm" @click="downloadQr">{{ $t('payroll.downloadQR') }}</button>
           </div>
           
           <!-- Employee Summary Table -->
@@ -78,7 +78,7 @@
             </template>
 
             <template #cell-amount="{ item }">{{ formatCurrency(item.amount) }}</template>
-            <template #cell-actions="{ item }"><button class="btn-secondary btn-xs" @click="openEdit(item)">{{ $t('common.edit') }}</button></template>
+            <template #cell-actions="{ item }"><button class="btn btn-ghost btn-sm" @click="openEdit(item)">{{ $t('common.edit') }}</button></template>
 
             <template #mobile-card="{ item }">
               <div class="font-medium text-gray-900 dark:text-gray-100 mb-1">{{ item.employeeName || item.user_id }}</div>
@@ -90,7 +90,7 @@
               </div>
               <div class="text-xs" :class="item.lateCount > 0 ? 'text-red-600 font-bold' : 'text-gray-600'">{{ $t('payroll.lateCount') }}: {{ item.lateCount }}</div>
               <div class="text-xs text-gray-900 dark:text-gray-100 flex justify-between mt-1"><span>{{ $t('common.amount') }}</span><span>{{ formatCurrency(item.amount) }}</span></div>
-              <div class="mt-2 text-right"><button class="btn-secondary btn-xs" @click="openEdit(item)">{{ $t('common.edit') }}</button></div>
+              <div class="mt-2 text-right"><button class="btn btn-ghost btn-sm" @click="openEdit(item)">{{ $t('common.edit') }}</button></div>
             </template>
           </ResponsiveTable>
           
@@ -206,7 +206,7 @@
                       <!-- Edit button -->
                       <button
                         @click.stop="openEditEntry(e)"
-                        class="btn-secondary btn-sm flex-1 !px-1 !py-0.5 inline-flex items-center justify-center"
+                        class="btn btn-ghost btn-sm flex-1 !px-1 !py-0.5 inline-flex items-center justify-center"
                         :aria-label="$t('payroll.editEntry')"
                       >
                         <MaterialIcon name="edit" :size="16" />
@@ -217,10 +217,10 @@
                         v-if="!e.approved_by && !e.paid"
                         @click.stop="quickApproveEntry(e.id)"
                         :disabled="approvingEntry === e.id"
-                        class="btn-success btn-sm flex-1 disabled:opacity-50 !px-1 !py-0.5 inline-flex items-center justify-center"
+                        class="btn btn-ghost btn-sm flex-1 disabled:opacity-50 !px-1 !py-0.5 inline-flex items-center justify-center"
                         :aria-label="approvingEntry === e.id ? $t('payroll.approving') : $t('payroll.quickApprove')"
                       >
-                        <span v-if="approvingEntry === e.id" class="loading-spinner !w-3.5 !h-3.5 !border-white/40 !border-t-white"></span>
+                        <span v-if="approvingEntry === e.id" class="loading-spinner !w-3.5 !h-3.5"></span>
                         <MaterialIcon v-else name="check" :size="16" />
                       </button>
                       
@@ -228,7 +228,7 @@
                       <button 
                         v-if="!e.approved_by && !e.paid && isComplexEntry(e)"
                         @click.stop="editBeforeApprove(e)"
-                        class="btn-warning btn-sm flex-1 !px-1 !py-0.5 inline-flex items-center justify-center"
+                        class="btn btn-ghost btn-sm flex-1 !px-1 !py-0.5 inline-flex items-center justify-center"
                         :aria-label="$t('payroll.reviewAndApprove')"
                       >
                         <MaterialIcon name="fact_check" :size="16" />
@@ -252,7 +252,7 @@
                       <!-- Edit button -->
                       <button
                         @click="openEditEntry(e)"
-                        class="btn-secondary btn-sm inline-flex items-center"
+                        class="btn btn-ghost btn-sm inline-flex items-center"
                         :aria-label="$t('payroll.editEntryTimesAndAmount')"
                       >
                         <MaterialIcon name="edit" :size="15" class="mr-0.5" /> {{ $t('common.edit') }}
@@ -263,10 +263,10 @@
                         v-if="!e.approved_by && !e.paid"
                         @click="quickApproveEntry(e.id)"
                         :disabled="approvingEntry === e.id"
-                        class="btn-success btn-sm inline-flex items-center disabled:opacity-50"
+                        class="btn btn-ghost btn-sm inline-flex items-center disabled:opacity-50"
                         :aria-label="approvingEntry === e.id ? $t('payroll.approving') : $t('payroll.quickApproveEntry')"
                       >
-                        <span v-if="approvingEntry === e.id" class="loading-spinner !w-3.5 !h-3.5 !border-white/40 !border-t-white mr-0.5"></span>
+                        <span v-if="approvingEntry === e.id" class="loading-spinner !w-3.5 !h-3.5 mr-0.5"></span>
                         <MaterialIcon v-else name="check" :size="15" class="mr-0.5" />
                         {{ approvingEntry === e.id ? $t('payroll.approving') : $t('payroll.approveEntry') }}
                       </button>
@@ -275,7 +275,7 @@
                       <button 
                         v-if="!e.approved_by && !e.paid && isComplexEntry(e)"
                         @click="editBeforeApprove(e)"
-                        class="btn-warning btn-sm inline-flex items-center"
+                        class="btn btn-ghost btn-sm inline-flex items-center"
                         :aria-label="$t('payroll.reviewAndApproveEntry')"
                       >
                         <MaterialIcon name="fact_check" :size="15" class="mr-0.5" /> {{ $t('payroll.review') }}
@@ -369,7 +369,7 @@
             <button class="btn-secondary btn-sm" @click="editEntry=null">{{ $t('common.cancel') }}</button>
             <button 
               v-if="editEntry.approveAfterSave"
-              class="btn-success btn-sm" 
+              class="btn btn-primary btn-sm" 
               :disabled="editableCount === 0" 
               :class="{ 'opacity-50 cursor-not-allowed': editableCount === 0 }" 
               @click="saveEdit"

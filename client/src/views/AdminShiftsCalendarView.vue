@@ -13,9 +13,9 @@
             </select>
           </div>
           <div class="flex items-center gap-2">
-            <button class="btn-secondary btn-sm" @click="prevWeek">{{ $t('shifts.prevWeek') }}</button>
-            <button class="btn-secondary btn-sm" @click="nextWeek">{{ $t('shifts.nextWeek') }}</button>
-            <button class="btn-primary btn-sm" @click="loadCalendar">{{ $t('common.refresh') }}</button>
+            <button class="btn btn-outline btn-sm" @click="prevWeek">{{ $t('shifts.prevWeek') }}</button>
+            <button class="btn btn-outline btn-sm" @click="nextWeek">{{ $t('shifts.nextWeek') }}</button>
+            <button class="btn btn-secondary btn-sm" @click="loadCalendar">{{ $t('common.refresh') }}</button>
           </div>
         </div>
       </div>

@@ -1,7 +1,7 @@
 <template>
   <div>
   <header class="page-header">
-    <div class="flex items-center justify-between">
+    <div class="flex items-center justify-between w-full">
       <!-- Mobile menu button and page title -->
       <div class="flex items-center space-x-3">
         <!-- Mobile menu button -->
@@ -22,7 +22,7 @@
       </div>
 
       <!-- User menu -->
-      <div class="flex items-center space-x-4">
+      <div class="flex items-center space-x-4 ml-auto">
         <!-- Language selector -->
         <div class="relative" ref="langDropdownRef">
           <button

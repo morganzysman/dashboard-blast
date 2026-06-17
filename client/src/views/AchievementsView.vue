@@ -13,16 +13,16 @@
           <div class="inline-flex rounded-md border border-gray-200 dark:border-gray-600 overflow-hidden">
             <button
               type="button"
-              class="px-4 py-1.5 text-sm transition-colors"
-              :class="scope === 'company' ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'"
+              class="px-4 py-1.5 text-sm font-medium transition-colors"
+              :class="scope === 'company' ? 'bg-[#EBF2FF] text-[#006AFF]' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'"
               @click="scope = 'company'"
             >
               {{ $t('achievements.company') }}
             </button>
             <button
               type="button"
-              class="px-4 py-1.5 text-sm border-l border-gray-200 dark:border-gray-600 transition-colors"
-              :class="scope === 'account' ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'"
+              class="px-4 py-1.5 text-sm font-medium border-l border-gray-200 dark:border-gray-600 transition-colors"
+              :class="scope === 'account' ? 'bg-[#EBF2FF] text-[#006AFF]' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'"
               @click="scope = 'account'"
             >
               {{ $t('achievements.account') }}
@@ -40,7 +40,7 @@
             </option>
           </select>
 
-          <button class="btn-secondary btn-sm ml-auto" :disabled="loading" @click="loadData">
+          <button class="btn btn-secondary btn-sm ml-auto" :disabled="loading" @click="loadData">
             {{ loading ? $t('common.loading') : $t('common.refresh') }}
           </button>
         </div>

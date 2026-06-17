@@ -80,7 +80,8 @@
   }
 
   .sidebar-header {
-    @apply px-4 py-4;
+    @apply px-4 flex items-center;
+    height: 59px;
     border-bottom: 1px solid var(--nav-border);
     @apply md:px-5;
   }
@@ -359,18 +360,31 @@
 
   .form-input {
     @apply block w-full px-3.5 transition-colors duration-150;
-    height: 40px;
+    min-height: 44px;
     background: var(--bg);
     color: var(--fg1);
     border: 1px solid var(--border-input);
-    border-radius: var(--r-sm);
+    border-radius: var(--r-md);
     @apply focus:outline-none;
-    @apply min-h-[44px] md:min-h-[auto];
   }
   .form-input::placeholder {
     color: var(--fg3);
   }
   .form-input:focus {
+    border-color: var(--border-strong);
+    box-shadow: var(--focus-ring);
+  }
+
+  .form-select {
+    @apply block w-full px-3.5 transition-colors duration-150;
+    min-height: 44px;
+    background: var(--bg);
+    color: var(--fg1);
+    border: 1px solid var(--border-input);
+    border-radius: var(--r-md);
+    @apply focus:outline-none;
+  }
+  .form-select:focus {
     border-color: var(--border-strong);
     box-shadow: var(--focus-ring);
   }

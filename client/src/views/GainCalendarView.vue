@@ -20,7 +20,7 @@
               </button>
             </div>
             <button
-              class="btn-secondary btn-sm"
+              class="btn btn-secondary btn-sm"
               :disabled="recalculating"
               @click="recalculateMonth"
             >
@@ -106,7 +106,7 @@
               <div v-if="day.gain !== null" class="mt-2 text-center">
                 <div
                   class="text-sm font-bold"
-                  :class="day.gain >= 0 ? 'text-green-700' : 'text-red-700'"
+                  :class="day.gain >= 0 ? 'text-success-700' : 'text-error-800'"
                 >
                   {{ formatCurrency(day.gain) }}
                 </div>
@@ -300,8 +300,8 @@ const monthObjective = computed(() => DAILY_GAIN_OBJECTIVE * daysInMonthSoFar.va
 function getDayCellClass(day) {
   if (!day.date) return 'bg-gray-50'
   if (day.gain === null) return 'bg-white hover:bg-gray-50'
-  if (day.gain > 0) return 'bg-green-50 border-green-200 hover:bg-green-100'
-  if (day.gain < 0) return 'bg-red-50 border-red-200 hover:bg-red-100'
+  if (day.gain > 0) return 'bg-success-100 border-green-200 hover:bg-success-200'
+  if (day.gain < 0) return 'bg-error-100 border-red-200 hover:bg-error-200'
   return 'bg-gray-50 border-gray-200 hover:bg-gray-100'
 }
 

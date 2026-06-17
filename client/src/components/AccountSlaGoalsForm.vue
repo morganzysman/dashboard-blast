@@ -52,7 +52,7 @@
       <div class="flex flex-wrap gap-2">
         <button
           type="button"
-          class="text-[11px] px-2 py-1 rounded bg-teal-600 text-white disabled:opacity-50"
+          class="btn btn-primary btn-xs"
           :disabled="saving || !companyToken"
           @click="save"
         >
@@ -60,7 +60,7 @@
         </button>
         <button
           type="button"
-          class="text-[11px] px-2 py-1 rounded border border-gray-300 text-gray-700 disabled:opacity-50"
+          class="btn btn-plain btn-xs"
           :disabled="saving || !companyToken"
           @click="resetDefaults"
         >

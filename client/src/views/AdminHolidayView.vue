@@ -80,8 +80,8 @@
             </template>
             <template #cell-actions="{ item }">
               <div class="flex gap-1">
-                <button class="btn-primary btn-xs" @click="openRegister(item)" :disabled="!item.has_hired_date">{{ $t('holidays.registerHoliday') }}</button>
-                <button class="btn-secondary btn-xs" @click="openHistory(item)">{{ $t('holidays.viewHistory') }}</button>
+                <button class="btn btn-primary btn-sm" @click="openRegister(item)" :disabled="!item.has_hired_date">{{ $t('holidays.registerHoliday') }}</button>
+                <button class="btn btn-ghost btn-sm" @click="openHistory(item)">{{ $t('holidays.viewHistory') }}</button>
               </div>
             </template>
 
@@ -97,8 +97,8 @@
                 <span :class="balanceColor(item.balance)" class="font-semibold">{{ $t('holidays.balance') }}: {{ item.balance.toFixed(2) }}</span>
               </div>
               <div class="mt-2 flex gap-1">
-                <button class="btn-primary btn-xs" @click="openRegister(item)" :disabled="!item.has_hired_date">{{ $t('holidays.registerHoliday') }}</button>
-                <button class="btn-secondary btn-xs" @click="openHistory(item)">{{ $t('holidays.viewHistory') }}</button>
+                <button class="btn btn-primary btn-sm" @click="openRegister(item)" :disabled="!item.has_hired_date">{{ $t('holidays.registerHoliday') }}</button>
+                <button class="btn btn-ghost btn-sm" @click="openHistory(item)">{{ $t('holidays.viewHistory') }}</button>
               </div>
             </template>
           </ResponsiveTable>

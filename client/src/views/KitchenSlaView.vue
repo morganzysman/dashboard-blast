@@ -27,7 +27,7 @@
               {{ $t('common.apply') }}
             </button>
           </div>
-          <button class="btn-sm btn-secondary" :disabled="loading" @click="fetchAll">
+          <button class="btn btn-outline btn-sm" :disabled="loading" @click="fetchAll">
             {{ loading ? $t('common.loading') : $t('common.refresh') }}
           </button>
           <span v-if="period.start" class="text-xs text-gray-500 ml-auto">
