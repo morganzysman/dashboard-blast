@@ -699,6 +699,7 @@
     "modulePayments": "Pagos",
     "moduleSla": "SLA",
     "moduleApiAccess": "Acceso API",
+    "moduleContract": "Datos de contrato (empleador)",
     "slaModuleHint": "Tiempo objetivo de preparación en minutos por canal. Alimenta las métricas de cocina en el panel.",
     "noAccountsToConfigure": "No se encontraron cuentas OlaClick para su empresa. Añada cuentas en la configuración primero.",
     "selectCompany": "Seleccionar empresa",

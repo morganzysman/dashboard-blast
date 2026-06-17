@@ -81,6 +81,22 @@
             />
           </section>
 
+          <!-- Module: Contract / employer legal data (per account) -->
+          <section class="rounded-md border border-gray-200 p-3 space-y-2" style="background: var(--surface-1);">
+            <h3 class="text-xs font-semibold text-gray-600 uppercase tracking-wider flex items-center gap-1.5">
+              {{ $t('rentability.moduleContract') }}
+            </h3>
+            <AccountContractSettings
+              :company-id="companyId"
+              :company-token="row.company_token"
+              :account-name="row.account_name"
+              :initial-country="row.country"
+              :initial-employer-info="row.contract_employer_info"
+              :countries="contractCountries"
+              @saved="onContractSaved"
+            />
+          </section>
+
           <!-- Module: API access (country-gated, self-service API key) -->
           <section
             v-if="hasApiAccessModule"
@@ -116,8 +132,12 @@ import api from '../utils/api'
 import AccountRentabilitySettings from '../components/AccountRentabilitySettings.vue'
 import AccountSlaGoalsForm from '../components/AccountSlaGoalsForm.vue'
 import AccountApiSettings from '../components/AccountApiSettings.vue'
+import AccountContractSettings from '../components/AccountContractSettings.vue'
 
 const authStore = useAuthStore()
+
+const companyId = computed(() => authStore.user?.company_id || authStore.user?.companyId || null)
+const contractCountries = ref([])
 
 const utilityCosts = ref([])
 const accounts = ref([])
@@ -139,6 +159,8 @@ const allAccountCards = computed(() => {
     list.push({
       company_token: a.company_token,
       account_name: a.account_name || a.company_token,
+      country: a.country || 'PE',
+      contract_employer_info: a.contract_employer_info || {},
       utilityRecord: ut
     })
     seen.add(a.company_token)
@@ -148,6 +170,8 @@ const allAccountCards = computed(() => {
       list.push({
         company_token: c.company_token,
         account_name: c.account_name || c.company_token,
+        country: 'PE',
+        contract_employer_info: {},
         utilityRecord: c
       })
     }
@@ -235,11 +259,28 @@ const onApiKeySaved = ({ company_token, api_token }) => {
   accountApiKeys.value = { ...accountApiKeys.value, [company_token]: api_token || '' }
 }
 
+const fetchContractConfig = async () => {
+  try {
+    const res = await api.getContractConfig()
+    contractCountries.value = res?.data?.countries || []
+  } catch (e) {
+    contractCountries.value = []
+  }
+}
+
+const onContractSaved = ({ company_token, country, contract_employer_info }) => {
+  const idx = accounts.value.findIndex((a) => a.company_token === company_token)
+  if (idx >= 0) {
+    accounts.value[idx] = { ...accounts.value[idx], country, contract_employer_info }
+  }
+}
+
 onMounted(async () => {
   await fetchCompanyAccounts()
   fetchKitchenSla()
   fetchUtilityCosts()
   fetchAccountApiKeys()
+  fetchContractConfig()
 })
 </script>
 

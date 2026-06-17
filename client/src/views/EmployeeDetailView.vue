@@ -126,7 +126,7 @@
             <div v-else-if="missingFields.length" class="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded p-3">
               <div class="font-medium mb-1">{{ $t('contract.missingFieldsTitle') }}</div>
               <ul class="list-disc ml-5">
-                <li v-for="m in missingFields" :key="m">{{ labelForMissing(m) }}</li>
+                <li v-for="m in missingFields" :key="m">{{ $t(labelForMissing(m)) }}</li>
               </ul>
             </div>
 
