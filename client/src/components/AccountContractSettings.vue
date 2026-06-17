@@ -29,10 +29,7 @@
       </div>
     </div>
 
-    <div class="flex items-center justify-between gap-2">
-      <span class="text-[10px]" :class="complete ? 'text-success-600' : 'text-gray-400'">
-        {{ complete ? $t('accountApi.configured') : $t('accountApi.notConfigured') }}
-      </span>
+    <div class="flex items-center justify-end gap-2">
       <button
         type="button"
         class="btn-primary btn-xs disabled:opacity-50"
@@ -93,11 +90,6 @@ const cleanInfo = computed(() => {
   }
   return out
 })
-
-const complete = computed(() =>
-  employerFields.value.length > 0 &&
-  employerFields.value.every((f) => !f.required || (info[f.key] && String(info[f.key]).trim() !== ''))
-)
 
 const dirty = computed(
   () => JSON.stringify({ country: country.value, info: { ...info } }) !== original
