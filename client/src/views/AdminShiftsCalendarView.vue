@@ -38,9 +38,14 @@
                   <div class="h-3 bg-gray-200 rounded w-24"></div>
                 </div>
                 <template v-else>
-                  <div v-for="e in day.entries" :key="e.user_id + ':' + e.start_time" class="rounded-lg px-1 py-0.5" style="background: rgba(243,244,246,0.6);">
-                    <div class="font-medium text-gray-900 truncate">{{ e.name || e.email }}</div>
-                    <div class="text-gray-600">{{ formatTime(e.start_time) }} - {{ formatTime(e.end_time) }}</div>
+                  <div
+                    v-for="e in day.entries"
+                    :key="e.user_id + ':' + e.start_time"
+                    class="rounded-md px-1.5 py-1"
+                    :style="entryStyle(e)"
+                  >
+                    <div class="font-semibold truncate" :style="{ color: entryColor(e).border }">{{ e.name || e.email }}</div>
+                    <div :style="{ color: entryColor(e).border, opacity: 0.85 }">{{ formatTime(e.start_time) }} - {{ formatTime(e.end_time) }}</div>
                   </div>
                   <div v-if="!day.entries || day.entries.length === 0" class="text-gray-400">—</div>
                 </template>
@@ -102,6 +107,39 @@ const buildWeekDays = (startStr) => {
     arr.push({ date: day.toISOString().slice(0,10), label: day.getDate(), entries: [] })
   }
   weekDays.value = arr
+}
+
+// Deterministic per-person color palette so shifts are easy to distinguish
+const SHIFT_COLORS = [
+  { border: '#3b82f6', bg: 'rgba(59,130,246,0.12)' },   // blue
+  { border: '#10b981', bg: 'rgba(16,185,129,0.12)' },   // emerald
+  { border: '#f59e0b', bg: 'rgba(245,158,11,0.14)' },   // amber
+  { border: '#8b5cf6', bg: 'rgba(139,92,246,0.12)' },   // violet
+  { border: '#ec4899', bg: 'rgba(236,72,153,0.12)' },   // pink
+  { border: '#14b8a6', bg: 'rgba(20,184,166,0.12)' },   // teal
+  { border: '#ef4444', bg: 'rgba(239,68,68,0.12)' },    // red
+  { border: '#6366f1', bg: 'rgba(99,102,241,0.12)' },   // indigo
+  { border: '#84cc16', bg: 'rgba(132,204,22,0.14)' },   // lime
+  { border: '#f97316', bg: 'rgba(249,115,22,0.14)' }    // orange
+]
+
+const colorIndex = (e) => {
+  const key = String(e.user_id ?? e.email ?? e.name ?? '')
+  let hash = 0
+  for (let i = 0; i < key.length; i++) {
+    hash = (hash * 31 + key.charCodeAt(i)) >>> 0
+  }
+  return hash % SHIFT_COLORS.length
+}
+
+const entryColor = (e) => SHIFT_COLORS[colorIndex(e)]
+
+const entryStyle = (e) => {
+  const c = entryColor(e)
+  return {
+    background: c.bg,
+    borderLeft: `3px solid ${c.border}`
+  }
 }
 
 const formatTime = (t) => {
