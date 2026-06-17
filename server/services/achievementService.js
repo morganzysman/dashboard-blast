@@ -346,11 +346,14 @@ export async function getBadges(companyId, scope, companyToken = null) {
   const defs = ACHIEVEMENT_DEFINITIONS.filter((d) => d.scope === scope)
   const tokenKey = scope === 'company' ? '' : companyToken
 
-  // Unlock summary for this scope/token
+  // Unlock summary for this scope/token. The "earned" date must reflect the
+  // period the goal was actually reached (period_key), NOT unlocked_at — the
+  // latter records when the cron/backfill wrote the row, which is identical for
+  // every row created in a single backfill run.
   const unlockRes = await pool.query(
     `SELECT achievement_id,
             COUNT(*)::int AS times,
-            MIN(unlocked_at) AS first_at,
+            MIN(period_key) AS first_period,
             MAX(period_key) AS last_period
        FROM achievements_unlocked
       WHERE company_id = $1 AND scope = $2 AND company_token = $3
@@ -358,6 +361,14 @@ export async function getBadges(companyId, scope, companyToken = null) {
     [companyId, scope, tokenKey || '']
   )
   const unlockMap = new Map(unlockRes.rows.map((r) => [r.achievement_id, r]))
+
+  // period_key → an ISO datetime the client can format. Daily keys are
+  // YYYY-MM-DD; monthly keys are YYYY-MM (anchor to the 1st). Noon avoids
+  // timezone off-by-one when the client formats the date.
+  const periodToDate = (pk, period) => {
+    if (!pk) return null
+    return period === 'daily' ? `${pk}T12:00:00` : `${pk}-01T12:00:00`
+  }
 
   // Live current-period rows
   const monthRows = await fetchMonthRows(companyId, monthKey)
@@ -390,7 +401,9 @@ export async function getBadges(companyId, scope, companyToken = null) {
       teamType: def.teamType || null,
       unlocked: !!u,
       timesEarned: u ? u.times : 0,
-      unlockedAt: u ? u.first_at : null,
+      // Most recent period the goal was reached — shown as the "earned" date.
+      unlockedAt: u ? periodToDate(u.last_period, def.period) : null,
+      firstPeriodKey: u ? u.first_period : null,
       lastPeriodKey: u ? u.last_period : null,
       target: null,
       current: null,
