@@ -13,7 +13,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 const props = defineProps({
-  // 'none' | 'pending' | 'active' | 'expired' | 'cancelled'
+  // 'none' | 'awaiting_employer' | 'awaiting_worker' | 'pending' | 'active' | 'expired' | 'cancelled'
   status: { type: String, default: 'none' },
   size: { type: String, default: 'md' }, // 'sm' | 'md'
 })
@@ -22,6 +22,8 @@ const { t } = useI18n()
 
 const STYLES = {
   active: 'bg-green-50 text-green-700 border-green-200',
+  awaiting_employer: 'bg-amber-50 text-amber-700 border-amber-200',
+  awaiting_worker: 'bg-blue-50 text-blue-700 border-blue-200',
   pending: 'bg-amber-50 text-amber-700 border-amber-200',
   expired: 'bg-red-50 text-red-700 border-red-200',
   none: 'bg-red-50 text-red-700 border-red-200',
@@ -29,6 +31,8 @@ const STYLES = {
 }
 const DOTS = {
   active: '#16a34a',
+  awaiting_employer: '#d97706',
+  awaiting_worker: '#2563eb',
   pending: '#d97706',
   expired: '#dc2626',
   none: '#dc2626',

@@ -10,6 +10,7 @@ import { pool } from '../database.js'
 import { getCountryConfig, DEFAULT_COUNTRY } from '../config/contractCountries.js'
 import {
   contractStatusFor,
+  isExpiringSoon,
   decodeSignaturePng,
   renderSignedContractIfComplete,
 } from '../services/contractSigning.js'
@@ -173,25 +174,31 @@ router.get('/contracts', requireAuth, async (req, res) => {
        ORDER BY c.created_at DESC`,
       [req.user.userId]
     )
-    const data = cq.rows.map((r) => {
-      const roles = r.signer_roles || []
-      const status = contractStatusFor(r)
-      return {
-        id: r.id,
-        company_token: r.company_token,
-        country: r.country,
-        contract_type: r.contract_type,
-        params: r.params,
-        start_date: r.start_date,
-        end_date: r.end_date,
-        status,
-        has_signed_pdf: r.has_signed_pdf,
-        worker_signed: roles.includes('worker'),
-        employer_signed: roles.includes('employer'),
-        // Worker action needed: not cancelled and worker hasn't signed yet.
-        awaiting_signature: status !== 'cancelled' && !roles.includes('worker'),
-      }
-    })
+    const data = cq.rows
+      .map((r) => {
+        const roles = r.signer_roles || []
+        const status = contractStatusFor(r, roles)
+        return {
+          id: r.id,
+          company_token: r.company_token,
+          country: r.country,
+          contract_type: r.contract_type,
+          params: r.params,
+          start_date: r.start_date,
+          end_date: r.end_date,
+          status,
+          has_signed_pdf: r.has_signed_pdf,
+          worker_signed: roles.includes('worker'),
+          employer_signed: roles.includes('employer'),
+          expiring_soon: status === 'active' && isExpiringSoon(r.end_date),
+          // Worker action needed only once the employer has signed (sequential
+          // signing) and the worker hasn't signed yet.
+          awaiting_signature: status === 'awaiting_worker',
+        }
+      })
+      // Hide contracts still awaiting the employer's signature — they only
+      // become visible to the worker after the employer signs.
+      .filter((c) => c.status !== 'awaiting_employer')
     res.json({ success: true, data, awaitingCount: data.filter((c) => c.awaiting_signature).length })
   } catch (e) {
     console.error('Error listing own contracts:', e)
@@ -239,6 +246,15 @@ router.post('/contracts/:id/sign', requireAuth, async (req, res) => {
     const c = q.rows[0]
     if (c.user_id !== req.user.userId) return res.status(403).json({ success: false, error: 'Forbidden' })
     if (c.status === 'cancelled') return res.status(400).json({ success: false, error: 'Contract is cancelled' })
+
+    // Sequential signing: the worker may only sign after the employer has.
+    const empSig = await pool.query(
+      `SELECT 1 FROM contract_signatures WHERE contract_id = $1 AND signer_role = 'employer' LIMIT 1`,
+      [id]
+    )
+    if (empSig.rowCount === 0) {
+      return res.status(409).json({ success: false, error: 'awaiting_employer' })
+    }
 
     const name = c.employee_snapshot?.name || req.user.userName || null
     await pool.query(

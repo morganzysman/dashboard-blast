@@ -116,7 +116,8 @@
             <select v-model="contractFilter" class="form-input w-full sm:w-auto text-sm">
               <option value="">{{ $t('contract.filterContract') }}: {{ $t('contract.filterAll') }}</option>
               <option value="none">{{ $t('contract.status.none') }}</option>
-              <option value="pending">{{ $t('contract.status.pending') }}</option>
+              <option value="awaiting_employer">{{ $t('contract.status.awaiting_employer') }}</option>
+              <option value="awaiting_worker">{{ $t('contract.status.awaiting_worker') }}</option>
               <option value="active">{{ $t('contract.status.active') }}</option>
               <option value="expired">{{ $t('contract.status.expired') }}</option>
             </select>

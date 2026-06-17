@@ -177,6 +177,7 @@
               </div>
               <div class="text-xs text-gray-500">
                 {{ $t('contract.term') }}: {{ formatDate(c.start_date) }} — {{ c.end_date ? formatDate(c.end_date) : $t('contract.indefinite') }}
+                <span v-if="c.expiring_soon" class="ml-2 text-amber-600 font-medium">· {{ $t('contract.expiringSoon') }}</span>
               </div>
               <div class="flex items-center gap-3 text-xs">
                 <span :class="c.employer_signed ? 'text-green-600' : 'text-amber-600'">

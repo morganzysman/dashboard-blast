@@ -73,11 +73,14 @@
     },
     "status": {
       "none": "Sem contrato",
+      "awaiting_employer": "Falta assinatura do empregador",
+      "awaiting_worker": "Falta assinatura do trabalhador",
       "pending": "Aguardando assinatura",
       "active": "Vigente",
       "expired": "Vencido",
       "cancelled": "Cancelado"
     },
+    "expiringSoon": "A vencer",
     "contractsTitle": "Contratos",
     "createContract": "Gerar contrato",
     "contractCreated": "Contrato gerado. Aguardando assinaturas.",

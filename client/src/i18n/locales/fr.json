@@ -73,11 +73,14 @@
     },
     "status": {
       "none": "Sans contrat",
+      "awaiting_employer": "En attente de l'employeur",
+      "awaiting_worker": "En attente du salarié",
       "pending": "En attente de signature",
       "active": "En vigueur",
       "expired": "Expiré",
       "cancelled": "Annulé"
     },
+    "expiringSoon": "Bientôt expiré",
     "contractsTitle": "Contrats",
     "createContract": "Générer le contrat",
     "contractCreated": "Contrat généré. En attente de signatures.",

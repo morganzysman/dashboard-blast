@@ -73,11 +73,14 @@
     },
     "status": {
       "none": "No contract",
+      "awaiting_employer": "Awaiting employer signature",
+      "awaiting_worker": "Awaiting worker signature",
       "pending": "Pending signature",
       "active": "Active",
       "expired": "Expired",
       "cancelled": "Cancelled"
     },
+    "expiringSoon": "Expiring soon",
     "contractsTitle": "Contracts",
     "createContract": "Generate contract",
     "contractCreated": "Contract generated. Awaiting signatures.",

@@ -9,6 +9,7 @@ import {
   sha256Hex,
   contractStatusFor,
   employeeContractStatus,
+  isExpiringSoon,
   decodeSignaturePng,
   renderSignedContractIfComplete,
 } from '../services/contractSigning.js';
@@ -1301,11 +1302,15 @@ router.get('/users/:userId/contracts', requireAuth, requireRole(['admin', 'super
     )
     const data = cq.rows.map((r) => {
       const sigRoles = (r.signatures || []).map((s) => s.role)
+      const status = contractStatusFor(r, sigRoles)
       return {
         ...r,
-        status: contractStatusFor(r),
+        status,
         employer_signed: sigRoles.includes('employer'),
         worker_signed: sigRoles.includes('worker'),
+        // Worker can only sign once the employer has (sequential signing).
+        awaiting_worker: status === 'awaiting_worker',
+        expiring_soon: status === 'active' && isExpiringSoon(r.end_date),
       }
     })
     res.json({ success: true, data, contractStatus: employeeContractStatus(cq.rows) })
@@ -1405,20 +1410,27 @@ router.get('/contract-statuses', requireAuth, requireRole(['admin', 'super-admin
     const params = []
     let scope = ''
     if (companyId) { params.push(companyId); scope = `AND u.company_id = $1` }
+    // One row per contract with its signer roles; status (including the
+    // pending -> awaiting_employer/awaiting_worker refinement and time-derived
+    // expiry) is computed in JS via the shared helpers so every surface agrees.
     const q = await pool.query(
-      `SELECT u.id,
-              bool_or(c.status = 'active' AND (c.end_date IS NULL OR c.end_date >= CURRENT_DATE)) AS has_active,
-              bool_or(c.status = 'pending') AS has_pending,
-              bool_or(c.status = 'active' AND c.end_date < CURRENT_DATE) AS has_expired
+      `SELECT c.user_id, c.status, c.end_date,
+              COALESCE(json_agg(s.signer_role) FILTER (WHERE s.id IS NOT NULL), '[]') AS signer_roles
        FROM users u
        JOIN contracts c ON c.user_id = u.id
+       LEFT JOIN contract_signatures s ON s.contract_id = c.id
        WHERE u.role = 'employee' ${scope}
-       GROUP BY u.id`,
+       GROUP BY c.id`,
       params
     )
-    const map = {}
+    const byUser = new Map()
     for (const r of q.rows) {
-      map[r.id] = r.has_active ? 'active' : r.has_pending ? 'pending' : r.has_expired ? 'expired' : 'none'
+      if (!byUser.has(r.user_id)) byUser.set(r.user_id, [])
+      byUser.get(r.user_id).push(r)
+    }
+    const map = {}
+    for (const [userId, rows] of byUser) {
+      map[userId] = employeeContractStatus(rows)
     }
     res.json({ success: true, data: map })
   } catch (e) {

@@ -40,6 +40,8 @@ export function decodeSignaturePng(input) {
   return { buffer }
 }
 
+const EXPIRING_SOON_DAYS = 14
+
 function isPastDate(dateValue) {
   if (!dateValue) return false
   const end = new Date(dateValue)
@@ -51,33 +53,77 @@ function isPastDate(dateValue) {
 }
 
 /**
- * Read-time status for a single contract row. Stored status is the source of
- * truth for pending/active/cancelled; expiry is time-derived so we never need a
- * cron to flip active -> expired.
- * @returns {'pending'|'active'|'expired'|'cancelled'}
+ * True when an active contract's end_date falls within the next `days` (and is
+ * not already past). Time-derived at read time — no stored flag, no cron.
  */
-export function contractStatusFor(contract) {
+export function isExpiringSoon(dateValue, days = EXPIRING_SOON_DAYS) {
+  if (!dateValue) return false
+  const end = new Date(dateValue)
+  if (Number.isNaN(end.getTime())) return false
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const limit = new Date(today)
+  limit.setDate(limit.getDate() + days)
+  return end >= today && end <= limit
+}
+
+/**
+ * Extract the set of signer roles for a contract row, tolerating the different
+ * shapes our queries produce: an explicit array, `signer_roles` (string[]), or
+ * `signatures` (objects with `role`/`signer_role`).
+ * @returns {string[]}
+ */
+function rolesOf(row, explicit) {
+  if (Array.isArray(explicit)) return explicit.filter(Boolean)
+  if (Array.isArray(row?.signer_roles)) return row.signer_roles.filter(Boolean)
+  if (Array.isArray(row?.signatures)) {
+    return row.signatures.map((s) => s?.role || s?.signer_role).filter(Boolean)
+  }
+  return []
+}
+
+/**
+ * Read-time status for a single contract row. Stored status is the source of
+ * truth for active/cancelled; the `pending` stored state is refined into
+ * `awaiting_employer` / `awaiting_worker` from the signatures, and expiry is
+ * time-derived — so we never need a cron to advance states.
+ *
+ * Sequential signing: the employer (admin) must sign first, then the worker.
+ * Hence pending with no employer signature -> awaiting_employer; with the
+ * employer signed (worker pending) -> awaiting_worker.
+ *
+ * @param {object} contract row with at least { status, end_date }
+ * @param {string[]} [signerRoles] roles that have signed (else read from row)
+ * @returns {'none'|'awaiting_employer'|'awaiting_worker'|'active'|'expired'|'cancelled'}
+ */
+export function contractStatusFor(contract, signerRoles) {
   if (!contract) return 'none'
   if (contract.status === 'cancelled') return 'cancelled'
-  if (contract.status === 'pending') return 'pending'
   if (contract.status === 'active') {
     return isPastDate(contract.end_date) ? 'expired' : 'active'
   }
-  return contract.status || 'pending'
+  // pending: refine by who has signed (employer-first ordering).
+  const roles = rolesOf(contract, signerRoles)
+  const employerSigned = roles.includes('employer')
+  const workerSigned = roles.includes('worker')
+  if (employerSigned && workerSigned) return 'active' // edge: not yet rendered
+  if (employerSigned) return 'awaiting_worker'
+  return 'awaiting_employer'
 }
 
 /**
  * The employee's overall contract status for badges, picking the "best" of
- * their contracts. Priority: active > pending > expired > (none).
- * @param {Array} contracts rows with { status, end_date }
- * @returns {'none'|'pending'|'active'|'expired'}
+ * their contracts.
+ * Priority: active > awaiting_worker > awaiting_employer > expired > (none).
+ * @param {Array} contracts rows with { status, end_date, signatures|signer_roles }
+ * @returns {'none'|'awaiting_employer'|'awaiting_worker'|'active'|'expired'}
  */
 export function employeeContractStatus(contracts) {
   if (!Array.isArray(contracts) || contracts.length === 0) return 'none'
-  const statuses = contracts.map(contractStatusFor)
-  if (statuses.includes('active')) return 'active'
-  if (statuses.includes('pending')) return 'pending'
-  if (statuses.includes('expired')) return 'expired'
+  const statuses = contracts.map((c) => contractStatusFor(c))
+  for (const s of ['active', 'awaiting_worker', 'awaiting_employer', 'expired']) {
+    if (statuses.includes(s)) return s
+  }
   return 'none'
 }
 
@@ -100,7 +146,7 @@ export async function renderSignedContractIfComplete(contractId) {
   )
   const byRole = new Map(sq.rows.map((r) => [r.signer_role, r]))
   if (!byRole.has('employer') || !byRole.has('worker')) {
-    return { status: contractStatusFor(contract), completed: false }
+    return { status: contractStatusFor(contract, [...byRole.keys()]), completed: false }
   }
 
   const employer = contract.employer_snapshot || {}
