@@ -13,8 +13,23 @@ import {
   updateUserPassword,
   getUserPasswordHash
 } from '../database.js';
+import { getEnabledModules } from '../config/featureModules.js';
 
 const router = Router();
+
+// Resolve a tenant's country (companies.country) and the optional feature
+// modules it unlocks. Returns sensible defaults when the user has no company.
+async function getCompanyFeatureContext(companyId) {
+  if (!companyId) return { country: null, enabledModules: [] };
+  try {
+    const { pool } = await import('../database.js');
+    const q = await pool.query('SELECT country FROM companies WHERE id = $1', [companyId]);
+    const country = q.rows[0]?.country || null;
+    return { country, enabledModules: getEnabledModules(country) };
+  } catch {
+    return { country: null, enabledModules: [] };
+  }
+}
 
 // Login endpoint
 router.post('/login', async (req, res) => {
@@ -87,12 +102,16 @@ router.post('/login', async (req, res) => {
       }
     }
 
+    const { country, enabledModules } = await getCompanyFeatureContext(user.company_id);
+
     const userData = {
       id: user.id,
       name: user.name,
       email: user.email,
       role: user.role,
       company_id: user.company_id || null,
+      country,
+      enabledModules,
       userAccounts
     };
     
@@ -162,12 +181,16 @@ router.get('/verify', async (req, res) => {
       } catch {}
     }
 
+    const { country, enabledModules } = await getCompanyFeatureContext(sessionData.user.company_id);
+
     const userData = {
       id: sessionData.user.id,
       name: sessionData.user.name,
       email: sessionData.user.email,
       role: sessionData.user.role,
       company_id: sessionData.user.company_id || null,
+      country,
+      enabledModules,
       userAccounts
     };
     

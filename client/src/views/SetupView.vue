@@ -80,6 +80,23 @@
               @saved="onKitchenSlaSaved"
             />
           </section>
+
+          <!-- Module: API access (country-gated, self-service API key) -->
+          <section
+            v-if="hasApiAccessModule"
+            class="rounded-md border border-gray-200 p-3 space-y-2"
+            style="background: var(--surface-1);"
+          >
+            <h3 class="text-xs font-semibold text-gray-600 uppercase tracking-wider flex items-center gap-1.5">
+              {{ $t('rentability.moduleApiAccess') }}
+            </h3>
+            <AccountApiSettings
+              :company-token="row.company_token"
+              :account-name="row.account_name"
+              :initial-api-token="accountApiKeys[row.company_token] || ''"
+              @saved="onApiKeySaved"
+            />
+          </section>
         </div>
       </div>
 
@@ -98,6 +115,7 @@ import { useAuthStore } from '../stores/auth'
 import api from '../utils/api'
 import AccountRentabilitySettings from '../components/AccountRentabilitySettings.vue'
 import AccountSlaGoalsForm from '../components/AccountSlaGoalsForm.vue'
+import AccountApiSettings from '../components/AccountApiSettings.vue'
 
 const authStore = useAuthStore()
 
@@ -107,6 +125,11 @@ const loading = ref(false)
 const error = ref('')
 const kitchenSlaResponse = ref(null)
 const kitchenSlaLoading = ref(false)
+
+// Self-service API key module is only available when the tenant's country
+// unlocks it (server/config/featureModules.js -> 'account-api-access').
+const hasApiAccessModule = computed(() => authStore.hasModule('account-api-access'))
+const accountApiKeys = ref({}) // { [company_token]: api_token }
 
 const allAccountCards = computed(() => {
   const list = []
@@ -194,10 +217,29 @@ const fetchCompanyAccounts = async () => {
   }
 }
 
+const fetchAccountApiKeys = async () => {
+  if (!hasApiAccessModule.value) return
+  try {
+    const res = await api.getAccountSettings()
+    const map = {}
+    for (const a of res?.data || []) {
+      map[a.company_token] = a.api_token || ''
+    }
+    accountApiKeys.value = map
+  } catch (e) {
+    accountApiKeys.value = {}
+  }
+}
+
+const onApiKeySaved = ({ company_token, api_token }) => {
+  accountApiKeys.value = { ...accountApiKeys.value, [company_token]: api_token || '' }
+}
+
 onMounted(async () => {
   await fetchCompanyAccounts()
   fetchKitchenSla()
   fetchUtilityCosts()
+  fetchAccountApiKeys()
 })
 </script>
 

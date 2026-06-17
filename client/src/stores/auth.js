@@ -20,6 +20,11 @@ export const useAuthStore = defineStore('auth', () => {
   const isUser = computed(() => user.value?.role === 'user')
   const isViewer = computed(() => user.value?.role === 'viewer')
 
+  // Tenant country + country-gated feature modules (from the auth payload).
+  const country = computed(() => user.value?.country || null)
+  const enabledModules = computed(() => user.value?.enabledModules || [])
+  const hasModule = computed(() => (moduleKey) => enabledModules.value.includes(moduleKey))
+
   // Actions
   const login = async (email, password) => {
     isLoading.value = true
@@ -231,6 +236,9 @@ export const useAuthStore = defineStore('auth', () => {
     isAdmin,
     isUser,
     isViewer,
+    country,
+    enabledModules,
+    hasModule,
     
     // Actions
     login,
