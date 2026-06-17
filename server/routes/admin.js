@@ -2,6 +2,10 @@ import { Router } from 'express';
 import { notifyUserShiftUpdate, notifyUserPaid } from '../services/notificationService.js';
 import { requireAuth, requireRole, hashPassword } from '../middleware/auth.js';
 import { pool } from '../database.js';
+import { listCountries, getCountryConfig, DEFAULT_COUNTRY } from '../config/contractCountries.js';
+import { validateContractData, buildContractDefinition } from '../services/contractService.js';
+import { createPdf } from '../services/pdfPrinter.js';
+import { isModuleEnabled } from '../config/featureModules.js';
 import {
   getAllUsers,
   createUserWithAccounts,
@@ -729,7 +733,7 @@ router.delete('/users/:userId/shifts/:shiftId', requireAuth, requireRole(['admin
 // Companies endpoints appended at end to avoid breaking existing imports
 router.get('/companies', requireAuth, requireRole(['super-admin']), async (req, res) => {
   try {
-    const companies = await pool.query(`SELECT id, name, timezone, currency, language, created_at, updated_at FROM companies ORDER BY name`)
+    const companies = await pool.query(`SELECT id, name, timezone, currency, language, country, created_at, updated_at FROM companies ORDER BY name`)
     res.json({ success: true, data: companies.rows })
   } catch (e) {
     res.status(500).json({ success: false, error: 'Failed to fetch companies' })
@@ -738,17 +742,18 @@ router.get('/companies', requireAuth, requireRole(['super-admin']), async (req, 
 
 router.post('/companies', requireAuth, requireRole(['super-admin']), async (req, res) => {
   try {
-    const { name, timezone, currency, currency_symbol, language } = req.body
+    const { name, timezone, currency, currency_symbol, language, country } = req.body
     if (!name) return res.status(400).json({ success: false, error: 'name is required' })
-    // Defaults: Lima timezone, PEN, and Portuguese
+    // Defaults: Lima timezone, PEN, Portuguese, and Peru
     const tz = timezone || 'America/Lima'
     const curr = currency || 'PEN'
     const currSym = currency_symbol || (curr === 'USD' ? '$' : curr === 'EUR' ? '€' : curr === 'GBP' ? '£' : curr === 'MXN' ? '$' : 'S/')
     const lang = language || 'pt'
+    const cc = (country || 'PE').toUpperCase()
     const q = await pool.query(
-      `INSERT INTO companies(name, timezone, currency, currency_symbol, language) 
-       VALUES($1,$2,$3,$4,$5) RETURNING id, name, timezone, currency, currency_symbol, language, created_at, updated_at`, 
-       [name, tz, curr, currSym, lang]
+      `INSERT INTO companies(name, timezone, currency, currency_symbol, language, country) 
+       VALUES($1,$2,$3,$4,$5,$6) RETURNING id, name, timezone, currency, currency_symbol, language, country, created_at, updated_at`, 
+       [name, tz, curr, currSym, lang, cc]
     )
     res.json({ success: true, data: q.rows[0] })
   } catch (e) {
@@ -762,7 +767,7 @@ router.get('/companies/:companyId/accounts', requireAuth, requireRole(['super-ad
     if (req.user.role === 'admin' && req.user.companyId !== companyId) {
       return res.status(403).json({ success: false, error: 'Forbidden' })
     }
-    const q = await pool.query(`SELECT company_id, company_token, account_name FROM company_accounts WHERE company_id = $1 ORDER BY account_name`, [companyId])
+    const q = await pool.query(`SELECT company_id, company_token, account_name, api_token, country, contract_employer_info FROM company_accounts WHERE company_id = $1 ORDER BY account_name`, [companyId])
     res.json({ success: true, data: q.rows })
   } catch (e) {
     res.status(500).json({ success: false, error: 'Failed to fetch accounts' })
@@ -772,16 +777,40 @@ router.get('/companies/:companyId/accounts', requireAuth, requireRole(['super-ad
 router.post('/companies/:companyId/accounts', requireAuth, requireRole(['super-admin', 'admin']), async (req, res) => {
   try {
     const { companyId } = req.params
-    const { company_token, account_name, api_token } = req.body
+    const { company_token, account_name, api_token, country, contract_employer_info } = req.body
     if (!company_token) return res.status(400).json({ success: false, error: 'company_token is required' })
     if (req.user.role === 'admin' && req.user.companyId !== companyId) {
       return res.status(403).json({ success: false, error: 'Forbidden' })
     }
+
+    // Validate country (when provided) and sanitise the employer info blob to the
+    // keys the country's registry actually defines, so we never persist garbage.
+    let normalizedCountry = null
+    let employerInfoJson = null
+    if (country !== undefined || contract_employer_info !== undefined) {
+      const code = (country || DEFAULT_COUNTRY).toUpperCase()
+      const config = getCountryConfig(code)
+      if (!config) return res.status(400).json({ success: false, error: `Unknown country: ${country}` })
+      normalizedCountry = code
+      const incoming = contract_employer_info && typeof contract_employer_info === 'object' ? contract_employer_info : {}
+      const clean = {}
+      for (const field of config.employerFields) {
+        const v = incoming[field.key]
+        if (v != null && String(v).trim() !== '') clean[field.key] = String(v).trim()
+      }
+      employerInfoJson = JSON.stringify(clean)
+    }
+
     const q = await pool.query(
-      `INSERT INTO company_accounts(company_id, company_token, account_name, api_token) VALUES ($1, $2, $3, $4)
-       ON CONFLICT (company_id, company_token) DO UPDATE SET account_name = EXCLUDED.account_name, api_token = EXCLUDED.api_token
-       RETURNING company_id, company_token, account_name, api_token`,
-      [companyId, company_token, account_name || null, api_token || null]
+      `INSERT INTO company_accounts(company_id, company_token, account_name, api_token, country, contract_employer_info)
+       VALUES ($1, $2, $3, $4, COALESCE($5, 'PE'), COALESCE($6::jsonb, '{}'::jsonb))
+       ON CONFLICT (company_id, company_token) DO UPDATE SET
+         account_name = EXCLUDED.account_name,
+         api_token = EXCLUDED.api_token,
+         country = COALESCE($5, company_accounts.country),
+         contract_employer_info = COALESCE($6::jsonb, company_accounts.contract_employer_info)
+       RETURNING company_id, company_token, account_name, api_token, country, contract_employer_info`,
+      [companyId, company_token, account_name || null, api_token || null, normalizedCountry, employerInfoJson]
     )
     res.json({ success: true, data: q.rows[0] })
   } catch (e) {
@@ -813,7 +842,7 @@ router.get('/companies/:companyId', requireAuth, requireRole(['super-admin', 'ad
       }
     }
     const q = await pool.query(
-      `SELECT id, name, timezone, currency, currency_symbol, language, created_at, updated_at
+      `SELECT id, name, timezone, currency, currency_symbol, language, country, created_at, updated_at
        FROM companies WHERE id = $1`,
       [companyId]
     )
@@ -832,6 +861,71 @@ router.delete('/companies/:companyId', requireAuth, requireRole(['super-admin'])
     res.json({ success: true })
   } catch (e) {
     res.status(500).json({ success: false, error: 'Failed to delete company' })
+  }
+})
+
+// ===== Self-service account settings (regular account admin) =================
+// Lets a company's own admin manage the OlaClick API key for their accounts,
+// instead of relying on the super-admin. Gated by the company country via the
+// 'account-api-access' feature module (server/config/featureModules.js).
+
+// Resolve the requesting user's company id + country, enforcing that the
+// account-api-access module is enabled for that country. Returns null + sends
+// the proper error response when not permitted.
+async function resolveAccountApiContext(req, res) {
+  const companyId = req.user.companyId
+  if (!companyId) {
+    res.status(403).json({ success: false, error: 'No company associated with this account' })
+    return null
+  }
+  const c = await pool.query('SELECT country FROM companies WHERE id = $1', [companyId])
+  if (c.rowCount === 0) {
+    res.status(404).json({ success: false, error: 'Company not found' })
+    return null
+  }
+  const country = c.rows[0].country
+  if (!isModuleEnabled('account-api-access', country)) {
+    res.status(403).json({ success: false, error: 'This feature is not available for your country' })
+    return null
+  }
+  return { companyId, country }
+}
+
+// List this company's accounts including their API key (the admin owns it).
+router.get('/account-settings', requireAuth, requireRole(['admin']), async (req, res) => {
+  try {
+    const ctx = await resolveAccountApiContext(req, res)
+    if (!ctx) return
+    const q = await pool.query(
+      `SELECT company_token, account_name, api_token
+       FROM company_accounts WHERE company_id = $1 ORDER BY account_name`,
+      [ctx.companyId]
+    )
+    res.json({ success: true, data: q.rows })
+  } catch (e) {
+    res.status(500).json({ success: false, error: 'Failed to fetch account settings' })
+  }
+})
+
+// Update the API key for one of this company's accounts.
+router.put('/account-settings/:companyToken', requireAuth, requireRole(['admin']), async (req, res) => {
+  try {
+    const ctx = await resolveAccountApiContext(req, res)
+    if (!ctx) return
+    const { companyToken } = req.params
+    const { api_token } = req.body
+    const q = await pool.query(
+      `UPDATE company_accounts SET api_token = $3
+       WHERE company_id = $1 AND company_token = $2
+       RETURNING company_token, account_name, api_token`,
+      [ctx.companyId, companyToken, api_token ?? null]
+    )
+    if (q.rowCount === 0) {
+      return res.status(404).json({ success: false, error: 'Account not found for this company' })
+    }
+    res.json({ success: true, data: q.rows[0] })
+  } catch (e) {
+    res.status(500).json({ success: false, error: 'Failed to update API key' })
   }
 })
 
@@ -903,6 +997,196 @@ router.get('/shifts', requireAuth, requireRole(['admin', 'super-admin']), async 
     res.json({ success: true, account: { company_token: acct.rows[0].company_token, account_name: acct.rows[0].account_name }, data })
   } catch (e) {
     res.status(500).json({ success: false, error: 'Failed to fetch shifts calendar' })
+  }
+})
+
+// ====== WORK CONTRACTS ======
+
+// Country contract registry (drives frontend field rendering + labels)
+router.get('/contract-config', requireAuth, requireRole(['admin', 'super-admin']), async (req, res) => {
+  res.json({ success: true, data: { countries: listCountries(), defaultCountry: DEFAULT_COUNTRY } })
+})
+
+// Get a single user's full detail (includes contract identity fields + the
+// accounts of their company, with employer contract info, for the detail page).
+router.get('/users/:userId/detail', requireAuth, requireRole(['admin', 'super-admin']), async (req, res) => {
+  try {
+    const { userId } = req.params
+    const uq = await pool.query(
+      `SELECT u.id, u.email, u.name, u.role, u.is_active, u.company_id,
+              u.hourly_rate, u.hired_at, u.job_type,
+              u.document_type, u.document_number, u.address,
+              c.name AS company_name
+       FROM users u
+       LEFT JOIN companies c ON c.id = u.company_id
+       WHERE u.id = $1`,
+      [userId]
+    )
+    if (uq.rowCount === 0) return res.status(404).json({ success: false, error: 'User not found' })
+    const user = uq.rows[0]
+
+    // Admin scope: only own company
+    if (req.user.role === 'admin' && user.company_id !== req.user.companyId) {
+      return res.status(403).json({ success: false, error: 'Forbidden' })
+    }
+
+    let accounts = []
+    if (user.company_id) {
+      const aq = await pool.query(
+        `SELECT company_token, COALESCE(account_name, company_token) AS account_name,
+                country, contract_employer_info
+         FROM company_accounts WHERE company_id = $1 ORDER BY account_name`,
+        [user.company_id]
+      )
+      accounts = aq.rows
+    }
+
+    res.json({
+      success: true,
+      data: {
+        user: {
+          ...user,
+          hourly_rate: user.hourly_rate != null ? Number(Number(user.hourly_rate).toFixed(2)) : null,
+        },
+        accounts,
+      },
+    })
+  } catch (e) {
+    console.error('Error fetching user detail:', e)
+    res.status(500).json({ success: false, error: 'Failed to fetch user detail' })
+  }
+})
+
+// Update employee contract identity fields (document + address)
+router.put('/users/:userId/contract-info', requireAuth, requireRole(['admin', 'super-admin']), async (req, res) => {
+  try {
+    const { userId } = req.params
+    const { document_type, document_number, address } = req.body || {}
+
+    // Admin scope check
+    const tq = await pool.query('SELECT company_id FROM users WHERE id = $1', [userId])
+    if (tq.rowCount === 0) return res.status(404).json({ success: false, error: 'User not found' })
+    if (req.user.role === 'admin' && tq.rows[0].company_id !== req.user.companyId) {
+      return res.status(403).json({ success: false, error: 'Forbidden' })
+    }
+
+    const norm = (v) => (v == null || String(v).trim() === '' ? null : String(v).trim())
+    const upd = await pool.query(
+      `UPDATE users SET document_type = $2, document_number = $3, address = $4, updated_at = NOW()
+       WHERE id = $1
+       RETURNING id, email, name, document_type, document_number, address`,
+      [userId, norm(document_type), norm(document_number), norm(address)]
+    )
+    res.json({ success: true, user: upd.rows[0] })
+  } catch (e) {
+    console.error('Error updating contract info:', e)
+    res.status(500).json({ success: false, error: 'Failed to update contract info' })
+  }
+})
+
+// Update an account's country + employer legal data (does not touch name/api_token)
+router.put('/companies/:companyId/accounts/:companyToken/contract-info', requireAuth, requireRole(['super-admin', 'admin']), async (req, res) => {
+  try {
+    const { companyId, companyToken } = req.params
+    const { country, contract_employer_info } = req.body || {}
+    if (req.user.role === 'admin' && req.user.companyId !== companyId) {
+      return res.status(403).json({ success: false, error: 'Forbidden' })
+    }
+    const code = (country || DEFAULT_COUNTRY).toUpperCase()
+    const config = getCountryConfig(code)
+    if (!config) return res.status(400).json({ success: false, error: `Unknown country: ${country}` })
+
+    const incoming = contract_employer_info && typeof contract_employer_info === 'object' ? contract_employer_info : {}
+    const clean = {}
+    for (const field of config.employerFields) {
+      const v = incoming[field.key]
+      if (v != null && String(v).trim() !== '') clean[field.key] = String(v).trim()
+    }
+
+    const upd = await pool.query(
+      `UPDATE company_accounts
+       SET country = $3, contract_employer_info = $4::jsonb, updated_at = NOW()
+       WHERE company_id = $1 AND company_token = $2
+       RETURNING company_id, company_token, account_name, country, contract_employer_info`,
+      [companyId, companyToken, code, JSON.stringify(clean)]
+    )
+    if (upd.rowCount === 0) return res.status(404).json({ success: false, error: 'Account not found' })
+    res.json({ success: true, data: upd.rows[0] })
+  } catch (e) {
+    console.error('Error updating account contract info:', e)
+    res.status(500).json({ success: false, error: 'Failed to update account contract info' })
+  }
+})
+
+// Generate a work contract PDF for an employee under a given account.
+router.post('/users/:userId/contract', requireAuth, requireRole(['admin', 'super-admin']), async (req, res) => {
+  try {
+    const { userId } = req.params
+    const { company_token, start_date, end_date, hourly_rate, monthly_reference, area_servicio } = req.body || {}
+
+    if (!company_token) return res.status(400).json({ success: false, error: 'company_token is required' })
+
+    // Load employee
+    const uq = await pool.query(
+      `SELECT id, name, company_id, document_type, document_number, address
+       FROM users WHERE id = $1`,
+      [userId]
+    )
+    if (uq.rowCount === 0) return res.status(404).json({ success: false, error: 'User not found' })
+    const employee = uq.rows[0]
+
+    // Admin scope: own company only
+    if (req.user.role === 'admin' && employee.company_id !== req.user.companyId) {
+      return res.status(403).json({ success: false, error: 'Forbidden' })
+    }
+
+    // Load account (legal entity) and ensure it belongs to the employee's company
+    const aq = await pool.query(
+      `SELECT company_id, company_token, country, contract_employer_info
+       FROM company_accounts WHERE company_token = $1`,
+      [company_token]
+    )
+    if (aq.rowCount === 0) return res.status(404).json({ success: false, error: 'Account not found' })
+    const account = aq.rows[0]
+    if (!employee.company_id || account.company_id !== employee.company_id) {
+      return res.status(400).json({ success: false, error: 'Account does not belong to the employee\'s company' })
+    }
+    if (req.user.role === 'admin' && account.company_id !== req.user.companyId) {
+      return res.status(403).json({ success: false, error: 'Forbidden' })
+    }
+
+    const country = account.country || DEFAULT_COUNTRY
+    const employer = account.contract_employer_info || {}
+    const params = { start_date, end_date, hourly_rate, monthly_reference, area_servicio }
+
+    const validation = validateContractData({ country, employer, employee, params })
+    if (!validation.ok) {
+      const status = validation.reason === 'template_unavailable' ? 422 : 400
+      return res.status(status).json({
+        success: false,
+        error: validation.reason || 'incomplete_contract_data',
+        missing: validation.missing,
+      })
+    }
+
+    const def = buildContractDefinition({ country, employer, employee, params })
+    const pdf = createPdf(def)
+
+    const safe = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || 'contrato'
+    const filename = `contrato-${safe(employee.name)}-${safe(company_token)}-${String(start_date).slice(0, 10)}.pdf`
+
+    res.setHeader('Content-Type', 'application/pdf')
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
+    pdf.on('error', (err) => {
+      console.error('PDF stream error:', err)
+      if (!res.headersSent) res.status(500).json({ success: false, error: 'Failed to render PDF' })
+      else res.end()
+    })
+    pdf.pipe(res)
+    pdf.end()
+  } catch (e) {
+    console.error('Error generating contract:', e)
+    if (!res.headersSent) res.status(500).json({ success: false, error: 'Failed to generate contract' })
   }
 })
 

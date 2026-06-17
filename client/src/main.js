@@ -12,6 +12,7 @@ import App from './App.vue'
 import LoginView from './views/LoginView.vue'
 import DashboardView from './views/DashboardView.vue'
 import AdminView from './views/AdminView.vue'
+import EmployeeDetailView from './views/EmployeeDetailView.vue'
 import NotificationsView from './views/NotificationsView.vue'
 import SetupView from './views/SetupView.vue'
 import EmployeeClockView from './views/EmployeeClockView.vue'
@@ -89,6 +90,12 @@ const routes = [
     path: '/admin',
     name: 'Admin',
     component: AdminView,
+    meta: { requiresAuth: true, requiresRole: ['admin', 'super-admin'] }
+  },
+  {
+    path: '/admin/users/:id',
+    name: 'EmployeeDetail',
+    component: EmployeeDetailView,
     meta: { requiresAuth: true, requiresRole: ['admin', 'super-admin'] }
   },
   {

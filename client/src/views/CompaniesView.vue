@@ -5,10 +5,16 @@
         <h1 class="text-2xl font-bold text-gray-900">{{ $t('companies.title') }}</h1>
         <p class="text-sm text-gray-600 mt-1">{{ $t('companies.subtitle') }}</p>
       </div>
-      <div class="grid grid-cols-1 md:grid-cols-5 gap-2 items-end">
+      <div class="grid grid-cols-1 md:grid-cols-6 gap-2 items-end">
         <div>
           <label class="form-label">{{ $t('companies.companyName') }}</label>
           <input v-model.trim="newCompanyName" class="form-input" :placeholder="$t('companies.newCompanyName')" />
+        </div>
+        <div>
+          <label class="form-label">{{ $t('companies.country') }}</label>
+          <select v-model="newCompanyCountry" class="form-input">
+            <option v-for="c in countryOptions" :key="c.code" :value="c.code">{{ c.flag }} {{ c.label }}</option>
+          </select>
         </div>
         <div>
           <label class="form-label">{{ $t('companies.timezone') }}</label>
@@ -53,7 +59,7 @@
             <div>
               <div class="text-lg font-semibold">{{ c.name }}</div>
               <div class="text-xs text-gray-500">{{ c.id }}</div>
-              <div class="text-xs text-gray-500 mt-1">{{ $t('companies.timezone') }}: {{ c.timezone || 'America/Lima' }} • {{ $t('companies.currency') }}: {{ c.currency || 'PEN' }} • {{ $t('companies.language') }}: {{ getLanguageName(c.language) }}</div>
+              <div class="text-xs text-gray-500 mt-1">{{ $t('companies.country') }}: {{ getCountryLabel(c.country) }} • {{ $t('companies.timezone') }}: {{ c.timezone || 'America/Lima' }} • {{ $t('companies.currency') }}: {{ c.currency || 'PEN' }} • {{ $t('companies.language') }}: {{ getLanguageName(c.language) }}</div>
             </div>
             <div class="flex items-center space-x-2">
               <button class="btn-danger" @click="deleteCompany(c.id)" :title="$t('common.delete')">{{ $t('common.delete') }}</button>
@@ -98,7 +104,36 @@
                     </div>
                     <div v-else class="flex justify-end gap-2">
                       <button class="btn-secondary btn-xs" @click="startEdit(c.id, a)">{{ $t('common.edit') }}</button>
+                      <button class="btn-secondary btn-xs" @click="toggleContract(c.id, a)">{{ $t('contract.editContract') }}</button>
                       <button class="btn-danger btn-xs" @click="removeAccount(c.id, a.company_token)">{{ $t('common.delete') }}</button>
+                    </div>
+                  </td>
+                </tr>
+                <tr v-if="isContractEditing(c.id, a.company_token)" style="border-top: 1px dashed var(--border);">
+                  <td colspan="4" class="py-3">
+                    <div class="bg-surface-2 rounded-lg p-4 space-y-3">
+                      <div class="flex items-center gap-3">
+                        <div>
+                          <label class="form-label">{{ $t('contract.country') }}</label>
+                          <select v-model="contractForm[c.id][a.company_token].country" class="form-input">
+                            <option v-for="cc in countries" :key="cc.code" :value="cc.code">{{ cc.label }} ({{ cc.code }})<span v-if="!cc.available"> — n/a</span></option>
+                          </select>
+                        </div>
+                      </div>
+                      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div v-for="field in employerFieldsFor(contractForm[c.id][a.company_token].country)" :key="field.key">
+                          <label class="form-label">{{ fieldLabel(field) }}</label>
+                          <select v-if="field.options" v-model="contractForm[c.id][a.company_token].info[field.key]" class="form-input">
+                            <option value="">—</option>
+                            <option v-for="opt in field.options" :key="opt" :value="opt">{{ opt }}</option>
+                          </select>
+                          <input v-else v-model.trim="contractForm[c.id][a.company_token].info[field.key]" type="text" class="form-input" />
+                        </div>
+                      </div>
+                      <div class="flex justify-end gap-2">
+                        <button class="btn-secondary btn-xs" @click="cancelContract(c.id, a.company_token)">{{ $t('common.cancel') }}</button>
+                        <button class="btn-primary btn-xs" @click="saveContract(c.id, a.company_token)">{{ $t('common.save') }}</button>
+                      </div>
                     </div>
                   </td>
                 </tr>
@@ -132,6 +167,66 @@ const newCompanyTimezone = ref('America/Lima')
 const newCompanyCurrency = ref('PEN')
 const newCompanyLanguage = ref('pt')
 
+// Contract config + per-account contract editing
+const countries = ref([])
+const contractEditing = reactive({}) // { [companyId]: company_token | null }
+const contractForm = reactive({})     // { [companyId]: { [token]: { country, info } } }
+
+const countryByCode = (code) => countries.value.find(c => c.code === (code || '').toUpperCase()) || null
+const employerFieldsFor = (code) => countryByCode(code)?.employerFields || []
+const fieldLabel = (field) => field.labelKey ? t(`contract.fields.${field.labelKey}`) : field.key
+
+const isContractEditing = (companyId, token) => contractEditing[companyId] === token
+const toggleContract = (companyId, account) => {
+  if (contractEditing[companyId] === account.company_token) {
+    contractEditing[companyId] = null
+    return
+  }
+  contractForm[companyId] = contractForm[companyId] || {}
+  const cfg = countryByCode(account.country || 'PE') || countries.value[0]
+  const info = {}
+  for (const f of (cfg?.employerFields || [])) {
+    info[f.key] = (account.contract_employer_info && account.contract_employer_info[f.key]) || ''
+  }
+  contractForm[companyId][account.company_token] = { country: (account.country || 'PE').toUpperCase(), info }
+  contractEditing[companyId] = account.company_token
+}
+const cancelContract = (companyId) => { contractEditing[companyId] = null }
+const saveContract = async (companyId, token) => {
+  const entry = contractForm[companyId][token]
+  const res = await api.updateAccountContractInfo(companyId, token, {
+    country: entry.country,
+    contract_employer_info: entry.info,
+  })
+  if (res.success) {
+    const a = await api.listCompanyAccounts(companyId)
+    accounts[companyId] = a.success ? a.data : []
+    contractEditing[companyId] = null
+    window.showNotification?.({ type: 'success', title: 'Success', message: 'Saved' })
+  }
+}
+const newCompanyCountry = ref('PE')
+
+// Country options for company creation. The selected country drives which
+// optional feature modules are available to the tenant (see featureModules.js).
+const countryOptions = [
+  { code: 'PE', label: 'Perú', flag: '🇵🇪' },
+  { code: 'MX', label: 'México', flag: '🇲🇽' },
+  { code: 'US', label: 'United States', flag: '🇺🇸' },
+  { code: 'BR', label: 'Brasil', flag: '🇧🇷' },
+  { code: 'CO', label: 'Colombia', flag: '🇨🇴' },
+  { code: 'CL', label: 'Chile', flag: '🇨🇱' },
+  { code: 'AR', label: 'Argentina', flag: '🇦🇷' },
+  { code: 'ES', label: 'España', flag: '🇪🇸' },
+  { code: 'GB', label: 'United Kingdom', flag: '🇬🇧' },
+  { code: 'FR', label: 'France', flag: '🇫🇷' }
+]
+
+const getCountryLabel = (code) => {
+  const c = countryOptions.find((o) => o.code === (code || 'PE'))
+  return c ? `${c.flag} ${c.label}` : (code || 'PE')
+}
+
 const load = async () => {
   const res = await api.listCompanies()
   if (res.success) {
@@ -149,12 +244,13 @@ const load = async () => {
 
 const createNewCompany = async () => {
   if (!canCreate.value) return
-  const res = await api.createCompany(newCompanyName.value, newCompanyTimezone.value, newCompanyCurrency.value, newCompanyLanguage.value)
+  const res = await api.createCompany(newCompanyName.value, newCompanyTimezone.value, newCompanyCurrency.value, newCompanyLanguage.value, newCompanyCountry.value)
   if (res.success) {
     newCompanyName.value = ''
     newCompanyTimezone.value = 'America/Lima'
     newCompanyCurrency.value = 'PEN'
     newCompanyLanguage.value = 'pt'
+    newCompanyCountry.value = 'PE'
     await load()
   }
 }
@@ -224,7 +320,18 @@ const deleteCompany = async (companyId) => {
   }
 }
 
-onMounted(load)
+const loadContractConfig = async () => {
+  try {
+    const res = await api.getContractConfig()
+    countries.value = res?.data?.countries || []
+  } catch (e) {
+    console.error('Failed to load contract config', e)
+  }
+}
+
+onMounted(async () => {
+  await Promise.all([load(), loadContractConfig()])
+})
 </script>
 
 <style scoped>

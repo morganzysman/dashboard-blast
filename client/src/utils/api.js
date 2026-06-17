@@ -259,10 +259,41 @@ export const api = {
   },
   // Companies (admin)
   listCompanies: () => apiRequest('/api/admin/companies', { method: 'GET' }),
-  createCompany: (name, timezone, currency, language) => apiRequest('/api/admin/companies', { method: 'POST', body: JSON.stringify({ name, timezone, currency, language }) }),
+  createCompany: (name, timezone, currency, language, country) => apiRequest('/api/admin/companies', { method: 'POST', body: JSON.stringify({ name, timezone, currency, language, country }) }),
   listCompanyAccounts: (companyId) => apiRequest(`/api/admin/companies/${companyId}/accounts`, { method: 'GET' }),
   upsertCompanyAccount: (companyId, payload) => apiRequest(`/api/admin/companies/${companyId}/accounts`, { method: 'POST', body: JSON.stringify(payload) }),
   deleteCompanyAccount: (companyId, companyToken) => apiRequest(`/api/admin/companies/${companyId}/accounts/${companyToken}`, { method: 'DELETE' }),
+
+  // Self-service account settings (regular account admin manages own API key)
+  getAccountSettings: () => apiRequest('/api/admin/account-settings', { method: 'GET' }),
+  updateAccountApiKey: (companyToken, apiToken) => apiRequest(`/api/admin/account-settings/${encodeURIComponent(companyToken)}`, { method: 'PUT', body: JSON.stringify({ api_token: apiToken }) }),
+
+  // Work contracts (admin)
+  getContractConfig: () => apiRequest('/api/admin/contract-config', { method: 'GET' }),
+  getUserDetail: (userId) => apiRequest(`/api/admin/users/${userId}/detail`, { method: 'GET' }),
+  updateUserContractInfo: (userId, payload) => apiRequest(`/api/admin/users/${userId}/contract-info`, { method: 'PUT', body: JSON.stringify(payload) }),
+  updateAccountContractInfo: (companyId, companyToken, payload) =>
+    apiRequest(`/api/admin/companies/${companyId}/accounts/${encodeURIComponent(companyToken)}/contract-info`, { method: 'PUT', body: JSON.stringify(payload) }),
+  // Streams a PDF; returns { blob, filename } or throws ApiError for JSON errors.
+  generateContract: async (userId, payload) => {
+    const authStore = useAuthStore()
+    const response = await fetch(`/api/admin/users/${userId}/contract`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(authStore.sessionId ? { 'X-Session-ID': authStore.sessionId } : {}),
+      },
+      body: JSON.stringify(payload),
+    })
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}))
+      throw new ApiError(data.error || 'Failed to generate contract', response.status, data)
+    }
+    const blob = await response.blob()
+    const disposition = response.headers.get('Content-Disposition') || ''
+    const match = disposition.match(/filename="?([^"]+)"?/)
+    return { blob, filename: match ? match[1] : 'contrato.pdf' }
+  },
 
   // Users (admin)
   resetUserPassword: (userId, newPassword) => apiRequest(`/api/admin/users/${userId}/password`, {

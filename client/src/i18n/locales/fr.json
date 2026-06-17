@@ -1,4 +1,42 @@
 {
+  "contract": {
+    "contract": "Contrat",
+    "employeeData": "Données du travailleur (contrat)",
+    "employeeDataHint": "Pièce d'identité et adresse qui figureront sur le contrat.",
+    "documentType": "Type de document",
+    "documentNumber": "Numéro de document",
+    "address": "Adresse",
+    "generateTitle": "Générer le contrat",
+    "noAccounts": "Cette entreprise n'a aucun compte configuré.",
+    "account": "Compte (entité légale)",
+    "areaServicio": "Domaine de service",
+    "startDate": "Date de début",
+    "endDate": "Date de fin",
+    "hourlyRate": "Tarif horaire",
+    "monthlyReference": "Montant mensuel de référence",
+    "monthlyReferenceHint": "Si laissé vide, calculé comme tarif × {hours} heures.",
+    "templateUnavailable": "Le modèle de contrat pour {country} n'est pas encore disponible.",
+    "missingFieldsTitle": "Données manquantes pour générer le contrat :",
+    "downloadPdf": "Télécharger le PDF",
+    "country": "Pays",
+    "employerData": "Données de l'employeur (contrat)",
+    "editContract": "Données du contrat",
+    "fields": {
+      "legalName": "Raison sociale",
+      "employerAddress": "Adresse de l'entreprise",
+      "repName": "Représentant légal",
+      "repDocType": "Type de doc. du représentant",
+      "repDocNumber": "N° de doc. du représentant",
+      "taxIdRUC": "RUC",
+      "taxIdCNPJ": "CNPJ",
+      "taxIdNIT": "NIT",
+      "taxIdRUT": "RUT",
+      "taxIdCUIT": "CUIT"
+    },
+    "missing": {
+      "employerTaxId": "Identifiant fiscal de l'employeur"
+    }
+  },
   "common": {
     "save": "Enregistrer",
     "cancel": "Annuler",
@@ -179,7 +217,18 @@
     "accountName": "Nom du compte",
     "apiToken": "Jeton API",
     "actions": "Actions",
-    "addUpdateAccount": "Ajouter/Mettre à jour le compte"
+    "addUpdateAccount": "Ajouter/Mettre à jour le compte",
+    "country": "Pays"
+  },
+  "accountApi": {
+    "hint": "Définissez la clé API OlaClick pour cet établissement. Vous pouvez la gérer vous-même, sans contacter le super-administrateur.",
+    "placeholder": "Collez la clé API",
+    "configured": "Clé API configurée",
+    "notConfigured": "Aucune clé API définie",
+    "savedTitle": "Clé API enregistrée",
+    "savedMsg": "Clé API mise à jour pour {account}",
+    "saveFailedTitle": "Échec de l'enregistrement",
+    "saveFailedMsg": "Impossible d'enregistrer la clé API. Veuillez réessayer."
   },
   "dashboard": {
     "title": "Dashboard",
@@ -637,6 +686,7 @@
     "moduleRentability": "Rentabilité",
     "modulePayments": "Paiements",
     "moduleSla": "SLA",
+    "moduleApiAccess": "Accès API",
     "slaModuleHint": "Objectifs de temps de préparation en minutes par canal. Ils alimentent les métriques cuisine du tableau de bord.",
     "noAccountsToConfigure": "Aucun compte OlaClick n'a été trouvé pour votre entreprise. Ajoutez des comptes dans les paramètres d'abord.",
     "selectCompany": "Sélectionner une entreprise",

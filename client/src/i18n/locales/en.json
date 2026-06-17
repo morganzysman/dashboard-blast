@@ -1,4 +1,42 @@
 {
+  "contract": {
+    "contract": "Contract",
+    "employeeData": "Employee data (contract)",
+    "employeeDataHint": "Identity document and address that will appear on the contract.",
+    "documentType": "Document type",
+    "documentNumber": "Document number",
+    "address": "Address",
+    "generateTitle": "Generate contract",
+    "noAccounts": "This company has no accounts configured.",
+    "account": "Account (legal entity)",
+    "areaServicio": "Service area",
+    "startDate": "Start date",
+    "endDate": "End date",
+    "hourlyRate": "Hourly rate",
+    "monthlyReference": "Monthly reference amount",
+    "monthlyReferenceHint": "If left blank, computed as rate × {hours} hours.",
+    "templateUnavailable": "The contract template for {country} is not available yet.",
+    "missingFieldsTitle": "Missing data to generate the contract:",
+    "downloadPdf": "Download PDF",
+    "country": "Country",
+    "employerData": "Employer data (contract)",
+    "editContract": "Contract data",
+    "fields": {
+      "legalName": "Legal name",
+      "employerAddress": "Company address",
+      "repName": "Legal representative",
+      "repDocType": "Representative doc. type",
+      "repDocNumber": "Representative doc. number",
+      "taxIdRUC": "RUC",
+      "taxIdCNPJ": "CNPJ",
+      "taxIdNIT": "NIT",
+      "taxIdRUT": "RUT",
+      "taxIdCUIT": "CUIT"
+    },
+    "missing": {
+      "employerTaxId": "Employer tax ID"
+    }
+  },
   "common": {
     "save": "Save",
     "cancel": "Cancel",
@@ -180,7 +218,18 @@
     "accountName": "Account Name",
     "apiToken": "API Token",
     "actions": "Actions",
-    "addUpdateAccount": "Add/Update Account"
+    "addUpdateAccount": "Add/Update Account",
+    "country": "Country"
+  },
+  "accountApi": {
+    "hint": "Set the OlaClick API key for this location. You can manage it yourself \u2014 no need to contact the super-admin.",
+    "placeholder": "Paste API key",
+    "configured": "API key configured",
+    "notConfigured": "No API key set",
+    "savedTitle": "API key saved",
+    "savedMsg": "API key updated for {account}",
+    "saveFailedTitle": "Could not save",
+    "saveFailedMsg": "Failed to save the API key. Please try again."
   },
   "dashboard": {
     "title": "Dashboard",
@@ -570,6 +619,7 @@
     "moduleRentability": "Rentability",
     "modulePayments": "Payments",
     "moduleSla": "SLA",
+    "moduleApiAccess": "API Access",
     "slaModuleHint": "Target prep time in minutes by channel. These goals feed kitchen metrics on the dashboard.",
     "noAccountsToConfigure": "No OlaClick accounts were found for your company. Add accounts in company settings first."
   },

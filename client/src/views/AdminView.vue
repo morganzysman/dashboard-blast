@@ -152,6 +152,7 @@
             
             <div class="grid grid-cols-2 gap-2 mt-2">
               <button @click="editUser(user)" class="btn-sm btn-secondary text-xs">{{ $t('common.edit') }}</button>
+              <button v-if="user.role === 'employee'" @click="openEmployeeDetail(user)" class="btn-sm btn-secondary text-xs">{{ $t('contract.contract') }}</button>
               <button @click="toggleUserStatus(user)" :class="user.is_active ? 'btn-sm btn-warning text-xs' : 'btn-sm btn-success text-xs'">{{ user.is_active ? $t('common.deactivate') : $t('common.activate') }}</button>
               <button v-if="!isSuperAdmin" @click="manageShifts(user)" class="btn-sm btn-secondary text-xs col-span-2">{{ $t('navigation.shifts') }}</button>
               <button @click="resetPassword(user)" class="btn-sm btn-warning text-xs col-span-2">{{ $t('admin.resetPassword') }}</button>
@@ -237,6 +238,13 @@
                       {{ $t('common.edit') }}
                     </button>
                     <button
+                      v-if="user.role === 'employee'"
+                      @click="openEmployeeDetail(user)"
+                      class="btn-sm btn-secondary"
+                    >
+                      {{ $t('contract.contract') }}
+                    </button>
+                    <button
                       v-if="!isSuperAdmin"
                       @click="manageShifts(user)"
                       class="btn-sm btn-secondary"
@@ -292,13 +300,19 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import UserModal from '../components/UserModal.vue'
 import ShiftManagerModal from '../components/ShiftManagerModal.vue'
 import api from '../utils/api'
 
 const authStore = useAuthStore()
+const router = useRouter()
 const isSuperAdmin = computed(() => authStore.user?.role === 'super-admin')
+
+const openEmployeeDetail = (user) => {
+  router.push({ name: 'EmployeeDetail', params: { id: user.id } })
+}
 
 // State
 const users = ref([])
