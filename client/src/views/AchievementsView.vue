@@ -86,10 +86,10 @@
             : 'border-gray-200 dark:border-gray-700 bg-gray-50/60 dark:bg-gray-800/40'"
         >
           <div
-            class="text-3xl leading-none flex-shrink-0 select-none"
-            :class="badge.unlocked ? '' : 'grayscale opacity-40'"
+            class="leading-none flex-shrink-0 select-none"
+            :class="badge.unlocked ? tierIconColor(badge.tier) : 'text-gray-300 dark:text-gray-600 opacity-60'"
           >
-            {{ badge.icon }}
+            <span class="material-symbols-rounded" style="font-size: 32px;">{{ achievementSymbol(badge.icon) }}</span>
           </div>
 
           <div class="min-w-0 flex-1">
@@ -129,6 +129,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../stores/auth'
 import api from '../utils/api.js'
+import { achievementSymbol } from '../utils/achievementIcons.js'
 
 const { t } = useI18n()
 const auth = useAuthStore()
@@ -196,6 +197,16 @@ function progressHint(badge) {
     return `${Math.round(badge.current || 0)} / ${Math.round(badge.target)}`
   }
   return `${formatMoney(badge.current)} / ${formatMoney(badge.target)}`
+}
+
+function tierIconColor(tier) {
+  const map = {
+    bronze: 'text-amber-600 dark:text-amber-400',
+    silver: 'text-slate-500 dark:text-slate-300',
+    gold: 'text-yellow-500 dark:text-yellow-400',
+    platinum: 'text-indigo-500 dark:text-indigo-400'
+  }
+  return map[tier] || 'text-green-600 dark:text-green-400'
 }
 
 function tierBorder(tier) {

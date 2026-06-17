@@ -86,8 +86,8 @@
                 <span v-if="item.approved_by" class="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded" :title="$t('employee.timesheet.approvedBy') + ' ' + (item.approved_by_name || $t('payroll.manager'))">
                   ✓ {{ $t('employee.timesheet.isApproved') }}
                 </span>
-                <span v-else-if="item.clock_out_at" class="inline-flex items-center px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded">
-                  ⏳ {{ $t('employee.timesheet.pendingApproval') }}
+                <span v-else-if="item.clock_out_at" class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded">
+                  <MaterialIcon name="schedule" :size="14" /> {{ $t('employee.timesheet.pendingApproval') }}
                 </span>
                 <span v-if="item.paid" class="inline-flex items-center px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded">
                   $ {{ $t('employee.timesheet.isPaid') }}
@@ -102,8 +102,8 @@
                 <span v-if="item.approved_by" class="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded" :title="$t('employee.timesheet.approvedBy') + ' ' + (item.approved_by_name || $t('payroll.manager'))">
                   ✓ {{ $t('employee.timesheet.isApproved') }}
                 </span>
-                <span v-else-if="item.clock_out_at" class="inline-flex items-center px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded">
-                  ⏳ {{ $t('employee.timesheet.pendingApproval') }}
+                <span v-else-if="item.clock_out_at" class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded">
+                  <MaterialIcon name="schedule" :size="14" /> {{ $t('employee.timesheet.pendingApproval') }}
                 </span>
                 <span v-if="item.paid" class="inline-flex items-center px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded">
                   $ {{ $t('employee.timesheet.isPaid') }}
@@ -128,6 +128,7 @@ import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../stores/auth'
 import api from '../utils/api'
 import ResponsiveTable from '../components/ui/ResponsiveTable.vue'
+import MaterialIcon from '../components/ui/MaterialIcon.vue'
 
 const entries = ref([])
 const loading = ref(false)

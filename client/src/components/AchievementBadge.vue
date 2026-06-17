@@ -9,10 +9,10 @@
   >
     <div class="flex items-start gap-3">
       <div
-        class="flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center text-2xl"
-        :class="unlocked ? 'bg-white/20' : 'bg-gray-100 dark:bg-gray-700 grayscale'"
+        class="flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center"
+        :class="unlocked ? 'bg-white/20' : 'bg-gray-100 dark:bg-gray-700'"
       >
-        {{ icon }}
+        <span class="material-symbols-rounded" style="font-size: 26px;">{{ achievementSymbol(icon) }}</span>
       </div>
       <div class="min-w-0 flex-1">
         <div class="flex items-center gap-2 flex-wrap">
@@ -42,9 +42,10 @@
 
 <script setup>
 import ObjectiveProgress from './ui/ObjectiveProgress.vue'
+import { achievementSymbol } from '../utils/achievementIcons.js'
 
 defineProps({
-  icon: { type: String, default: '🏆' },
+  icon: { type: String, default: 'emoji_events' },
   title: { type: String, required: true },
   description: { type: String, default: '' },
   unlocked: { type: Boolean, default: false },

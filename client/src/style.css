@@ -185,7 +185,18 @@
   }
 
   /* ─── Buttons ─── */
-  .btn {
+  /* Variant/size classes carry the base layout too, so legacy markup that
+     uses e.g. `btn-primary btn-xs` without the base `btn` class still renders
+     as a proper button. Using `btn btn-primary` stays idempotent. */
+  .btn,
+  .btn-primary,
+  .btn-secondary,
+  .btn-outline,
+  .btn-ghost,
+  .btn-plain,
+  .btn-danger,
+  .btn-success,
+  .btn-warning {
     @apply inline-flex items-center justify-center gap-2 text-sm font-medium transition-colors duration-150;
     height: 40px;
     padding: 0 16px;
@@ -194,10 +205,26 @@
     @apply focus:outline-none disabled:cursor-not-allowed;
     @apply min-h-[44px] md:min-h-[auto];
   }
-  .btn:focus-visible {
+  .btn:focus-visible,
+  .btn-primary:focus-visible,
+  .btn-secondary:focus-visible,
+  .btn-outline:focus-visible,
+  .btn-ghost:focus-visible,
+  .btn-plain:focus-visible,
+  .btn-danger:focus-visible,
+  .btn-success:focus-visible,
+  .btn-warning:focus-visible {
     box-shadow: var(--focus-ring);
   }
-  .btn:disabled {
+  .btn:disabled,
+  .btn-primary:disabled,
+  .btn-secondary:disabled,
+  .btn-outline:disabled,
+  .btn-ghost:disabled,
+  .btn-plain:disabled,
+  .btn-danger:disabled,
+  .btn-success:disabled,
+  .btn-warning:disabled {
     opacity: 0.4;
   }
 
@@ -282,6 +309,14 @@
     padding: 0 12px;
     @apply text-xs;
     @apply min-h-[40px] md:min-h-[auto];
+  }
+
+  .btn-xs {
+    height: 28px;
+    padding: 0 10px;
+    font-size: 12px;
+    gap: 4px;
+    min-height: 0;
   }
 
   .btn-lg {

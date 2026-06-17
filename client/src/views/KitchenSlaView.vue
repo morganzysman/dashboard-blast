@@ -4,7 +4,7 @@
     <div class="card">
       <div class="card-body space-y-3">
         <div>
-          <h1 class="text-2xl font-bold text-gray-900">⏱ {{ $t('kitchenSla.title') }}</h1>
+          <h1 class="text-2xl font-bold text-gray-900">{{ $t('kitchenSla.title') }}</h1>
           <p class="text-sm text-gray-600 mt-1">{{ $t('kitchenSla.subtitleHub') }}</p>
         </div>
 
