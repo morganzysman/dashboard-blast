@@ -17,6 +17,7 @@ import NotificationsView from './views/NotificationsView.vue'
 import SetupView from './views/SetupView.vue'
 import EmployeeClockView from './views/EmployeeClockView.vue'
 import EmployeeTimesheetView from './views/EmployeeTimesheetView.vue'
+import EmployeeContractsView from './views/EmployeeContractsView.vue'
 import EmployeeWarningsView from './views/EmployeeWarningsView.vue'
 import AdminPayrollView from './views/AdminPayrollView.vue'
 import AdminShiftsCalendarView from './views/AdminShiftsCalendarView.vue'
@@ -48,6 +49,12 @@ const routes = [
     path: '/timesheet',
     name: 'EmployeeTimesheet',
     component: EmployeeTimesheetView,
+    meta: { requiresAuth: true, requiresRole: ['employee'] }
+  },
+  {
+    path: '/contracts',
+    name: 'EmployeeContracts',
+    component: EmployeeContractsView,
     meta: { requiresAuth: true, requiresRole: ['employee'] }
   },
   {

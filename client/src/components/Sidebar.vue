@@ -72,6 +72,7 @@ const links = computed(() => [
   { name: 'KitchenSla', to: '/kitchen-sla', icon: 'timer', label: 'navigation.kitchenSla', show: !isSuperAdmin.value && !isEmployee.value },
   { name: 'EmployeeClock', to: '/clock', icon: 'schedule', label: 'navigation.clock', show: isEmployee.value },
   { name: 'EmployeeTimesheet', to: '/timesheet', icon: 'event_note', label: 'navigation.timesheet', show: isEmployee.value },
+  { name: 'EmployeeContracts', to: '/contracts', icon: 'description', label: 'navigation.contracts', show: isEmployee.value },
   { name: 'Notifications', to: '/notifications', icon: 'notifications', label: 'navigation.notifications', show: !isSuperAdmin.value },
   { name: 'GainCalendar', to: '/gain-calendar', icon: 'savings', label: 'navigation.gainCalendar', show: !isSuperAdmin.value && !isEmployee.value },
   { name: 'Achievements', to: '/achievements', icon: 'emoji_events', label: 'navigation.achievements', show: !isSuperAdmin.value && !isEmployee.value },

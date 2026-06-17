@@ -1,5 +1,5 @@
 <template>
-  <div class="card" v-if="loading || contracts.length">
+  <div class="card">
     <div class="card-body space-y-4">
       <div class="flex items-center justify-between">
         <h3 class="text-md font-semibold">{{ $t('contract.myContractsTitle') }}</h3>
@@ -7,6 +7,8 @@
       </div>
 
       <div v-if="loading" class="text-sm text-gray-400">{{ $t('common.loading') }}</div>
+
+      <p v-else-if="!contracts.length" class="text-sm text-gray-500">{{ $t('contract.noContracts') }}</p>
 
       <div v-else class="space-y-3">
         <div
