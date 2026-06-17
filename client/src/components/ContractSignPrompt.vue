@@ -86,7 +86,9 @@ const loadPdf = async () => {
   revokePdf()
   if (!current.value) return
   try {
-    pdfUrl.value = await api.fetchPdfObjectUrl(`/api/profile/contracts/${current.value.id}/pdf?which=unsigned`)
+    // 'signed' resolves to the current signing state so the worker reviews the
+    // contract with the employer's signature already applied.
+    pdfUrl.value = await api.fetchPdfObjectUrl(`/api/profile/contracts/${current.value.id}/pdf?which=signed`)
   } catch (e) {
     pdfUrl.value = ''
   }

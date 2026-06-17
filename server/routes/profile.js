@@ -13,6 +13,7 @@ import {
   isExpiringSoon,
   decodeSignaturePng,
   renderSignedContractIfComplete,
+  renderContractCurrentPdf,
 } from '../services/contractSigning.js'
 
 const router = Router()
@@ -210,7 +211,7 @@ router.get('/contracts', requireAuth, async (req, res) => {
 router.get('/contracts/:id/pdf', requireAuth, async (req, res) => {
   try {
     const { id } = req.params
-    const which = req.query.which === 'signed' ? 'signed' : 'unsigned'
+    const which = req.query.which === 'unsigned' ? 'unsigned' : 'signed'
     const q = await pool.query(
       `SELECT user_id, unsigned_pdf, signed_pdf FROM contracts WHERE id = $1`,
       [id]
@@ -218,7 +219,11 @@ router.get('/contracts/:id/pdf', requireAuth, async (req, res) => {
     if (q.rowCount === 0) return res.status(404).json({ success: false, error: 'Contract not found' })
     const row = q.rows[0]
     if (row.user_id !== req.user.userId) return res.status(403).json({ success: false, error: 'Forbidden' })
-    const buf = which === 'signed' ? (row.signed_pdf || row.unsigned_pdf) : row.unsigned_pdf
+    // which=unsigned -> blank draft; otherwise signed PDF when complete, else the
+    // current signing state so the worker sees the employer's signature.
+    let buf
+    if (which === 'unsigned') buf = row.unsigned_pdf
+    else buf = row.signed_pdf || await renderContractCurrentPdf(id)
     if (!buf) return res.status(404).json({ success: false, error: 'No PDF available' })
     res.setHeader('Content-Type', 'application/pdf')
     res.setHeader('Content-Disposition', `inline; filename="contrato-${id}.pdf"`)

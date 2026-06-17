@@ -12,6 +12,7 @@ import {
   isExpiringSoon,
   decodeSignaturePng,
   renderSignedContractIfComplete,
+  renderContractCurrentPdf,
 } from '../services/contractSigning.js';
 import { isModuleEnabled } from '../config/featureModules.js';
 import {
@@ -1320,7 +1321,9 @@ router.get('/users/:userId/contracts', requireAuth, requireRole(['admin', 'super
   }
 })
 
-// Stream a contract PDF (signed when available, else the unsigned draft).
+// Stream a contract PDF. which=unsigned -> the original blank draft;
+// otherwise the immutable signed PDF when complete, else the current signing
+// state (base + signatures collected so far, e.g. the employer's).
 router.get('/contracts/:id/pdf', requireAuth, requireRole(['admin', 'super-admin']), async (req, res) => {
   try {
     const { id } = req.params
@@ -1334,7 +1337,9 @@ router.get('/contracts/:id/pdf', requireAuth, requireRole(['admin', 'super-admin
     if (req.user.role === 'admin' && row.company_id !== req.user.companyId) {
       return res.status(403).json({ success: false, error: 'Forbidden' })
     }
-    const buf = which === 'signed' ? (row.signed_pdf || row.unsigned_pdf) : row.unsigned_pdf
+    let buf
+    if (which === 'unsigned') buf = row.unsigned_pdf
+    else buf = row.signed_pdf || await renderContractCurrentPdf(id)
     if (!buf) return res.status(404).json({ success: false, error: 'No PDF available' })
     res.setHeader('Content-Type', 'application/pdf')
     res.setHeader('Content-Disposition', `inline; filename="contrato-${id}.pdf"`)

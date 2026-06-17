@@ -4,7 +4,7 @@
 
 import { createHash } from 'crypto'
 import { pool } from '../database.js'
-import { buildSignedContractDefinition } from './contractService.js'
+import { buildContractDefinition, buildSignedContractDefinition } from './contractService.js'
 import { createPdfBuffer } from './pdfPrinter.js'
 
 const MAX_SIGNATURE_BYTES = 2 * 1024 * 1024 // 2MB decoded
@@ -127,6 +127,65 @@ export function employeeContractStatus(contracts) {
   return 'none'
 }
 
+// Map signature DB rows into the shape buildSignedContractDefinition expects,
+// ordered employer-first, including only roles that have actually signed.
+function signatureEntriesFor(contract, sigRows) {
+  const employer = contract.employer_snapshot || {}
+  const employee = contract.employee_snapshot || {}
+  const docLabel = (type, number) => [type, number].filter(Boolean).join(' ')
+  const byRole = new Map(sigRows.map((r) => [r.signer_role, r]))
+  const entries = []
+  for (const role of ['employer', 'worker']) {
+    const row = byRole.get(role)
+    if (!row) continue
+    entries.push({
+      role,
+      name: row.signer_name || (role === 'worker' ? employee.name : employer.rep_name),
+      documentLabel: role === 'worker'
+        ? docLabel(employee.document_type, employee.document_number)
+        : docLabel(employer.rep_doc_type, employer.rep_doc_number),
+      signedAt: row.signed_at,
+      ip: row.ip,
+      docHash: row.doc_sha256_at_signing,
+      imageDataUrl: `data:image/png;base64,${Buffer.from(row.signature_png).toString('base64')}`,
+    })
+  }
+  return entries
+}
+
+const SIGNATURE_COLUMNS =
+  'signer_role, signer_name, signature_png, signed_at, ip, doc_sha256_at_signing'
+
+/**
+ * Render the contract in its CURRENT signing state: the base contract plus a
+ * signatures/constancia page for whichever parties have signed so far (e.g. the
+ * employer while we await the worker). Used for previews/reviews so each party
+ * sees signatures already collected. Does not persist anything.
+ *
+ * @returns {Promise<Buffer|null>} null when the contract doesn't exist.
+ */
+export async function renderContractCurrentPdf(contractId) {
+  const cq = await pool.query(`SELECT * FROM contracts WHERE id = $1`, [contractId])
+  if (cq.rowCount === 0) return null
+  const contract = cq.rows[0]
+  const sq = await pool.query(
+    `SELECT ${SIGNATURE_COLUMNS} FROM contract_signatures WHERE contract_id = $1`,
+    [contractId]
+  )
+  const signatures = signatureEntriesFor(contract, sq.rows)
+  const base = {
+    country: contract.country,
+    contractType: contract.contract_type,
+    employer: contract.employer_snapshot || {},
+    employee: contract.employee_snapshot || {},
+    params: contract.params || {},
+  }
+  const def = signatures.length
+    ? buildSignedContractDefinition({ ...base, signatures })
+    : buildContractDefinition(base)
+  return createPdfBuffer(def)
+}
+
 /**
  * If both parties (employer + worker) have signed, render the immutable signed
  * PDF (base contract + signatures/audit page) and flip the contract to active.
@@ -140,8 +199,7 @@ export async function renderSignedContractIfComplete(contractId) {
   const contract = cq.rows[0]
 
   const sq = await pool.query(
-    `SELECT signer_role, signer_name, signature_png, signed_at, ip, doc_sha256_at_signing
-     FROM contract_signatures WHERE contract_id = $1`,
+    `SELECT ${SIGNATURE_COLUMNS} FROM contract_signatures WHERE contract_id = $1`,
     [contractId]
   )
   const byRole = new Map(sq.rows.map((r) => [r.signer_role, r]))
@@ -149,33 +207,13 @@ export async function renderSignedContractIfComplete(contractId) {
     return { status: contractStatusFor(contract, [...byRole.keys()]), completed: false }
   }
 
-  const employer = contract.employer_snapshot || {}
-  const employee = contract.employee_snapshot || {}
-  const docLabel = (type, number) => [type, number].filter(Boolean).join(' ')
-
-  const signatures = ['employer', 'worker'].map((role) => {
-    const row = byRole.get(role)
-    const documentLabel = role === 'worker'
-      ? docLabel(employee.document_type, employee.document_number)
-      : docLabel(employer.rep_doc_type, employer.rep_doc_number)
-    return {
-      role,
-      name: row.signer_name || (role === 'worker' ? employee.name : employer.rep_name),
-      documentLabel,
-      signedAt: row.signed_at,
-      ip: row.ip,
-      docHash: row.doc_sha256_at_signing,
-      imageDataUrl: `data:image/png;base64,${Buffer.from(row.signature_png).toString('base64')}`,
-    }
-  })
-
   const def = buildSignedContractDefinition({
     country: contract.country,
     contractType: contract.contract_type,
-    employer,
-    employee,
+    employer: contract.employer_snapshot || {},
+    employee: contract.employee_snapshot || {},
     params: contract.params || {},
-    signatures,
+    signatures: signatureEntriesFor(contract, sq.rows),
   })
   const pdf = await createPdfBuffer(def)
   const hash = sha256Hex(pdf)

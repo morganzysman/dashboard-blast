@@ -607,8 +607,9 @@ const loadContracts = async () => {
 
 const viewContractPdf = async (c) => {
   try {
-    const which = c.has_signed_pdf ? 'signed' : 'unsigned'
-    const url = await api.fetchPdfObjectUrl(`/api/admin/contracts/${c.id}/pdf?which=${which}`)
+    // 'signed' resolves server-side to the final signed PDF when complete, else
+    // the current signing state (base + signatures collected so far).
+    const url = await api.fetchPdfObjectUrl(`/api/admin/contracts/${c.id}/pdf?which=signed`)
     if (previewUrl.value) URL.revokeObjectURL(previewUrl.value)
     previewBlob = null
     previewFilename = `contrato-${c.id}.pdf`
