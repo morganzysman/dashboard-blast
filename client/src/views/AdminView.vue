@@ -113,6 +113,13 @@
               <option value="active">{{ $t('common.active') }}</option>
               <option value="inactive">{{ $t('common.inactive') }}</option>
             </select>
+            <select v-model="contractFilter" class="form-input w-full sm:w-auto text-sm">
+              <option value="">{{ $t('contract.filterContract') }}: {{ $t('contract.filterAll') }}</option>
+              <option value="none">{{ $t('contract.status.none') }}</option>
+              <option value="pending">{{ $t('contract.status.pending') }}</option>
+              <option value="active">{{ $t('contract.status.active') }}</option>
+              <option value="expired">{{ $t('contract.status.expired') }}</option>
+            </select>
           </div>
         </div>
       </div>
@@ -147,6 +154,7 @@
               <span class="badge text-xs" :class="getRoleBadgeClass(user.role)">
                 {{ user.role?.replace('-', ' ') }}
               </span>
+              <ContractStatusBadge v-if="user.role === 'employee'" :status="contractStatusFor(user)" size="sm" />
               <span class="text-xs text-gray-500">{{ $t('admin.company') }}: {{ user.company?.name || '—' }}</span>
             </div>
             
@@ -194,9 +202,12 @@
                   </div>
                 </td>
                 <td>
-                  <span class="badge" :class="getRoleBadgeClass(user.role)">
-                    {{ user.role?.replace('-', ' ') }}
-                  </span>
+                  <div class="flex flex-col items-start gap-1">
+                    <span class="badge" :class="getRoleBadgeClass(user.role)">
+                      {{ user.role?.replace('-', ' ') }}
+                    </span>
+                    <ContractStatusBadge v-if="user.role === 'employee'" :status="contractStatusFor(user)" size="sm" />
+                  </div>
                 </td>
                 <td>
                   <span class="badge" :class="user.is_active ? 'badge-success' : 'badge-gray'">
@@ -230,36 +241,41 @@
                   </div>
                 </td>
                 <td>
-                  <div class="flex items-center space-x-2">
-                    <button
-                      @click="editUser(user)"
-                      class="btn btn-ghost btn-sm"
-                    >
-                      {{ $t('common.edit') }}
-                    </button>
-                    <button
-                      v-if="user.role === 'employee'"
-                      @click="openEmployeeDetail(user)"
-                      class="btn btn-ghost btn-sm"
-                    >
-                      {{ $t('contract.contract') }}
-                    </button>
-                    <button
-                      v-if="!isSuperAdmin"
-                      @click="manageShifts(user)"
-                      class="btn btn-ghost btn-sm"
-                    >
-                      {{ $t('navigation.shifts') }}
-                    </button>
-                    <button
-                      @click="resetPassword(user)"
-                      class="btn btn-ghost btn-sm"
-                    >
-                      {{ $t('admin.resetPassword') }}
-                    </button>
+                  <div class="flex items-center justify-end gap-1">
+                    <div class="inline-flex items-center rounded-md overflow-hidden" style="border: 1px solid var(--border);">
+                      <button
+                        @click="editUser(user)"
+                        class="btn btn-ghost btn-sm rounded-none"
+                      >
+                        {{ $t('common.edit') }}
+                      </button>
+                      <button
+                        v-if="user.role === 'employee'"
+                        @click="openEmployeeDetail(user)"
+                        class="btn btn-ghost btn-sm rounded-none"
+                        style="border-left: 1px solid var(--border);"
+                      >
+                        {{ $t('contract.contract') }}
+                      </button>
+                      <button
+                        v-if="!isSuperAdmin"
+                        @click="manageShifts(user)"
+                        class="btn btn-ghost btn-sm rounded-none"
+                        style="border-left: 1px solid var(--border);"
+                      >
+                        {{ $t('navigation.shifts') }}
+                      </button>
+                      <button
+                        @click="resetPassword(user)"
+                        class="btn btn-ghost btn-sm rounded-none"
+                        style="border-left: 1px solid var(--border);"
+                      >
+                        {{ $t('admin.resetPassword') }}
+                      </button>
+                    </div>
                     <button
                       @click="toggleUserStatus(user)"
-                      :class="user.is_active ? 'btn btn-danger btn-sm' : 'btn btn-primary btn-sm'"
+                      :class="user.is_active ? 'btn btn-danger btn-sm ml-1' : 'btn btn-primary btn-sm ml-1'"
                     >
                       {{ user.is_active ? $t('common.deactivate') : $t('common.activate') }}
                     </button>
@@ -270,7 +286,6 @@
                     >
                       {{ $t('common.delete') }}
                     </button>
-                    
                   </div>
                 </td>
               </tr>
@@ -304,6 +319,7 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import UserModal from '../components/UserModal.vue'
 import ShiftManagerModal from '../components/ShiftManagerModal.vue'
+import ContractStatusBadge from '../components/ContractStatusBadge.vue'
 import api from '../utils/api'
 
 const authStore = useAuthStore()
@@ -320,6 +336,8 @@ const loading = ref(false)
 const searchQuery = ref('')
 const roleFilter = ref('')
 const statusFilter = ref('')
+const contractFilter = ref('')
+const contractStatuses = ref({})
 const showUserModal = ref(false)
 const selectedUser = ref(null)
 const isEditMode = ref(false)
@@ -336,10 +354,14 @@ const filteredUsers = computed(() => {
     const matchesStatus = !statusFilter.value || 
       (statusFilter.value === 'active' && user.is_active) ||
       (statusFilter.value === 'inactive' && !user.is_active)
+    const matchesContract = !contractFilter.value ||
+      (user.role === 'employee' && contractStatusFor(user) === contractFilter.value)
     
-    return matchesSearch && matchesRole && matchesStatus
+    return matchesSearch && matchesRole && matchesStatus && matchesContract
   })
 })
+
+const contractStatusFor = (user) => contractStatuses.value[user.id] || 'none'
 
 const activeUsers = computed(() => users.value.filter(user => user.is_active).length)
 const adminUsers = computed(() => users.value.filter(user => user.role === 'admin').length)
@@ -351,6 +373,7 @@ const fetchUsers = async () => {
   try {
     const data = await api.get('/api/admin/users')
     users.value = data.users
+    fetchContractStatuses()
   } catch (error) {
     console.error('Error fetching users:', error)
     
@@ -364,6 +387,16 @@ const fetchUsers = async () => {
     }
   } finally {
     loading.value = false
+  }
+}
+
+const fetchContractStatuses = async () => {
+  try {
+    const companyId = isSuperAdmin.value ? null : (authStore.user?.company_id || authStore.user?.companyId || null)
+    const res = await api.getContractStatuses(companyId)
+    contractStatuses.value = res?.data || {}
+  } catch (e) {
+    contractStatuses.value = {}
   }
 }
 

@@ -4,7 +4,14 @@ import { requireAuth, requireRole, hashPassword } from '../middleware/auth.js';
 import { pool } from '../database.js';
 import { listCountries, getCountryConfig, DEFAULT_COUNTRY } from '../config/contractCountries.js';
 import { validateContractData, buildContractDefinition } from '../services/contractService.js';
-import { createPdf } from '../services/pdfPrinter.js';
+import { createPdf, createPdfBuffer } from '../services/pdfPrinter.js';
+import {
+  sha256Hex,
+  contractStatusFor,
+  employeeContractStatus,
+  decodeSignaturePng,
+  renderSignedContractIfComplete,
+} from '../services/contractSigning.js';
 import { isModuleEnabled } from '../config/featureModules.js';
 import {
   getAllUsers,
@@ -1042,6 +1049,13 @@ router.get('/users/:userId/detail', requireAuth, requireRole(['admin', 'super-ad
       accounts = aq.rows
     }
 
+    // Derived contract status for the prominent header badge.
+    const csq = await pool.query(
+      `SELECT status, end_date FROM contracts WHERE user_id = $1`,
+      [userId]
+    )
+    const contractStatus = employeeContractStatus(csq.rows)
+
     res.json({
       success: true,
       data: {
@@ -1050,6 +1064,7 @@ router.get('/users/:userId/detail', requireAuth, requireRole(['admin', 'super-ad
           hourly_rate: user.hourly_rate != null ? Number(Number(user.hourly_rate).toFixed(2)) : null,
         },
         accounts,
+        contractStatus,
       },
     })
   } catch (e) {
@@ -1145,10 +1160,18 @@ router.put('/companies/:companyId/accounts/:companyToken/contract-info', require
 })
 
 // Generate a work contract PDF for an employee under a given account.
+// `preview: true` (or ?preview=1) streams the PDF inline (Content-Disposition:
+// inline) so the client can render it in a viewer before downloading.
 router.post('/users/:userId/contract', requireAuth, requireRole(['admin', 'super-admin']), async (req, res) => {
   try {
     const { userId } = req.params
-    const { company_token, start_date, end_date, hourly_rate, monthly_reference, area_servicio } = req.body || {}
+    const {
+      company_token, contract_type,
+      start_date, end_date, hourly_rate, monthly_reference, area_servicio,
+      position, monthly_salary, weekly_hours,
+      preview,
+    } = req.body || {}
+    const isPreview = preview === true || preview === 'true' || req.query.preview === '1'
 
     if (!company_token) return res.status(400).json({ success: false, error: 'company_token is required' })
 
@@ -1183,11 +1206,14 @@ router.post('/users/:userId/contract', requireAuth, requireRole(['admin', 'super
 
     const country = account.country || DEFAULT_COUNTRY
     const employer = account.contract_employer_info || {}
-    const params = { start_date, end_date, hourly_rate, monthly_reference, area_servicio }
+    const params = {
+      start_date, end_date, hourly_rate, monthly_reference, area_servicio,
+      position, monthly_salary, weekly_hours,
+    }
 
-    const validation = validateContractData({ country, employer, employee, params })
+    const validation = validateContractData({ country, contractType: contract_type, employer, employee, params })
     if (!validation.ok) {
-      const status = validation.reason === 'template_unavailable' ? 422 : 400
+      const status = (validation.reason === 'template_unavailable' || validation.reason === 'unknown_contract_type') ? 422 : 400
       return res.status(status).json({
         success: false,
         error: validation.reason || 'incomplete_contract_data',
@@ -1195,24 +1221,237 @@ router.post('/users/:userId/contract', requireAuth, requireRole(['admin', 'super
       })
     }
 
-    const def = buildContractDefinition({ country, employer, employee, params })
-    const pdf = createPdf(def)
+    const def = buildContractDefinition({ country, contractType: contract_type, employer, employee, params })
 
-    const safe = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || 'contrato'
-    const filename = `contrato-${safe(employee.name)}-${safe(company_token)}-${String(start_date).slice(0, 10)}.pdf`
+    // Preview: stream inline, persist nothing.
+    if (isPreview) {
+      const pdf = createPdf(def)
+      const safe = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || 'contrato'
+      const typeSlug = contract_type ? `${safe(contract_type)}-` : ''
+      const filename = `contrato-${typeSlug}${safe(employee.name)}-${safe(company_token)}-${String(start_date).slice(0, 10)}.pdf`
+      res.setHeader('Content-Type', 'application/pdf')
+      res.setHeader('Content-Disposition', `inline; filename="${filename}"`)
+      pdf.on('error', (err) => {
+        console.error('PDF stream error:', err)
+        if (!res.headersSent) res.status(500).json({ success: false, error: 'Failed to render PDF' })
+        else res.end()
+      })
+      pdf.pipe(res)
+      pdf.end()
+      return
+    }
 
-    res.setHeader('Content-Type', 'application/pdf')
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
-    pdf.on('error', (err) => {
-      console.error('PDF stream error:', err)
-      if (!res.headersSent) res.status(500).json({ success: false, error: 'Failed to render PDF' })
-      else res.end()
-    })
-    pdf.pipe(res)
-    pdf.end()
+    // Persist: render the unsigned PDF to a buffer, snapshot employer/employee
+    // data, and create a pending contract awaiting both signatures.
+    const unsignedPdf = await createPdfBuffer(def)
+    const unsignedHash = sha256Hex(unsignedPdf)
+    const employeeSnapshot = {
+      name: employee.name,
+      document_type: employee.document_type,
+      document_number: employee.document_number,
+      address: employee.address,
+    }
+    const ins = await pool.query(
+      `INSERT INTO contracts
+         (user_id, company_id, company_token, country, contract_type, params,
+          start_date, end_date, employer_snapshot, employee_snapshot,
+          status, unsigned_pdf, unsigned_pdf_sha256, created_by)
+       VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7, $8, $9::jsonb, $10::jsonb,
+               'pending', $11, $12, $13)
+       RETURNING id, status, contract_type, start_date, end_date, created_at`,
+      [
+        userId, employee.company_id, company_token, country, contract_type || null,
+        JSON.stringify(params),
+        start_date || null, end_date || null,
+        JSON.stringify(employer), JSON.stringify(employeeSnapshot),
+        unsignedPdf, unsignedHash, req.user.userId,
+      ]
+    )
+    res.json({ success: true, data: { ...ins.rows[0], status: contractStatusFor(ins.rows[0]) } })
   } catch (e) {
     console.error('Error generating contract:', e)
     if (!res.headersSent) res.status(500).json({ success: false, error: 'Failed to generate contract' })
+  }
+})
+
+// ====== CONTRACT RECORDS + SIGNING (admin) ======
+
+// List an employee's contracts (no PDF bytes) with read-time status + which
+// parties have signed.
+router.get('/users/:userId/contracts', requireAuth, requireRole(['admin', 'super-admin']), async (req, res) => {
+  try {
+    const { userId } = req.params
+    const uq = await pool.query('SELECT company_id FROM users WHERE id = $1', [userId])
+    if (uq.rowCount === 0) return res.status(404).json({ success: false, error: 'User not found' })
+    if (req.user.role === 'admin' && uq.rows[0].company_id !== req.user.companyId) {
+      return res.status(403).json({ success: false, error: 'Forbidden' })
+    }
+    const cq = await pool.query(
+      `SELECT c.id, c.company_token, c.country, c.contract_type, c.params,
+              c.start_date, c.end_date, c.status, c.created_at,
+              (c.signed_pdf IS NOT NULL) AS has_signed_pdf,
+              COALESCE(json_agg(json_build_object('role', s.signer_role, 'signed_at', s.signed_at)
+                       ) FILTER (WHERE s.id IS NOT NULL), '[]') AS signatures
+       FROM contracts c
+       LEFT JOIN contract_signatures s ON s.contract_id = c.id
+       WHERE c.user_id = $1
+       GROUP BY c.id
+       ORDER BY c.created_at DESC`,
+      [userId]
+    )
+    const data = cq.rows.map((r) => {
+      const sigRoles = (r.signatures || []).map((s) => s.role)
+      return {
+        ...r,
+        status: contractStatusFor(r),
+        employer_signed: sigRoles.includes('employer'),
+        worker_signed: sigRoles.includes('worker'),
+      }
+    })
+    res.json({ success: true, data, contractStatus: employeeContractStatus(cq.rows) })
+  } catch (e) {
+    console.error('Error listing contracts:', e)
+    res.status(500).json({ success: false, error: 'Failed to list contracts' })
+  }
+})
+
+// Stream a contract PDF (signed when available, else the unsigned draft).
+router.get('/contracts/:id/pdf', requireAuth, requireRole(['admin', 'super-admin']), async (req, res) => {
+  try {
+    const { id } = req.params
+    const which = req.query.which === 'unsigned' ? 'unsigned' : 'signed'
+    const q = await pool.query(
+      `SELECT c.company_id, c.unsigned_pdf, c.signed_pdf FROM contracts c WHERE c.id = $1`,
+      [id]
+    )
+    if (q.rowCount === 0) return res.status(404).json({ success: false, error: 'Contract not found' })
+    const row = q.rows[0]
+    if (req.user.role === 'admin' && row.company_id !== req.user.companyId) {
+      return res.status(403).json({ success: false, error: 'Forbidden' })
+    }
+    const buf = which === 'signed' ? (row.signed_pdf || row.unsigned_pdf) : row.unsigned_pdf
+    if (!buf) return res.status(404).json({ success: false, error: 'No PDF available' })
+    res.setHeader('Content-Type', 'application/pdf')
+    res.setHeader('Content-Disposition', `inline; filename="contrato-${id}.pdf"`)
+    res.setHeader('Cache-Control', 'private, no-store')
+    res.send(Buffer.from(buf))
+  } catch (e) {
+    console.error('Error streaming contract pdf:', e)
+    res.status(500).json({ success: false, error: 'Failed to load contract PDF' })
+  }
+})
+
+// Employer representative signs (admin / super-admin).
+router.post('/contracts/:id/sign-employer', requireAuth, requireRole(['admin', 'super-admin']), async (req, res) => {
+  try {
+    const { id } = req.params
+    const { signature_png, signer_name } = req.body || {}
+    const { buffer, error } = decodeSignaturePng(signature_png)
+    if (error) return res.status(400).json({ success: false, error })
+
+    const q = await pool.query(
+      `SELECT company_id, status, unsigned_pdf_sha256, employer_snapshot FROM contracts WHERE id = $1`,
+      [id]
+    )
+    if (q.rowCount === 0) return res.status(404).json({ success: false, error: 'Contract not found' })
+    const c = q.rows[0]
+    if (req.user.role === 'admin' && c.company_id !== req.user.companyId) {
+      return res.status(403).json({ success: false, error: 'Forbidden' })
+    }
+    if (c.status === 'cancelled') return res.status(400).json({ success: false, error: 'Contract is cancelled' })
+
+    const name = (signer_name && String(signer_name).trim()) || c.employer_snapshot?.rep_name || req.user.userName || null
+    await pool.query(
+      `INSERT INTO contract_signatures
+         (contract_id, signer_role, signer_user_id, signer_name, signature_png, ip, user_agent, doc_sha256_at_signing)
+       VALUES ($1, 'employer', $2, $3, $4, $5, $6, $7)
+       ON CONFLICT (contract_id, signer_role) DO UPDATE SET
+         signer_user_id = EXCLUDED.signer_user_id, signer_name = EXCLUDED.signer_name,
+         signature_png = EXCLUDED.signature_png, signed_at = NOW(),
+         ip = EXCLUDED.ip, user_agent = EXCLUDED.user_agent,
+         doc_sha256_at_signing = EXCLUDED.doc_sha256_at_signing`,
+      [id, req.user.userId, name, buffer, req.ip, req.get('user-agent') || null, c.unsigned_pdf_sha256]
+    )
+    const result = await renderSignedContractIfComplete(id)
+    res.json({ success: true, data: { status: result.status, fully_signed: result.completed } })
+  } catch (e) {
+    console.error('Error signing contract (employer):', e)
+    res.status(500).json({ success: false, error: 'Failed to sign contract' })
+  }
+})
+
+// Cancel a contract.
+router.post('/contracts/:id/cancel', requireAuth, requireRole(['admin', 'super-admin']), async (req, res) => {
+  try {
+    const { id } = req.params
+    const q = await pool.query('SELECT company_id FROM contracts WHERE id = $1', [id])
+    if (q.rowCount === 0) return res.status(404).json({ success: false, error: 'Contract not found' })
+    if (req.user.role === 'admin' && q.rows[0].company_id !== req.user.companyId) {
+      return res.status(403).json({ success: false, error: 'Forbidden' })
+    }
+    await pool.query(`UPDATE contracts SET status = 'cancelled', updated_at = NOW() WHERE id = $1`, [id])
+    res.json({ success: true })
+  } catch (e) {
+    console.error('Error cancelling contract:', e)
+    res.status(500).json({ success: false, error: 'Failed to cancel contract' })
+  }
+})
+
+// Per-employee derived contract status for the user list badges/filter.
+// Returns a map keyed by user_id; users absent from the map have no contract.
+router.get('/contract-statuses', requireAuth, requireRole(['admin', 'super-admin']), async (req, res) => {
+  try {
+    const companyId = req.user.role === 'admin' ? req.user.companyId : (req.query.company_id || null)
+    const params = []
+    let scope = ''
+    if (companyId) { params.push(companyId); scope = `AND u.company_id = $1` }
+    const q = await pool.query(
+      `SELECT u.id,
+              bool_or(c.status = 'active' AND (c.end_date IS NULL OR c.end_date >= CURRENT_DATE)) AS has_active,
+              bool_or(c.status = 'pending') AS has_pending,
+              bool_or(c.status = 'active' AND c.end_date < CURRENT_DATE) AS has_expired
+       FROM users u
+       JOIN contracts c ON c.user_id = u.id
+       WHERE u.role = 'employee' ${scope}
+       GROUP BY u.id`,
+      params
+    )
+    const map = {}
+    for (const r of q.rows) {
+      map[r.id] = r.has_active ? 'active' : r.has_pending ? 'pending' : r.has_expired ? 'expired' : 'none'
+    }
+    res.json({ success: true, data: map })
+  } catch (e) {
+    console.error('Error building contract statuses:', e)
+    res.status(500).json({ success: false, error: 'Failed to build contract statuses' })
+  }
+})
+
+// Count of this company's active employees without a valid (active) contract.
+router.get('/contracts-summary', requireAuth, requireRole(['admin', 'super-admin']), async (req, res) => {
+  try {
+    const companyId = req.user.role === 'admin' ? req.user.companyId : (req.query.company_id || null)
+    if (req.user.role === 'admin' && !companyId) {
+      return res.status(403).json({ success: false, error: 'No company associated with this account' })
+    }
+    const params = []
+    let scope = ''
+    if (companyId) { params.push(companyId); scope = `AND u.company_id = $1` }
+    const q = await pool.query(
+      `SELECT u.id,
+              COALESCE(bool_or(c.status = 'active' AND (c.end_date IS NULL OR c.end_date >= CURRENT_DATE)), false) AS has_active
+       FROM users u
+       LEFT JOIN contracts c ON c.user_id = u.id
+       WHERE u.role = 'employee' AND u.is_active = TRUE ${scope}
+       GROUP BY u.id`,
+      params
+    )
+    const total = q.rowCount
+    const withoutActive = q.rows.filter((r) => !r.has_active).length
+    res.json({ success: true, data: { totalEmployees: total, withoutActiveContract: withoutActive } })
+  } catch (e) {
+    console.error('Error building contracts summary:', e)
+    res.status(500).json({ success: false, error: 'Failed to build contracts summary' })
   }
 })
 

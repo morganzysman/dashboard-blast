@@ -39,3 +39,22 @@ export function createPdf(docDefinition) {
   const doc = printer.createPdfKitDocument(def)
   return doc
 }
+
+/**
+ * Render a pdfmake document definition fully into a Buffer.
+ * Used when we need to persist the PDF (immutable contract snapshots) rather
+ * than stream it to the client.
+ *
+ * @param {object} docDefinition pdfmake document definition.
+ * @returns {Promise<Buffer>} the complete PDF bytes.
+ */
+export function createPdfBuffer(docDefinition) {
+  return new Promise((resolve, reject) => {
+    const doc = createPdf(docDefinition)
+    const chunks = []
+    doc.on('data', (c) => chunks.push(c))
+    doc.on('end', () => resolve(Buffer.concat(chunks)))
+    doc.on('error', reject)
+    doc.end()
+  })
+}

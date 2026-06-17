@@ -8,6 +8,11 @@ import { Router } from 'express'
 import { requireAuth } from '../middleware/auth.js'
 import { pool } from '../database.js'
 import { getCountryConfig, DEFAULT_COUNTRY } from '../config/contractCountries.js'
+import {
+  contractStatusFor,
+  decodeSignaturePng,
+  renderSignedContractIfComplete,
+} from '../services/contractSigning.js'
 
 const router = Router()
 
@@ -147,6 +152,111 @@ router.put('/contract-info', requireAuth, async (req, res) => {
   } catch (e) {
     console.error('Error updating own contract info:', e)
     res.status(500).json({ success: false, error: 'Failed to update contract info' })
+  }
+})
+
+// ====== OWN CONTRACTS + SIGNING (worker self-service) ======
+
+// List own contracts (no PDF bytes). `awaiting_signature` flags contracts the
+// worker still needs to sign (drives the login sign prompt).
+router.get('/contracts', requireAuth, async (req, res) => {
+  try {
+    const cq = await pool.query(
+      `SELECT c.id, c.company_token, c.country, c.contract_type, c.params,
+              c.start_date, c.end_date, c.status, c.created_at,
+              (c.signed_pdf IS NOT NULL) AS has_signed_pdf,
+              COALESCE(json_agg(s.signer_role) FILTER (WHERE s.id IS NOT NULL), '[]') AS signer_roles
+       FROM contracts c
+       LEFT JOIN contract_signatures s ON s.contract_id = c.id
+       WHERE c.user_id = $1
+       GROUP BY c.id
+       ORDER BY c.created_at DESC`,
+      [req.user.userId]
+    )
+    const data = cq.rows.map((r) => {
+      const roles = r.signer_roles || []
+      const status = contractStatusFor(r)
+      return {
+        id: r.id,
+        company_token: r.company_token,
+        country: r.country,
+        contract_type: r.contract_type,
+        params: r.params,
+        start_date: r.start_date,
+        end_date: r.end_date,
+        status,
+        has_signed_pdf: r.has_signed_pdf,
+        worker_signed: roles.includes('worker'),
+        employer_signed: roles.includes('employer'),
+        // Worker action needed: not cancelled and worker hasn't signed yet.
+        awaiting_signature: status !== 'cancelled' && !roles.includes('worker'),
+      }
+    })
+    res.json({ success: true, data, awaitingCount: data.filter((c) => c.awaiting_signature).length })
+  } catch (e) {
+    console.error('Error listing own contracts:', e)
+    res.status(500).json({ success: false, error: 'Failed to list contracts' })
+  }
+})
+
+// Stream own contract PDF (signed when available, else unsigned draft).
+router.get('/contracts/:id/pdf', requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params
+    const which = req.query.which === 'signed' ? 'signed' : 'unsigned'
+    const q = await pool.query(
+      `SELECT user_id, unsigned_pdf, signed_pdf FROM contracts WHERE id = $1`,
+      [id]
+    )
+    if (q.rowCount === 0) return res.status(404).json({ success: false, error: 'Contract not found' })
+    const row = q.rows[0]
+    if (row.user_id !== req.user.userId) return res.status(403).json({ success: false, error: 'Forbidden' })
+    const buf = which === 'signed' ? (row.signed_pdf || row.unsigned_pdf) : row.unsigned_pdf
+    if (!buf) return res.status(404).json({ success: false, error: 'No PDF available' })
+    res.setHeader('Content-Type', 'application/pdf')
+    res.setHeader('Content-Disposition', `inline; filename="contrato-${id}.pdf"`)
+    res.setHeader('Cache-Control', 'private, no-store')
+    res.send(Buffer.from(buf))
+  } catch (e) {
+    console.error('Error streaming own contract pdf:', e)
+    res.status(500).json({ success: false, error: 'Failed to load contract PDF' })
+  }
+})
+
+// Worker signs own contract.
+router.post('/contracts/:id/sign', requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params
+    const { signature_png } = req.body || {}
+    const { buffer, error } = decodeSignaturePng(signature_png)
+    if (error) return res.status(400).json({ success: false, error })
+
+    const q = await pool.query(
+      `SELECT user_id, status, unsigned_pdf_sha256, employee_snapshot FROM contracts WHERE id = $1`,
+      [id]
+    )
+    if (q.rowCount === 0) return res.status(404).json({ success: false, error: 'Contract not found' })
+    const c = q.rows[0]
+    if (c.user_id !== req.user.userId) return res.status(403).json({ success: false, error: 'Forbidden' })
+    if (c.status === 'cancelled') return res.status(400).json({ success: false, error: 'Contract is cancelled' })
+
+    const name = c.employee_snapshot?.name || req.user.userName || null
+    await pool.query(
+      `INSERT INTO contract_signatures
+         (contract_id, signer_role, signer_user_id, signer_name, signature_png, ip, user_agent, doc_sha256_at_signing)
+       VALUES ($1, 'worker', $2, $3, $4, $5, $6, $7)
+       ON CONFLICT (contract_id, signer_role) DO UPDATE SET
+         signer_user_id = EXCLUDED.signer_user_id, signer_name = EXCLUDED.signer_name,
+         signature_png = EXCLUDED.signature_png, signed_at = NOW(),
+         ip = EXCLUDED.ip, user_agent = EXCLUDED.user_agent,
+         doc_sha256_at_signing = EXCLUDED.doc_sha256_at_signing`,
+      [id, req.user.userId, name, buffer, req.ip, req.get('user-agent') || null, c.unsigned_pdf_sha256]
+    )
+    const result = await renderSignedContractIfComplete(id)
+    res.json({ success: true, data: { status: result.status, fully_signed: result.completed } })
+  } catch (e) {
+    console.error('Error signing own contract:', e)
+    res.status(500).json({ success: false, error: 'Failed to sign contract' })
   }
 })
 

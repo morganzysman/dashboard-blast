@@ -292,8 +292,8 @@ export const api = {
   updateUserContractInfo: (userId, payload) => apiRequest(`/api/admin/users/${userId}/contract-info`, { method: 'PUT', body: JSON.stringify(payload) }),
   updateAccountContractInfo: (companyId, companyToken, payload) =>
     apiRequest(`/api/admin/companies/${companyId}/accounts/${encodeURIComponent(companyToken)}/contract-info`, { method: 'PUT', body: JSON.stringify(payload) }),
-  // Streams a PDF; returns { blob, filename } or throws ApiError for JSON errors.
-  generateContract: async (userId, payload) => {
+  // Preview (preview:true): streams a draft PDF inline; returns { blob, filename }.
+  previewContract: async (userId, payload) => {
     const authStore = useAuthStore()
     const response = await fetch(`/api/admin/users/${userId}/contract`, {
       method: 'POST',
@@ -301,7 +301,7 @@ export const api = {
         'Content-Type': 'application/json',
         ...(authStore.sessionId ? { 'X-Session-ID': authStore.sessionId } : {}),
       },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({ ...payload, preview: true }),
     })
     if (!response.ok) {
       const data = await response.json().catch(() => ({}))
@@ -311,6 +311,38 @@ export const api = {
     const disposition = response.headers.get('Content-Disposition') || ''
     const match = disposition.match(/filename="?([^"]+)"?/)
     return { blob, filename: match ? match[1] : 'contrato.pdf' }
+  },
+  // Persists a contract record (pending, awaiting signatures); returns JSON.
+  createContract: (userId, payload) =>
+    apiRequest(`/api/admin/users/${userId}/contract`, { method: 'POST', body: JSON.stringify(payload) }),
+
+  // Contract lifecycle (admin)
+  getUserContracts: (userId) => apiRequest(`/api/admin/users/${userId}/contracts`, { method: 'GET' }),
+  signContractEmployer: (contractId, payload) =>
+    apiRequest(`/api/admin/contracts/${contractId}/sign-employer`, { method: 'POST', body: JSON.stringify(payload) }),
+  cancelContract: (contractId) =>
+    apiRequest(`/api/admin/contracts/${contractId}/cancel`, { method: 'POST' }),
+  getContractsSummary: (companyId) =>
+    apiRequest(`/api/admin/contracts-summary${companyId ? `?company_id=${encodeURIComponent(companyId)}` : ''}`, { method: 'GET' }),
+  getContractStatuses: (companyId) =>
+    apiRequest(`/api/admin/contract-statuses${companyId ? `?company_id=${encodeURIComponent(companyId)}` : ''}`, { method: 'GET' }),
+
+  // Contract lifecycle (worker self-service)
+  getMyContracts: () => apiRequest('/api/profile/contracts', { method: 'GET' }),
+  signMyContract: (contractId, payload) =>
+    apiRequest(`/api/profile/contracts/${contractId}/sign`, { method: 'POST', body: JSON.stringify(payload) }),
+
+  // Fetch an authenticated PDF endpoint as an object URL (for <iframe>/download).
+  fetchPdfObjectUrl: async (url) => {
+    const authStore = useAuthStore()
+    const response = await fetch(url, {
+      headers: { ...(authStore.sessionId ? { 'X-Session-ID': authStore.sessionId } : {}) },
+    })
+    if (!response.ok) {
+      throw new ApiError('Failed to fetch PDF', response.status)
+    }
+    const blob = await response.blob()
+    return URL.createObjectURL(blob)
   },
 
   // Users (admin)
