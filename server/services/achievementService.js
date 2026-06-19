@@ -2,7 +2,7 @@ import cron from 'node-cron'
 import { pool } from '../database.js'
 
 // ── Calibration constants (mirror client/src/composables/useAchievements.js) ──
-const DAILY_GAIN_OBJECTIVE = 2000 // account-level daily net-gain objective
+const DAILY_GAIN_OBJECTIVE = 2500 // account-level daily net-gain objective
 const COMPANY_DAILY_GAIN_GOAL = 2000 // combined daily net-gain goal
 const COMPANY_DAILY_GAIN_STRETCH = 3500 // EOY combined daily stretch
 const MONTHLY_SALES_BRONZE_PER_LOCATION = 50000 // S/ 50k/store → S/ 100k @ 2 stores

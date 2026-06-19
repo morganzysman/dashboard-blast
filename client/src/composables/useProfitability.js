@@ -1,7 +1,7 @@
 // Shared profitability/calculation utilities for accounts and company-level aggregation
 
 // Company-wide daily gain objective (in account currency)
-export const DAILY_GAIN_OBJECTIVE = 2000
+export const DAILY_GAIN_OBJECTIVE = 2500
 
 // Calculate number of days in a selected date range
 export function calculateDaysInPeriod(currentDateRange) {
