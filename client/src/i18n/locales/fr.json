@@ -34,6 +34,7 @@
     "types": {
       "locacionPE": "Prestation de services (civil)",
       "planillaPE": "Contrat de travail (paie)",
+      "microempresaPE": "Contrat de travail de micro-entreprise (REMYPE)",
       "prestacionCO": "Prestation de services",
       "laboralCO": "Contrat de travail",
       "honorariosCL": "Prestation aux honoraires",

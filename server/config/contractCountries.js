@@ -106,6 +106,7 @@ export const CONTRACT_COUNTRIES = {
     contractTypes: [
       { id: 'locacion', template: 'pe_locacion_v1', labelKey: 'locacionPE', available: true, category: 'service', paramFields: serviceParamFields() },
       { id: 'planilla', template: 'pe_planilla_v1', labelKey: 'planillaPE', available: true, category: 'employment', paramFields: employmentParamFields() },
+      { id: 'microempresa', template: 'pe_microempresa_v1', labelKey: 'microempresaPE', available: true, category: 'employment', paramFields: employmentParamFields() },
     ],
   },
   CO: {

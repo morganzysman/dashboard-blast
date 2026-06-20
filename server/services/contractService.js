@@ -19,7 +19,7 @@
 
 import { getCountryConfig, getContractType } from '../config/contractCountries.js'
 import { formatMoney, formatSpanishDate, formatPortugueseDate, isBlank, resolveMonthlyReference } from './contractTemplates/shared.js'
-import { buildPeruLocacion, buildPeruPlanilla } from './contractTemplates/peru.js'
+import { buildPeruLocacion, buildPeruPlanilla, buildPeruMicroempresa } from './contractTemplates/peru.js'
 import { buildColombiaPrestacion, buildColombiaLaboral } from './contractTemplates/colombia.js'
 import { buildChileHonorarios, buildChileTrabajo } from './contractTemplates/chile.js'
 import { buildArgentinaLocacion, buildArgentinaTrabajo } from './contractTemplates/argentina.js'
@@ -92,6 +92,7 @@ export function validateContractData({ country, contractType, employer = {}, emp
 const BUILDERS = {
   pe_locacion_v1: buildPeruLocacion,
   pe_planilla_v1: buildPeruPlanilla,
+  pe_microempresa_v1: buildPeruMicroempresa,
   co_prestacion_v1: buildColombiaPrestacion,
   co_laboral_v1: buildColombiaLaboral,
   cl_honorarios_v1: buildChileHonorarios,
