@@ -24,6 +24,7 @@
     "idDocumentOnFile": "Documento cargado",
     "idDocumentHint": "Sube una foto clara de tu documento (anverso).",
     "skipForNow": "Omitir por ahora",
+    "completeRequiredHint": "Debes completar todos los campos y subir tu documento para continuar.",
     "country": "País",
     "employerData": "Datos del empleador (contrato)",
     "employerDataHint": "Datos legales de la empresa que aparecerán como empleador/contratante.",

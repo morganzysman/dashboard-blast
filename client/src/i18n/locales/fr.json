@@ -24,6 +24,7 @@
     "idDocumentOnFile": "Document téléchargé",
     "idDocumentHint": "Téléchargez une photo nette de votre pièce d'identité (recto).",
     "skipForNow": "Ignorer pour l'instant",
+    "completeRequiredHint": "Vous devez remplir tous les champs et téléverser votre document pour continuer.",
     "country": "Pays",
     "employerData": "Données de l'employeur (contrat)",
     "employerDataHint": "Données légales de l'entreprise qui figureront comme employeur/contractant.",

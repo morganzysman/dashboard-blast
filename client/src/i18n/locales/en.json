@@ -24,6 +24,7 @@
     "idDocumentOnFile": "Document uploaded",
     "idDocumentHint": "Upload a clear photo of your ID (front).",
     "skipForNow": "Skip for now",
+    "completeRequiredHint": "You must complete all fields and upload your document to continue.",
     "country": "Country",
     "employerData": "Employer data (contract)",
     "employerDataHint": "Legal company data that will appear as the employer/contracting party.",

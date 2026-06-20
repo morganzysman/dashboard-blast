@@ -24,6 +24,7 @@
     "idDocumentOnFile": "Documento enviado",
     "idDocumentHint": "Envie uma foto nítida do seu documento (frente).",
     "skipForNow": "Pular por agora",
+    "completeRequiredHint": "Você precisa preencher todos os campos e enviar seu documento para continuar.",
     "country": "País",
     "employerData": "Dados do empregador (contrato)",
     "employerDataHint": "Dados legais da empresa que aparecerão como empregador/contratante.",

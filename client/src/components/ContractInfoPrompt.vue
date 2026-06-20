@@ -56,10 +56,9 @@
               <p class="text-xs text-gray-400 mt-1">{{ $t('contract.idDocumentHint') }}</p>
             </div>
 
-            <div class="flex justify-between items-center gap-2 pt-2">
-              <button type="button" class="btn-secondary btn-sm" @click="skip" :disabled="saving">
-                {{ $t('contract.skipForNow') }}
-              </button>
+            <p class="text-xs text-amber-600">{{ $t('contract.completeRequiredHint') }}</p>
+
+            <div class="flex justify-end items-center gap-2 pt-2">
               <button type="submit" class="btn-primary" :disabled="saving || !canSave">
                 {{ saving ? $t('common.loading') : $t('common.save') }}
               </button>
@@ -74,9 +73,6 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import api from '../utils/api'
-import { useAuthStore } from '../stores/auth'
-
-const authStore = useAuthStore()
 
 const show = ref(false)
 const saving = ref(false)
@@ -93,14 +89,13 @@ const formData = reactive({
 // Pending compressed image to upload: { base64, mime }
 const pendingImage = ref(null)
 
-// Allow saving as long as the employee provided at least something new.
+// Completing the contract identity is mandatory: all text fields AND an ID
+// document (either already on file or newly picked) are required before saving.
 const canSave = computed(() => {
-  const textProvided = !!(formData.document_type || formData.document_number || formData.address)
-  return textProvided || !!pendingImage.value
+  const textComplete = !!(formData.document_type && formData.document_number && formData.address)
+  const hasDoc = hasIdDocument.value || !!pendingImage.value
+  return textComplete && hasDoc
 })
-
-// Per-login skip flag: keyed by session so it reappears on the next login.
-const skipKey = computed(() => `contractPromptSkipped:${authStore.sessionId || 'anon'}`)
 
 // Downscale + compress an image file to keep DB rows small.
 function compressImage(file) {
@@ -170,17 +165,7 @@ const submit = async () => {
   }
 }
 
-const skip = () => {
-  try { sessionStorage.setItem(skipKey.value, '1') } catch { /* ignore */ }
-  show.value = false
-}
-
 onMounted(async () => {
-  // Respect a skip from earlier in this login session.
-  try {
-    if (sessionStorage.getItem(skipKey.value) === '1') return
-  } catch { /* ignore */ }
-
   try {
     const res = await api.getMyContractInfo()
     const d = res?.data
