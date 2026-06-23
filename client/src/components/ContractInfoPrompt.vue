@@ -32,33 +32,36 @@
               <input v-model.trim="formData.address" type="text" class="form-input" />
             </div>
 
-            <div>
-              <label class="form-label">{{ $t('contract.idDocumentImage') }}</label>
-              <div v-if="imagePreview || hasIdDocument" class="mb-2">
-                <img
-                  v-if="imagePreview"
-                  :src="imagePreview"
-                  alt="ID preview"
-                  class="max-h-40 rounded border border-gray-200 object-contain"
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div v-for="side in sides" :key="side.key">
+                <label class="form-label">{{ $t(side.label) }}</label>
+                <div v-if="side.preview || side.onFile" class="mb-2">
+                  <img
+                    v-if="side.preview"
+                    :src="side.preview"
+                    :alt="$t(side.label)"
+                    class="max-h-40 rounded border border-gray-200 object-contain"
+                  />
+                  <p v-else class="text-xs text-green-700 flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    {{ $t('contract.idDocumentOnFile') }}
+                  </p>
+                </div>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  capture="environment"
+                  class="form-input"
+                  @change="(e) => onFileChange(e, side.key)"
                 />
-                <p v-else class="text-xs text-green-700 flex items-center gap-1">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                  {{ $t('contract.idDocumentOnFile') }}
-                </p>
               </div>
-              <input
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                capture="environment"
-                class="form-input"
-                @change="onFileChange"
-              />
-              <p class="text-xs text-gray-400 mt-1">{{ $t('contract.idDocumentHint') }}</p>
             </div>
+            <p class="text-xs text-gray-400">{{ $t('contract.idDocumentBothHint') }}</p>
 
-            <p class="text-xs text-amber-600">{{ $t('contract.completeRequiredHint') }}</p>
-
-            <div class="flex justify-end items-center gap-2 pt-2">
+            <div class="flex justify-between items-center gap-2 pt-2">
+              <button type="button" class="btn-secondary" :disabled="saving" @click="skip">
+                {{ $t('contract.doItLater') }}
+              </button>
               <button type="submit" class="btn-primary" :disabled="saving || !canSave">
                 {{ saving ? $t('common.loading') : $t('common.save') }}
               </button>
@@ -73,12 +76,13 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import api from '../utils/api'
+import { useAuthStore } from '../stores/auth'
+
+const authStore = useAuthStore()
 
 const show = ref(false)
 const saving = ref(false)
 const docTypes = ref(['DNI', 'CE', 'Pasaporte'])
-const hasIdDocument = ref(false)
-const imagePreview = ref('')
 
 const formData = reactive({
   document_type: '',
@@ -86,16 +90,31 @@ const formData = reactive({
   address: '',
 })
 
-// Pending compressed image to upload: { base64, mime }
-const pendingImage = ref(null)
+// Both ID document sides are required. Each side tracks whether a scan is
+// already on file and any newly picked (pending) compressed image to upload.
+const idSides = reactive({
+  front: { onFile: false, preview: '', pending: null },
+  back: { onFile: false, preview: '', pending: null },
+})
 
-// Completing the contract identity is mandatory: all text fields AND an ID
-// document (either already on file or newly picked) are required before saving.
+// Drives the two upload widgets in the template.
+const sides = computed(() => [
+  { key: 'front', label: 'contract.idDocumentFront', preview: idSides.front.preview, onFile: idSides.front.onFile },
+  { key: 'back', label: 'contract.idDocumentBack', preview: idSides.back.preview, onFile: idSides.back.onFile },
+])
+
+function sideReady(key) {
+  return idSides[key].onFile || !!idSides[key].pending
+}
+
+// All text fields AND both ID document sides (front + back) are required to save.
 const canSave = computed(() => {
   const textComplete = !!(formData.document_type && formData.document_number && formData.address)
-  const hasDoc = hasIdDocument.value || !!pendingImage.value
-  return textComplete && hasDoc
+  return textComplete && sideReady('front') && sideReady('back')
 })
+
+// Per-login skip flag: keyed by session so it reappears on the next login.
+const skipKey = computed(() => `contractPromptSkipped:${authStore.sessionId || 'anon'}`)
 
 // Downscale + compress an image file to keep DB rows small.
 function compressImage(file) {
@@ -127,13 +146,13 @@ function compressImage(file) {
   })
 }
 
-const onFileChange = async (e) => {
+const onFileChange = async (e, side) => {
   const file = e.target.files && e.target.files[0]
   if (!file) return
   try {
     const { base64, mime, preview } = await compressImage(file)
-    pendingImage.value = { base64, mime }
-    imagePreview.value = preview
+    idSides[side].pending = { base64, mime }
+    idSides[side].preview = preview
   } catch (err) {
     window.showNotification?.({ type: 'error', title: 'Error', message: 'Could not process image' })
   }
@@ -150,11 +169,11 @@ const submit = async () => {
         address: formData.address,
       })
     }
-    if (pendingImage.value) {
-      await api.uploadMyIdDocument({
-        image_base64: pendingImage.value.base64,
-        mime: pendingImage.value.mime,
-      })
+    for (const side of ['front', 'back']) {
+      const pending = idSides[side].pending
+      if (pending) {
+        await api.uploadMyIdDocument({ image_base64: pending.base64, mime: pending.mime, side })
+      }
     }
     show.value = false
     window.showNotification?.({ type: 'success', title: 'Success', message: 'Saved' })
@@ -165,7 +184,17 @@ const submit = async () => {
   }
 }
 
+const skip = () => {
+  try { sessionStorage.setItem(skipKey.value, '1') } catch { /* ignore */ }
+  show.value = false
+}
+
 onMounted(async () => {
+  // Respect a skip from earlier in this login session.
+  try {
+    if (sessionStorage.getItem(skipKey.value) === '1') return
+  } catch { /* ignore */ }
+
   try {
     const res = await api.getMyContractInfo()
     const d = res?.data
@@ -174,7 +203,8 @@ onMounted(async () => {
     formData.document_type = d.document_type || ''
     formData.document_number = d.document_number || ''
     formData.address = d.address || ''
-    hasIdDocument.value = !!d.has_id_document
+    idSides.front.onFile = !!d.has_id_document_front
+    idSides.back.onFile = !!d.has_id_document_back
     show.value = !d.complete
   } catch (e) {
     // Non-blocking: if the check fails, don't trap the employee.

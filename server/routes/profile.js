@@ -65,7 +65,8 @@ router.get('/contract-info', requireAuth, async (req, res) => {
     const userId = req.user.userId
     const q = await pool.query(
       `SELECT document_type, document_number, address, company_id,
-              (id_document_image IS NOT NULL) AS has_id_document
+              (id_document_image IS NOT NULL) AS has_id_document_front,
+              (id_document_image_back IS NOT NULL) AS has_id_document_back
        FROM users WHERE id = $1`,
       [userId]
     )
@@ -74,14 +75,19 @@ router.get('/contract-info', requireAuth, async (req, res) => {
     const country = await resolveUserCountry(row.company_id)
     const config = getCountryConfig(country)
 
-    const complete = !!(row.document_type && row.document_number && row.address && row.has_id_document)
+    // A complete identity requires both ID document sides (front + back).
+    const complete = !!(
+      row.document_type && row.document_number && row.address &&
+      row.has_id_document_front && row.has_id_document_back
+    )
     res.json({
       success: true,
       data: {
         document_type: row.document_type || '',
         document_number: row.document_number || '',
         address: row.address || '',
-        has_id_document: row.has_id_document,
+        has_id_document_front: row.has_id_document_front,
+        has_id_document_back: row.has_id_document_back,
         country,
         employeeDocTypes: config?.employeeDocTypes || ['DNI', 'CE', 'Pasaporte'],
         complete,
@@ -93,36 +99,47 @@ router.get('/contract-info', requireAuth, async (req, res) => {
   }
 })
 
-// Upload/replace own ID document image.
+// Resolve which ID-document side a request targets. Defaults to 'front'.
+function resolveDocSide(value) {
+  return String(value || 'front').toLowerCase() === 'back' ? 'back' : 'front'
+}
+
+// Upload/replace own ID document image (front or back side).
 router.post('/id-document', requireAuth, async (req, res) => {
   try {
     const { error, buffer, mime } = decodeImagePayload(req.body || {})
     if (error) return res.status(400).json({ success: false, error })
+    const side = resolveDocSide(req.body?.side)
+    const imageCol = side === 'back' ? 'id_document_image_back' : 'id_document_image'
+    const mimeCol = side === 'back' ? 'id_document_mime_back' : 'id_document_mime'
     await pool.query(
-      `UPDATE users SET id_document_image = $2, id_document_mime = $3, updated_at = NOW() WHERE id = $1`,
+      `UPDATE users SET ${imageCol} = $2, ${mimeCol} = $3, updated_at = NOW() WHERE id = $1`,
       [req.user.userId, buffer, mime]
     )
-    res.json({ success: true, data: { has_id_document: true } })
+    res.json({ success: true, data: { side, uploaded: true } })
   } catch (e) {
     console.error('Error uploading ID document:', e)
     res.status(500).json({ success: false, error: 'Failed to upload ID document' })
   }
 })
 
-// Stream own ID document image.
+// Stream own ID document image (front or back side via ?side=).
 router.get('/id-document', requireAuth, async (req, res) => {
   try {
+    const side = resolveDocSide(req.query?.side)
+    const imageCol = side === 'back' ? 'id_document_image_back' : 'id_document_image'
+    const mimeCol = side === 'back' ? 'id_document_mime_back' : 'id_document_mime'
     const q = await pool.query(
-      `SELECT id_document_image, id_document_mime FROM users WHERE id = $1`,
+      `SELECT ${imageCol} AS image, ${mimeCol} AS mime FROM users WHERE id = $1`,
       [req.user.userId]
     )
     const row = q.rows[0]
-    if (!row || !row.id_document_image) {
+    if (!row || !row.image) {
       return res.status(404).json({ success: false, error: 'No ID document on file' })
     }
-    res.setHeader('Content-Type', row.id_document_mime || 'application/octet-stream')
+    res.setHeader('Content-Type', row.mime || 'application/octet-stream')
     res.setHeader('Cache-Control', 'private, no-store')
-    res.send(row.id_document_image)
+    res.send(row.image)
   } catch (e) {
     console.error('Error fetching ID document:', e)
     res.status(500).json({ success: false, error: 'Failed to fetch ID document' })

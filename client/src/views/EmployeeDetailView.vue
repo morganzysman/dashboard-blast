@@ -67,8 +67,15 @@
           </div>
           <div>
             <label class="form-label">{{ $t('contract.idDocumentImage') }}</label>
-            <div v-if="idDocumentUrl" class="mt-1">
-              <img :src="idDocumentUrl" alt="ID document" class="max-h-48 rounded border border-gray-200 object-contain" />
+            <div v-if="idDocumentFrontUrl || idDocumentBackUrl" class="mt-1 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div v-if="idDocumentFrontUrl">
+                <p class="text-xs text-gray-500 mb-1">{{ $t('contract.idDocumentFront') }}</p>
+                <img :src="idDocumentFrontUrl" alt="ID document front" class="max-h-48 rounded border border-gray-200 object-contain" />
+              </div>
+              <div v-if="idDocumentBackUrl">
+                <p class="text-xs text-gray-500 mb-1">{{ $t('contract.idDocumentBack') }}</p>
+                <img :src="idDocumentBackUrl" alt="ID document back" class="max-h-48 rounded border border-gray-200 object-contain" />
+              </div>
             </div>
             <p v-else class="text-sm text-gray-400">{{ $t('common.none') }}</p>
           </div>
@@ -276,7 +283,8 @@ const { t, te, locale } = useI18n()
 const loading = ref(true)
 const user = ref(null)
 const accounts = ref([])
-const idDocumentUrl = ref('')
+const idDocumentFrontUrl = ref('')
+const idDocumentBackUrl = ref('')
 const countries = ref([])
 const savingPayroll = ref(false)
 const savingContractInfo = ref(false)
@@ -436,10 +444,15 @@ const load = async () => {
       form.document_type = user.value.document_type || ''
       form.document_number = user.value.document_number || ''
       form.address = user.value.address || ''
-      if (user.value.has_id_document) {
-        api.fetchImageObjectUrl(`/api/admin/users/${userId.value}/id-document`)
-          .then((url) => { idDocumentUrl.value = url })
-          .catch(() => { idDocumentUrl.value = '' })
+      if (user.value.has_id_document_front) {
+        api.fetchImageObjectUrl(`/api/admin/users/${userId.value}/id-document?side=front`)
+          .then((url) => { idDocumentFrontUrl.value = url })
+          .catch(() => { idDocumentFrontUrl.value = '' })
+      }
+      if (user.value.has_id_document_back) {
+        api.fetchImageObjectUrl(`/api/admin/users/${userId.value}/id-document?side=back`)
+          .then((url) => { idDocumentBackUrl.value = url })
+          .catch(() => { idDocumentBackUrl.value = '' })
       }
     }
     if (accounts.value.length) gen.company_token = accounts.value[0].company_token
