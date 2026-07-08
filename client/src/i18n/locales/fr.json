@@ -53,14 +53,16 @@
       "areaServicio": "Domaine de service",
       "startDate": "Date de début",
       "endDate": "Date de fin",
-      "endDateIndefiniteHint": "Laissez vide pour un contrat à durée indéterminée.",
+      "endDateIndefiniteHint": "Le contrat prend fin automatiquement à cette date.",
       "hourlyRate": "Tarif horaire",
       "monthlyReference": "Montant mensuel de référence",
       "monthlyReferenceHint": "Si laissé vide, calculé comme tarif × {hours} heures.",
       "position": "Poste / fonction",
       "monthlySalary": "Salaire mensuel",
       "weeklyHours": "Heures hebdomadaires",
-      "weeklyHoursHint": "Maximum légal : {max} heures par semaine."
+      "weeklyHoursHint": "Maximum légal : {max} heures par semaine.",
+      "objectiveCause": "Cause objective (contrat à durée déterminée)",
+      "objectiveCauseHint": "Obligatoire pour les contrats à durée déterminée (lorsqu'une date de fin est fixée). Indiquez le motif précis (ex. « ouverture du nouveau local dans le district X » ou « début des activités depuis [date] »). Non requis pour les contrats à durée indéterminée."
     },
     "fields": {
       "legalName": "Raison sociale",
@@ -94,6 +96,8 @@
     "createdOn": "Généré le",
     "term": "Durée",
     "indefinite": "Indéterminée",
+    "fixedTerm": "Durée déterminée",
+    "termHint": "La durée indéterminée est recommandée pour le personnel permanent. Choisissez la durée déterminée uniquement en cas de besoin réellement temporaire.",
     "employerSigned": "Employeur a signé",
     "workerSigned": "Travailleur a signé",
     "awaitingEmployer": "Signature de l'employeur manquante",

@@ -53,14 +53,16 @@
       "areaServicio": "Service area",
       "startDate": "Start date",
       "endDate": "End date",
-      "endDateIndefiniteHint": "Leave blank for an open-ended contract.",
+      "endDateIndefiniteHint": "The contract ends automatically on this date.",
       "hourlyRate": "Hourly rate",
       "monthlyReference": "Monthly reference amount",
       "monthlyReferenceHint": "If left blank, computed as rate × {hours} hours.",
       "position": "Position / role",
       "monthlySalary": "Monthly salary",
       "weeklyHours": "Weekly hours",
-      "weeklyHoursHint": "Legal maximum: {max} hours per week."
+      "weeklyHoursHint": "Legal maximum: {max} hours per week.",
+      "objectiveCause": "Objective cause (fixed-term contract)",
+      "objectiveCauseHint": "Required for fixed-term contracts (when an end date is set). State the specific reason (e.g. \"opening of the new location in district X\" or \"start of operations from [date]\"). Not needed for indefinite contracts."
     },
     "fields": {
       "legalName": "Legal name",
@@ -94,6 +96,8 @@
     "createdOn": "Created on",
     "term": "Term",
     "indefinite": "Indefinite",
+    "fixedTerm": "Fixed-term",
+    "termHint": "Indefinite is recommended for permanent staff. Choose fixed-term only for a genuinely temporary need.",
     "employerSigned": "Employer signed",
     "workerSigned": "Worker signed",
     "awaitingEmployer": "Awaiting employer signature",

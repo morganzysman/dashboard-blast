@@ -80,6 +80,17 @@ export function validateContractData({ country, contractType, employer = {}, emp
   // Date sanity: only when both dates are present and well-formed.
   const start = String(params.start_date || '').slice(0, 10)
   const end = String(params.end_date || '').slice(0, 10)
+
+  // Fixed-term guard: when a contract type offers an objective_cause field and an
+  // end_date is present (⇒ fixed-term), the objective cause is legally required
+  // and must be specific (art. 72 LPCL). A vague/omitted cause is the main cause
+  // of desnaturalización. A blank end_date ⇒ indefinite (the recommended default),
+  // which needs no cause — so indefinite stays the frictionless path.
+  const hasObjectiveCauseField = type.paramFields.some((f) => f.key === 'objective_cause')
+  if (hasObjectiveCauseField && ISO.test(end) && isBlank(params.objective_cause)) {
+    missing.push('params.objective_cause')
+  }
+
   if (ISO.test(start) && ISO.test(end) && end < start) {
     return { ok: false, missing, reason: 'end_before_start' }
   }

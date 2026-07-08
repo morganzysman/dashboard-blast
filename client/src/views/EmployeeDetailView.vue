@@ -116,8 +116,33 @@
                 </select>
               </div>
 
+              <!-- Contract term: explicit indefinite vs fixed-term switch, so
+                   nobody has to infer the term from a blank end-date field. -->
+              <div v-if="supportsIndefinite">
+                <label class="form-label">{{ $t('contract.term') }}</label>
+                <div class="inline-flex rounded-lg border border-gray-200 p-0.5 bg-gray-50" role="group">
+                  <button
+                    type="button"
+                    class="px-3 py-1.5 text-sm rounded-md transition-colors"
+                    :class="termType === 'indefinite' ? 'bg-white shadow-sm text-gray-900 font-medium' : 'text-gray-500 hover:text-gray-700'"
+                    @click="termType = 'indefinite'"
+                  >
+                    {{ $t('contract.indefinite') }}
+                  </button>
+                  <button
+                    type="button"
+                    class="px-3 py-1.5 text-sm rounded-md transition-colors"
+                    :class="termType === 'fixed' ? 'bg-white shadow-sm text-gray-900 font-medium' : 'text-gray-500 hover:text-gray-700'"
+                    @click="termType = 'fixed'"
+                  >
+                    {{ $t('contract.fixedTerm') }}
+                  </button>
+                </div>
+                <p class="text-xs text-gray-400 mt-1">{{ $t('contract.termHint') }}</p>
+              </div>
+
               <!-- Dynamic per-contract-type parameter fields -->
-              <div v-for="field in paramFields" :key="field.key">
+              <div v-for="field in visibleParamFields" :key="field.key">
                 <label class="form-label">{{ paramLabel(field) }}</label>
                 <input
                   v-if="field.type === 'number'"
@@ -330,6 +355,37 @@ const selectedContractType = computed(() =>
 )
 const paramFields = computed(() => selectedContractType.value?.paramFields || [])
 
+// A contract type "supports indefinite" when it has an optional end_date (labor
+// contracts). Service contracts (locación) have a required end_date and are always
+// fixed-term, so no term switch is shown for them.
+const supportsIndefinite = computed(() => {
+  const ef = paramFields.value.find(f => f.key === 'end_date')
+  return !!ef && ef.required === false
+})
+
+// Explicit term choice for indefinite-capable types. Default: indefinite.
+const termType = ref('indefinite')
+
+// end_date and objective_cause are driven by the term switch, not shown inline,
+// for types that support the switch. Everything else renders normally.
+const visibleParamFields = computed(() =>
+  paramFields.value.filter(f => {
+    if (!supportsIndefinite.value) return true
+    if (f.key === 'end_date' || f.key === 'objective_cause') return termType.value === 'fixed'
+    return true
+  })
+)
+
+// Switching to indefinite must clear any end_date/objective_cause the user typed —
+// otherwise the server would see an end_date and generate a fixed-term contract.
+watch(termType, (t) => {
+  if (!supportsIndefinite.value) return
+  if (t === 'indefinite') {
+    if ('end_date' in gen.params) gen.params.end_date = ''
+    if ('objective_cause' in gen.params) gen.params.objective_cause = ''
+  }
+})
+
 const contractTypeLabel = (ct) => (te(`contract.types.${ct.labelKey}`) ? t(`contract.types.${ct.labelKey}`) : ct.labelKey)
 const paramLabel = (field) => (field.labelKey && te(`contract.params.${field.labelKey}`) ? t(`contract.params.${field.labelKey}`) : (field.labelKey || field.key))
 const paramHint = (field) => {
@@ -364,6 +420,8 @@ watch(selectedContractType, (ct) => {
     next.hourly_rate = user.value?.hourly_rate ?? null
   }
   gen.params = next
+  // New type ⇒ back to the recommended default term.
+  termType.value = 'indefinite'
 })
 
 // Client-side mirror of server validateContractData for instant feedback.
@@ -387,6 +445,14 @@ const missingFields = computed(() => {
       if (!Number.isFinite(n) || n <= 0) missing.push(`params.${field.key}`)
     } else if (isBlank(gen.params[field.key])) {
       missing.push(`params.${field.key}`)
+    }
+  }
+  // Fixed-term requires an end date, and (for microempresa) a specific objective
+  // cause — mirrors the server's validateContractData so the button state matches.
+  if (supportsIndefinite.value && termType.value === 'fixed') {
+    if (isBlank(gen.params.end_date)) missing.push('params.end_date')
+    if (ct.paramFields.some(f => f.key === 'objective_cause') && isBlank(gen.params.objective_cause)) {
+      missing.push('params.objective_cause')
     }
   }
   const s = gen.params.start_date

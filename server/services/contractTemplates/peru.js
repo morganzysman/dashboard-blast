@@ -390,6 +390,13 @@ export function buildPeruMicroempresa({ config, employer, employee, params }) {
     ? Math.min(Number(params.weekly_hours), config.maxWeeklyHours)
     : config.maxWeeklyHours
 
+  // Objective cause for fixed-term (modalidad) contracts. Jurisprudence requires
+  // it to be specific, so we use the employer-provided text when available and
+  // fall back to a generic (placeholder-style) description otherwise.
+  const objectiveCause = (params.objective_cause && String(params.objective_cause).trim())
+    ? String(params.objective_cause).trim()
+    : 'la necesidad del EMPLEADOR de cubrir actividades vinculadas al inicio y/o incremento de su actividad económica (apertura de local, ampliación de operaciones, lanzamiento de nuevos servicios o incremento sostenido de la demanda)'
+
   const plazoClause = indefinite
     ? clause('SÉTIMA: DEL PLAZO DEL CONTRATO', [
         { text: [
@@ -399,13 +406,45 @@ export function buildPeruMicroempresa({ config, employer, employee, params }) {
       ])
     : clause('SÉTIMA: DEL PLAZO DEL CONTRATO', [
         { text: [
-          'El presente contrato se celebra bajo la modalidad de inicio de actividad y tendrá una vigencia desde el ',
+          'El presente contrato se celebra bajo la modalidad de inicio o incremento de actividad, prevista en el artículo 57° del Texto Único Ordenado del Decreto Legislativo N.° 728 (LPCL), y tendrá una vigencia desde el ',
           { text: fechaInicio, bold: true }, ' hasta el ',
           { text: fechaFin, bold: true },
-          ', fecha en la que concluirá sin necesidad de previo aviso, pudiendo renovarse por acuerdo escrito de las partes dentro de los límites máximos previstos por la ley.',
+          ', fecha en la que concluirá de forma automática y sin necesidad de previo aviso, pudiendo renovarse por acuerdo escrito de las partes dentro del plazo máximo de tres (3) años previsto por la ley.',
         ] },
-        'La causa objetiva de la presente contratación es la necesidad del EMPLEADOR de cubrir las actividades vinculadas al inicio y desarrollo de su giro de negocio.',
+        `La causa objetiva que justifica la presente contratación temporal es ${objectiveCause}, la cual tiene carácter temporal.`,
       ])
+
+  // PRIMERA: for the fixed-term variant this clause must state the SAME temporary
+  // cause as SÉTIMA — describing a permanent need here (while SÉTIMA claims a
+  // temporary one) is an internal contradiction that supports desnaturalización.
+  // The indefinite variant carries no "causa objetiva" (a temporary-contract
+  // concept), so it gets a neutral title and a plain description of the post.
+  const primeraClause = indefinite
+    ? clause('PRIMERA: DEL EMPLEADOR Y DEL PUESTO', [
+        'EL EMPLEADOR es una persona jurídica de derecho privado que se dedica a la actividad económica de servicios gastronómicos, preparación y expendio de alimentos y bebidas.',
+        { text: [
+          'Por ello, EL EMPLEADOR requiere contar con personal idóneo y calificado, motivo por el cual procede a la contratación de EL TRABAJADOR para que se desempeñe como ',
+          { text: cargo, bold: true }, '.',
+        ] },
+      ])
+    : clause('PRIMERA: DEL EMPLEADOR Y LA CAUSA OBJETIVA DE LA CONTRATACIÓN', [
+        'EL EMPLEADOR es una persona jurídica de derecho privado que se dedica a la actividad económica de servicios gastronómicos, preparación y expendio de alimentos y bebidas.',
+        { text: [
+          'La presente contratación responde a una necesidad de carácter temporal consistente en ',
+          { text: objectiveCause, bold: true },
+          ', motivo por el cual EL EMPLEADOR requiere contar con EL TRABAJADOR para que se desempeñe como ',
+          { text: cargo, bold: true }, '.',
+        ] },
+      ])
+
+  // Indemnity on employer-initiated termination without just cause differs by
+  // variant: an indefinite contract triggers the microempresa arbitrary-dismissal
+  // scale (art. 56 D.S. 013-2013-PRODUCE / D.Leg. 1086); a fixed-term contract cut
+  // short before its end date triggers art. 76 LPCL (per remaining month). Applying
+  // the 10/90 scale to a fixed-term early termination understates the exposure.
+  const indemnizacionText = indefinite
+    ? 'Tratándose de un despido arbitrario, la indemnización aplicable será la establecida para el Régimen Laboral Especial de la Microempresa, equivalente a diez (10) remuneraciones diarias por cada año completo de servicios, con el tope máximo de noventa (90) remuneraciones diarias; las fracciones de año se abonan por dozavos. Conforme al régimen especial, la protección frente al despido arbitrario se satisface exclusivamente mediante el pago de dicha indemnización.'
+    : 'Tratándose de la resolución arbitraria del presente contrato por parte de EL EMPLEADOR antes de su vencimiento, la indemnización aplicable será la prevista en el artículo 76° de la LPCL, equivalente a una (1) remuneración y media ordinaria mensual por cada mes dejado de laborar hasta el vencimiento del plazo pactado, con el límite de doce (12) remuneraciones.'
 
   const content = [
     { text: 'CONTRATO DE TRABAJO DE MICROEMPRESA', style: 'docTitle' },
@@ -426,13 +465,7 @@ export function buildPeruMicroempresa({ config, employer, employee, params }) {
       style: 'para',
     },
 
-    clause('PRIMERA: DEL EMPLEADOR Y LA CAUSA OBJETIVA DE LA CONTRATACIÓN', [
-      'EL EMPLEADOR es una persona jurídica de derecho privado que se dedica a la actividad económica de servicios gastronómicos, preparación y expendio de alimentos y bebidas.',
-      { text: [
-        'Por ello, EL EMPLEADOR requiere contar con personal idóneo y calificado, motivo por el cual procede a la contratación de EL TRABAJADOR para que se desempeñe como ',
-        { text: cargo, bold: true }, '.',
-      ] },
-    ]),
+    primeraClause,
 
     clause('SEGUNDA: DEL OBJETO DEL CONTRATO', [
       { text: [
@@ -465,6 +498,7 @@ export function buildPeruMicroempresa({ config, employer, employee, params }) {
         ' semanales, sin exceder el máximo legal de cuarenta y ocho (48) horas semanales, con un tiempo de refrigerio mínimo de cuarenta y cinco (45) minutos, el cual no forma parte de la jornada de trabajo.',
       ] },
       'EL EMPLEADOR está facultado a establecer y variar los turnos y horarios de acuerdo con las necesidades operativas del establecimiento, respetando el descanso semanal obligatorio.',
+      'El trabajo en sobretiempo es voluntario para ambas partes y será compensado con las sobretasas legales vigentes o, por acuerdo de las partes, con períodos equivalentes de descanso. Ninguna labor en sobretiempo se entenderá autorizada sin la aprobación previa y expresa de EL EMPLEADOR.',
     ]),
 
     clause('SEXTA: DE LA REMUNERACIÓN', [
@@ -492,11 +526,27 @@ export function buildPeruMicroempresa({ config, employer, employee, params }) {
       ] },
     ]),
 
-    clause('DÉCIMA: DEL INCUMPLIMIENTO',
-      'El incumplimiento total o parcial por parte de EL TRABAJADOR de cualquiera de las obligaciones asumidas en el presente contrato se considerará falta grave y, por lo tanto, causa justificada de despido, conforme a la legislación vigente.'),
+    clause('DÉCIMA: DEL INCUMPLIMIENTO', [
+      'El incumplimiento total o parcial por parte de EL TRABAJADOR de cualquiera de las obligaciones asumidas en el presente contrato, así como en las políticas, manuales y directivas emitidas por EL EMPLEADOR (incluido el Reglamento Interno de Trabajo, de contar EL EMPLEADOR con dicho documento), será considerado falta y, según su gravedad, podrá constituir falta grave y causa justa de despido conforme a la legislación vigente.',
+      'La imposición de cualquier sanción, así como el despido, se sujetarán al procedimiento y a las garantías previstas en el Texto Único Ordenado del Decreto Legislativo N.° 728 (LPCL) y su reglamento.',
+    ]),
 
-    clause('DÉCIMA PRIMERA: DE LA BUENA FE LABORAL',
-      'EL TRABAJADOR se obliga a cumplir las normas propias del centro de trabajo y la normativa interna de EL EMPLEADOR, y a poner al servicio de este toda su capacidad y lealtad, comprometiéndose a obrar de buena fe en relación con su empleo, de conformidad con el artículo 9° de la LPCL.'),
+    clause('DÉCIMA PRIMERA: DE LA BUENA FE LABORAL Y LAS FALTAS GRAVES', [
+      'La relación laboral se sustenta en la confianza recíproca y en el deber de buena fe. EL TRABAJADOR se obliga a poner al servicio de EL EMPLEADOR toda su capacidad, diligencia y lealtad, y a obrar de buena fe en el cumplimiento de sus funciones, de conformidad con el artículo 9° de la LPCL.',
+      'Las partes dejan expresa constancia de que constituyen quebrantamiento de la buena fe laboral y falta grave, causa justa de despido conforme al artículo 25° del Texto Único Ordenado del Decreto Legislativo N.° 728 (D.S. N.° 003-97-TR), entre otros, los siguientes actos de EL TRABAJADOR:',
+      { ul: [
+        'La apropiación, sustracción, retención indebida o hurto de dinero, bienes, insumos, productos o mercadería de EL EMPLEADOR, de sus clientes o de sus compañeros de trabajo, así como su uso o disposición no autorizados.',
+        'La deshonestidad, el engaño, el fraude, la falsedad o la adulteración de información, comprobantes, registros de asistencia, arqueos, cuentas o reportes de ventas o de caja.',
+        'La manipulación indebida de la caja, el cobro no registrado, la alteración de precios o cualquier acto que afecte el patrimonio o la contabilidad de EL EMPLEADOR.',
+        'Los actos de violencia, hostigamiento, acoso o el grave faltamiento de palabra, verbal o escrito, en agravio de EL EMPLEADOR, del personal jerárquico, de los compañeros de trabajo o de los clientes.',
+        'El maltrato, la discriminación o el trato ofensivo hacia los compañeros de trabajo o hacia los clientes que afecte el clima laboral o la imagen de EL EMPLEADOR.',
+        'La concurrencia al centro de trabajo en estado de embriaguez o bajo la influencia de drogas o sustancias estupefacientes.',
+        'La revelación o el uso indebido de información confidencial o reservada de EL EMPLEADOR, de sus clientes o de sus proveedores.',
+        'El incumplimiento injustificado y reiterado de las obligaciones de trabajo, el abandono de puesto y las inasistencias injustificadas, en los términos y con la gravedad que la ley establece.',
+      ] },
+      'Para efectos del abandono de trabajo, constituye falta grave la inasistencia injustificada por más de tres (3) días consecutivos, por más de cinco (5) días no consecutivos en un período de treinta (30) días calendario, o por más de quince (15) días en un período de ciento ochenta (180) días calendario.',
+      'La comisión de cualquiera de dichas faltas facultará a EL EMPLEADOR a dar por extinguida la relación laboral por causa justa, sin derecho a indemnización, observando el procedimiento de despido previsto en la LPCL (carta de preaviso, otorgamiento del plazo de descargo y carta de despido).',
+    ]),
 
     clause('DÉCIMA SEGUNDA: DEL PODER DE DIRECCIÓN',
       'Las partes acuerdan que EL EMPLEADOR podrá, de acuerdo con sus necesidades de funcionamiento y las facultades de dirección establecidas en el artículo 9° de la LPCL, disponer modificaciones razonables en el tiempo, la forma, la modalidad, el lugar y las directrices de trabajo.'),
@@ -510,7 +560,7 @@ export function buildPeruMicroempresa({ config, employer, employee, params }) {
       'EL TRABAJADOR asume el compromiso expreso de respetar la política de seguridad y salud en el trabajo establecida por EL EMPLEADOR, conforme a la Ley N.° 29783, dejándose constancia de que este último ha cumplido con informarle las recomendaciones que se detallan en el ANEXO 1, el cual forma parte integrante del presente contrato.'),
 
     clause('DÉCIMA QUINTA: DEL COMPROMISO DEL TRABAJADOR',
-      'EL TRABAJADOR declara conocer y someterse a las disposiciones contenidas en el Reglamento Interno de Trabajo de EL EMPLEADOR, así como a los demás reglamentos, prácticas y políticas vigentes, las cuales se obliga a cumplir fielmente.'),
+      'EL TRABAJADOR declara conocer y someterse a las políticas, manuales, directivas y demás normas internas emitidas por EL EMPLEADOR —incluido el Reglamento Interno de Trabajo, de contar EL EMPLEADOR con dicho documento—, las cuales se obliga a cumplir fielmente. EL EMPLEADOR entregará a EL TRABAJADOR una copia de los documentos internos aplicables, dejándose constancia de su recepción.'),
 
     clause('DÉCIMA SEXTA: DE LA CONFIDENCIALIDAD', [
       'EL TRABAJADOR se compromete a mantener reserva y confidencialidad absoluta respecto de la información y documentación obtenida con ocasión de su trabajo para EL EMPLEADOR, obligándose a no revelarla ni usarla, en provecho propio o de terceros, para ningún propósito distinto a la ejecución del presente contrato.',
@@ -528,15 +578,25 @@ export function buildPeruMicroempresa({ config, employer, employee, params }) {
     clause('DÉCIMA NOVENA: DE LA DEVOLUCIÓN DE MATERIALES',
       'Al terminar la relación laboral por cualquier causa, EL TRABAJADOR se obliga a entregar de forma inmediata y ordenada a EL EMPLEADOR toda la documentación y cualquier otro bien de su propiedad que tuviera en su poder, así como a trasladar sus funciones a la persona que EL EMPLEADOR designe.'),
 
-    clause('VIGÉSIMA: DE LA LEGISLACIÓN APLICABLE',
+    clause('VIGÉSIMA: DE LA CUSTODIA DE BIENES, UNIFORMES Y HERRAMIENTAS', [
+      'EL EMPLEADOR podrá entregar a EL TRABAJADOR uniformes, herramientas, utensilios, equipos, insumos y demás bienes necesarios para el desempeño de sus funciones, los cuales son de propiedad exclusiva de EL EMPLEADOR. EL TRABAJADOR se obliga a utilizarlos de manera diligente y exclusivamente para fines laborales, a conservarlos en buen estado y a devolverlos al término de la relación laboral.',
+      'EL TRABAJADOR será responsable por la pérdida, sustracción o deterioro de dichos bienes cuando resulten atribuibles a su dolo o negligencia. Para tal efecto, EL TRABAJADOR autoriza a EL EMPLEADOR a efectuar los descuentos que correspondan de su remuneración o de su liquidación de beneficios sociales, previa comunicación escrita y dentro de los límites permitidos por la ley.',
+    ]),
+
+    clause('VIGÉSIMA PRIMERA: DEL PREAVISO DE RENUNCIA Y LA EXTINCIÓN DEL CONTRATO', [
+      'En caso EL TRABAJADOR decida dar por terminada la relación laboral de forma voluntaria (renuncia), se obliga a comunicarlo por escrito a EL EMPLEADOR con una anticipación no menor de quince (15) días calendario, con la finalidad de permitir la adecuada reorganización de las labores y la eventual contratación de un reemplazo. EL EMPLEADOR podrá exonerar, total o parcialmente, dicho plazo, conforme al artículo 18° de la LPCL.',
+      `El presente contrato se extinguirá por cualquiera de las causas previstas en el artículo 16° de la LPCL. ${indemnizacionText}`,
+    ]),
+
+    clause('VIGÉSIMA SEGUNDA: DE LA LEGISLACIÓN APLICABLE',
       'En todo lo no previsto expresamente en el presente contrato regirán las normas del Régimen Laboral Especial de la Microempresa y, supletoriamente, las demás normas legales vigentes en la República del Perú al momento de producirse el hecho que las regule.'),
 
-    clause('VIGÉSIMA PRIMERA: DEL DOMICILIO Y LA JURISDICCIÓN', [
+    clause('VIGÉSIMA TERCERA: DEL DOMICILIO Y LA JURISDICCIÓN', [
       'EL TRABAJADOR señala como domicilio, para todos los efectos del presente contrato, el indicado en la parte introductoria de este documento, donde se tendrán por válidamente efectuadas todas las notificaciones que EL EMPLEADOR le remita. Todo cambio de domicilio deberá ser comunicado por escrito dentro de un plazo máximo de siete (7) días hábiles.',
       'Las partes renuncian expresamente al fuero de sus domicilios y se someten a la jurisdicción de los jueces y tribunales del Distrito Judicial de Lima.',
     ]),
 
-    { text: '\nFirmado por las partes, en señal de conformidad, en dos (2) ejemplares de idéntico tenor.', style: 'para' },
+    { text: '\nFirmado por las partes, en señal de conformidad, en dos (2) ejemplares de idéntico tenor. EL EMPLEADOR entregará a EL TRABAJADOR un (1) ejemplar del presente contrato dentro de los tres (3) días hábiles siguientes a su suscripción.', style: 'para' },
 
     signatureBlock(
       {

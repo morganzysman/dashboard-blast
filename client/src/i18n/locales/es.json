@@ -53,14 +53,16 @@
       "areaServicio": "Área de servicio",
       "startDate": "Fecha de inicio",
       "endDate": "Fecha de fin",
-      "endDateIndefiniteHint": "Déjalo vacío para un contrato a plazo indefinido.",
+      "endDateIndefiniteHint": "El contrato termina automáticamente en esta fecha.",
       "hourlyRate": "Tarifa por hora",
       "monthlyReference": "Contraprestación mensual referencial",
       "monthlyReferenceHint": "Si se deja vacío se calcula como tarifa × {hours} horas.",
       "position": "Cargo / puesto",
       "monthlySalary": "Remuneración mensual",
       "weeklyHours": "Horas semanales",
-      "weeklyHoursHint": "Máximo legal: {max} horas semanales."
+      "weeklyHoursHint": "Máximo legal: {max} horas semanales.",
+      "objectiveCause": "Causa objetiva (contrato a plazo fijo)",
+      "objectiveCauseHint": "Obligatorio para contratos a plazo fijo (cuando se fija una fecha de fin). Indica el motivo específico (ej. \"apertura del nuevo local en el distrito de X\" o \"inicio de operaciones desde [fecha]\"). No se requiere para contratos a plazo indefinido."
     },
     "fields": {
       "legalName": "Razón social",
@@ -94,6 +96,8 @@
     "createdOn": "Generado el",
     "term": "Vigencia",
     "indefinite": "Indefinido",
+    "fixedTerm": "Plazo fijo",
+    "termHint": "El plazo indefinido es lo recomendado para el personal estable. Elige plazo fijo solo ante una necesidad realmente temporal.",
     "employerSigned": "Empleador firmó",
     "workerSigned": "Trabajador firmó",
     "awaitingEmployer": "Falta firma del empleador",

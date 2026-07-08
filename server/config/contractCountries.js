@@ -91,6 +91,14 @@ const employmentParamFields = () => [
   { key: 'weekly_hours', type: 'number', required: false, labelKey: 'weeklyHours', hintKey: 'weeklyHoursHint' },
 ]
 
+// Peru microempresa: same as employment, plus an optional objective cause used
+// only for fixed-term (modalidad) contracts. Jurisprudence requires the cause to
+// be specific (e.g. "apertura del nuevo local en el distrito de X").
+const microempresaParamFields = () => [
+  ...employmentParamFields(),
+  { key: 'objective_cause', type: 'text', required: false, labelKey: 'objectiveCause', hintKey: 'objectiveCauseHint' },
+]
+
 export const CONTRACT_COUNTRIES = {
   PE: {
     code: 'PE',
@@ -106,7 +114,7 @@ export const CONTRACT_COUNTRIES = {
     contractTypes: [
       { id: 'locacion', template: 'pe_locacion_v1', labelKey: 'locacionPE', available: true, category: 'service', paramFields: serviceParamFields() },
       { id: 'planilla', template: 'pe_planilla_v1', labelKey: 'planillaPE', available: true, category: 'employment', paramFields: employmentParamFields() },
-      { id: 'microempresa', template: 'pe_microempresa_v1', labelKey: 'microempresaPE', available: true, category: 'employment', paramFields: employmentParamFields() },
+      { id: 'microempresa', template: 'pe_microempresa_v1', labelKey: 'microempresaPE', available: true, category: 'employment', paramFields: microempresaParamFields() },
     ],
   },
   CO: {
