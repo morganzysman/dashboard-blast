@@ -37,9 +37,9 @@
     "preview": "Pré-visualizar",
     "previewTitle": "Pré-visualização do contrato",
     "types": {
-      "locacionPE": "Prestação de serviços (civil)",
-      "planillaPE": "Contrato de trabalho (folha)",
-      "microempresaPE": "Contrato de trabalho de microempresa (REMYPE)",
+      "locacionPE": "Prestação de serviços (civil, honorários)",
+      "planillaPE": "Contrato de trabalho — Regime geral (folha)",
+      "microempresaPE": "Contrato de trabalho — Regime MYPE (REMYPE)",
       "prestacionCO": "Prestação de serviços",
       "laboralCO": "Contrato de trabalho",
       "honorariosCL": "Prestação por honorários",
