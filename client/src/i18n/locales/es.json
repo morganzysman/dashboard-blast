@@ -38,8 +38,8 @@
     "previewTitle": "Vista previa del contrato",
     "types": {
       "locacionPE": "Locación de servicios (civil, honorarios)",
-      "planillaPE": "Contrato de trabajo en planilla — Régimen general",
-      "microempresaPE": "Contrato de trabajo en planilla — Régimen MYPE (REMYPE)",
+      "planillaPE": "Planilla — Régimen normal",
+      "microempresaPE": "Planilla — Régimen REMYPE",
       "prestacionCO": "Prestación de servicios",
       "laboralCO": "Contrato de trabajo",
       "honorariosCL": "Prestación a honorarios",
