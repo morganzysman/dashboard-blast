@@ -38,8 +38,8 @@
     "previewTitle": "Contract preview",
     "types": {
       "locacionPE": "Service agreement (civil, fees)",
-      "planillaPE": "Employment contract — General regime (payroll)",
-      "microempresaPE": "Employment contract — MYPE regime (REMYPE)",
+      "planillaPE": "Employment contract (payroll) — General regime",
+      "microempresaPE": "Employment contract (payroll) — MYPE regime (REMYPE)",
       "prestacionCO": "Service agreement",
       "laboralCO": "Employment contract",
       "honorariosCL": "Fee-based service agreement",

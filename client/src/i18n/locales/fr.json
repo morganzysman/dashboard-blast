@@ -38,8 +38,8 @@
     "previewTitle": "Aperçu du contrat",
     "types": {
       "locacionPE": "Prestation de services (civil, honoraires)",
-      "planillaPE": "Contrat de travail — Régime général (paie)",
-      "microempresaPE": "Contrat de travail — Régime MYPE (REMYPE)",
+      "planillaPE": "Contrat de travail (paie) — Régime général",
+      "microempresaPE": "Contrat de travail (paie) — Régime MYPE (REMYPE)",
       "prestacionCO": "Prestation de services",
       "laboralCO": "Contrat de travail",
       "honorariosCL": "Prestation aux honoraires",
