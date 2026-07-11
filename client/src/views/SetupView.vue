@@ -7,6 +7,54 @@
       <p class="text-xs text-gray-500 mt-2 max-w-2xl leading-relaxed">{{ $t('rentability.perAccountNote') }}</p>
     </div>
 
+    <!-- Add account (admins only) -->
+    <div v-if="canManageAccounts" class="card">
+      <div class="card-body space-y-3">
+        <div>
+          <h2 class="text-lg font-medium text-gray-900">{{ $t('rentability.addAccountTitle') }}</h2>
+          <p class="text-sm text-gray-500">{{ $t('rentability.addAccountHint') }}</p>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-2 items-end">
+          <div>
+            <label class="form-label">{{ $t('companies.companyToken') }}</label>
+            <input
+              v-model.trim="newAccount.company_token"
+              class="form-input"
+              :placeholder="$t('companies.companyToken')"
+              @keyup.enter="addAccount"
+            />
+          </div>
+          <div>
+            <label class="form-label">{{ $t('companies.accountName') }}</label>
+            <input
+              v-model.trim="newAccount.account_name"
+              class="form-input"
+              :placeholder="$t('companies.accountName')"
+              @keyup.enter="addAccount"
+            />
+          </div>
+          <div>
+            <label class="form-label">{{ $t('companies.apiToken') }}</label>
+            <input
+              v-model.trim="newAccount.api_token"
+              class="form-input"
+              :placeholder="$t('companies.apiToken')"
+              @keyup.enter="addAccount"
+            />
+          </div>
+          <div>
+            <button
+              class="btn-primary w-full"
+              :disabled="!newAccount.company_token || addingAccount"
+              @click="addAccount"
+            >
+              {{ addingAccount ? $t('common.loading') : $t('companies.addUpdateAccount') }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Loading State -->
     <div v-if="loading" class="card">
       <div class="card-body text-center py-12">
@@ -127,6 +175,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../stores/auth'
 import api from '../utils/api'
 import AccountRentabilitySettings from '../components/AccountRentabilitySettings.vue'
@@ -134,10 +183,48 @@ import AccountSlaGoalsForm from '../components/AccountSlaGoalsForm.vue'
 import AccountApiSettings from '../components/AccountApiSettings.vue'
 import AccountContractSettings from '../components/AccountContractSettings.vue'
 
+const { t } = useI18n()
 const authStore = useAuthStore()
 
 const companyId = computed(() => authStore.user?.company_id || authStore.user?.companyId || null)
 const contractCountries = ref([])
+
+// Only company admins may create accounts (backend enforces super-admin/admin
+// on POST /api/admin/companies/:companyId/accounts for their own company).
+const canManageAccounts = computed(() => authStore.isAdmin)
+const newAccount = ref({ company_token: '', account_name: '', api_token: '' })
+const addingAccount = ref(false)
+
+const addAccount = async () => {
+  if (!companyId.value || !newAccount.value.company_token || addingAccount.value) return
+  addingAccount.value = true
+  try {
+    const res = await api.upsertCompanyAccount(companyId.value, { ...newAccount.value })
+    if (res?.success) {
+      newAccount.value = { company_token: '', account_name: '', api_token: '' }
+      await Promise.all([fetchCompanyAccounts(), fetchAccountApiKeys()])
+      window.showNotification?.({
+        type: 'success',
+        title: t('common.success'),
+        message: t('rentability.accountAdded')
+      })
+    } else {
+      window.showNotification?.({
+        type: 'error',
+        title: t('common.error'),
+        message: res?.error || t('rentability.addAccountFailed')
+      })
+    }
+  } catch (e) {
+    window.showNotification?.({
+      type: 'error',
+      title: t('common.error'),
+      message: e?.message || t('rentability.addAccountFailed')
+    })
+  } finally {
+    addingAccount.value = false
+  }
+}
 
 const utilityCosts = ref([])
 const accounts = ref([])

@@ -717,7 +717,11 @@
     "moduleApiAccess": "API Access",
     "moduleContract": "Contract data (employer)",
     "slaModuleHint": "Target prep time in minutes by channel. These goals feed kitchen metrics on the dashboard.",
-    "noAccountsToConfigure": "No OlaClick accounts were found for your company. Add accounts in company settings first."
+    "noAccountsToConfigure": "No OlaClick accounts were found for your company. Add one using the form above.",
+    "addAccountTitle": "Add account",
+    "addAccountHint": "Connect a new OlaClick account to your company. The company token is required.",
+    "accountAdded": "Account added",
+    "addAccountFailed": "Failed to add account"
   },
   "notifications": {
     "title": "Notification Status",
