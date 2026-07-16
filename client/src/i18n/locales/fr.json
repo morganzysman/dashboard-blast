@@ -632,6 +632,7 @@
     "missingOrInvalidAmount": "Montant manquant ou invalide",
     "downloadQR": "Télécharger le QR",
     "employeeSummary": "Résumé des employés",
+    "employeeSummaryAllAccounts": "Totaux de tous les comptes combinés",
     "missingApprovals": "{count} approbations manquantes",
     "summaryForEmployees": "Résumé pour {count} employé | Résumé pour {count} employés",
     "totalAmount": "Montant total",

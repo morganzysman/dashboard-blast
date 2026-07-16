@@ -968,6 +968,7 @@
     "paidDouble": "Holiday — paid double",
     "downloadQR": "Download QR",
     "employeeSummary": "Employee Summary",
+    "employeeSummaryAllAccounts": "Totals across all accounts combined",
     "missingApprovals": "Missing {count} Approvals",
     "summaryForEmployees": "Summary for {count} employee | Summary for {count} employees",
     "totalAmount": "Total Amount",
