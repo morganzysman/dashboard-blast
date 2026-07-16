@@ -186,7 +186,7 @@ router.get('/qr/:companyToken', requireAuth, async (req, res) => {
   }
 })
 
-// QR PNG image for an account (admin or super-admin)
+// QR image for an account (admin or super-admin) — SVG with account name label
 router.get('/qr/:companyToken/image', requireAuth, async (req, res) => {
   try {
     const { companyToken } = req.params
@@ -212,10 +212,31 @@ router.get('/qr/:companyToken/image', requireAuth, async (req, res) => {
     const fullUrl = config.appBaseUrl
       ? `${config.appBaseUrl.replace(/\/$/, '')}${path}`
       : path
-    const png = await QRCode.toBuffer(fullUrl, { type: 'png', width: 512, margin: 2 })
-    res.setHeader('Content-Type', 'image/png')
-    res.setHeader('Content-Disposition', `attachment; filename="qr-${acct.company_token}.png"`)
-    return res.send(png)
+
+    // Compose a printable SVG: account name label above the QR code.
+    const QR_SIZE = 512
+    const MARGIN = 24
+    const LABEL_H = 72
+    const CANVAS_W = QR_SIZE + MARGIN * 2
+    const CANVAS_H = LABEL_H + QR_SIZE + MARGIN
+    const label = (acct.account_name || acct.company_token || '').toString().trim()
+    // Shrink long names so they don't overflow the canvas width.
+    const fontSize = label.length > 28 ? 20 : label.length > 20 ? 24 : 30
+    const escapeXml = (s) => s.replace(/[<>&'"]/g, (c) => (
+      { '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;' }[c]
+    ))
+    const qrSvg = await QRCode.toString(fullUrl, { type: 'svg', width: QR_SIZE, margin: 1 })
+    const qrInner = qrSvg.replace(/<\?xml[^>]*\?>\s*/i, '')
+    const svg = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="${CANVAS_W}" height="${CANVAS_H}" viewBox="0 0 ${CANVAS_W} ${CANVAS_H}">
+  <rect width="${CANVAS_W}" height="${CANVAS_H}" fill="#ffffff"/>
+  <text x="${CANVAS_W / 2}" y="${LABEL_H / 2 + 12}" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="${fontSize}" font-weight="700" fill="#111827">${escapeXml(label)}</text>
+  <g transform="translate(${MARGIN}, ${LABEL_H})">${qrInner}</g>
+</svg>`
+    const safeName = label.replace(/[^\w.-]+/g, '-').replace(/^-+|-+$/g, '') || acct.company_token
+    res.setHeader('Content-Type', 'image/svg+xml')
+    res.setHeader('Content-Disposition', `attachment; filename="qr-${safeName}.svg"`)
+    return res.send(svg)
   } catch (e) {
     res.status(500).json({ success: false, error: e.message })
   }

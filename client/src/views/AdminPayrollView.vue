@@ -1356,7 +1356,9 @@ const downloadQr = async () => {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `qr-${companyToken.value}.png`
+    const accName = accounts.value.find(ac => ac.company_token === companyToken.value)?.account_name
+    const safeName = (accName || companyToken.value).replace(/[^\w.-]+/g, '-').replace(/^-+|-+$/g, '') || companyToken.value
+    a.download = `qr-${safeName}.svg`
     document.body.appendChild(a)
     a.click()
     a.remove()
