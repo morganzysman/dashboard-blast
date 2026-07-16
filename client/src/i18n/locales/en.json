@@ -964,6 +964,8 @@
     "export": "Export",
     "marking": "Marking...",
     "markAsPaid": "Mark as Paid",
+    "feriado": "Holiday",
+    "paidDouble": "Holiday — paid double",
     "downloadQR": "Download QR",
     "employeeSummary": "Employee Summary",
     "missingApprovals": "Missing {count} Approvals",
@@ -1033,7 +1035,11 @@
       "pendingApproval": "Pending",
       "isPaid": "Paid",
       "approvedBy": "Approved by",
-      "totalHours": "Total time"
+      "totalHours": "Total time",
+      "earned": "Earned",
+      "totalEarned": "Total earned",
+      "weeklyEarnings": "Weekly earnings",
+      "weeklyEarningsHint": "Your pay grouped by week (Monday to Sunday)."
     },
     "clock": {
       "title": "Employee Clock",

@@ -547,7 +547,11 @@
       "wasRegistered": "a été enregistré",
       "clockIn": "entrée",
       "clockOut": "sortie",
-      "myShiftsThisWeek": "Mes équipes (cette semaine)"
+      "myShiftsThisWeek": "Mes équipes (cette semaine)",
+      "earned": "Gagné",
+      "totalEarned": "Total gagné",
+      "weeklyEarnings": "Gains hebdomadaires",
+      "weeklyEarningsHint": "Votre paie regroupée par semaine (du lundi au dimanche)."
     },
     "warnings": {
       "title": "Avertissements des employés",
@@ -592,6 +596,8 @@
     "paid": "Payé",
     "approved": "Approuvé",
     "markAsPaid": "Marquer comme payé",
+    "feriado": "Jour férié",
+    "paidDouble": "Jour férié — payé double",
     "approveEntry": "Approuver la saisie",
     "rejectEntry": "Rejeter la saisie",
     "bulkActions": "Actions en lot",

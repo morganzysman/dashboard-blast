@@ -7,6 +7,9 @@ import { notifyUserPaid, notifyAdminsClockEvent } from '../services/notification
 
 const router = Router()
 
+// Peru: a worked public holiday (feriado) is paid double (base + 100%).
+const HOLIDAY_MULTIPLIER = 2
+
 // Helpers
 function getBiweeklyPeriod(date = new Date(), timezone = 'America/Lima') {
   const tzDate = new Date(date.toLocaleString('en-US', { timeZone: timezone }))
@@ -619,16 +622,17 @@ router.put('/admin/entries/:id', requireAuth, async (req, res) => {
   try {
     if (req.user.role !== 'admin' && req.user.role !== 'super-admin') return res.status(403).json({ success: false, error: 'Access denied' })
     const { id } = req.params
-    const { clock_in_at, clock_out_at, amount } = req.body
+    const { clock_in_at, clock_out_at, amount, is_holiday } = req.body
     const upd = await pool.query(
       `UPDATE time_entries SET
          clock_in_at = COALESCE($1, clock_in_at),
          clock_out_at = COALESCE($2, clock_out_at),
          amount = COALESCE($3::numeric, amount),
+         is_holiday = COALESCE($5::boolean, is_holiday),
          updated_at = NOW()
        WHERE id = $4
        RETURNING *`,
-      [clock_in_at, clock_out_at, amount, id]
+      [clock_in_at, clock_out_at, amount, id, typeof is_holiday === 'boolean' ? is_holiday : null]
     )
     if (upd.rowCount === 0) {
       return res.status(404).json({ success: false, error: 'Entry not found' })
@@ -645,7 +649,8 @@ router.post('/admin/entries', requireAuth, async (req, res) => {
     if (req.user.role !== 'admin' && req.user.role !== 'super-admin') {
       return res.status(403).json({ success: false, error: 'Access denied' })
     }
-    const { user_id, company_token, clock_in_at, clock_out_at, amount } = req.body || {}
+    const { user_id, company_token, clock_in_at, clock_out_at, amount, is_holiday } = req.body || {}
+    const holiday = is_holiday === true
     if (!user_id || !company_token || !clock_in_at) {
       return res.status(400).json({ success: false, error: 'Missing required fields' })
     }
@@ -669,23 +674,24 @@ router.post('/admin/entries', requireAuth, async (req, res) => {
       }
     }
 
-    // Compute amount if not provided and both timestamps present
+    // Compute amount if not provided and both timestamps present.
+    // Holiday entries include the ×2 premium in the stored amount.
     let computedAmount = amount
     if ((amount == null || Number.isNaN(Number(amount))) && clock_out_at) {
       const q = await pool.query(
         `SELECT ROUND((
            CEIL(EXTRACT(EPOCH FROM ($2::timestamptz - $1::timestamptz)) / 60)::numeric / 60
-         ) * COALESCE((SELECT hourly_rate FROM users u WHERE u.id = $3), 0), 2) AS amt`,
-        [clock_in_at, clock_out_at, user_id]
+         ) * COALESCE((SELECT hourly_rate FROM users u WHERE u.id = $3), 0) * $4, 2) AS amt`,
+        [clock_in_at, clock_out_at, user_id, holiday ? HOLIDAY_MULTIPLIER : 1]
       )
       computedAmount = q.rows[0]?.amt ?? 0
     }
 
     const ins = await pool.query(
-      `INSERT INTO time_entries(user_id, company_token, clock_in_at, clock_out_at, amount)
-       VALUES ($1, $2, $3::timestamptz, $4::timestamptz, COALESCE($5::numeric, 0))
+      `INSERT INTO time_entries(user_id, company_token, clock_in_at, clock_out_at, amount, is_holiday)
+       VALUES ($1, $2, $3::timestamptz, $4::timestamptz, COALESCE($5::numeric, 0), $6)
        RETURNING *`,
-      [user_id, company_token, clock_in_at, clock_out_at || null, computedAmount]
+      [user_id, company_token, clock_in_at, clock_out_at || null, computedAmount, holiday]
     )
     res.json({ success: true, data: ins.rows[0] })
   } catch (e) {
@@ -775,29 +781,29 @@ router.post('/admin/:companyToken/pay', requireAuth, async (req, res) => {
     const currency = comp.rows[0]?.currency || 'USD'
     const currencySymbol = comp.rows[0]?.currency_symbol || '$'
     await client.query('BEGIN')
-    // compute totals per user
-    const entries = await client.query(
-      `SELECT user_id, clock_in_at, clock_out_at
-       FROM time_entries
-       WHERE company_token = $1 AND clock_in_at >= $2::date AND clock_in_at < ($3::date + INTERVAL '1 day')
-         AND clock_out_at IS NOT NULL AND locked = FALSE`, [companyToken, start, end]
+    // Compute totals per user by summing the per-entry `amount` (which already
+    // reflects clock-out rate, admin edits and the feriado ×2 premium) rather
+    // than recomputing from a rate table. `applied_hourly_rate` is recorded
+    // from the user's current rate for reference only.
+    const totals = await client.query(
+      `SELECT te.user_id,
+              COALESCE(SUM(EXTRACT(EPOCH FROM (te.clock_out_at - te.clock_in_at))), 0) AS total_seconds,
+              COALESCE(SUM(te.amount), 0) AS total_amount,
+              COALESCE(MAX(u.hourly_rate), 0) AS hourly_rate
+       FROM time_entries te
+       JOIN users u ON u.id = te.user_id
+       WHERE te.company_token = $1
+         AND te.clock_in_at >= $2::date AND te.clock_in_at < ($3::date + INTERVAL '1 day')
+         AND te.clock_out_at IS NOT NULL AND te.locked = FALSE
+       GROUP BY te.user_id`,
+      [companyToken, start, end]
     )
-    const byUser = new Map()
-    for (const r of entries.rows) {
-      const secs = Math.max(0, (new Date(r.clock_out_at).getTime() - new Date(r.clock_in_at).getTime()) / 1000)
-      byUser.set(r.user_id, (byUser.get(r.user_id) || 0) + secs)
-    }
     const payouts = new Map()
-    for (const [userId, totalSeconds] of byUser.entries()) {
-      // pick rate effective from first day of next period boundary logic handled at rate insertion time
-      const rate = await client.query(
-        `SELECT hourly_rate FROM employee_rates
-         WHERE user_id = $1 AND company_token = $2 AND effective_from <= $3
-         ORDER BY effective_from DESC LIMIT 1`, [userId, companyToken, end]
-      )
-      const hourly = rate.rows[0]?.hourly_rate || 0
-      const amount = (totalSeconds / 3600) * Number(hourly)
-      payouts.set(userId, (payouts.get(userId) || 0) + amount)
+    for (const r of totals.rows) {
+      const totalSeconds = Math.round(Number(r.total_seconds) || 0)
+      const amount = Number(r.total_amount) || 0
+      const hourly = Number(r.hourly_rate) || 0
+      payouts.set(r.user_id, amount)
       await client.query(
         `INSERT INTO payroll_snapshots(company_token, user_id, period_start, period_end, period_label, total_seconds, applied_hourly_rate, total_amount, paid, paid_at, snapshot)
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,TRUE,NOW(),$9)
@@ -808,7 +814,7 @@ router.post('/admin/:companyToken/pay', requireAuth, async (req, res) => {
            paid = TRUE,
            paid_at = NOW(),
            snapshot = EXCLUDED.snapshot`,
-        [companyToken, userId, start, end, label, Math.round(totalSeconds), hourly, amount.toFixed(2), null]
+        [companyToken, r.user_id, start, end, label, totalSeconds, hourly, amount.toFixed(2), null]
       )
     }
     // mark all entries in period as paid
@@ -857,28 +863,18 @@ router.post('/admin/:companyToken/notify-paid', requireAuth, async (req, res) =>
     )
     const currency = comp.rows[0]?.currency || 'USD'
     const currencySymbol = comp.rows[0]?.currency_symbol || '$'
-    // compute totals per user for current period
-    const entries = await pool.query(
-      `SELECT user_id, clock_in_at, clock_out_at
+    // Sum the per-entry `amount` per user (reflects rate, edits and feriado ×2).
+    const totals = await pool.query(
+      `SELECT user_id, COALESCE(SUM(amount), 0) AS total_amount
          FROM time_entries
         WHERE company_token = $1 AND clock_in_at >= $2::date AND clock_in_at < ($3::date + INTERVAL '1 day')
-          AND clock_out_at IS NOT NULL AND locked = FALSE`, [companyToken, start, end]
+          AND clock_out_at IS NOT NULL AND locked = FALSE
+        GROUP BY user_id`, [companyToken, start, end]
     )
-    const byUser = new Map()
-    for (const r of entries.rows) {
-      const secs = Math.max(0, (new Date(r.clock_out_at).getTime() - new Date(r.clock_in_at).getTime()) / 1000)
-      byUser.set(r.user_id, (byUser.get(r.user_id) || 0) + secs)
-    }
-    for (const [userId, totalSeconds] of byUser.entries()) {
-      const rate = await pool.query(
-        `SELECT hourly_rate FROM employee_rates
-         WHERE user_id = $1 AND company_token = $2 AND effective_from <= $3
-         ORDER BY effective_from DESC LIMIT 1`, [userId, companyToken, end]
-      )
-      const hourly = rate.rows[0]?.hourly_rate || 0
-      const amount = (totalSeconds / 3600) * Number(hourly)
+    for (const r of totals.rows) {
+      const amount = Number(r.total_amount) || 0
       if (amount > 0) {
-        try { await notifyUserPaid(userId, Number(amount).toFixed(2), currencySymbol || currency, start, end) } catch {}
+        try { await notifyUserPaid(r.user_id, amount.toFixed(2), currencySymbol || currency, start, end) } catch {}
       }
     }
     res.json({ success: true })

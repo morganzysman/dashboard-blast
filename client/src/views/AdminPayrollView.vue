@@ -186,6 +186,13 @@
           <span class="text-white text-[8px] font-bold">⋯</span>
         </div>
                         
+                        <!-- Feriado (holiday, paid double) icon -->
+                        <div v-if="e.is_holiday"
+                             class="w-3 h-3 rounded-full bg-purple-600 flex items-center justify-center ml-1"
+                             :title="$t('payroll.paidDouble')">
+                          <MaterialIcon name="celebration" :size="8" class="text-white" />
+                        </div>
+
                         <!-- Payment status icon -->
                         <div v-if="e.paid" 
                              class="w-3 h-3 rounded-full bg-yellow-500 flex items-center justify-center ml-1" 
@@ -350,7 +357,17 @@
             </div>
             <div>
               <label class="text-xs text-gray-700">{{ $t('common.amount') }}</label>
-              <input v-model="e.amount" type="number" inputmode="decimal" min="0" step="any" class="form-input w-full" />
+              <input v-model="e.amount" type="number" inputmode="decimal" min="0" step="any" class="form-input w-full" :disabled="!!e.approved_by" />
+              <label class="mt-1.5 flex items-center gap-1.5 text-xs" :class="e.is_holiday ? 'text-purple-700 font-medium' : 'text-gray-700'">
+                <input
+                  type="checkbox"
+                  :checked="!!e.is_holiday"
+                  :disabled="!!e.approved_by"
+                  @change="toggleHoliday(e, editEntry.user_id, $event.target.checked)"
+                />
+                <MaterialIcon name="celebration" :size="14" />
+                {{ $t('payroll.feriado') }} <span class="text-gray-400">({{ $t('payroll.paidDouble') }})</span>
+              </label>
             </div>
             <div class="sm:col-span-3 flex justify-end gap-2">
               <button v-if="!e.id" class="btn-danger btn-xs" @click="removeNewEntry(idx)">{{ $t('common.remove') }}</button>
@@ -1052,13 +1069,27 @@ const calculateAmount = (clockInAt, clockOutAt, userId) => {
   }
 }
 
-// Auto-calculate amount when times change
+// Peru: a worked public holiday (feriado) is paid double.
+const HOLIDAY_MULTIPLIER = 2
+
+// Auto-calculate amount when times change (includes feriado ×2 premium)
 const updateEntryAmount = (entry, userId) => {
   if (!entry) return
 
-  const newAmount = calculateAmount(entry.clock_in_at, entry.clock_out_at, userId)
-  if (newAmount > 0) {
-    entry.amount = newAmount
+  const base = calculateAmount(entry.clock_in_at, entry.clock_out_at, userId)
+  if (base > 0) {
+    const mult = entry.is_holiday ? HOLIDAY_MULTIPLIER : 1
+    entry.amount = Math.round(base * mult * 100) / 100
+  }
+}
+
+// Toggle the feriado flag and re-derive the amount with/without the ×2 premium
+const toggleHoliday = (entry, userId, checked) => {
+  if (!entry) return
+  entry.is_holiday = checked
+  const base = calculateAmount(entry.clock_in_at, entry.clock_out_at, userId)
+  if (base > 0) {
+    entry.amount = Math.round(base * (checked ? HOLIDAY_MULTIPLIER : 1) * 100) / 100
   }
 }
 
@@ -1134,6 +1165,7 @@ const openEdit = (row) => {
         amount: e.amount, 
         paid: !!e.paid,
         approved_by: e.approved_by, // Track approval status for UI logic
+        is_holiday: !!e.is_holiday, // Feriado (paid double)
         shift_start: e.shift_start, // Required for smart detection
         shift_end: e.shift_end // Required for smart detection
       }
@@ -1159,7 +1191,8 @@ const saveEdit = async () => {
       const body = {
         clock_in_at: e.clock_in_at ? new Date(e.clock_in_at).toISOString() : null,
         clock_out_at: e.clock_out_at ? new Date(e.clock_out_at).toISOString() : null,
-        amount: e.amount != null && e.amount !== '' ? Number(e.amount) : undefined
+        amount: e.amount != null && e.amount !== '' ? Number(e.amount) : undefined,
+        is_holiday: !!e.is_holiday
       }
       
       if (e.id) {
@@ -1219,7 +1252,7 @@ const editableSum = computed(() => (editEntry.value?.list || []).filter(e => !e.
   const addNewEntry = () => {
     if (!editEntry.value) return
     editEntry.value.list = editEntry.value.list || []
-    editEntry.value.list.unshift({ id: null, clock_in_at: '', clock_out_at: '', amount: '', paid: false, _isNew: true })
+    editEntry.value.list.unshift({ id: null, clock_in_at: '', clock_out_at: '', amount: '', paid: false, is_holiday: false, _isNew: true })
   }
   const removeNewEntry = (idx) => {
     if (!editEntry.value) return
@@ -1352,6 +1385,10 @@ const showEntryTooltip = (entry, event) => {
     statusText = `${msIcon('work')} Working`
   }
   
+  const feriadoLine = entry.is_holiday
+    ? `<div class="text-purple-700 font-medium">${msIcon('celebration')} ${t('payroll.paidDouble')}</div>`
+    : ''
+
   const content = `
     <div class="text-sm font-medium">${userName(entry.user_id)}</div>
     <div class="text-xs text-gray-600 mt-1">
@@ -1359,6 +1396,7 @@ const showEntryTooltip = (entry, event) => {
       <div><strong>Duration:</strong> ${duration}</div>
       <div><strong>Amount:</strong> ${entry.amount ? formatCurrency(entry.amount) : 'TBD'}</div>
       <div><strong>Status:</strong> ${statusText}</div>
+      ${feriadoLine}
     </div>
   `
   
@@ -1522,6 +1560,7 @@ const editBeforeApprove = (entry) => {
     amount: entry.amount,
     paid: entry.paid || false,
     approved_by: entry.approved_by,
+    is_holiday: !!entry.is_holiday, // Feriado (paid double)
     shift_start: entry.shift_start, // Required for smart detection
     shift_end: entry.shift_end // Required for smart detection
   }
@@ -1572,6 +1611,7 @@ const openEditEntry = (entry) => {
     amount: entry.amount,
     paid: entry.paid || false,
     approved_by: entry.approved_by,
+    is_holiday: !!entry.is_holiday, // Feriado (paid double)
     shift_start: entry.shift_start, // Required for smart detection
     shift_end: entry.shift_end // Required for smart detection
   }

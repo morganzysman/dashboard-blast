@@ -73,6 +73,7 @@
               { key: 'clock_in', label: $t('employee.timesheet.clockInTime'), headerClass: 'whitespace-normal', cellClass: 'whitespace-normal', skeletonWidth: 'w-32' },
               { key: 'clock_out', label: $t('employee.timesheet.clockOutTime'), headerClass: 'whitespace-normal', cellClass: 'whitespace-normal', skeletonWidth: 'w-24' },
               { key: 'duration', label: $t('common.duration'), headerClass: 'whitespace-normal', cellClass: 'whitespace-normal', skeletonWidth: 'w-20' },
+              { key: 'earned', label: $t('employee.timesheet.earned'), headerClass: 'whitespace-normal', cellClass: 'whitespace-normal text-right', skeletonWidth: 'w-20' },
               { key: 'status', label: $t('common.status'), headerClass: 'whitespace-normal', cellClass: 'whitespace-normal', skeletonWidth: 'w-16' }
             ]"
             :stickyHeader="true"
@@ -84,6 +85,12 @@
             <template #cell-clock_in="{ item }">{{ formatDateTime(item.clock_in_at) }}</template>
             <template #cell-clock_out="{ item }">{{ item.clock_out_at ? formatDateTime(item.clock_out_at) : '—' }}</template>
             <template #cell-duration="{ item }">{{ formatDuration(secondsBetween(item.clock_in_at, item.clock_out_at)) }}</template>
+            <template #cell-earned="{ item }">
+              <span class="inline-flex items-center gap-1 font-medium">
+                {{ formatCurrency(item.amount) }}
+                <MaterialIcon v-if="item.is_holiday" name="celebration" :size="14" class="text-purple-600" :title="$t('payroll.paidDouble')" />
+              </span>
+            </template>
             <template #cell-status="{ item }">
               <div class="flex items-center gap-1">
                 <span v-if="item.approved_by" class="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded" :title="$t('employee.timesheet.approvedBy') + ' ' + (item.approved_by_name || $t('payroll.manager'))">
@@ -91,6 +98,9 @@
                 </span>
                 <span v-else-if="item.clock_out_at" class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded">
                   <MaterialIcon name="schedule" :size="14" /> {{ $t('employee.timesheet.pendingApproval') }}
+                </span>
+                <span v-if="item.is_holiday" class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-purple-100 text-purple-800 rounded" :title="$t('payroll.paidDouble')">
+                  <MaterialIcon name="celebration" :size="14" /> {{ $t('payroll.feriado') }}
                 </span>
                 <span v-if="item.paid" class="inline-flex items-center px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded">
                   $ {{ $t('employee.timesheet.isPaid') }}
@@ -100,13 +110,20 @@
             <template #mobile-card="{ item }">
               <div class="font-medium text-gray-900 dark:text-gray-100 mb-1">{{ accountLabel(item.company_token) }}</div>
               <div class="text-xs text-gray-600 dark:text-gray-400">{{ formatDateTime(item.clock_in_at) }} → {{ item.clock_out_at ? formatDateTime(item.clock_out_at) : '—' }}</div>
-              <div class="text-xs text-gray-600 dark:text-gray-400 mb-2">{{ $t('common.duration') }}: {{ formatDuration(secondsBetween(item.clock_in_at, item.clock_out_at)) }}</div>
-              <div class="flex items-center gap-1">
+              <div class="text-xs text-gray-600 dark:text-gray-400">{{ $t('common.duration') }}: {{ formatDuration(secondsBetween(item.clock_in_at, item.clock_out_at)) }}</div>
+              <div class="text-xs text-gray-900 dark:text-gray-100 font-medium mb-2 flex items-center gap-1">
+                {{ $t('employee.timesheet.earned') }}: {{ formatCurrency(item.amount) }}
+                <MaterialIcon v-if="item.is_holiday" name="celebration" :size="14" class="text-purple-600" :title="$t('payroll.paidDouble')" />
+              </div>
+              <div class="flex items-center gap-1 flex-wrap">
                 <span v-if="item.approved_by" class="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded" :title="$t('employee.timesheet.approvedBy') + ' ' + (item.approved_by_name || $t('payroll.manager'))">
                   ✓ {{ $t('employee.timesheet.isApproved') }}
                 </span>
                 <span v-else-if="item.clock_out_at" class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded">
                   <MaterialIcon name="schedule" :size="14" /> {{ $t('employee.timesheet.pendingApproval') }}
+                </span>
+                <span v-if="item.is_holiday" class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-purple-100 text-purple-800 rounded" :title="$t('payroll.paidDouble')">
+                  <MaterialIcon name="celebration" :size="14" /> {{ $t('payroll.feriado') }}
                 </span>
                 <span v-if="item.paid" class="inline-flex items-center px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded">
                   $ {{ $t('employee.timesheet.isPaid') }}
@@ -116,7 +133,31 @@
           </ResponsiveTable>
           <div class="mt-4 text-right text-gray-800 font-medium space-y-1">
             <div>{{ $t('employee.timesheet.totalHours') }}: {{ formatDuration(totalSeconds) }}</div>
-            <!-- <div>Total earned: {{ formatCurrency(totalAmount) }}</div> -->
+            <div class="text-lg font-bold text-gray-900">{{ $t('employee.timesheet.totalEarned') }}: {{ formatCurrency(totalAmount) }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Weekly earnings breakdown (Monday–Sunday) -->
+    <div class="card" v-if="weeklyBreakdown.length">
+      <div class="card-body">
+        <div class="flex items-center justify-between mb-1">
+          <h3 class="text-md font-semibold">{{ $t('employee.timesheet.weeklyEarnings') }}</h3>
+        </div>
+        <p class="text-xs text-gray-500 mb-3">{{ $t('employee.timesheet.weeklyEarningsHint') }}</p>
+        <div class="space-y-2">
+          <div v-for="w in weeklyBreakdown" :key="w.key" class="flex items-center justify-between rounded-md p-3" style="background: var(--surface-1); border: 1px solid var(--border);">
+            <div>
+              <div class="text-sm font-medium text-gray-900">{{ w.label }}</div>
+              <div class="text-xs text-gray-500 flex items-center gap-1">
+                {{ formatDuration(w.seconds) }}
+                <span v-if="w.hasHoliday" class="inline-flex items-center gap-0.5 text-purple-600" :title="$t('payroll.paidDouble')">
+                  · <MaterialIcon name="celebration" :size="12" /> {{ $t('payroll.feriado') }}
+                </span>
+              </div>
+            </div>
+            <div class="text-base font-semibold text-gray-900">{{ formatCurrency(w.amount) }}</div>
           </div>
         </div>
       </div>
@@ -149,6 +190,41 @@ const secondsBetween = (a,b) => {
 }
 
 const totalSeconds = computed(() => entries.value.reduce((s, e) => s + secondsBetween(e.clock_in_at, e.clock_out_at), 0))
+const totalAmount = computed(() => entries.value.reduce((s, e) => s + Number(e.amount || 0), 0))
+
+const formatCurrency = (n) => {
+  const symbol = auth.user?.currencySymbol || 'S/'
+  return `${symbol} ${(Number(n) || 0).toFixed(2)}`
+}
+
+// Group the period's entries into Monday–Sunday weeks with hours + earnings
+const weeklyBreakdown = computed(() => {
+  const tz = auth.user?.timezone || 'America/Lima'
+  const map = new Map()
+  for (const e of entries.value) {
+    if (!e.clock_in_at) continue
+    // Local calendar date of the clock-in, in the company timezone
+    const localStr = new Date(e.clock_in_at).toLocaleDateString('en-CA', { timeZone: tz }) // YYYY-MM-DD
+    const [y, m, d] = localStr.split('-').map(Number)
+    const dt = new Date(y, m - 1, d)
+    const wd = dt.getDay() // 0 = Sun .. 6 = Sat
+    const diff = wd === 0 ? -6 : 1 - wd // shift back to Monday
+    const monday = new Date(dt)
+    monday.setDate(dt.getDate() + diff)
+    const sunday = new Date(monday)
+    sunday.setDate(monday.getDate() + 6)
+    const key = `${monday.getFullYear()}-${monday.getMonth() + 1}-${monday.getDate()}`
+    const cur = map.get(key) || { key, monday, sunday, seconds: 0, amount: 0, hasHoliday: false }
+    cur.seconds += secondsBetween(e.clock_in_at, e.clock_out_at)
+    cur.amount += Number(e.amount || 0)
+    if (e.is_holiday) cur.hasHoliday = true
+    map.set(key, cur)
+  }
+  const fmt = (dt) => dt.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+  return Array.from(map.values())
+    .sort((a, b) => a.monday - b.monday)
+    .map(w => ({ ...w, label: `${fmt(w.monday)} – ${fmt(w.sunday)}` }))
+})
 
 const formatDuration = (secs) => {
   const h = Math.floor(secs / 3600)

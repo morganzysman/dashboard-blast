@@ -553,7 +553,11 @@
       "wasRegistered": "fue registrado",
       "clockIn": "entrada",
       "clockOut": "salida",
-      "myShiftsThisWeek": "Mis Turnos (Esta Semana)"
+      "myShiftsThisWeek": "Mis Turnos (Esta Semana)",
+      "earned": "Ganado",
+      "totalEarned": "Total ganado",
+      "weeklyEarnings": "Ganancias semanales",
+      "weeklyEarningsHint": "Tu pago agrupado por semana (de lunes a domingo)."
     },
     "warnings": {
       "title": "Advertencias del Empleado",
@@ -602,6 +606,8 @@
     "paid": "Pagado",
     "approved": "Aprobado",
     "markAsPaid": "Marcar como Pagado",
+    "feriado": "Feriado",
+    "paidDouble": "Feriado — pagado doble",
     "approveEntry": "Aprobar Registro",
     "rejectEntry": "Rechazar Registro",
     "bulkActions": "Acciones Masivas",
