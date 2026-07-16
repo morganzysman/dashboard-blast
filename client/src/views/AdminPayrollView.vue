@@ -1352,17 +1352,54 @@ const downloadQr = async () => {
       const err = await resp.json().catch(() => ({}))
       throw new Error(err.error || `Failed to download QR (${resp.status})`)
     }
+    // Prefer the account name from the response header, fall back to the list
+    let accName = ''
+    try { accName = decodeURIComponent(resp.headers.get('X-Account-Name') || '') } catch { accName = '' }
+    if (!accName) {
+      accName = accounts.value.find(ac => ac.company_token === companyToken.value)?.account_name || companyToken.value
+    }
+
     const blob = await resp.blob()
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    const accName = accounts.value.find(ac => ac.company_token === companyToken.value)?.account_name
-    const safeName = (accName || companyToken.value).replace(/[^\w.-]+/g, '-').replace(/^-+|-+$/g, '') || companyToken.value
-    a.download = `qr-${safeName}.svg`
-    document.body.appendChild(a)
-    a.click()
-    a.remove()
-    URL.revokeObjectURL(url)
+    const qrUrl = URL.createObjectURL(blob)
+    try {
+      // Composite the account name label above the QR onto a canvas → PNG
+      const img = new Image()
+      await new Promise((resolve, reject) => {
+        img.onload = resolve
+        img.onerror = () => reject(new Error('Failed to load QR image'))
+        img.src = qrUrl
+      })
+
+      const QR = img.naturalWidth || 512
+      const MARGIN = Math.round(QR * 0.047)   // ~24px at 512
+      const LABEL_H = Math.round(QR * 0.16)    // room for the name
+      const canvas = document.createElement('canvas')
+      canvas.width = QR + MARGIN * 2
+      canvas.height = LABEL_H + QR + MARGIN
+      const ctx = canvas.getContext('2d')
+      ctx.fillStyle = '#ffffff'
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+      const fontSize = accName.length > 28 ? Math.round(QR * 0.045) : accName.length > 20 ? Math.round(QR * 0.055) : Math.round(QR * 0.066)
+      ctx.fillStyle = '#111827'
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+      ctx.font = `700 ${fontSize}px Arial, Helvetica, sans-serif`
+      ctx.fillText(accName, canvas.width / 2, LABEL_H / 2, canvas.width - MARGIN * 2)
+
+      ctx.drawImage(img, MARGIN, LABEL_H, QR, QR)
+
+      const safeName = accName.replace(/[^\w.-]+/g, '-').replace(/^-+|-+$/g, '') || companyToken.value
+      const outUrl = canvas.toDataURL('image/png')
+      const a = document.createElement('a')
+      a.href = outUrl
+      a.download = `qr-${safeName}.png`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+    } finally {
+      URL.revokeObjectURL(qrUrl)
+    }
   } catch (e) {
     window.showNotification?.({ type: 'error', title: t('payroll.qrDownload'), message: e.message || t('payroll.failedToDownloadQR') })
   }
