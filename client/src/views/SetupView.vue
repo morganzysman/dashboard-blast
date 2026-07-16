@@ -81,9 +81,18 @@
     <div v-if="!loading && !error" class="grid grid-cols-1 xl:grid-cols-2 gap-6">
       <div v-for="row in allAccountCards" :key="row.company_token" class="card">
         <div class="card-body space-y-4">
-          <div class="border-b border-gray-100 pb-3">
-            <h2 class="text-lg font-medium text-gray-900">{{ row.account_name }}</h2>
-            <p class="text-sm text-gray-500 font-mono">{{ row.company_token }}</p>
+          <div class="border-b border-gray-100 pb-3 flex items-start justify-between gap-2">
+            <div>
+              <h2 class="text-lg font-medium text-gray-900">{{ row.account_name }}</h2>
+              <p class="text-sm text-gray-500 font-mono">{{ row.company_token }}</p>
+            </div>
+            <button
+              class="btn btn-outline btn-sm whitespace-nowrap"
+              :disabled="downloadingQr === row.company_token"
+              @click="downloadQr(row)"
+            >
+              {{ downloadingQr === row.company_token ? $t('common.loading') : $t('payroll.downloadQR') }}
+            </button>
           </div>
 
           <!-- Module: Rentability (utility / fixed costs) -->
@@ -182,9 +191,26 @@ import AccountRentabilitySettings from '../components/AccountRentabilitySettings
 import AccountSlaGoalsForm from '../components/AccountSlaGoalsForm.vue'
 import AccountApiSettings from '../components/AccountApiSettings.vue'
 import AccountContractSettings from '../components/AccountContractSettings.vue'
+import { downloadAccountQr } from '../utils/qr'
 
 const { t } = useI18n()
 const authStore = useAuthStore()
+
+const downloadingQr = ref('')
+const downloadQr = async (row) => {
+  if (!row?.company_token || downloadingQr.value) return
+  downloadingQr.value = row.company_token
+  try {
+    await downloadAccountQr({
+      companyToken: row.company_token,
+      accountName: row.account_name,
+      sessionId: authStore.sessionId,
+      t
+    })
+  } finally {
+    downloadingQr.value = ''
+  }
+}
 
 const companyId = computed(() => authStore.user?.company_id || authStore.user?.companyId || null)
 const contractCountries = ref([])

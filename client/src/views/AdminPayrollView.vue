@@ -25,38 +25,31 @@
         </div>
         
         <div class="mt-4">
-          <div class="mb-3 flex items-center gap-2 flex-wrap">
-            <template v-if="isSuperAdmin">
-              <label class="text-xs text-gray-700">{{ $t('admin.company') }}</label>
-              <select v-model="selectedCompanyId" class="form-input" @change="loadCompanyAccounts">
-                <option value="">{{ $t('rentability.selectCompany') }}</option>
-                <option v-for="c in companies" :key="c.id" :value="c.id">{{ c.name }}</option>
-              </select>
-            </template>
-
-            <label class="text-xs text-gray-700">{{ $t('rentability.account') }}</label>
-            <select v-model="companyToken" class="form-input" @change="loadEntries">
-              <option v-for="acc in accounts" :key="acc.company_token" :value="acc.company_token">{{ acc.account_name || acc.company_token }}</option>
+          <div v-if="isSuperAdmin" class="mb-3 flex items-center gap-2 flex-wrap">
+            <label class="text-xs text-gray-700">{{ $t('admin.company') }}</label>
+            <select v-model="selectedCompanyId" class="form-input" @change="loadCompanyAccounts">
+              <option value="">{{ $t('rentability.selectCompany') }}</option>
+              <option v-for="c in companies" :key="c.id" :value="c.id">{{ c.name }}</option>
             </select>
-            <button class="btn btn-secondary btn-sm" @click="loadEntries">{{ $t('common.load') }}</button>
-            <button v-if="companyToken" class="btn btn-outline btn-sm" @click="downloadQr">{{ $t('payroll.downloadQR') }}</button>
           </div>
           
-          <!-- Employee Summary Table -->
+          <!-- Employee Summary Table (aggregated across all accounts) -->
           <div class="mb-4">
             <h3 class="text-md font-semibold text-gray-900 mb-3">{{ $t('payroll.employeeSummary') }}</h3>
+            <p class="text-xs text-gray-500">{{ $t('payroll.employeeSummaryAllAccounts') }}</p>
           </div>
           <ResponsiveTable
             :items="rows"
             :columns="[
               { key: 'employee', label: $t('payroll.employee'), skeletonWidth: 'w-40' },
               { key: 'count', label: $t('payroll.entries'), skeletonWidth: 'w-20' },
+              { key: 'hours', label: $t('payroll.hoursWorked'), skeletonWidth: 'w-20' },
               { key: 'lateCount', label: $t('payroll.lateCount'), skeletonWidth: 'w-24' },
               { key: 'amount', label: $t('common.amount'), cellClass: 'text-right', skeletonWidth: 'w-16' },
               { key: 'actions', label: $t('companies.actions'), skeletonWidth: 'w-16' }
             ]"
             :stickyHeader="true"
-            :loading="loading"
+            :loading="loadingSummary"
             rowKeyField="user_id"
             mobileTitleField="employee"
           >
@@ -71,6 +64,7 @@
                 </span>
               </div>
             </template>
+            <template #cell-hours="{ item }">{{ formatHoursMinutes(item.totalSeconds) }}</template>
             <template #cell-lateCount="{ item }">
               <span :class="item.lateCount > 0 ? 'text-red-600 font-bold' : 'text-gray-600'">
                 {{ item.lateCount }}
@@ -88,6 +82,7 @@
                   ({{ $t('payroll.missingApprovals', { count: item.pendingApprovalCount }) }})
                 </span>
               </div>
+              <div class="text-xs text-gray-600 dark:text-gray-400">{{ $t('payroll.hoursWorked') }}: {{ formatHoursMinutes(item.totalSeconds) }}</div>
               <div class="text-xs" :class="item.lateCount > 0 ? 'text-red-600 font-bold' : 'text-gray-600'">{{ $t('payroll.lateCount') }}: {{ item.lateCount }}</div>
               <div class="text-xs text-gray-900 dark:text-gray-100 flex justify-between mt-1"><span>{{ $t('common.amount') }}</span><span>{{ formatCurrency(item.amount) }}</span></div>
               <div class="mt-2 text-right"><button class="btn btn-ghost btn-sm" @click="openEdit(item)">{{ $t('common.edit') }}</button></div>
@@ -108,6 +103,13 @@
           
           <!-- Simple calendar-like visualization -->
           <div class="mt-6">
+            <div class="mb-3 flex items-center gap-2 flex-wrap">
+              <label class="text-xs text-gray-700">{{ $t('rentability.account') }}</label>
+              <select v-model="companyToken" class="form-input" @change="loadEntries">
+                <option v-for="acc in accounts" :key="acc.company_token" :value="acc.company_token">{{ acc.account_name || acc.company_token }}</option>
+              </select>
+              <button class="btn btn-secondary btn-sm" @click="loadEntries">{{ $t('common.load') }}</button>
+            </div>
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
               <h3 class="text-md font-semibold">{{ $t('payroll.entriesCalendar') }}</h3>
               <div class="flex flex-wrap items-center gap-2 sm:gap-4 text-xs">
@@ -461,7 +463,12 @@ const accounts = ref([])
 const companies = ref([])
 const selectedCompanyId = ref(auth.user?.company_id || '')
 const companyToken = ref('')
+// entries: time entries for the account selected in the calendar section
 const entries = ref([])
+// allEntries: time entries aggregated across every account of the company;
+// powers the "Employee Summary" section (which is account-independent)
+const allEntries = ref([])
+const loadingSummary = ref(false)
 const period = ref({ start: '', end: '' })
 const selectedStart = ref(null)
 const selectedEnd = ref(null)
@@ -511,10 +518,38 @@ const loadEntries = async () => {
   }
 }
 
+// Load and aggregate entries across ALL accounts of the company for the
+// current period. Feeds the account-independent Employee Summary section.
+const loadAllEntries = async () => {
+  const accs = accounts.value || []
+  if (!accs.length) { allEntries.value = []; return }
+  loadingSummary.value = true
+  try {
+    const results = await Promise.all(
+      accs.map(a => api.getAdminEntries(a.company_token, selectedStart.value, selectedEnd.value).catch(() => null))
+    )
+    const combined = []
+    for (const res of results) {
+      if (res?.success && Array.isArray(res.data)) combined.push(...res.data)
+    }
+    allEntries.value = combined
+  } finally {
+    loadingSummary.value = false
+  }
+}
+
+// Reload both the selected-account calendar and the all-accounts summary.
+// loadEntries runs first so the period (selectedStart/End) is resolved before
+// the summary fetch fans out across accounts.
+const reloadAll = async () => {
+  await loadEntries()
+  await loadAllEntries()
+}
+
 // Group entries per user (only users with entries for the period)
 const groupByUser = computed(() => {
   const map = new Map()
-  for (const e of entries.value) {
+  for (const e of allEntries.value) {
     const key = e.user_id
     const curr = map.get(key) || { 
       user_id: key, 
@@ -1030,6 +1065,13 @@ const formatDuration = (secs) => {
   const s = Math.floor(secs % 60)
   return `${h}h ${m}m ${s}s`
 }
+// Compact hours+minutes, used for period totals in the employee summary
+const formatHoursMinutes = (secs) => {
+  const total = Math.max(0, Number(secs) || 0)
+  const h = Math.floor(total / 3600)
+  const m = Math.floor((total % 3600) / 60)
+  return `${h}h ${m}m`
+}
 const formatCurrency = (n) => {
   const symbol = auth.user?.currencySymbol || 'S/'
   return `${symbol} ${(Number(n)||0).toFixed(2)}`
@@ -1126,14 +1168,14 @@ const prevPeriod = async () => {
   const r = getPrevBiweeklyRange(selectedStart.value, selectedEnd.value)
   selectedStart.value = r.start
   selectedEnd.value = r.end
-  await loadEntries()
+  await reloadAll()
 }
 const nextPeriod = async () => {
   if (!selectedStart.value) { selectedStart.value = period.value.start; selectedEnd.value = period.value.end }
   const r = getNextBiweeklyRange(selectedStart.value, selectedEnd.value)
   selectedStart.value = r.start
   selectedEnd.value = r.end
-  await loadEntries()
+  await reloadAll()
 }
 
 const markPaid = async () => {
@@ -1143,7 +1185,7 @@ const markPaid = async () => {
   const res = await api.markPaid(companyToken.value)
     if (res.success) {
       window.showNotification?.({ type: 'success', title: t('navigation.payroll'), message: t('payroll.periodMarkedAsPaid') })
-      loadEntries()
+      reloadAll()
     }
   } finally {
     paying.value = false
@@ -1152,8 +1194,8 @@ const markPaid = async () => {
 
 
 const openEdit = (row) => {
-  // list all entries for this user in current period
-  const list = entries.value.filter(x => x.user_id === row.user_id)
+  // list all entries for this user in current period, across every account
+  const list = allEntries.value.filter(x => x.user_id === row.user_id)
   // Even if there are no entries, open the modal so admin can add manual ones
   editEntry.value = {
     user_id: row.user_id,
@@ -1243,7 +1285,7 @@ const saveEdit = async () => {
   }
   
   editEntry.value = null
-  await loadEntries()
+  await reloadAll()
 }
 
 const editableCount = computed(() => (editEntry.value?.list || []).filter(e => !e.approved_by).length)
@@ -1293,7 +1335,7 @@ const editableSum = computed(() => (editEntry.value?.list || []).filter(e => !e.
         console.log('✅ Entry deleted successfully')
         
         // Reload entries to get updated data
-        loadEntries()
+        reloadAll()
       } else {
         console.error('❌ Failed to delete entry:', result.error)
         window.showNotification?.({ type: 'error', title: t('common.error'), message: t('payroll.failedToDeleteEntry') + ': ' + (result.error || t('common.unknownError')) })
@@ -1310,17 +1352,20 @@ loadEntries()
 
 // Fetch accounts based on role
 const loadCompanyAccounts = async () => {
-  if (!selectedCompanyId.value) { accounts.value = []; companyToken.value = ''; return }
+  if (!selectedCompanyId.value) { accounts.value = []; companyToken.value = ''; allEntries.value = []; return }
   try {
     const res = await api.listCompanyAccounts(selectedCompanyId.value)
     accounts.value = res?.data || []
     companyToken.value = accounts.value[0]?.company_token || ''
     if (companyToken.value) {
-      await loadEntries()
+      await reloadAll()
+    } else {
+      allEntries.value = []
     }
   } catch (e) {
     accounts.value = []
     companyToken.value = ''
+    allEntries.value = []
   }
 }
 
@@ -1342,68 +1387,6 @@ const loadCompanyAccounts = async () => {
 })()
 
 // Download QR with session header and force-file download
-const downloadQr = async () => {
-  try {
-    if (!companyToken.value) return
-    const resp = await fetch(`/api/payroll/qr/${encodeURIComponent(companyToken.value)}/image`, {
-      headers: { 'X-Session-ID': auth.sessionId }
-    })
-    if (!resp.ok) {
-      const err = await resp.json().catch(() => ({}))
-      throw new Error(err.error || `Failed to download QR (${resp.status})`)
-    }
-    // Prefer the account name from the response header, fall back to the list
-    let accName = ''
-    try { accName = decodeURIComponent(resp.headers.get('X-Account-Name') || '') } catch { accName = '' }
-    if (!accName) {
-      accName = accounts.value.find(ac => ac.company_token === companyToken.value)?.account_name || companyToken.value
-    }
-
-    const blob = await resp.blob()
-    const qrUrl = URL.createObjectURL(blob)
-    try {
-      // Composite the account name label above the QR onto a canvas → PNG
-      const img = new Image()
-      await new Promise((resolve, reject) => {
-        img.onload = resolve
-        img.onerror = () => reject(new Error('Failed to load QR image'))
-        img.src = qrUrl
-      })
-
-      const QR = img.naturalWidth || 512
-      const MARGIN = Math.round(QR * 0.047)   // ~24px at 512
-      const LABEL_H = Math.round(QR * 0.16)    // room for the name
-      const canvas = document.createElement('canvas')
-      canvas.width = QR + MARGIN * 2
-      canvas.height = LABEL_H + QR + MARGIN
-      const ctx = canvas.getContext('2d')
-      ctx.fillStyle = '#ffffff'
-      ctx.fillRect(0, 0, canvas.width, canvas.height)
-
-      const fontSize = accName.length > 28 ? Math.round(QR * 0.045) : accName.length > 20 ? Math.round(QR * 0.055) : Math.round(QR * 0.066)
-      ctx.fillStyle = '#111827'
-      ctx.textAlign = 'center'
-      ctx.textBaseline = 'middle'
-      ctx.font = `700 ${fontSize}px Arial, Helvetica, sans-serif`
-      ctx.fillText(accName, canvas.width / 2, LABEL_H / 2, canvas.width - MARGIN * 2)
-
-      ctx.drawImage(img, MARGIN, LABEL_H, QR, QR)
-
-      const safeName = accName.replace(/[^\w.-]+/g, '-').replace(/^-+|-+$/g, '') || companyToken.value
-      const outUrl = canvas.toDataURL('image/png')
-      const a = document.createElement('a')
-      a.href = outUrl
-      a.download = `qr-${safeName}.png`
-      document.body.appendChild(a)
-      a.click()
-      a.remove()
-    } finally {
-      URL.revokeObjectURL(qrUrl)
-    }
-  } catch (e) {
-    window.showNotification?.({ type: 'error', title: t('payroll.qrDownload'), message: e.message || t('payroll.failedToDownloadQR') })
-  }
-}
 
 // Calendar interaction functions
 const showEntryTooltip = (entry, event) => {
@@ -1486,7 +1469,7 @@ const quickApproveEntry = async (entryId) => {
       })
       
       // Reload entries to get updated data
-      await loadEntries()
+      await reloadAll()
     }
   } catch (e) {
     console.error('❌ Failed to approve entry:', e)
