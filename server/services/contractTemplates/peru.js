@@ -486,7 +486,7 @@ export function buildPeruMicroempresa({ config, employer, employee, params }) {
         'Una jornada de trabajo de ocho (8) horas diarias o cuarenta y ocho (48) horas semanales.',
         'Un descanso mínimo de veinticuatro (24) horas consecutivas por semana.',
         'Quince (15) días de descanso vacacional remunerado por cada año completo de servicios.',
-        'Afiliación al régimen de salud (SIS Microempresarial o EsSalud, según corresponda) y al sistema de pensiones (ONP o AFP).',
+        'Afiliación al régimen de salud a través del Seguro Integral de Salud para microempresas (SIS Microempresarial) y al sistema de pensiones (ONP o AFP).',
       ] },
       'EL TRABAJADOR acepta y declara conocer que, bajo este régimen, no le corresponde el pago de Compensación por Tiempo de Servicios (CTS) ni Gratificaciones de Fiestas Patrias y Navidad.',
     ]),
@@ -495,7 +495,7 @@ export function buildPeruMicroempresa({ config, employer, employee, params }) {
       { text: [
         'EL TRABAJADOR cumplirá una jornada de trabajo de hasta ',
         { text: `${weeklyHours} (${inWords(weeklyHours)}) horas`, bold: true },
-        ' semanales, sin exceder el máximo legal de cuarenta y ocho (48) horas semanales, con un tiempo de refrigerio mínimo de cuarenta y cinco (45) minutos, el cual no forma parte de la jornada de trabajo.',
+        ' semanales, sin exceder el máximo legal de cuarenta y ocho (48) horas semanales.',
       ] },
       'EL EMPLEADOR está facultado a establecer y variar los turnos y horarios de acuerdo con las necesidades operativas del establecimiento, respetando el descanso semanal obligatorio.',
       'El trabajo en sobretiempo es voluntario para ambas partes y será compensado con las sobretasas legales vigentes o, por acuerdo de las partes, con períodos equivalentes de descanso. Ninguna labor en sobretiempo se entenderá autorizada sin la aprobación previa y expresa de EL EMPLEADOR.',
@@ -507,7 +507,7 @@ export function buildPeruMicroempresa({ config, employer, employee, params }) {
         { text: sueldo, bold: true },
         ', la cual estará sujeta a los descuentos de ley por concepto de pensiones (AFP u ONP) y demás retenciones legales que correspondan.',
       ] },
-      'La remuneración no podrá ser inferior a la Remuneración Mínima Vital vigente y será abonada dentro de los plazos de pago establecidos por EL EMPLEADOR.',
+      'La remuneración no podrá ser inferior a la Remuneración Mínima Vital vigente y será abonada a fin de mes, dentro de los plazos de pago establecidos por EL EMPLEADOR.',
     ]),
 
     plazoClause,
@@ -580,6 +580,7 @@ export function buildPeruMicroempresa({ config, employer, employee, params }) {
 
     clause('VIGÉSIMA: DE LA CUSTODIA DE BIENES, UNIFORMES Y HERRAMIENTAS', [
       'EL EMPLEADOR podrá entregar a EL TRABAJADOR uniformes, herramientas, utensilios, equipos, insumos y demás bienes necesarios para el desempeño de sus funciones, los cuales son de propiedad exclusiva de EL EMPLEADOR. EL TRABAJADOR se obliga a utilizarlos de manera diligente y exclusivamente para fines laborales, a conservarlos en buen estado y a devolverlos al término de la relación laboral.',
+      'En caso EL EMPLEADOR entregue uniforme a EL TRABAJADOR, su uso será obligatorio durante toda la jornada de trabajo, debiendo mantenerse limpio, completo y en adecuadas condiciones de presentación. Esta obligación resulta especialmente exigible respecto del personal de atención al cliente (mozos y demás personal de salón), por razones de imagen, higiene e identificación ante los clientes. El incumplimiento injustificado y reiterado de esta obligación será considerado falta laboral y sancionable conforme al presente contrato y a la legislación vigente.',
       'EL TRABAJADOR será responsable por la pérdida, sustracción o deterioro de dichos bienes cuando resulten atribuibles a su dolo o negligencia. Para tal efecto, EL TRABAJADOR autoriza a EL EMPLEADOR a efectuar los descuentos que correspondan de su remuneración o de su liquidación de beneficios sociales, previa comunicación escrita y dentro de los límites permitidos por la ley.',
     ]),
 
