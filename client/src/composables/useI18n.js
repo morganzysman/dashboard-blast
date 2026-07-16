@@ -7,9 +7,9 @@ export function useI18n() {
   const { locale, t } = useVueI18n()
   const authStore = useAuthStore()
 
-  // Get current company language from auth store or fallback to 'pt'
+  // Get current company language from auth store or fallback to 'es'
   const currentLanguage = computed(() => {
-    return authStore.user?.company?.language || authStore.currentCompany?.language || 'pt'
+    return authStore.user?.company?.language || authStore.currentCompany?.language || 'es'
   })
 
   // Set locale when company language changes
@@ -40,16 +40,16 @@ export function useI18n() {
       if (authStore.user?.company_id) {
         const companyRes = await api.get(`/api/admin/companies/${authStore.user.company_id}`)
         if (companyRes.success) {
-          const companyLanguage = companyRes.data.language || 'pt'
+          const companyLanguage = companyRes.data.language || 'es'
           setLocale(companyLanguage)
           authStore.currentCompany = companyRes.data
         }
       } else {
-        setLocale('pt')
+        setLocale('es')
       }
     } catch (error) {
       console.warn('Failed to initialize locale:', error)
-      setLocale('pt')
+      setLocale('es')
     }
   }
 

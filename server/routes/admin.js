@@ -753,11 +753,11 @@ router.post('/companies', requireAuth, requireRole(['super-admin']), async (req,
   try {
     const { name, timezone, currency, currency_symbol, language, country } = req.body
     if (!name) return res.status(400).json({ success: false, error: 'name is required' })
-    // Defaults: Lima timezone, PEN, Portuguese, and Peru
+    // Defaults: Lima timezone, PEN, Spanish, and Peru
     const tz = timezone || 'America/Lima'
     const curr = currency || 'PEN'
     const currSym = currency_symbol || (curr === 'USD' ? '$' : curr === 'EUR' ? '€' : curr === 'GBP' ? '£' : curr === 'MXN' ? '$' : 'S/')
-    const lang = language || 'pt'
+    const lang = language || 'es'
     const cc = (country || 'PE').toUpperCase()
     const q = await pool.query(
       `INSERT INTO companies(name, timezone, currency, currency_symbol, language, country) 

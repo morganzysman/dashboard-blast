@@ -13,8 +13,8 @@ const messages = {
   fr
 }
 
-// Restore saved language from localStorage, otherwise default to Portuguese
-let savedLocale = 'pt'
+// Restore saved language from localStorage, otherwise default to Spanish
+let savedLocale = 'es'
 try {
   const stored = localStorage.getItem('user_language')
   if (stored && ['pt', 'es', 'en', 'fr'].includes(stored)) {

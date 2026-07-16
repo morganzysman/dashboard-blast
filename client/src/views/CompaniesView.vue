@@ -165,7 +165,7 @@ const newCompanyName = ref('')
 const canCreate = computed(() => newCompanyName.value && newCompanyName.value.length >= 3)
 const newCompanyTimezone = ref('America/Lima')
 const newCompanyCurrency = ref('PEN')
-const newCompanyLanguage = ref('pt')
+const newCompanyLanguage = ref('es')
 
 // Contract config + per-account contract editing
 const countries = ref([])
@@ -249,7 +249,7 @@ const createNewCompany = async () => {
     newCompanyName.value = ''
     newCompanyTimezone.value = 'America/Lima'
     newCompanyCurrency.value = 'PEN'
-    newCompanyLanguage.value = 'pt'
+    newCompanyLanguage.value = 'es'
     newCompanyCountry.value = 'PE'
     await load()
   }
