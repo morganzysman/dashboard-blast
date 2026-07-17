@@ -35,12 +35,34 @@
           </div>
           
           <!-- Employee Summary Table (aggregated across all accounts) -->
-          <div class="mb-4">
-            <h3 class="text-md font-semibold text-gray-900 mb-3">{{ $t('payroll.employeeSummary') }}</h3>
-            <p class="text-xs text-gray-500">{{ $t('payroll.employeeSummaryAllAccounts') }}</p>
+          <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h3 class="text-md font-semibold text-gray-900 mb-1">{{ $t('payroll.employeeSummary') }}</h3>
+              <p class="text-xs text-gray-500">{{ $t('payroll.employeeSummaryAllAccounts') }}</p>
+            </div>
+            <div class="relative w-full sm:w-64">
+              <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              </span>
+              <input
+                v-model="search"
+                type="text"
+                class="form-input w-full pl-9 pr-8"
+                :placeholder="$t('payroll.searchEmployee')"
+              />
+              <button
+                v-if="search"
+                type="button"
+                class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
+                :aria-label="$t('common.clear')"
+                @click="search = ''"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+              </button>
+            </div>
           </div>
           <ResponsiveTable
-            :items="rows"
+            :items="filteredRows"
             :columns="[
               { key: 'employee', label: $t('payroll.employee'), skeletonWidth: 'w-40' },
               { key: 'count', label: $t('payroll.entries'), skeletonWidth: 'w-20' },
@@ -110,7 +132,7 @@
           <div class="mt-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <div class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                {{ $t('payroll.summaryForEmployees', { count: rows.length }) }}
+                {{ $t('payroll.summaryForEmployees', { count: filteredRows.length }) }}
               </div>
               <div class="text-lg font-bold text-gray-900 dark:text-gray-100">
                 {{ $t('payroll.totalAmount') }}: {{ formatCurrency(totalEmployeeAmount) }}
@@ -670,11 +692,30 @@ const groupByUser = computed(() => {
   })).sort((a,b)=> (a.employeeName||'').localeCompare(b.employeeName||''))
 })
 
-const rows = computed(() => groupByUser.value.map(u => ({ ...u, amount: u.totalAmount })))
+const rows = computed(() => {
+  const mapped = groupByUser.value.map(u => ({ ...u, amount: u.totalAmount }))
+  // Hide disabled/unknown users: the active-employee name map only contains
+  // active users, so any entry whose user_id is missing from it belongs to a
+  // deactivated employee and should not appear in the summary. Skip filtering
+  // until the map has loaded to avoid briefly emptying the list.
+  if (userIdToName.value.size === 0) return mapped
+  return mapped.filter(u => userIdToName.value.has(u.user_id))
+})
 
-// Calculate total amount across all employees
+// Free-text filter for the employee summary table (matches name or user id)
+const search = ref('')
+const filteredRows = computed(() => {
+  const q = search.value.trim().toLowerCase()
+  if (!q) return rows.value
+  return rows.value.filter(u =>
+    (u.employeeName || '').toLowerCase().includes(q) ||
+    String(u.user_id || '').toLowerCase().includes(q)
+  )
+})
+
+// Calculate total amount across all displayed employees
 const totalEmployeeAmount = computed(() => {
-  return rows.value.reduce((total, employee) => total + (employee.amount || 0), 0)
+  return filteredRows.value.reduce((total, employee) => total + (employee.amount || 0), 0)
 })
 
 

@@ -643,6 +643,7 @@
     "downloadQR": "Descargar QR",
     "employeeSummary": "Resumen de Empleados",
     "employeeSummaryAllAccounts": "Totales de todas las cuentas combinadas",
+    "searchEmployee": "Buscar empleado...",
     "missingApprovals": "Faltan {count} aprobaciones",
     "summaryForEmployees": "Resumen para {count} empleado | Resumen para {count} empleados",
     "totalAmount": "Cantidad Total",

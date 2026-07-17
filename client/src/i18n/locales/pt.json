@@ -638,6 +638,7 @@
     "downloadQR": "Baixar QR",
     "employeeSummary": "Resumo de Funcionários",
     "employeeSummaryAllAccounts": "Totais de todas as contas combinadas",
+    "searchEmployee": "Buscar funcionário...",
     "missingApprovals": "Faltando {count} aprovações",
     "summaryForEmployees": "Resumo para {count} funcionário | Resumo para {count} funcionários",
     "totalAmount": "Valor Total",
