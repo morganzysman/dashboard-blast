@@ -373,6 +373,8 @@ export const api = {
   // Approval workflow
   getPendingApprovals: (companyToken) => apiRequest(`/api/payroll/admin/${companyToken}/pending-approvals`, { method: 'GET' }),
   approveEntry: (id) => apiRequest(`/api/payroll/admin/entries/${id}/approve`, { method: 'POST' }),
+  reopenEntry: (id) => apiRequest(`/api/payroll/admin/entries/${id}/reopen`, { method: 'POST' }),
+  setEntryPaid: (id, paid) => apiRequest(`/api/payroll/admin/entries/${id}/paid`, { method: 'POST', body: JSON.stringify({ paid }) }),
 
   // Holidays
   getHolidaySummary: (companyId) => apiRequest(`/api/holidays/summary${companyId ? `?companyId=${companyId}` : ''}`, { method: 'GET' }),

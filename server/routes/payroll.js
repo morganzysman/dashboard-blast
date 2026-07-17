@@ -1033,5 +1033,96 @@ router.post('/admin/entries/:id/approve', requireAuth, async (req, res) => {
   }
 })
 
+// Admin: Reopen a single time entry (clear paid + approved locks so it can be edited)
+// This is the per-entry counterpart of the period-level "mark unpaid". Amounts and
+// hourly rates are not modified — it only removes the locks on this one entry.
+router.post('/admin/entries/:id/reopen', requireAuth, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin' && req.user.role !== 'super-admin') {
+      return res.status(403).json({ success: false, error: 'Access denied' })
+    }
+
+    const { id } = req.params
+
+    const checkQuery = await pool.query(
+      'SELECT id, company_token FROM time_entries WHERE id = $1',
+      [id]
+    )
+    if (checkQuery.rowCount === 0) {
+      return res.status(404).json({ success: false, error: 'Entry not found' })
+    }
+    const entry = checkQuery.rows[0]
+
+    // For admins (not super), ensure the account belongs to their company
+    if (req.user.role === 'admin') {
+      const cq = await pool.query('SELECT company_id FROM company_accounts WHERE company_token = $1', [entry.company_token])
+      const companyId = cq.rows[0]?.company_id || null
+      const belongs = !!(req.user.companyId && companyId && req.user.companyId === companyId)
+      if (!belongs) return res.status(403).json({ success: false, error: 'Access denied' })
+    }
+
+    const updateQuery = await pool.query(
+      'UPDATE time_entries SET paid = FALSE, approved_by = NULL, updated_at = NOW() WHERE id = $1 RETURNING *',
+      [id]
+    )
+
+    console.log(`✅ Admin ${req.user.userEmail} reopened time entry ${id}`)
+
+    res.json({
+      success: true,
+      message: 'Entry reopened successfully',
+      data: updateQuery.rows[0]
+    })
+  } catch (e) {
+    console.error('❌ Reopen entry error:', e)
+    res.status(500).json({ success: false, error: e.message })
+  }
+})
+
+// Admin: set the paid flag on a single entry (independent of approval)
+router.post('/admin/entries/:id/paid', requireAuth, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin' && req.user.role !== 'super-admin') {
+      return res.status(403).json({ success: false, error: 'Access denied' })
+    }
+
+    const { id } = req.params
+    const paid = req.body?.paid === true
+
+    const checkQuery = await pool.query(
+      'SELECT id, company_token FROM time_entries WHERE id = $1',
+      [id]
+    )
+    if (checkQuery.rowCount === 0) {
+      return res.status(404).json({ success: false, error: 'Entry not found' })
+    }
+    const entry = checkQuery.rows[0]
+
+    // For admins (not super), ensure the account belongs to their company
+    if (req.user.role === 'admin') {
+      const cq = await pool.query('SELECT company_id FROM company_accounts WHERE company_token = $1', [entry.company_token])
+      const companyId = cq.rows[0]?.company_id || null
+      const belongs = !!(req.user.companyId && companyId && req.user.companyId === companyId)
+      if (!belongs) return res.status(403).json({ success: false, error: 'Access denied' })
+    }
+
+    const updateQuery = await pool.query(
+      'UPDATE time_entries SET paid = $1, updated_at = NOW() WHERE id = $2 RETURNING *',
+      [paid, id]
+    )
+
+    console.log(`✅ Admin ${req.user.userEmail} set entry ${id} paid=${paid}`)
+
+    res.json({
+      success: true,
+      message: 'Entry paid status updated',
+      data: updateQuery.rows[0]
+    })
+  } catch (e) {
+    console.error('❌ Set entry paid error:', e)
+    res.status(500).json({ success: false, error: e.message })
+  }
+})
+
 export default router
 

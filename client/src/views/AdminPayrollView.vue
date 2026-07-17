@@ -410,9 +410,18 @@
                 {{ $t('payroll.feriado') }} <span class="text-gray-400">({{ $t('payroll.paidDouble') }})</span>
               </label>
             </div>
-            <div class="sm:col-span-3 flex justify-end gap-2">
-              <button v-if="!e.id" class="btn-danger btn-xs" @click="removeNewEntry(idx)">{{ $t('common.remove') }}</button>
-              <button v-else-if="e.id && !e.paid && !e.approved_by" class="btn-danger btn-xs" @click="confirmDeleteEntry(e.id, idx)">{{ $t('common.delete') }}</button>
+            <div class="sm:col-span-3 flex flex-wrap items-center justify-between gap-2">
+              <label v-if="e.id" class="flex items-center gap-1.5 text-xs cursor-pointer" :class="e.paid ? 'text-yellow-700 font-medium' : 'text-gray-700'">
+                <input type="checkbox" :checked="!!e.paid" @change="setEntryPaid(e, $event.target.checked)" />
+                <MaterialIcon name="paid" :size="14" />
+                {{ $t('payroll.paid') }}
+              </label>
+              <span v-else></span>
+              <div class="flex flex-wrap gap-2">
+                <button v-if="e.id && e.approved_by" class="btn-secondary btn-xs" @click="reopenEntryInModal(e)">{{ $t('payroll.reopenEntry') }}</button>
+                <button v-if="!e.id" class="btn-danger btn-xs" @click="removeNewEntry(idx)">{{ $t('common.remove') }}</button>
+                <button v-else-if="e.id && !e.paid && !e.approved_by" class="btn-danger btn-xs" @click="confirmDeleteEntry(e.id, idx)">{{ $t('common.delete') }}</button>
+              </div>
             </div>
           </div>
         </div>
@@ -1268,6 +1277,43 @@ const markUnpaid = async () => {
     }
   } finally {
     unpaying.value = false
+  }
+}
+
+// Per-entry counterpart of "mark unpaid": unlock a single entry (clear its paid
+// and approved locks) so it becomes editable in place. Keeps the stored amount.
+const reopenEntryInModal = async (e) => {
+  if (!e?.id) return
+  if (!window.confirm(t('payroll.confirmReopenEntry'))) return
+  try {
+    const res = await api.reopenEntry(e.id)
+    if (res.success) {
+      e.paid = false
+      e.approved_by = null
+      window.showNotification?.({ type: 'success', title: t('common.success'), message: t('payroll.entryReopened') })
+    }
+  } catch (err) {
+    console.error('❌ Failed to reopen entry:', err)
+    window.showNotification?.({ type: 'error', title: t('common.error'), message: t('payroll.failedToReopenEntry') })
+  }
+}
+
+// Per-entry paid toggle: flips only the paid flag, independent of approval.
+const setEntryPaid = async (e, paid) => {
+  if (!e?.id) return
+  const prev = !!e.paid
+  e.paid = paid
+  try {
+    const res = await api.setEntryPaid(e.id, paid)
+    if (!res.success) {
+      e.paid = prev
+      return
+    }
+    window.showNotification?.({ type: 'success', title: t('common.success'), message: paid ? t('payroll.entryMarkedPaid') : t('payroll.entryMarkedUnpaid') })
+  } catch (err) {
+    e.paid = prev
+    console.error('❌ Failed to update entry paid status:', err)
+    window.showNotification?.({ type: 'error', title: t('common.error'), message: t('payroll.failedToUpdatePaid') })
   }
 }
 
