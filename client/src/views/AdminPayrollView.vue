@@ -2,12 +2,12 @@
   <div class="space-y-4 lg:space-y-6">
     <div class="card">
       <div class="card-body">
-        <div class="flex items-start justify-between gap-2 flex-wrap">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h2 class="text-lg font-bold text-gray-900">{{ $t('payroll.title') }}</h2>
             <p class="text-sm text-gray-600">{{ $t('payroll.payrollPeriod') }}: {{ periodLabel }}</p>
           </div>
-          <div class="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+          <div class="flex flex-wrap items-center gap-2 sm:justify-end">
             <div class="inline-flex overflow-hidden rounded-md border border-gray-200">
               <button class="btn-secondary btn-sm flex items-center gap-1 rounded-none" @click="prevPeriod">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
@@ -18,8 +18,9 @@
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
               </button>
             </div>
-            <div class="inline-flex gap-2">
-              <button class="btn btn-primary btn-sm" :disabled="paying || !companyToken" @click="markPaid">{{ paying ? $t('payroll.marking') : $t('payroll.markAsPaid') }}</button>
+            <div class="flex flex-1 gap-2 sm:flex-none">
+              <button class="btn btn-secondary btn-sm flex-1 whitespace-nowrap sm:flex-none" :disabled="unpaying || !companyToken" @click="markUnpaid">{{ unpaying ? $t('payroll.unmarking') : $t('payroll.markAsUnpaid') }}</button>
+              <button class="btn btn-primary btn-sm flex-1 whitespace-nowrap sm:flex-none" :disabled="paying || !companyToken" @click="markPaid">{{ paying ? $t('payroll.marking') : $t('payroll.markAsPaid') }}</button>
             </div>
           </div>
         </div>
@@ -75,17 +76,33 @@
             <template #cell-actions="{ item }"><button class="btn btn-ghost btn-sm" @click="openEdit(item)">{{ $t('common.edit') }}</button></template>
 
             <template #mobile-card="{ item }">
-              <div class="font-medium text-gray-900 dark:text-gray-100 mb-1">{{ item.employeeName || item.user_id }}</div>
-              <div class="text-xs text-gray-600 dark:text-gray-400">
-                {{ $t('payroll.entries') }}: {{ item.count }}
-                <span v-if="item.pendingApprovalCount > 0" class="text-orange-600 font-bold ml-1">
-                  ({{ $t('payroll.missingApprovals', { count: item.pendingApprovalCount }) }})
-                </span>
+              <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <div class="font-semibold text-gray-900 dark:text-gray-100 truncate">{{ item.employeeName || item.user_id }}</div>
+                  <span v-if="item.pendingApprovalCount > 0" class="mt-1 inline-flex items-center rounded-full bg-orange-100 dark:bg-orange-900/30 px-2 py-0.5 text-[11px] font-semibold text-orange-700 dark:text-orange-400">
+                    {{ $t('payroll.missingApprovals', { count: item.pendingApprovalCount }) }}
+                  </span>
+                </div>
+                <div class="text-right shrink-0">
+                  <div class="text-[11px] text-gray-500 dark:text-gray-400">{{ $t('common.amount') }}</div>
+                  <div class="text-base font-bold text-gray-900 dark:text-gray-100">{{ formatCurrency(item.amount) }}</div>
+                </div>
               </div>
-              <div class="text-xs text-gray-600 dark:text-gray-400">{{ $t('payroll.hoursWorked') }}: {{ formatHoursMinutes(item.totalSeconds) }}</div>
-              <div class="text-xs" :class="item.lateCount > 0 ? 'text-red-600 font-bold' : 'text-gray-600'">{{ $t('payroll.lateCount') }}: {{ item.lateCount }}</div>
-              <div class="text-xs text-gray-900 dark:text-gray-100 flex justify-between mt-1"><span>{{ $t('common.amount') }}</span><span>{{ formatCurrency(item.amount) }}</span></div>
-              <div class="mt-2 text-right"><button class="btn btn-ghost btn-sm" @click="openEdit(item)">{{ $t('common.edit') }}</button></div>
+              <div class="mt-3 grid grid-cols-3 gap-2 text-center">
+                <div class="rounded-md bg-gray-50 dark:bg-gray-800 py-1.5">
+                  <div class="text-[11px] text-gray-500 dark:text-gray-400">{{ $t('payroll.entries') }}</div>
+                  <div class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ item.count }}</div>
+                </div>
+                <div class="rounded-md bg-gray-50 dark:bg-gray-800 py-1.5">
+                  <div class="text-[11px] text-gray-500 dark:text-gray-400">{{ $t('payroll.hoursWorked') }}</div>
+                  <div class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ formatHoursMinutes(item.totalSeconds) }}</div>
+                </div>
+                <div class="rounded-md py-1.5" :class="item.lateCount > 0 ? 'bg-red-50 dark:bg-red-900/20' : 'bg-gray-50 dark:bg-gray-800'">
+                  <div class="text-[11px]" :class="item.lateCount > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-500 dark:text-gray-400'">{{ $t('payroll.lateCount') }}</div>
+                  <div class="text-sm font-semibold" :class="item.lateCount > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-gray-100'">{{ item.lateCount }}</div>
+                </div>
+              </div>
+              <button class="btn btn-primary btn-sm w-full mt-3" @click="openEdit(item)">{{ $t('common.edit') }}</button>
             </template>
           </ResponsiveTable>
           
@@ -318,10 +335,10 @@
 
     <!-- Edit Modal -->
     <div v-if="editEntry" class="fixed inset-0 flex items-center justify-center z-50 p-4" style="background: var(--scrim);">
-      <div class="rounded-lg p-5 w-full max-w-2xl mx-4" style="background: var(--bg); border: 1px solid var(--border); box-shadow: var(--shadow-pop);">
-        <div class="flex items-center justify-between mb-1">
+      <div class="rounded-lg p-4 sm:p-5 w-full max-w-2xl mx-4" style="background: var(--bg); border: 1px solid var(--border); box-shadow: var(--shadow-pop);">
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-1">
           <h3 class="text-md font-semibold">{{ $t('payroll.editEntries') }} - {{ userName(editEntry.user_id) }}</h3>
-          <button class="btn-secondary btn-xs" @click="addNewEntry">{{ $t('payroll.addEntry') }}</button>
+          <button class="btn-secondary btn-xs shrink-0 self-start sm:self-auto" @click="addNewEntry">{{ $t('payroll.addEntry') }}</button>
         </div>
         <p class="text-xs text-gray-500 mb-3">{{ $t('payroll.payrollPeriod') }}: {{ periodLabel }} • {{ $t('payroll.timesShownIn') }} {{ auth.user?.timezone || 'America/Lima' }}</p>
         <div class="max-h-[60vh] overflow-auto space-y-3 pr-1">
@@ -377,8 +394,12 @@
             </div>
           </div>
         </div>
-        <div class="mt-3 text-right text-sm text-gray-600">{{ $t('payroll.totalSelected') }}: {{ editEntry.list.length }} • {{ $t('payroll.editable') }}: {{ editableCount }} • {{ $t('payroll.sum') }}: {{ formatCurrency(editableSum) }}</div>
-        <div class="mt-4 flex justify-between">
+        <div class="mt-3 flex flex-wrap items-center justify-end gap-x-4 gap-y-1 text-sm text-gray-600">
+          <span>{{ $t('payroll.totalSelected') }}: <b class="text-gray-900">{{ editEntry.list.length }}</b></span>
+          <span>{{ $t('payroll.editable') }}: <b class="text-gray-900">{{ editableCount }}</b></span>
+          <span>{{ $t('payroll.sum') }}: <b class="text-gray-900">{{ formatCurrency(editableSum) }}</b></span>
+        </div>
+        <div class="mt-4 flex flex-wrap items-center justify-between gap-2">
           <div class="flex items-center gap-2">
             <span v-if="editEntry.approveAfterSave" class="text-xs text-green-600 font-medium inline-flex items-center gap-1">
               <MaterialIcon name="check_circle" :size="14" :filled="true" /> {{ $t('payroll.willApproveAfterSaving') }}
@@ -473,6 +494,7 @@ const period = ref({ start: '', end: '' })
 const selectedStart = ref(null)
 const selectedEnd = ref(null)
 const paying = ref(false)
+const unpaying = ref(false)
 const editEntry = ref(null)
 const deleteConfirmation = ref(null)
 const deleting = ref(false)
@@ -1189,6 +1211,22 @@ const markPaid = async () => {
     }
   } finally {
     paying.value = false
+  }
+}
+
+const markUnpaid = async () => {
+  if (!companyToken.value) return
+  const ok = window.confirm(t('payroll.confirmMarkAsUnpaid'))
+  if (!ok) return
+  try {
+    unpaying.value = true
+    const res = await api.markUnpaid(companyToken.value)
+    if (res.success) {
+      window.showNotification?.({ type: 'success', title: t('navigation.payroll'), message: t('payroll.periodMarkedAsUnpaid') })
+      reloadAll()
+    }
+  } finally {
+    unpaying.value = false
   }
 }
 

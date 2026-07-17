@@ -845,6 +845,47 @@ router.post('/admin/:companyToken/pay', requireAuth, async (req, res) => {
   }
 })
 
+// Admin: reverse "mark paid" for the period (mark unpaid)
+// Flips paid=FALSE on all entries in the current period and resets the
+// payroll snapshot's paid state. Approvals are intentionally left untouched
+// and stored amounts / hourly rates are not modified.
+router.post('/admin/:companyToken/unpay', requireAuth, async (req, res) => {
+  const client = await pool.connect()
+  try {
+    if (req.user.role !== 'admin' && req.user.role !== 'super-admin') return res.status(403).json({ success: false, error: 'Access denied' })
+    const { companyToken } = req.params
+    const bq = await pool.query('SELECT company_id FROM company_accounts WHERE company_token = $1', [companyToken])
+    const companyId4 = bq.rows[0]?.company_id || null
+    if (!(req.user.companyId && companyId4 && req.user.companyId === companyId4)) return res.status(403).json({ success: false, error: 'Access denied' })
+
+    // Get company timezone for proper period calculation
+    const companyTimezone = await getCompanyTimezone(companyId4)
+    const { start, end } = getBiweeklyPeriod(new Date(), companyTimezone)
+
+    await client.query('BEGIN')
+    // Re-open all entries in the period so they can be edited/deleted again.
+    await client.query(
+      `UPDATE time_entries SET paid = FALSE, updated_at = NOW()
+       WHERE company_token = $1 AND clock_in_at >= $2::date AND clock_in_at < ($3::date + INTERVAL '1 day')`,
+      [companyToken, start, end]
+    )
+    // Reset the snapshot paid state for this period (keep the row for history).
+    await client.query(
+      `UPDATE payroll_snapshots SET paid = FALSE, paid_at = NULL
+       WHERE company_token = $1 AND period_start = $2 AND period_end = $3`,
+      [companyToken, start, end]
+    )
+    await client.query('COMMIT')
+    console.log(`✅ Admin ${req.user.email} marked period ${start}..${end} as UNPAID for ${companyToken}`)
+    res.json({ success: true })
+  } catch (e) {
+    await client.query('ROLLBACK')
+    res.status(500).json({ success: false, error: e.message })
+  } finally {
+    client.release()
+  }
+})
+
 // Admin: notify employees paid for current period (without marking paid)
 router.post('/admin/:companyToken/notify-paid', requireAuth, async (req, res) => {
   try {
