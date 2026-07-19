@@ -196,7 +196,29 @@ export async function backfillGains(startDate, endDate, companyId = null) {
   return totalDays
 }
 
-// Auto-backfill on startup — find missing dates from 2026-01-01 through yesterday and fill gaps
+// Auto-backfill on startup — heal missing AND stale (account, day) rows from
+// 2026-01-01 through yesterday.
+//
+// This is per-ACCOUNT, not per-date, on purpose. `computeAndStoreDailyGain`
+// skips writing a row when the OlaClick fetch for that account fails, so a
+// single transient error leaves a permanent hole for just that account on that
+// day. A per-date check ("does any account have a row for this date?") can't
+// see those holes — it treats the date as done as long as one account
+// succeeded.
+//
+// Two failure modes both corrupt an account's same-weekday "record to beat":
+//   • MISSING — no row at all (fetch failed and never retried).
+//   • STALE   — a row exists but is only an intraday snapshot that never got
+//               finalized after the day closed (nightly cron missed / failed
+//               that night). The frozen partial value undercounts the day, so
+//               a genuine best-Saturday can be hidden behind an older one.
+//
+// We detect a stale row as: a past day (in the company timezone) whose
+// computed_at (in that timezone) lands on or before the day itself. We only
+// fill INTERIOR gaps: for each account we start from its earliest existing row
+// and fill any missing day up to yesterday. Accounts with no rows at all in the
+// window are skipped so we never fabricate zero-revenue rows for dates before
+// the account existed.
 export async function autoBackfillIfNeeded() {
   try {
     const yesterday = new Date()
@@ -209,36 +231,114 @@ export async function autoBackfillIfNeeded() {
       return
     }
 
-    // Find dates that have NO data across any account between startDate and yesterday
-    // Generate all dates in range, then subtract dates that already have at least one row
-    const existingDatesRes = await pool.query(
-      "SELECT DISTINCT to_char(date, 'YYYY-MM-DD') AS date_str FROM daily_gains WHERE date >= $1 AND date <= $2 ORDER BY date_str",
-      [startDate, endDate]
-    )
-    const existingDates = new Set(existingDatesRes.rows.map(r => r.date_str))
-
-    // Build list of missing dates
-    const missingDates = []
-    const current = new Date(startDate + 'T12:00:00')
-    const endObj = new Date(endDate + 'T12:00:00')
-    while (current <= endObj) {
-      const dateStr = current.toISOString().split('T')[0]
-      if (!existingDates.has(dateStr)) {
-        missingDates.push(dateStr)
-      }
-      current.setDate(current.getDate() + 1)
-    }
-
-    if (missingDates.length === 0) {
-      console.log(`📊 No missing dates to backfill (${existingDates.size} dates already computed)`)
+    // Accounts we can recompute (need api_token) plus their company timezone.
+    const accountsRes = await pool.query(`
+      SELECT ca.company_id, ca.company_token, ca.api_token, c.timezone
+      FROM company_accounts ca
+      JOIN companies c ON c.id = ca.company_id
+    `)
+    if (accountsRes.rows.length === 0) {
+      console.log('📊 No accounts configured, skipping auto-backfill')
       return
     }
 
-    console.log(`📊 Auto-backfill: ${missingDates.length} missing dates found (${existingDates.size} already exist)`)
-    console.log(`📊 First missing: ${missingDates[0]}, last missing: ${missingDates[missingDates.length - 1]}`)
+    // Map accounts by key for quick api_token / timezone lookup.
+    const accMap = new Map()
+    for (const acc of accountsRes.rows) {
+      accMap.set(`${acc.company_id}|${acc.company_token}`, acc)
+    }
+
+    // Existing (company_id, company_token, date) rows in the window, flagged
+    // stale when they're a past day whose last compute (in the company tz)
+    // happened on or before that same day — i.e. a partial intraday snapshot
+    // that never got finalized.
+    const existingRes = await pool.query(
+      `SELECT dg.company_id,
+              dg.company_token,
+              to_char(dg.date, 'YYYY-MM-DD') AS date_str,
+              (dg.date < (now() AT TIME ZONE c.timezone)::date
+               AND (dg.computed_at AT TIME ZONE c.timezone)::date <= dg.date) AS is_stale
+       FROM daily_gains dg
+       JOIN companies c ON c.id = dg.company_id
+       WHERE dg.date >= $1 AND dg.date <= $2`,
+      [startDate, endDate]
+    )
+    // Fresh database (no rows yet): fall back to the original full-history
+    // initialization so a first deploy still populates every day/account.
+    if (existingRes.rows.length === 0) {
+      const dates = []
+      const current = new Date(startDate + 'T12:00:00')
+      const endObj = new Date(endDate + 'T12:00:00')
+      while (current <= endObj) {
+        dates.push(current.toISOString().split('T')[0])
+        current.setDate(current.getDate() + 1)
+      }
+      console.log(`📊 Auto-backfill: empty daily_gains — initializing ${dates.length} days for all accounts`)
+      backfillAllAccountsForDates(dates).catch(err => {
+        console.error('❌ Auto-backfill error:', err.message)
+      })
+      return
+    }
+
+    const existingByAccount = new Map() // key `${companyId}|${token}` -> Set(dateStr)
+    const todo = new Map() // dedupe key `${companyId}|${token}|${date}` -> tuple
+    let staleCount = 0
+
+    const addTuple = (companyId, companyToken, date) => {
+      const acc = accMap.get(`${companyId}|${companyToken}`)
+      if (!acc) return // account removed / no api_token — can't recompute
+      todo.set(`${companyId}|${companyToken}|${date}`, {
+        companyId,
+        companyToken,
+        apiToken: acc.api_token,
+        timezone: acc.timezone || 'America/Lima',
+        date
+      })
+    }
+
+    for (const row of existingRes.rows) {
+      const key = `${row.company_id}|${row.company_token}`
+      if (!existingByAccount.has(key)) existingByAccount.set(key, new Set())
+      existingByAccount.get(key).add(row.date_str)
+      // Stale rows (partial intraday snapshots) get re-finalized.
+      if (row.is_stale) {
+        staleCount += 1
+        addTuple(row.company_id, row.company_token, row.date_str)
+      }
+    }
+
+    // Add interior missing (account, day) gaps.
+    let missingCount = 0
+    for (const acc of accountsRes.rows) {
+      const key = `${acc.company_id}|${acc.company_token}`
+      const dates = existingByAccount.get(key)
+      // No history for this account in the window — don't backfill pre-existence
+      // dates; the crons will start populating it from today/yesterday onward.
+      if (!dates || dates.size === 0) continue
+
+      const accountStart = [...dates].sort()[0]
+      const current = new Date(accountStart + 'T12:00:00')
+      const endObj = new Date(endDate + 'T12:00:00')
+      while (current <= endObj) {
+        const dateStr = current.toISOString().split('T')[0]
+        if (!dates.has(dateStr)) {
+          missingCount += 1
+          addTuple(acc.company_id, acc.company_token, dateStr)
+        }
+        current.setDate(current.getDate() + 1)
+      }
+    }
+
+    const tuples = [...todo.values()]
+    if (tuples.length === 0) {
+      console.log(`📊 No account-days to backfill (${existingRes.rows.length} rows already exist)`)
+      return
+    }
+
+    console.log(`📊 Auto-backfill: ${tuples.length} account-days to recompute (${missingCount} missing, ${staleCount} stale; ${existingRes.rows.length} rows exist)`)
 
     // Run in background — don't await
-    backfillMissingDates(missingDates).catch(err => {
+    backfillAccountDays(tuples).catch(err => {
       console.error('❌ Auto-backfill error:', err.message)
     })
   } catch (err) {
@@ -247,9 +347,10 @@ export async function autoBackfillIfNeeded() {
   }
 }
 
-// Backfill only specific missing dates (throttled 1 day/min)
-async function backfillMissingDates(dates) {
-  console.log(`📊 Backfilling ${dates.length} missing dates...`)
+// Full initialization path (fresh DB): compute every account for each date,
+// throttled ~1 day/min to stay under OlaClick rate limits.
+async function backfillAllAccountsForDates(dates) {
+  console.log(`📊 Backfilling ${dates.length} dates (all accounts)...`)
 
   for (let i = 0; i < dates.length; i++) {
     const dateStr = dates[i]
@@ -266,31 +367,65 @@ async function backfillMissingDates(dates) {
     }
   }
 
-  console.log(`📊 Backfill complete: ${dates.length} missing dates processed`)
+  console.log(`📊 Backfill complete: ${dates.length} dates processed`)
 }
+
+// Recompute specific (account, day) tuples — missing or stale (throttled to
+// avoid OlaClick rate limits). Unlike the per-date backfill, this only
+// re-fetches the exact account+day holes, so cost scales with the number of
+// gaps/stale rows rather than the number of calendar days.
+async function backfillAccountDays(tuples) {
+  console.log(`📊 Backfilling ${tuples.length} account-days...`)
+
+  for (let i = 0; i < tuples.length; i++) {
+    const t = tuples[i]
+    try {
+      const result = await computeAndStoreDailyGain(t.companyId, t.companyToken, t.apiToken, t.date, t.timezone)
+      const status = result ? `gross=${(result.gross ?? 0).toFixed(2)}` : 'SKIPPED (no OlaClick data)'
+      console.log(`📊 Backfill [${i + 1}/${tuples.length}] ${t.companyToken} ${t.date} — ${status}`)
+    } catch (err) {
+      console.error(`📊 Backfill [${i + 1}/${tuples.length}] ${t.companyToken} ${t.date} — ERROR: ${err.message}`)
+    }
+
+    // 2s between calls to stay well under rate limits
+    if (i < tuples.length - 1) {
+      await sleep(2000)
+    }
+  }
+
+  console.log(`📊 Backfill complete: ${tuples.length} account-days processed`)
+}
+
+// Number of trailing days the nightly cron re-finalizes. Recomputing more than
+// just "yesterday" means a single missed/failed nightly run (deploy, outage,
+// transient OlaClick error) self-heals on a later night instead of leaving a
+// permanently stale partial-day snapshot that corrupts the same-weekday record.
+const NIGHTLY_FINALIZE_DAYS = 3
 
 // Schedule cron jobs for daily gain computation
 export function scheduleDailyGainsCron() {
-  // 3 AM Lima time — compute yesterday's final gain
+  // 3 AM Lima time — finalize the last few closed days (see NIGHTLY_FINALIZE_DAYS)
   cron.schedule('0 3 * * *', async () => {
-    console.log('📊 [Cron] Computing yesterday\'s daily gains...')
+    console.log(`📊 [Cron] Finalizing last ${NIGHTLY_FINALIZE_DAYS} day(s) of daily gains...`)
     try {
       const companiesRes = await pool.query('SELECT id, timezone FROM companies')
       for (const company of companiesRes.rows) {
         const tz = company.timezone || 'America/Lima'
-        const yesterday = getYesterdayInTimezone(tz)
+        const days = getRecentDatesInTimezone(NIGHTLY_FINALIZE_DAYS, tz) // yesterday, -2, -3, ...
         const accounts = (await pool.query('SELECT company_token, api_token FROM company_accounts WHERE company_id = $1', [company.id])).rows
-        for (const acc of accounts) {
-          try {
-            await computeAndStoreDailyGain(company.id, acc.company_token, acc.api_token, yesterday, tz)
-            console.log(`  ✓ ${acc.company_token} ${yesterday}`)
-          } catch (err) {
-            console.error(`  ❌ ${acc.company_token} ${yesterday}:`, err.message)
+        for (const day of days) {
+          for (const acc of accounts) {
+            try {
+              await computeAndStoreDailyGain(company.id, acc.company_token, acc.api_token, day, tz)
+              console.log(`  ✓ ${acc.company_token} ${day}`)
+            } catch (err) {
+              console.error(`  ❌ ${acc.company_token} ${day}:`, err.message)
+            }
+            await sleep(2000)
           }
-          await sleep(2000)
         }
       }
-      console.log('📊 [Cron] Yesterday\'s gains computed')
+      console.log('📊 [Cron] Recent days finalized')
     } catch (err) {
       console.error('❌ [Cron] Daily gains error:', err.message)
     }
@@ -323,11 +458,16 @@ export function scheduleDailyGainsCron() {
   console.log('📊 Daily gains cron jobs scheduled (3 AM final + every 2h rolling)')
 }
 
-// Helper: get yesterday's date in a timezone
-function getYesterdayInTimezone(timezone) {
+// Helper: get the last `count` closed days (yesterday, -2, ...) in a timezone,
+// ordered oldest → newest.
+function getRecentDatesInTimezone(count, timezone) {
   const now = new Date()
   const todayStr = now.toLocaleDateString('en-CA', { timeZone: timezone })
-  const todayDate = new Date(todayStr + 'T12:00:00')
-  todayDate.setDate(todayDate.getDate() - 1)
-  return todayDate.toISOString().split('T')[0]
+  const dates = []
+  for (let i = count; i >= 1; i--) {
+    const d = new Date(todayStr + 'T12:00:00')
+    d.setDate(d.getDate() - i)
+    dates.push(d.toISOString().split('T')[0])
+  }
+  return dates
 }
