@@ -1,6 +1,7 @@
 import cron from 'node-cron'
 import { pool } from '../database.js'
-import { fetchOrdersList, getTimezoneAwareDate } from './olaClickService.js'
+// fetchOrdersList is the cookie-API fallback (temporarily disabled below).
+import { getTimezoneAwareDate /*, fetchOrdersList */ } from './olaClickService.js'
 import { getPaymentData } from './ledgerReadService.js'
 
 const FOOD_COST_RATE = 0.3
@@ -52,17 +53,19 @@ export async function computeAndStoreDailyGain(companyId, companyToken, apiToken
   // (COUNT of order_facts), else from the cookie /orders list.
   let ordersCount = 0
   try {
-    if (publicApiKey) {
-      const cntRes = await pool.query(
-        `SELECT COUNT(*) AS n FROM order_facts
-         WHERE company_token = $1 AND day_local = $2 AND status <> 'CANCELLED'`,
-        [companyToken, date]
-      )
-      ordersCount = Number(cntRes.rows[0]?.n) || 0
-    } else {
-      const orders = await fetchOrdersList(account, { startDate: date, endDate: date, timezone })
-      ordersCount = orders.filter((o) => (o?.status || '').toString().toUpperCase() !== 'CANCELLED').length
-    }
+    const cntRes = await pool.query(
+      `SELECT COUNT(*) AS n FROM order_facts
+       WHERE company_token = $1 AND day_local = $2 AND status <> 'CANCELLED'`,
+      [companyToken, date]
+    )
+    ordersCount = Number(cntRes.rows[0]?.n) || 0
+    // Cookie-API fallback disabled — always count from the ledger.
+    // if (publicApiKey) {
+    //   ...ledger count (above)
+    // } else {
+    //   const orders = await fetchOrdersList(account, { startDate: date, endDate: date, timezone })
+    //   ordersCount = orders.filter((o) => (o?.status || '').toString().toUpperCase() !== 'CANCELLED').length
+    // }
   } catch (err) {
     console.error(`  ❌ Order count error for ${companyToken} on ${date}:`, err.message)
     return null

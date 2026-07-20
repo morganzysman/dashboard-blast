@@ -18,12 +18,14 @@
 // keys are still being provisioned). CANCELLED orders are excluded everywhere.
 
 import { pool } from '../database.js'
-import {
-  fetchGeneralIndicators,
-  fetchServiceMetrics,
-  fetchOlaClickData,
-  fetchTipsData
-} from './olaClickService.js'
+// Cookie-API fallback (temporarily disabled — see the commented guards below).
+// Kept imported/commented so the fallback can be restored quickly if needed.
+// import {
+//   fetchGeneralIndicators,
+//   fetchServiceMetrics,
+//   fetchOlaClickData,
+//   fetchTipsData
+// } from './olaClickService.js'
 
 const SERVICE_TYPES = ['TABLE', 'ONSITE', 'TAKEAWAY', 'DELIVERY']
 
@@ -53,7 +55,8 @@ function parseRange(params = {}) {
  * lower but more correct.
  */
 export async function getRevenueIndicators(account, params = {}) {
-  if (!hasKey(account)) return fetchGeneralIndicators(account, params)
+  // Cookie fallback disabled — always read from the ledger.
+  // if (!hasKey(account)) return fetchGeneralIndicators(account, params)
   const { startDate, endDate } = parseRange(params)
   try {
     const res = await pool.query(
@@ -83,7 +86,8 @@ export async function getRevenueIndicators(account, params = {}) {
  *   { success, data: { data: { TABLE:{orders:{current_period},sales:{current_period},average_ticket:{current_period}}, ... } }, account, accountKey }
  */
 export async function getServiceMetrics(account, params = {}) {
-  if (!hasKey(account)) return fetchServiceMetrics(account, params)
+  // Cookie fallback disabled — always read from the ledger.
+  // if (!hasKey(account)) return fetchServiceMetrics(account, params)
   const { startDate, endDate } = parseRange(params)
   try {
     const res = await pool.query(
@@ -129,7 +133,8 @@ export async function getServiceMetrics(account, params = {}) {
  * which matches the private by_payment_methods aggregator across split payments.
  */
 export async function getPaymentData(account, params = {}) {
-  if (!hasKey(account)) return fetchOlaClickData(account, params)
+  // Cookie fallback disabled — always read from the ledger.
+  // if (!hasKey(account)) return fetchOlaClickData(account, params)
   const { startDate, endDate } = parseRange(params)
   try {
     const res = await pool.query(
@@ -163,7 +168,8 @@ export async function getPaymentData(account, params = {}) {
  * Returned as a single aggregated row since callers only sum `tip.sum`.
  */
 export async function getTipsData(account, params = {}) {
-  if (!hasKey(account)) return fetchTipsData(account, params)
+  // Cookie fallback disabled — always read from the ledger.
+  // if (!hasKey(account)) return fetchTipsData(account, params)
   const { startDate, endDate } = parseRange(params)
   try {
     const res = await pool.query(
