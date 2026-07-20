@@ -244,6 +244,24 @@ export const api = {
   backfillDailyGains: (startDate, endDate) => {
     return apiRequest('/api/analytics/daily-gains/backfill', { method: 'POST', body: JSON.stringify({ start_date: startDate, end_date: endDate }) })
   },
+  // Daily combos endpoints (average combos per order)
+  getDailyCombos: (month, companyToken = null) => {
+    const params = new URLSearchParams({ month })
+    if (companyToken) params.set('company_token', companyToken)
+    return apiRequest(`/api/analytics/daily-combos?${params.toString()}`, { method: 'GET' })
+  },
+  syncDailyCombos: (date, companyToken = null) => {
+    return apiRequest('/api/analytics/daily-combos/sync', { method: 'POST', body: JSON.stringify({ date, company_token: companyToken }) })
+  },
+  backfillDailyCombos: (startDate, endDate) => {
+    return apiRequest('/api/analytics/daily-combos/backfill', { method: 'POST', body: JSON.stringify({ start_date: startDate, end_date: endDate }) })
+  },
+  // Burgers per order per shop per sales channel (source) — double-entry matrix
+  getBurgersBySource: (month, companyToken = null) => {
+    const params = new URLSearchParams({ month })
+    if (companyToken) params.set('company_token', companyToken)
+    return apiRequest(`/api/analytics/burgers-by-source?${params.toString()}`, { method: 'GET' })
+  },
   // Daily record / goal-to-beat for the weekday of `date` (defaults to today)
   getDailyRecord: (date = null, timezone = null) => {
     const params = new URLSearchParams()
@@ -268,6 +286,7 @@ export const api = {
   // Self-service account settings (regular account admin manages own API key)
   getAccountSettings: () => apiRequest('/api/admin/account-settings', { method: 'GET' }),
   updateAccountApiKey: (companyToken, apiToken) => apiRequest(`/api/admin/account-settings/${encodeURIComponent(companyToken)}`, { method: 'PUT', body: JSON.stringify({ api_token: apiToken }) }),
+  updateAccountPublicApiKey: (companyToken, publicApiKey) => apiRequest(`/api/admin/account-settings/${encodeURIComponent(companyToken)}`, { method: 'PUT', body: JSON.stringify({ public_api_key: publicApiKey }) }),
 
   // Self-service contract identity (employee)
   getMyContractInfo: () => apiRequest('/api/profile/contract-info', { method: 'GET' }),

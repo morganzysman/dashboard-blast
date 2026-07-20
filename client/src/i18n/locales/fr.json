@@ -323,7 +323,35 @@
     "savedTitle": "Clé API enregistrée",
     "savedMsg": "Clé API mise à jour pour {account}",
     "saveFailedTitle": "Échec de l'enregistrement",
-    "saveFailedMsg": "Impossible d'enregistrer la clé API. Veuillez réessayer."
+    "saveFailedMsg": "Impossible d'enregistrer la clé API. Veuillez réessayer.",
+    "publicKeyLabel": "Clé API publique",
+    "publicKeyHint": "Clé API publique OlaClick (olk_live_...) depuis Intégrations > API Keys. Utilisée pour l'analyse des combos.",
+    "publicKeyPlaceholder": "Collez la clé API publique (olk_live_...)"
+  },
+  "combos": {
+    "title": "Burgers par commande",
+    "subtitle": "Moyenne de burgers vendus dans chaque commande (produits nommés combo / burger / smash)",
+    "avgPerOrder": "Moy. / commande",
+    "avgPerOrderShort": "moy./cmd",
+    "totalBurgers": "Total burgers",
+    "ordersWithBurger": "Cmd avec burger",
+    "comboCompare": "combos/cmd",
+    "totalCombos": "Total combos",
+    "ordersWithCombo": "Cmd avec combo",
+    "ordersShort": "commandes",
+    "noData": "Pas encore de données burgers",
+    "noDataHint": "Définissez la clé API publique de ce compte pour suivre les burgers.",
+    "sourceMatrixTitle": "Burgers par commande par boutique et canal",
+    "sourceMatrixSubtitle": "Moyenne de burgers par commande, répartie par canal de vente",
+    "shop": "Boutique",
+    "total": "Total",
+    "sources": {
+      "RAPPI": "Rappi",
+      "RAPPI_TURBO": "Rappi Turbo",
+      "WEB": "Web",
+      "OUTBOUND": "POS",
+      "UNKNOWN": "Autre"
+    }
   },
   "dashboard": {
     "title": "Dashboard",

@@ -3,6 +3,7 @@ import { requireAuth, requireRole } from '../middleware/auth.js'
 import { pool } from '../database.js'
 import { fetchOlaClickData, fetchTipsData, getTimezoneAwareDate } from '../services/olaClickService.js'
 import { computeAndStoreDailyGain, backfillGains } from '../services/dailyGainService.js'
+import { syncComboFactsForDay, backfillComboStats } from '../services/comboStatsService.js'
 import { getBadges, evaluateCompanyMonths } from '../services/achievementService.js'
 
 const router = Router()
@@ -570,6 +571,203 @@ router.post('/daily-gains/backfill', requireAuth, requireRole(['admin', 'super-a
     return res.json({ success: true, message: `Backfill started for ${daysDiff} days. Check server logs for progress.` })
   } catch (error) {
     console.error('❌ Daily gains backfill error:', error)
+    res.status(500).json({ success: false, error: error.message })
+  }
+})
+
+// ====== BURGER / COMBO STATS ENDPOINTS ======
+// "Burger" = any order line item whose product name contains "combo", "burger",
+// or "smash" (case-insensitive) — the unified sale unit, summed by quantity.
+// "Combo" is the narrow subset (name contains "combo"). Metrics are derived
+// from the per-order ledger `combo_order_facts`, excluding CANCELLED orders and
+// counting only orders whose detail has been fetched (burger_units IS NOT NULL).
+
+// GET /api/analytics/daily-combos?month=YYYY-MM&company_token=xxx
+// Returns per-day burger + combo stats for a month. Omit company_token for aggregated view.
+router.get('/daily-combos', requireAuth, async (req, res) => {
+  try {
+    const { month, company_token } = req.query
+    if (!month || !/^\d{4}-\d{2}$/.test(month)) {
+      return res.status(400).json({ success: false, error: 'month parameter required (YYYY-MM)' })
+    }
+
+    const companyId = req.user.companyId
+    const startDate = `${month}-01`
+    const endDate = new Date(parseInt(month.split('-')[0]), parseInt(month.split('-')[1]), 0)
+      .toISOString().split('T')[0]
+
+    const params = [companyId, startDate, endDate]
+    let tokenClause = ''
+    if (company_token) {
+      params.push(company_token)
+      tokenClause = ` AND company_token = $${params.length}`
+    }
+
+    const result = await pool.query(
+      `SELECT to_char(day_local, 'YYYY-MM-DD') AS date,
+              COUNT(*) FILTER (WHERE status <> 'CANCELLED' AND burger_units IS NOT NULL) AS order_count,
+              COALESCE(SUM(burger_units) FILTER (WHERE status <> 'CANCELLED'), 0) AS burger_units,
+              COUNT(*) FILTER (WHERE status <> 'CANCELLED' AND has_burger) AS burger_orders,
+              COALESCE(SUM(combo_units) FILTER (WHERE status <> 'CANCELLED'), 0) AS combo_units,
+              COUNT(*) FILTER (WHERE status <> 'CANCELLED' AND has_combo) AS combo_orders
+       FROM combo_order_facts
+       WHERE company_id = $1 AND day_local >= $2 AND day_local <= $3${tokenClause}
+       GROUP BY day_local
+       ORDER BY day_local`,
+      params
+    )
+
+    const data = result.rows.map((r) => {
+      const orderCount = Number(r.order_count) || 0
+      const burgerUnits = Number(r.burger_units) || 0
+      const burgerOrders = Number(r.burger_orders) || 0
+      const comboUnits = Number(r.combo_units) || 0
+      const comboOrders = Number(r.combo_orders) || 0
+      return {
+        date: r.date,
+        order_count: orderCount,
+        // Unified headline metric.
+        burger_units: burgerUnits,
+        burger_orders: burgerOrders,
+        avg_burgers_per_order: orderCount > 0 ? burgerUnits / orderCount : 0,
+        burger_order_rate: orderCount > 0 ? burgerOrders / orderCount : 0,
+        // Narrow combo subset (kept for comparison).
+        combo_units: comboUnits,
+        combo_orders: comboOrders,
+        avg_combos_per_order: orderCount > 0 ? comboUnits / orderCount : 0,
+        combo_order_rate: orderCount > 0 ? comboOrders / orderCount : 0
+      }
+    })
+    return res.json({ success: true, data })
+  } catch (error) {
+    console.error('❌ Daily combos fetch error:', error)
+    res.status(500).json({ success: false, error: error.message })
+  }
+})
+
+// POST /api/analytics/daily-combos/sync  { date, company_token? }
+// Manually sync the combo ledger for a specific date (optionally one account).
+router.post('/daily-combos/sync', requireAuth, requireRole(['admin', 'super-admin']), async (req, res) => {
+  try {
+    const { date, company_token } = req.body
+    if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return res.status(400).json({ success: false, error: 'date parameter required (YYYY-MM-DD)' })
+    }
+    const companyId = req.user.companyId
+
+    let accounts
+    if (company_token) {
+      accounts = (await pool.query(
+        'SELECT company_token, public_api_key FROM company_accounts WHERE company_id = $1 AND company_token = $2',
+        [companyId, company_token]
+      )).rows
+    } else {
+      accounts = (await pool.query(
+        'SELECT company_token, public_api_key FROM company_accounts WHERE company_id = $1 AND public_api_key IS NOT NULL',
+        [companyId]
+      )).rows
+    }
+
+    const results = []
+    for (const acc of accounts) {
+      const r = await syncComboFactsForDay(companyId, acc.company_token, acc.public_api_key, date)
+      if (r) results.push({ company_token: acc.company_token, ...r })
+    }
+    return res.json({ success: true, synced: results.length, results })
+  } catch (error) {
+    console.error('❌ Daily combos sync error:', error)
+    res.status(500).json({ success: false, error: error.message })
+  }
+})
+
+// POST /api/analytics/daily-combos/backfill  { start_date, end_date }
+router.post('/daily-combos/backfill', requireAuth, requireRole(['admin', 'super-admin']), async (req, res) => {
+  try {
+    const { start_date, end_date } = req.body
+    if (!start_date || !end_date) {
+      return res.status(400).json({ success: false, error: 'start_date and end_date required (YYYY-MM-DD)' })
+    }
+    const startObj = new Date(start_date)
+    const endObj = new Date(end_date)
+    const daysDiff = Math.ceil((endObj - startObj) / (1000 * 3600 * 24)) + 1
+    if (daysDiff > 365) {
+      return res.status(400).json({ success: false, error: 'Maximum 365 days for backfill' })
+    }
+    if (daysDiff < 1) {
+      return res.status(400).json({ success: false, error: 'end_date must be >= start_date' })
+    }
+
+    const companyId = req.user.companyId
+    backfillComboStats(start_date, end_date, companyId).catch((err) => {
+      console.error('❌ Combo backfill error:', err.message)
+    })
+    return res.json({ success: true, message: `Combo backfill started for ${daysDiff} days. Check server logs for progress.` })
+  } catch (error) {
+    console.error('❌ Daily combos backfill error:', error)
+    res.status(500).json({ success: false, error: error.message })
+  }
+})
+
+// GET /api/analytics/burgers-by-source?month=YYYY-MM&company_token=xxx
+// Double-entry matrix source data: burgers per order per shop per sales channel
+// (source). Counts only fetched, non-cancelled orders. Omit company_token for
+// all shops in the company. Frontend pivots rows(shop) × cols(source).
+router.get('/burgers-by-source', requireAuth, async (req, res) => {
+  try {
+    const { month, company_token } = req.query
+    if (!month || !/^\d{4}-\d{2}$/.test(month)) {
+      return res.status(400).json({ success: false, error: 'month parameter required (YYYY-MM)' })
+    }
+
+    const companyId = req.user.companyId
+    const startDate = `${month}-01`
+    const endDate = new Date(parseInt(month.split('-')[0]), parseInt(month.split('-')[1]), 0)
+      .toISOString().split('T')[0]
+
+    const params = [companyId, startDate, endDate]
+    let tokenClause = ''
+    if (company_token) {
+      params.push(company_token)
+      tokenClause = ` AND cof.company_token = $${params.length}`
+    }
+
+    const result = await pool.query(
+      `SELECT cof.company_token,
+              COALESCE(ca.account_name, cof.company_token) AS account_name,
+              COALESCE(cof.source, 'UNKNOWN') AS source,
+              COUNT(*) AS order_count,
+              COALESCE(SUM(cof.burger_units), 0) AS burger_units,
+              COALESCE(SUM(cof.combo_units), 0) AS combo_units
+       FROM combo_order_facts cof
+       LEFT JOIN company_accounts ca
+         ON ca.company_id = cof.company_id AND ca.company_token = cof.company_token
+       WHERE cof.company_id = $1
+         AND cof.day_local >= $2 AND cof.day_local <= $3
+         AND cof.status <> 'CANCELLED'
+         AND cof.burger_units IS NOT NULL${tokenClause}
+       GROUP BY cof.company_token, ca.account_name, cof.source
+       ORDER BY account_name, source`,
+      params
+    )
+
+    const data = result.rows.map((r) => {
+      const orderCount = Number(r.order_count) || 0
+      const burgerUnits = Number(r.burger_units) || 0
+      const comboUnits = Number(r.combo_units) || 0
+      return {
+        company_token: r.company_token,
+        account_name: r.account_name,
+        source: r.source,
+        order_count: orderCount,
+        burger_units: burgerUnits,
+        combo_units: comboUnits,
+        avg_burgers_per_order: orderCount > 0 ? burgerUnits / orderCount : 0,
+        avg_combos_per_order: orderCount > 0 ? comboUnits / orderCount : 0
+      }
+    })
+    return res.json({ success: true, month, data })
+  } catch (error) {
+    console.error('❌ Burgers-by-source fetch error:', error)
     res.status(500).json({ success: false, error: error.message })
   }
 })

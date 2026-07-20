@@ -71,6 +71,16 @@
           </div>
         </div>
 
+        <!-- Combo stats summary (average burgers per order) -->
+        <div class="mb-4">
+          <ComboSummaryCard :month="monthKey" :company-token="selectedToken" />
+        </div>
+
+        <!-- Burgers per order per shop per sales channel -->
+        <div class="mb-4">
+          <BurgerSourceMatrix :month="monthKey" :company-token="selectedToken" />
+        </div>
+
         <!-- Calendar grid -->
         <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 lg:gap-3 text-xs">
           <!-- Weekday headers (desktop) -->
@@ -169,6 +179,8 @@ import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../stores/auth'
 import api from '../utils/api.js'
 import ObjectiveProgress from '../components/ui/ObjectiveProgress.vue'
+import ComboSummaryCard from '../components/ComboSummaryCard.vue'
+import BurgerSourceMatrix from '../components/BurgerSourceMatrix.vue'
 import { DAILY_GAIN_OBJECTIVE } from '../composables/useProfitability'
 
 const { t } = useI18n()

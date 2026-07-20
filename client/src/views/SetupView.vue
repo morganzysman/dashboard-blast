@@ -167,6 +167,7 @@
               :company-token="row.company_token"
               :account-name="row.account_name"
               :initial-api-token="accountApiKeys[row.company_token] || ''"
+              :initial-public-api-key="accountPublicApiKeys[row.company_token] || ''"
               @saved="onApiKeySaved"
             />
           </section>
@@ -263,6 +264,7 @@ const kitchenSlaLoading = ref(false)
 // unlocks it (server/config/featureModules.js -> 'account-api-access').
 const hasApiAccessModule = computed(() => authStore.hasModule('account-api-access'))
 const accountApiKeys = ref({}) // { [company_token]: api_token }
+const accountPublicApiKeys = ref({}) // { [company_token]: public_api_key }
 
 const allAccountCards = computed(() => {
   const list = []
@@ -359,17 +361,22 @@ const fetchAccountApiKeys = async () => {
   try {
     const res = await api.getAccountSettings()
     const map = {}
+    const publicMap = {}
     for (const a of res?.data || []) {
       map[a.company_token] = a.api_token || ''
+      publicMap[a.company_token] = a.public_api_key || ''
     }
     accountApiKeys.value = map
+    accountPublicApiKeys.value = publicMap
   } catch (e) {
     accountApiKeys.value = {}
+    accountPublicApiKeys.value = {}
   }
 }
 
-const onApiKeySaved = ({ company_token, api_token }) => {
+const onApiKeySaved = ({ company_token, api_token, public_api_key }) => {
   accountApiKeys.value = { ...accountApiKeys.value, [company_token]: api_token || '' }
+  accountPublicApiKeys.value = { ...accountPublicApiKeys.value, [company_token]: public_api_key || '' }
 }
 
 const fetchContractConfig = async () => {

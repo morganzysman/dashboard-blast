@@ -324,7 +324,35 @@
     "savedTitle": "API key saved",
     "savedMsg": "API key updated for {account}",
     "saveFailedTitle": "Could not save",
-    "saveFailedMsg": "Failed to save the API key. Please try again."
+    "saveFailedMsg": "Failed to save the API key. Please try again.",
+    "publicKeyLabel": "Public API key",
+    "publicKeyHint": "OlaClick Public API key (olk_live_...) from Integrations > API Keys. Used for combo analytics.",
+    "publicKeyPlaceholder": "Paste public API key (olk_live_...)"
+  },
+  "combos": {
+    "title": "Burgers per order",
+    "subtitle": "Average burgers sold in each order (products named combo / burger / smash)",
+    "avgPerOrder": "Avg / order",
+    "avgPerOrderShort": "avg/order",
+    "totalBurgers": "Total burgers",
+    "ordersWithBurger": "Orders w/ burger",
+    "comboCompare": "combos/order",
+    "totalCombos": "Total combos",
+    "ordersWithCombo": "Orders w/ combo",
+    "ordersShort": "orders",
+    "noData": "No burger data yet",
+    "noDataHint": "Set the public API key for this account to start tracking burgers.",
+    "sourceMatrixTitle": "Burgers per order by shop & channel",
+    "sourceMatrixSubtitle": "Average burgers per order, broken down by sales channel",
+    "shop": "Shop",
+    "total": "Total",
+    "sources": {
+      "RAPPI": "Rappi",
+      "RAPPI_TURBO": "Rappi Turbo",
+      "WEB": "Web",
+      "OUTBOUND": "POS",
+      "UNKNOWN": "Other"
+    }
   },
   "dashboard": {
     "title": "Dashboard",

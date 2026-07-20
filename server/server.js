@@ -8,6 +8,7 @@ import { fileURLToPath } from 'url';
 import { config, checkConfiguration } from './config/index.js';
 import { configureWebPush, scheduleDailyReports } from './services/notificationService.js';
 import { scheduleDailyGainsCron, autoBackfillIfNeeded } from './services/dailyGainService.js';
+import { scheduleComboStatsCron, autoBackfillComboStatsIfNeeded } from './services/comboStatsService.js';
 import { scheduleEmployeeSlaCron, autoBackfillEmployeeSlaIfNeeded } from './services/employeeSlaService.js';
 import { scheduleAchievementsCron, autoEvaluateAchievementsOnBoot } from './services/achievementService.js';
 
@@ -219,6 +220,16 @@ try {
 }
 autoBackfillIfNeeded().catch(err => {
   console.error('❌ Auto-backfill startup error:', err.message);
+});
+
+// Combo stats (average combos per order) — cron + opportunistic backfill on boot
+try {
+  scheduleComboStatsCron();
+} catch (err) {
+  console.error('❌ Failed to schedule combo stats cron:', err.message);
+}
+autoBackfillComboStatsIfNeeded().catch(err => {
+  console.error('❌ Combo stats auto-backfill startup error:', err.message);
 });
 
 // Per-employee kitchen SLA — cron + opportunistic backfill on boot

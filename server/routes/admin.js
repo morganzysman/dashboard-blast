@@ -906,7 +906,7 @@ router.get('/account-settings', requireAuth, requireRole(['admin']), async (req,
     const ctx = await resolveAccountApiContext(req, res)
     if (!ctx) return
     const q = await pool.query(
-      `SELECT company_token, account_name, api_token
+      `SELECT company_token, account_name, api_token, public_api_key
        FROM company_accounts WHERE company_id = $1 ORDER BY account_name`,
       [ctx.companyId]
     )
@@ -916,18 +916,35 @@ router.get('/account-settings', requireAuth, requireRole(['admin']), async (req,
   }
 })
 
-// Update the API key for one of this company's accounts.
+// Update the API key(s) for one of this company's accounts. Accepts either or
+// both of `api_token` (private scraped token) and `public_api_key` (OlaClick
+// Public API key, olk_live_...); only the fields present in the body are
+// updated, so the two can be saved independently.
 router.put('/account-settings/:companyToken', requireAuth, requireRole(['admin']), async (req, res) => {
   try {
     const ctx = await resolveAccountApiContext(req, res)
     if (!ctx) return
     const { companyToken } = req.params
-    const { api_token } = req.body
+
+    const sets = []
+    const params = [ctx.companyId, companyToken]
+    if (Object.prototype.hasOwnProperty.call(req.body, 'api_token')) {
+      params.push(req.body.api_token ?? null)
+      sets.push(`api_token = $${params.length}`)
+    }
+    if (Object.prototype.hasOwnProperty.call(req.body, 'public_api_key')) {
+      params.push(req.body.public_api_key ?? null)
+      sets.push(`public_api_key = $${params.length}`)
+    }
+    if (sets.length === 0) {
+      return res.status(400).json({ success: false, error: 'Nothing to update' })
+    }
+
     const q = await pool.query(
-      `UPDATE company_accounts SET api_token = $3
+      `UPDATE company_accounts SET ${sets.join(', ')}
        WHERE company_id = $1 AND company_token = $2
-       RETURNING company_token, account_name, api_token`,
-      [ctx.companyId, companyToken, api_token ?? null]
+       RETURNING company_token, account_name, api_token, public_api_key`,
+      params
     )
     if (q.rowCount === 0) {
       return res.status(404).json({ success: false, error: 'Account not found for this company' })

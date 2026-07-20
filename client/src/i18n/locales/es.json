@@ -325,7 +325,35 @@
     "savedTitle": "Clave API guardada",
     "savedMsg": "Clave API actualizada para {account}",
     "saveFailedTitle": "No se pudo guardar",
-    "saveFailedMsg": "No se pudo guardar la clave API. Inténtalo de nuevo."
+    "saveFailedMsg": "No se pudo guardar la clave API. Inténtalo de nuevo.",
+    "publicKeyLabel": "Clave API pública",
+    "publicKeyHint": "Clave API pública de OlaClick (olk_live_...) desde Integraciones > API Keys. Se usa para la analítica de combos.",
+    "publicKeyPlaceholder": "Pega la clave API pública (olk_live_...)"
+  },
+  "combos": {
+    "title": "Hamburguesas por pedido",
+    "subtitle": "Promedio de hamburguesas vendidas en cada pedido (productos con combo / burger / smash en el nombre)",
+    "avgPerOrder": "Prom. / pedido",
+    "avgPerOrderShort": "prom./pedido",
+    "totalBurgers": "Total hamburguesas",
+    "ordersWithBurger": "Pedidos con hamburguesa",
+    "comboCompare": "combos/pedido",
+    "totalCombos": "Total combos",
+    "ordersWithCombo": "Pedidos con combo",
+    "ordersShort": "pedidos",
+    "noData": "Aún no hay datos de hamburguesas",
+    "noDataHint": "Configura la clave API pública de esta cuenta para empezar a medir hamburguesas.",
+    "sourceMatrixTitle": "Hamburguesas por pedido por tienda y canal",
+    "sourceMatrixSubtitle": "Promedio de hamburguesas por pedido, desglosado por canal de venta",
+    "shop": "Tienda",
+    "total": "Total",
+    "sources": {
+      "RAPPI": "Rappi",
+      "RAPPI_TURBO": "Rappi Turbo",
+      "WEB": "Web",
+      "OUTBOUND": "POS",
+      "UNKNOWN": "Otro"
+    }
   },
   "dashboard": {
     "title": "Dashboard",
