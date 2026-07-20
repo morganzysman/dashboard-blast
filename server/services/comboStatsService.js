@@ -10,9 +10,10 @@ import {
 } from './publicOlaClickService.js'
 
 // Throttling to stay well under the public API rate limit (~120/window).
-const INTER_ORDER_SLEEP_MS = 150
-const INTER_ACCOUNT_SLEEP_MS = 1000
-const INTER_DAY_SLEEP_MS = 1500
+// Overridable via env so a long backfill can be dialed up/down without a deploy.
+const INTER_ORDER_SLEEP_MS = Number(process.env.COMBO_INTER_ORDER_SLEEP_MS) || 150
+const INTER_ACCOUNT_SLEEP_MS = Number(process.env.COMBO_INTER_ACCOUNT_SLEEP_MS) || 1000
+const INTER_DAY_SLEEP_MS = Number(process.env.COMBO_INTER_DAY_SLEEP_MS) || 1500
 
 // How many trailing days the nightly cron re-syncs (self-heals a missed night).
 const NIGHTLY_FINALIZE_DAYS = 3
