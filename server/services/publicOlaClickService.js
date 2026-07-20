@@ -60,6 +60,20 @@ function resolveBackoffMs(response, attempt) {
  * @param {Record<string, any>} [params]
  */
 async function publicApiGet(publicApiKey, path, params = {}) {
+  return publicApiRequest(publicApiKey, 'get', path, { params });
+}
+
+/**
+ * Send a request to a public API path with retry on 429 / 5xx. Supports any
+ * HTTP method (get/post/patch/delete). Throws on non-retryable errors (4xx
+ * other than 429, with `.status` attached) or after MAX_RETRIES exhausted.
+ *
+ * @param {string} publicApiKey
+ * @param {string} method http method
+ * @param {string} path e.g. `/webhooks`
+ * @param {{params?:Record<string,any>, data?:any}} [opts]
+ */
+async function publicApiRequest(publicApiKey, method, path, { params, data } = {}) {
   if (!publicApiKey) throw new Error('public_api_key is required');
   const url = `${PUBLIC_API_BASE_URL}${path}`;
   let lastError = null;
@@ -67,9 +81,19 @@ async function publicApiGet(publicApiKey, path, params = {}) {
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt += 1) {
     let response;
     try {
-      response = await axios.get(url, {
+      response = await axios.request({
+        url,
+        method,
         params,
-        headers: buildHeaders(publicApiKey),
+        data,
+        headers: {
+          ...buildHeaders(publicApiKey),
+          ...(data != null ? { 'Content-Type': 'application/json' } : {})
+        },
+        // Fail fast on a dead/hung socket (e.g. laptop sleep drops the TCP
+        // connection) instead of blocking forever; the catch below retries with
+        // backoff. Overridable via PUBLIC_API_TIMEOUT_MS.
+        timeout: Number(process.env.PUBLIC_API_TIMEOUT_MS) || 30_000,
         // Let us inspect 4xx/5xx instead of throwing, so we can decide to retry.
         validateStatus: (s) => s >= 200 && s < 600
       });
@@ -102,10 +126,70 @@ async function publicApiGet(publicApiKey, path, params = {}) {
     // Non-retryable (4xx other than 429) or retries exhausted.
     const detail =
       response.data?.detail || response.data?.title || JSON.stringify(response.data);
-    throw new Error(`OlaClick public API ${response.status} on ${path}: ${detail}`);
+    const err = new Error(`OlaClick public API ${response.status} on ${path}: ${detail}`);
+    err.status = response.status;
+    throw err;
   }
 
   throw lastError || new Error(`OlaClick public API request failed on ${path}`);
+}
+
+/** True when an error came from the public API with a 404 (order not found). */
+export function isNotFoundError(err) {
+  return Number(err?.status) === 404;
+}
+
+// ─────────────────────────── Webhooks ───────────────────────────
+// Manage per-restaurant webhook subscriptions (real-time order events).
+// Requires the `webhooks:read` / `webhooks:write` scopes on the API key.
+
+/**
+ * List the webhooks currently registered for this API key's restaurant.
+ * @param {string} publicApiKey
+ * @returns {Promise<Array<Record<string, any>>>}
+ */
+export async function listWebhooks(publicApiKey) {
+  const body = await publicApiRequest(publicApiKey, 'get', '/webhooks');
+  const data = body?.data;
+  return Array.isArray(data) ? data : (data ? [data] : []);
+}
+
+/**
+ * Register a new webhook.
+ * @param {string} publicApiKey
+ * @param {{webhookUrl:string, merchantId:string, webhookHeaders?:Record<string,string>,
+ *          maxRetry?:number, ackHttpCodes?:number[]}} opts
+ * @returns {Promise<Record<string, any>>}
+ */
+export async function createWebhook(publicApiKey, { webhookUrl, merchantId, webhookHeaders, maxRetry, ackHttpCodes }) {
+  const data = { webhook_url: webhookUrl, merchant_id: merchantId };
+  if (webhookHeaders) data.webhook_headers = webhookHeaders;
+  if (maxRetry != null) data.max_retry = maxRetry;
+  if (ackHttpCodes) data.ack_http_codes = ackHttpCodes;
+  const body = await publicApiRequest(publicApiKey, 'post', '/webhooks', { data });
+  return body?.data ?? body;
+}
+
+/**
+ * Update an existing webhook (partial).
+ * @param {string} publicApiKey
+ * @param {string} webhookId
+ * @param {Partial<{webhook_url:string, webhook_headers:Record<string,string>,
+ *          is_active:boolean, max_retry:number, ack_http_codes:number[]}>} patch
+ * @returns {Promise<Record<string, any>>}
+ */
+export async function updateWebhook(publicApiKey, webhookId, patch) {
+  const body = await publicApiRequest(publicApiKey, 'patch', `/webhooks/${encodeURIComponent(webhookId)}`, { data: patch });
+  return body?.data ?? body;
+}
+
+/**
+ * Delete a webhook.
+ * @param {string} publicApiKey
+ * @param {string} webhookId
+ */
+export async function deleteWebhook(publicApiKey, webhookId) {
+  return publicApiRequest(publicApiKey, 'delete', `/webhooks/${encodeURIComponent(webhookId)}`);
 }
 
 /**

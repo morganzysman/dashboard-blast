@@ -63,7 +63,8 @@ export async function getRevenueIndicators(account, params = {}) {
       `SELECT COUNT(*) AS orders, COALESCE(SUM(order_total), 0) AS sales
        FROM order_facts
        WHERE company_token = $1 AND day_local >= $2 AND day_local <= $3
-         AND status <> 'CANCELLED'`,
+         AND status <> 'CANCELLED'
+         AND deleted_at IS NULL`,
       [account.company_token, startDate, endDate]
     )
     const orders = Number(res.rows[0]?.orders) || 0
@@ -97,6 +98,7 @@ export async function getServiceMetrics(account, params = {}) {
        FROM order_facts
        WHERE company_token = $1 AND day_local >= $2 AND day_local <= $3
          AND status <> 'CANCELLED'
+         AND deleted_at IS NULL
        GROUP BY service_type`,
       [account.company_token, startDate, endDate]
     )
@@ -146,6 +148,7 @@ export async function getPaymentData(account, params = {}) {
          ON o.company_token = p.company_token AND o.order_id = p.order_id
        WHERE p.company_token = $1 AND p.day_local >= $2 AND p.day_local <= $3
          AND o.status <> 'CANCELLED'
+         AND o.deleted_at IS NULL
        GROUP BY p.method
        ORDER BY sum DESC`,
       [account.company_token, startDate, endDate]
@@ -176,7 +179,8 @@ export async function getTipsData(account, params = {}) {
       `SELECT COALESCE(SUM(tips_total), 0) AS sum
        FROM order_facts
        WHERE company_token = $1 AND day_local >= $2 AND day_local <= $3
-         AND status <> 'CANCELLED'`,
+         AND status <> 'CANCELLED'
+         AND deleted_at IS NULL`,
       [account.company_token, startDate, endDate]
     )
     const tips = Number(res.rows[0]?.sum) || 0

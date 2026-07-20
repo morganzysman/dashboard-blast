@@ -55,7 +55,8 @@ export async function computeAndStoreDailyGain(companyId, companyToken, apiToken
   try {
     const cntRes = await pool.query(
       `SELECT COUNT(*) AS n FROM order_facts
-       WHERE company_token = $1 AND day_local = $2 AND status <> 'CANCELLED'`,
+       WHERE company_token = $1 AND day_local = $2 AND status <> 'CANCELLED'
+         AND deleted_at IS NULL`,
       [companyToken, date]
     )
     ordersCount = Number(cntRes.rows[0]?.n) || 0

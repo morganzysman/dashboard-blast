@@ -612,7 +612,8 @@ router.get('/daily-combos', requireAuth, async (req, res) => {
               COALESCE(SUM(combo_units) FILTER (WHERE status <> 'CANCELLED'), 0) AS combo_units,
               COUNT(*) FILTER (WHERE status <> 'CANCELLED' AND has_combo) AS combo_orders
        FROM order_facts
-       WHERE company_id = $1 AND day_local >= $2 AND day_local <= $3${tokenClause}
+       WHERE company_id = $1 AND day_local >= $2 AND day_local <= $3
+         AND deleted_at IS NULL${tokenClause}
        GROUP BY day_local
        ORDER BY day_local`,
       params
@@ -745,6 +746,7 @@ router.get('/burgers-by-source', requireAuth, async (req, res) => {
        WHERE cof.company_id = $1
          AND cof.day_local >= $2 AND cof.day_local <= $3
          AND cof.status <> 'CANCELLED'
+         AND cof.deleted_at IS NULL
          AND cof.burger_units IS NOT NULL${tokenClause}
        GROUP BY cof.company_token, ca.account_name, cof.source
        ORDER BY account_name, source`,
@@ -805,7 +807,8 @@ router.get('/payment-methods', requireAuth, async (req, res) => {
          ON o.company_token = p.company_token AND o.order_id = p.order_id
        WHERE p.company_id = $1
          AND p.day_local >= $2 AND p.day_local <= $3
-         AND o.status <> 'CANCELLED'${tokenClause}
+         AND o.status <> 'CANCELLED'
+         AND o.deleted_at IS NULL${tokenClause}
        GROUP BY p.method
        ORDER BY sum DESC`,
       params
@@ -864,7 +867,8 @@ router.get('/revenue', requireAuth, async (req, res) => {
               COALESCE(SUM(service_fee), 0) AS service_fee
        FROM order_facts
        WHERE company_id = $1 AND day_local >= $2 AND day_local <= $3
-         AND status <> 'CANCELLED'${tokenClause}
+         AND status <> 'CANCELLED'
+         AND deleted_at IS NULL${tokenClause}
        GROUP BY day_local
        ORDER BY day_local`,
       params

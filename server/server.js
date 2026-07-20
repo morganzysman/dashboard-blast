@@ -10,6 +10,7 @@ import { configureWebPush, scheduleDailyReports } from './services/notificationS
 import { scheduleDailyGainsCron, autoBackfillIfNeeded } from './services/dailyGainService.js';
 import { scheduleComboStatsCron, autoBackfillComboStatsIfNeeded } from './services/comboStatsService.js';
 import { scheduleAchievementsCron, autoEvaluateAchievementsOnBoot } from './services/achievementService.js';
+import { ensureAccountWebhooks } from './services/webhookService.js';
 
 // Import database module
 import {
@@ -34,6 +35,7 @@ import payrollRoutes from './routes/payroll.js';
 import warningsRoutes from './routes/warnings.js';
 import holidayRoutes from './routes/holidays.js';
 import profileRoutes from './routes/profile.js';
+import webhookRoutes from './routes/webhooks.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -149,6 +151,7 @@ app.use('/api/payroll', payrollRoutes);
 app.use('/api/warnings', warningsRoutes);
 app.use('/api/holidays', holidayRoutes);
 app.use('/api/profile', profileRoutes);
+app.use('/api/webhooks', webhookRoutes);
 
 // Serve notifications debug page
 app.get('/notifications-debug', (req, res) => {
@@ -227,6 +230,12 @@ try {
 }
 autoBackfillComboStatsIfNeeded().catch(err => {
   console.error('❌ Combo stats auto-backfill startup error:', err.message);
+});
+
+// Ensure each keyed account has a webhook pointing at this server (real-time
+// order events). Idempotent — creates only when missing. Non-blocking.
+ensureAccountWebhooks().catch(err => {
+  console.error('❌ Webhook auto-registration startup error:', err.message);
 });
 
 // Achievements trophy case — daily cron + opportunistic backfill from history
