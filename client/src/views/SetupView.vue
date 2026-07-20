@@ -125,19 +125,6 @@
             />
           </section>
 
-          <!-- Module: SLA -->
-          <section class="rounded-md border border-gray-200 p-3 space-y-2" style="background: var(--surface-1);">
-            <h3 class="text-xs font-semibold text-gray-600 uppercase tracking-wider flex items-center gap-1.5">
-              {{ $t('rentability.moduleSla') }}
-            </h3>
-            <AccountSlaGoalsForm
-              :company-token="row.company_token"
-              :kitchen-sla-response="kitchenSlaResponse"
-              :loading="kitchenSlaLoading"
-              @saved="onKitchenSlaSaved"
-            />
-          </section>
-
           <!-- Module: Contract / employer legal data (per account) -->
           <section class="rounded-md border border-gray-200 p-3 space-y-2" style="background: var(--surface-1);">
             <h3 class="text-xs font-semibold text-gray-600 uppercase tracking-wider flex items-center gap-1.5">
@@ -189,7 +176,6 @@ import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../stores/auth'
 import api from '../utils/api'
 import AccountRentabilitySettings from '../components/AccountRentabilitySettings.vue'
-import AccountSlaGoalsForm from '../components/AccountSlaGoalsForm.vue'
 import AccountApiSettings from '../components/AccountApiSettings.vue'
 import AccountContractSettings from '../components/AccountContractSettings.vue'
 import { downloadAccountQr } from '../utils/qr'
@@ -257,8 +243,6 @@ const utilityCosts = ref([])
 const accounts = ref([])
 const loading = ref(false)
 const error = ref('')
-const kitchenSlaResponse = ref(null)
-const kitchenSlaLoading = ref(false)
 
 // Self-service API key module is only available when the tenant's country
 // unlocks it (server/config/featureModules.js -> 'account-api-access').
@@ -328,23 +312,6 @@ const onUtilityDeleted = (token) => {
   utilityCosts.value = utilityCosts.value.filter((c) => c.company_token !== token)
 }
 
-const fetchKitchenSla = async () => {
-  kitchenSlaLoading.value = true
-  try {
-    const data = await api.getKitchenSla()
-    kitchenSlaResponse.value = data?.success ? data : null
-  } catch (e) {
-    console.warn('kitchen-sla fetch failed', e)
-    kitchenSlaResponse.value = null
-  } finally {
-    kitchenSlaLoading.value = false
-  }
-}
-
-const onKitchenSlaSaved = async () => {
-  await fetchKitchenSla()
-}
-
 const fetchCompanyAccounts = async () => {
   try {
     const companyId = authStore.user?.company_id || authStore.user?.companyId
@@ -397,7 +364,6 @@ const onContractSaved = ({ company_token, country, contract_employer_info }) => 
 
 onMounted(async () => {
   await fetchCompanyAccounts()
-  fetchKitchenSla()
   fetchUtilityCosts()
   fetchAccountApiKeys()
   fetchContractConfig()

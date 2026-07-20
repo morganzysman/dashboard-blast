@@ -4,14 +4,10 @@ import { getTimezoneAwareDate } from './olaClickService.js'
 import {
   fetchPublicOrdersList,
   fetchPublicOrderDetail,
-  countOrderUnits
+  countOrderUnits,
+  extractOrderFields,
+  extractPayments
 } from './publicOlaClickService.js'
-
-// Statuses considered "final and countable" — we only pay for a detail fetch
-// (and count combos) once an order reaches one of these. Everything else
-// (PENDING/PREPARING/READY) is stored as a skeleton and re-evaluated next run.
-// CANCELLED orders are stored as skeletons but excluded from the rollup.
-const COUNTABLE_STATUSES = new Set(['FINALIZED', 'DELIVERED'])
 
 // Throttling to stay well under the public API rate limit (~120/window).
 const INTER_ORDER_SLEEP_MS = 150
@@ -39,23 +35,22 @@ function normSource(s) {
   return v || null
 }
 
-function orderTotalOf(order) {
-  const v = Number(order?.total ?? order?.total_paid)
-  return Number.isFinite(v) ? v : null
-}
-
 /**
- * Sync the per-order combo ledger for one account on one local day. Idempotent
- * and resumable:
- *   1. List the day's orders via the public API (order-level skeletons).
- *   2. Load the existing ledger rows for the day.
+ * Sync the per-order ledger for one account on one local day. Idempotent and
+ * resumable:
+ *   1. List the day's orders via the public API. The list carries order-level
+ *      revenue (total, tips, discounts, fees, source, service_type), so we
+ *      persist those in the skeleton without a detail call.
+ *   2. Load the existing ledger rows for the day (fetched flag + updated_at).
  *   3. Upsert a skeleton for every listed order.
- *   4. For each countable order not yet fetched (or whose updated_at changed),
- *      fetch detail, count combos, and upsert the full row with fetched_at.
+ *   4. For every NON-CANCELLED order that is new or whose updated_at changed,
+ *      fetch detail to count combos/burgers and record per-method payments,
+ *      then write the full row + replace its payment child rows atomically.
  *
- * A 429/crash mid-run only leaves unfetched gaps; the next run re-lists and
- * fetches just those. Terminal orders already fetched (with unchanged
- * updated_at) are skipped forever.
+ * We no longer gate on terminal status — open orders are fetched too so the
+ * ledger reflects live activity. The updated_at diff keeps detail calls bounded
+ * (unchanged orders are skipped). A 429/crash mid-run only leaves unfetched
+ * gaps; the next run re-lists and fetches just those.
  *
  * @param {string} companyId
  * @param {string} companyToken
@@ -65,7 +60,7 @@ function orderTotalOf(order) {
  */
 export async function syncComboFactsForDay(companyId, companyToken, publicApiKey, day) {
   if (!publicApiKey) {
-    console.warn(`  ⏭️  ${companyToken} ${day}: no public_api_key, skipping combo sync`)
+    console.warn(`  ⏭️  ${companyToken} ${day}: no public_api_key, skipping order sync`)
     return null
   }
 
@@ -73,14 +68,14 @@ export async function syncComboFactsForDay(companyId, companyToken, publicApiKey
   try {
     orders = await fetchPublicOrdersList(publicApiKey, { startDate: day, endDate: day })
   } catch (err) {
-    console.error(`  ❌ Combo list fetch failed for ${companyToken} ${day}: ${err.message}`)
+    console.error(`  ❌ Order list fetch failed for ${companyToken} ${day}: ${err.message}`)
     return null
   }
 
   // Existing ledger rows for this account+day: order_id -> { fetched, updatedAt }
   const existingRes = await pool.query(
     `SELECT order_id, fetched_at, order_updated_at, burger_units
-     FROM combo_order_facts
+     FROM order_facts
      WHERE company_token = $1 AND day_local = $2`,
     [companyToken, day]
   )
@@ -88,7 +83,7 @@ export async function syncComboFactsForDay(companyId, companyToken, publicApiKey
   for (const r of existingRes.rows) {
     existing.set(r.order_id, {
       // Treat rows fetched before the burger columns existed as un-fetched so a
-      // single pass backfills burger_units; terminal rows are then never re-hit.
+      // single pass backfills burger_units.
       fetched: r.fetched_at != null && r.burger_units != null,
       updatedAt: r.order_updated_at ? new Date(r.order_updated_at).getTime() : null
     })
@@ -104,9 +99,11 @@ export async function syncComboFactsForDay(companyId, companyToken, publicApiKey
     if (!orderId) continue
     const status = normStatus(order.status)
     const source = normSource(order.source)
-    const updatedAtMs = order.updated_at ? new Date(order.updated_at).getTime() : null
+    const fields = extractOrderFields(order)
+    const updatedAtMs = fields.updatedAt ? new Date(fields.updatedAt).getTime() : null
 
-    // Always keep a skeleton up to date (status/source can change between runs).
+    // Always keep the order-level skeleton up to date (status/source/revenue can
+    // change between runs). Never touches combo/burger/payment/fetched columns.
     await upsertSkeleton({
       companyId,
       companyToken,
@@ -114,18 +111,11 @@ export async function syncComboFactsForDay(companyId, companyToken, publicApiKey
       dayLocal: day,
       status,
       source,
-      orderTotal: orderTotalOf(order),
-      orderUpdatedAt: order.updated_at || null
+      fields
     })
 
     if (status === 'CANCELLED') {
       cancelled += 1
-      continue
-    }
-
-    if (!COUNTABLE_STATUSES.has(status)) {
-      // Not final yet — revisit next run.
-      skipped += 1
       continue
     }
 
@@ -138,98 +128,145 @@ export async function syncComboFactsForDay(companyId, companyToken, publicApiKey
       continue
     }
 
-    // Needs a detail fetch to count combos/burgers.
+    // New or changed: fetch detail for combo/burger counts + payment methods.
     try {
       const detail = await fetchPublicOrderDetail(publicApiKey, orderId)
-      const { comboUnits, comboLines, hasCombo, burgerUnits, burgerLines, hasBurger } =
-        countOrderUnits(detail)
-      await upsertCounts({
-        companyId,
-        companyToken,
-        orderId,
-        dayLocal: day,
-        status: normStatus(detail?.status) || status,
-        source: normSource(detail?.source) || source,
-        orderTotal: orderTotalOf(detail) ?? orderTotalOf(order),
-        orderUpdatedAt: detail?.updated_at || order.updated_at || null,
-        comboUnits,
-        comboLines,
-        hasCombo,
-        burgerUnits,
-        burgerLines,
-        hasBurger
-      })
+      const counts = countOrderUnits(detail)
+      const detailFields = extractOrderFields(detail)
+      const payments = extractPayments(detail)
+      await writeOrderDetail(
+        {
+          companyId,
+          companyToken,
+          orderId,
+          dayLocal: day,
+          status: normStatus(detail?.status) || status,
+          source: normSource(detail?.source) || source,
+          fields: { ...fields, ...detailFields },
+          counts,
+          paymentCount: payments.length
+        },
+        payments
+      )
       fetched += 1
     } catch (err) {
       errors += 1
-      console.error(`  ❌ Combo detail fetch failed for ${companyToken} order ${orderId}: ${err.message}`)
+      console.error(`  ❌ Order detail fetch failed for ${companyToken} order ${orderId}: ${err.message}`)
     }
 
     await sleep(INTER_ORDER_SLEEP_MS)
   }
 
   console.log(
-    `  🍔 Burger sync ${companyToken} ${day}: listed=${orders.length} fetched=${fetched} skipped=${skipped} cancelled=${cancelled} errors=${errors}`
+    `  🍔 Order sync ${companyToken} ${day}: listed=${orders.length} fetched=${fetched} skipped=${skipped} cancelled=${cancelled} errors=${errors}`
   )
   return { listed: orders.length, fetched, skipped, cancelled, errors }
 }
 
-// Skeleton upsert: never touches the combo_* / fetched_at columns so a listing
-// pass can't wipe a previously fetched order's counts.
-async function upsertSkeleton({ companyId, companyToken, orderId, dayLocal, status, source, orderTotal, orderUpdatedAt }) {
+// Skeleton upsert: order-level fields only (revenue comes cheaply from the list
+// endpoint). Never touches the combo/burger/payment/fetched_at columns so a
+// listing pass can't wipe a previously fetched order's counts.
+async function upsertSkeleton({ companyId, companyToken, orderId, dayLocal, status, source, fields }) {
   await pool.query(
-    `INSERT INTO combo_order_facts
-       (company_id, company_token, order_id, day_local, status, source, order_total, order_updated_at)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    `INSERT INTO order_facts
+       (company_id, company_token, order_id, day_local, status, source,
+        order_total, total_paid, tips_total, discounts_total, service_fee, service_type, order_updated_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
      ON CONFLICT (company_token, order_id) DO UPDATE SET
        status = EXCLUDED.status,
        source = EXCLUDED.source,
        day_local = EXCLUDED.day_local,
        order_total = EXCLUDED.order_total,
+       total_paid = EXCLUDED.total_paid,
+       tips_total = EXCLUDED.tips_total,
+       discounts_total = EXCLUDED.discounts_total,
+       service_fee = EXCLUDED.service_fee,
+       service_type = EXCLUDED.service_type,
        order_updated_at = EXCLUDED.order_updated_at`,
-    [companyId, companyToken, orderId, dayLocal, status, source, orderTotal, orderUpdatedAt]
+    [
+      companyId, companyToken, orderId, dayLocal, status, source,
+      fields.orderTotal, fields.totalPaid, fields.tipsTotal, fields.discountsTotal,
+      fields.serviceFee, fields.serviceType, fields.updatedAt
+    ]
   )
 }
 
-// Full upsert after a detail fetch: writes the combo/burger counts and stamps fetched_at.
-async function upsertCounts({
-  companyId,
-  companyToken,
-  orderId,
-  dayLocal,
-  status,
-  source,
-  orderTotal,
-  orderUpdatedAt,
-  comboUnits,
-  comboLines,
-  hasCombo,
-  burgerUnits,
-  burgerLines,
-  hasBurger
-}) {
-  await pool.query(
-    `INSERT INTO combo_order_facts
-       (company_id, company_token, order_id, day_local, status, source, order_total, order_updated_at,
-        combo_units, combo_lines, has_combo,
-        burger_units, burger_lines, has_burger, fetched_at)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW())
-     ON CONFLICT (company_token, order_id) DO UPDATE SET
-       status = EXCLUDED.status,
-       source = EXCLUDED.source,
-       day_local = EXCLUDED.day_local,
-       order_total = EXCLUDED.order_total,
-       order_updated_at = EXCLUDED.order_updated_at,
-       combo_units = EXCLUDED.combo_units,
-       combo_lines = EXCLUDED.combo_lines,
-       has_combo = EXCLUDED.has_combo,
-       burger_units = EXCLUDED.burger_units,
-       burger_lines = EXCLUDED.burger_lines,
-       has_burger = EXCLUDED.has_burger,
-       fetched_at = NOW()`,
-    [companyId, companyToken, orderId, dayLocal, status, source, orderTotal, orderUpdatedAt,
-     comboUnits, comboLines, hasCombo, burgerUnits, burgerLines, hasBurger]
-  )
+// Full write after a detail fetch: order-level revenue + combo/burger counts +
+// closed_at + payment_count, then replace the order's payment child rows. Done
+// in a transaction so counts and payments never drift apart.
+async function writeOrderDetail(
+  { companyId, companyToken, orderId, dayLocal, status, source, fields, counts, paymentCount },
+  payments
+) {
+  const client = await pool.connect()
+  try {
+    await client.query('BEGIN')
+
+    await client.query(
+      `INSERT INTO order_facts
+         (company_id, company_token, order_id, day_local, status, source,
+          order_total, total_paid, tips_total, discounts_total, service_fee, service_type,
+          combo_units, combo_lines, has_combo,
+          burger_units, burger_lines, has_burger,
+          payment_count, closed_at, order_updated_at, fetched_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12,
+               $13, $14, $15, $16, $17, $18, $19, $20, $21, NOW())
+       ON CONFLICT (company_token, order_id) DO UPDATE SET
+         status = EXCLUDED.status,
+         source = EXCLUDED.source,
+         day_local = EXCLUDED.day_local,
+         order_total = EXCLUDED.order_total,
+         total_paid = EXCLUDED.total_paid,
+         tips_total = EXCLUDED.tips_total,
+         discounts_total = EXCLUDED.discounts_total,
+         service_fee = EXCLUDED.service_fee,
+         service_type = EXCLUDED.service_type,
+         combo_units = EXCLUDED.combo_units,
+         combo_lines = EXCLUDED.combo_lines,
+         has_combo = EXCLUDED.has_combo,
+         burger_units = EXCLUDED.burger_units,
+         burger_lines = EXCLUDED.burger_lines,
+         has_burger = EXCLUDED.has_burger,
+         payment_count = EXCLUDED.payment_count,
+         closed_at = EXCLUDED.closed_at,
+         order_updated_at = EXCLUDED.order_updated_at,
+         fetched_at = NOW()`,
+      [
+        companyId, companyToken, orderId, dayLocal, status, source,
+        fields.orderTotal, fields.totalPaid, fields.tipsTotal, fields.discountsTotal,
+        fields.serviceFee, fields.serviceType,
+        counts.comboUnits, counts.comboLines, counts.hasCombo,
+        counts.burgerUnits, counts.burgerLines, counts.hasBurger,
+        paymentCount, fields.closedAt, fields.updatedAt
+      ]
+    )
+
+    // Replace the order's payment rows wholesale (handles split / changed payments).
+    await client.query(
+      `DELETE FROM order_payment_facts WHERE company_token = $1 AND order_id = $2`,
+      [companyToken, orderId]
+    )
+    for (let i = 0; i < payments.length; i += 1) {
+      const p = payments[i]
+      await client.query(
+        `INSERT INTO order_payment_facts
+           (company_id, company_token, order_id, seq, day_local, method,
+            bill_amount, received_amount, tip_amount, fee_amount)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+        [
+          companyId, companyToken, orderId, i, dayLocal, p.method,
+          p.billAmount, p.receivedAmount, p.tipAmount, p.feeAmount
+        ]
+      )
+    }
+
+    await client.query('COMMIT')
+  } catch (err) {
+    await client.query('ROLLBACK')
+    throw err
+  } finally {
+    client.release()
+  }
 }
 
 // Load accounts (with a public API key) plus their company timezone.
@@ -266,7 +303,7 @@ function getRecentDatesInTimezone(count, timezone, includeToday = false) {
 }
 
 /**
- * Backfill combo facts for a date range across accounts (all, or one company).
+ * Backfill order facts for a date range across accounts (all, or one company).
  * Idempotent/resumable thanks to the ledger. Throttled to respect rate limits.
  *
  * @param {string} startDate YYYY-MM-DD
@@ -276,7 +313,7 @@ function getRecentDatesInTimezone(count, timezone, includeToday = false) {
 export async function backfillComboStats(startDate, endDate, companyId = null) {
   const accounts = await loadComboAccounts(companyId)
   if (accounts.length === 0) {
-    console.log('🍔 Combo backfill: no accounts with a public_api_key')
+    console.log('🍔 Order backfill: no accounts with a public_api_key')
     return 0
   }
 
@@ -288,38 +325,36 @@ export async function backfillComboStats(startDate, endDate, companyId = null) {
     cur.setDate(cur.getDate() + 1)
   }
 
-  console.log(`🍔 Combo backfill: ${accounts.length} account(s) × ${days.length} day(s) (${startDate} → ${endDate})`)
+  console.log(`🍔 Order backfill: ${accounts.length} account(s) × ${days.length} day(s) (${startDate} → ${endDate})`)
   let processed = 0
   for (const acc of accounts) {
     for (const day of days) {
       try {
         await syncComboFactsForDay(acc.company_id, acc.company_token, acc.public_api_key, day)
       } catch (err) {
-        console.error(`  ❌ Combo backfill error ${acc.company_token} ${day}: ${err.message}`)
+        console.error(`  ❌ Order backfill error ${acc.company_token} ${day}: ${err.message}`)
       }
       processed += 1
       await sleep(INTER_DAY_SLEEP_MS)
     }
     await sleep(INTER_ACCOUNT_SLEEP_MS)
   }
-  console.log(`🍔 Combo backfill complete: ${processed} account-days`)
+  console.log(`🍔 Order backfill complete: ${processed} account-days`)
   return processed
 }
 
 /**
  * Boot-time backfill of a bounded recent window, only for accounts that have a
  * public API key. Runs in the background. Cheap on re-run because already-synced
- * terminal orders are skipped.
+ * orders (unchanged updated_at) are skipped.
  */
 export async function autoBackfillComboStatsIfNeeded() {
   try {
     const accounts = await loadComboAccounts()
     if (accounts.length === 0) {
-      console.log('🍔 No accounts with public_api_key, skipping combo auto-backfill')
+      console.log('🍔 No accounts with public_api_key, skipping order auto-backfill')
       return
     }
-    // Use the first account's tz just to compute the window bounds; per-account
-    // days are recomputed inside the loop.
     const now = new Date()
     for (const acc of accounts) {
       const tz = acc.timezone || 'America/Lima'
@@ -336,28 +371,32 @@ export async function autoBackfillComboStatsIfNeeded() {
         cur.setDate(cur.getDate() + 1)
       }
 
-      console.log(`🍔 Combo auto-backfill ${acc.company_token}: ${days.length} day(s)`)
+      console.log(`🍔 Order auto-backfill ${acc.company_token}: ${days.length} day(s)`)
       for (const day of days) {
         try {
           await syncComboFactsForDay(acc.company_id, acc.company_token, acc.public_api_key, day)
         } catch (err) {
-          console.error(`  ❌ Combo auto-backfill error ${acc.company_token} ${day}: ${err.message}`)
+          console.error(`  ❌ Order auto-backfill error ${acc.company_token} ${day}: ${err.message}`)
         }
         await sleep(INTER_DAY_SLEEP_MS)
       }
       await sleep(INTER_ACCOUNT_SLEEP_MS)
     }
-    console.log('🍔 Combo auto-backfill complete')
+    console.log('🍔 Order auto-backfill complete')
   } catch (err) {
-    console.log('🍔 combo_order_facts not ready, skipping combo auto-backfill:', err.message)
+    console.log('🍔 order_facts not ready, skipping order auto-backfill:', err.message)
   }
 }
 
-/** Schedule combo-stats cron jobs (nightly finalize + rolling today). */
+// Overlap guard: the 5-minute rolling sync can run long on a busy day; skip a
+// tick rather than let two passes hammer the API and race on the same rows.
+let rollingSyncRunning = false
+
+/** Schedule order-stats cron jobs (nightly finalize + 5-minute rolling today). */
 export function scheduleComboStatsCron() {
-  // 3:30 AM Lima — finalize the last few closed days.
+  // 3:30 AM Lima — finalize the last few closed days (self-heal missed nights).
   cron.schedule('30 3 * * *', async () => {
-    console.log(`🍔 [Cron] Finalizing last ${NIGHTLY_FINALIZE_DAYS} day(s) of combo stats...`)
+    console.log(`🍔 [Cron] Finalizing last ${NIGHTLY_FINALIZE_DAYS} day(s) of order stats...`)
     try {
       const accounts = await loadComboAccounts()
       for (const acc of accounts) {
@@ -373,15 +412,21 @@ export function scheduleComboStatsCron() {
         }
         await sleep(INTER_ACCOUNT_SLEEP_MS)
       }
-      console.log('🍔 [Cron] Combo stats finalized')
+      console.log('🍔 [Cron] Order stats finalized')
     } catch (err) {
-      console.error('❌ [Cron] Combo stats nightly error:', err.message)
+      console.error('❌ [Cron] Order stats nightly error:', err.message)
     }
   }, { timezone: 'America/Lima' })
 
-  // Every 2 hours from 9 AM to 11 PM Lima — refresh today's rolling snapshot.
-  cron.schedule('0 9-23/2 * * *', async () => {
-    console.log("🍔 [Cron] Updating today's combo stats...")
+  // Every 5 minutes — refresh today's rolling snapshot. updated_at diffing keeps
+  // this cheap (only new/changed orders trigger a detail fetch). Guarded so runs
+  // never overlap.
+  cron.schedule('*/5 * * * *', async () => {
+    if (rollingSyncRunning) {
+      console.log('🍔 [Cron] Rolling order sync still running — skipping this tick')
+      return
+    }
+    rollingSyncRunning = true
     try {
       const accounts = await loadComboAccounts()
       for (const acc of accounts) {
@@ -394,11 +439,12 @@ export function scheduleComboStatsCron() {
         }
         await sleep(INTER_ACCOUNT_SLEEP_MS)
       }
-      console.log("🍔 [Cron] Today's combo stats updated")
     } catch (err) {
-      console.error('❌ [Cron] Combo stats rolling error:', err.message)
+      console.error('❌ [Cron] Order stats rolling error:', err.message)
+    } finally {
+      rollingSyncRunning = false
     }
   }, { timezone: 'America/Lima' })
 
-  console.log('🍔 Combo stats cron jobs scheduled (3:30 AM final + every 2h rolling)')
+  console.log('🍔 Order stats cron jobs scheduled (3:30 AM finalize + every 5 min rolling)')
 }

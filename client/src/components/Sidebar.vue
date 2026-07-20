@@ -69,7 +69,6 @@ const isSuperAdmin = computed(() => authStore.isSuperAdmin)
 const links = computed(() => [
   { name: 'Dashboard', to: '/', icon: 'dashboard', label: 'navigation.dashboard', show: !isSuperAdmin.value && !isEmployee.value },
   { name: 'Setup', to: '/setup', icon: 'settings', label: 'navigation.setup', show: !isSuperAdmin.value && !isEmployee.value },
-  { name: 'KitchenSla', to: '/kitchen-sla', icon: 'timer', label: 'navigation.kitchenSla', show: !isSuperAdmin.value && !isEmployee.value },
   { name: 'EmployeeClock', to: '/clock', icon: 'schedule', label: 'navigation.clock', show: isEmployee.value },
   { name: 'EmployeeTimesheet', to: '/timesheet', icon: 'event_note', label: 'navigation.timesheet', show: isEmployee.value },
   { name: 'EmployeeContracts', to: '/contracts', icon: 'description', label: 'navigation.contracts', show: isEmployee.value },

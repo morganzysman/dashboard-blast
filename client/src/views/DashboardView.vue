@@ -17,9 +17,6 @@
               @refresh-data="refreshData"
             />
 
-    <!-- Company-wide kitchen (all accounts) -->
-    <CompanyKitchenSummary :company-kitchen="ordersData?.aggregated?.companyKitchen" />
-
     <!-- Account Details Component -->
     <AccountDetails
       :analytics-data="analyticsDataWithServiceMetrics"
@@ -110,7 +107,6 @@ import { ref, onMounted, computed, nextTick } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import DashboardOverview from '../components/DashboardOverview.vue'
 import AccountDetails from '../components/AccountDetails.vue'
-import CompanyKitchenSummary from '../components/CompanyKitchenSummary.vue'
 import OrderEvolutionChart from '../components/OrderEvolutionChart.vue'
 import api from '../utils/api'
 

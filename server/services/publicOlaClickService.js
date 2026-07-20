@@ -11,7 +11,11 @@ import axios from 'axios';
  */
 
 const PUBLIC_API_BASE_URL = 'https://public-api.olaclick.app/v1';
-const DEFAULT_PER_PAGE = 50;
+// The list endpoint paginates via `page` + `per_page` (the bracketed
+// `page[number]`/`page[size]` forms are silently ignored — they always return
+// the first page). per_page is honored, so we request 100 to keep page counts
+// low; `page` then walks the remainder for very busy days.
+const DEFAULT_PER_PAGE = 100;
 const MAX_PAGES = 200;
 const MAX_RETRIES = 5;
 
@@ -106,8 +110,14 @@ async function publicApiGet(publicApiKey, path, params = {}) {
 
 /**
  * Fetch all orders for a date range as lightweight skeletons (the list endpoint
- * returns order-level fields only — no line items). Paginates via
- * `page[number]`/`page[size]` until `pagination.has_more` is false.
+ * returns order-level fields only — no line items). A busy day can span many
+ * pages, so we walk `page` + `per_page` until the API says there is nothing
+ * more.
+ *
+ * Results are de-duplicated by order id: the endpoint can re-serve the same order
+ * across pages (orders shift while paginating, and some ranges re-serve the tail
+ * with `has_more:true`). Deduping keeps the caller from fetching the same order's
+ * detail twice in one run and prevents the loop from spinning to MAX_PAGES.
  *
  * @param {string} publicApiKey
  * @param {{startDate:string, endDate:string, statuses?:string}} range dates as YYYY-MM-DD
@@ -116,27 +126,50 @@ async function publicApiGet(publicApiKey, path, params = {}) {
 export async function fetchPublicOrdersList(publicApiKey, { startDate, endDate, statuses } = {}) {
   if (!startDate || !endDate) throw new Error('startDate and endDate are required');
 
-  const all = [];
+  const byId = new Map(); // order id -> latest copy seen (dedupes across pages)
+  const noId = [];        // orders missing an id are kept verbatim
   let pageNumber = 1;
+
   while (pageNumber <= MAX_PAGES) {
     const params = {
       'filter[start_date]': startDate,
       'filter[end_date]': endDate,
-      'page[number]': pageNumber,
-      'page[size]': DEFAULT_PER_PAGE
+      page: pageNumber,
+      per_page: DEFAULT_PER_PAGE
     };
     if (statuses) params['filter[status]'] = statuses;
 
     const body = await publicApiGet(publicApiKey, '/orders', params);
     const chunk = Array.isArray(body?.data) ? body.data : [];
-    all.push(...chunk);
+
+    let newThisPage = 0;
+    for (const o of chunk) {
+      const id = o?.id ?? o?.order_id ?? o?.uuid;
+      if (id == null || id === '') {
+        noId.push(o);
+        newThisPage += 1;
+        continue;
+      }
+      if (!byId.has(id)) newThisPage += 1;
+      byId.set(id, o); // always refresh with the latest copy
+    }
 
     const pagination = body?.pagination || {};
     const hasMore = pagination.has_more === true;
-    if (!hasMore || chunk.length === 0) break;
+
+    // Stop when the API says there's no more, the page was empty, or the page
+    // added nothing new (guards the "tail re-served with has_more:true" quirk
+    // that would otherwise loop all the way to MAX_PAGES).
+    if (!hasMore || chunk.length === 0 || newThisPage === 0) break;
+
+    // Hard ceiling: never collect more unique orders than the reported total.
+    const total = Number(pagination.total);
+    if (Number.isFinite(total) && byId.size + noId.length >= total) break;
+
     pageNumber += 1;
   }
-  return all;
+
+  return [...byId.values(), ...noId];
 }
 
 /**
@@ -232,4 +265,58 @@ export function countOrderUnits(order) {
 export function countComboUnits(order) {
   const { comboUnits, comboLines, hasCombo } = countOrderUnits(order);
   return { comboUnits, comboLines, hasCombo };
+}
+
+function num(v) {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
+/**
+ * Extract order-level revenue fields shared by the list and detail shapes.
+ * All of these are present on the cheap list endpoint, so the skeleton upsert
+ * can persist them without a detail fetch.
+ *
+ * @param {Record<string, any>|null|undefined} order
+ */
+export function extractOrderFields(order) {
+  if (!order || typeof order !== 'object') return {};
+  return {
+    orderTotal: num(order.total ?? order.total_paid),
+    totalPaid: num(order.total_paid),
+    tipsTotal: num(order.total_tips),
+    discountsTotal: num(order.total_discounts),
+    serviceFee: num(order.service_fee_price),
+    serviceType: order.service_type ? String(order.service_type).toUpperCase().trim() : null,
+    closedAt: order.closed_at || null,
+    updatedAt: order.updated_at || null
+  };
+}
+
+/**
+ * Extract the per-payment rows from an order DETAIL (payments[]). Canceled
+ * payments are skipped. `payment_method.code` is lowercased so revenue-by-method
+ * sums line up with the private by_payment_methods naming (cash/card/yape/...).
+ *
+ * @param {Record<string, any>|null|undefined} order a single-order detail object
+ * @returns {Array<{ method:string, billAmount:number|null, receivedAmount:number|null,
+ *                   tipAmount:number|null, feeAmount:number|null }>}
+ */
+export function extractPayments(order) {
+  const payments = Array.isArray(order?.payments) ? order.payments : [];
+  const out = [];
+  for (const p of payments) {
+    if (!p || typeof p !== 'object') continue;
+    const canceled = p.canceled_at ?? p.cancelled_at;
+    if (canceled != null && canceled !== '') continue;
+    const code = p.payment_method?.code ?? p.payment_method_code ?? p.method ?? 'other';
+    out.push({
+      method: String(code || 'other').toLowerCase().trim() || 'other',
+      billAmount: num(p.bill_amount),
+      receivedAmount: num(p.received_amount),
+      tipAmount: num(p.tip_amount),
+      feeAmount: num(p.fee_amount)
+    });
+  }
+  return out;
 }

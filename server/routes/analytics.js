@@ -579,7 +579,7 @@ router.post('/daily-gains/backfill', requireAuth, requireRole(['admin', 'super-a
 // "Burger" = any order line item whose product name contains "combo", "burger",
 // or "smash" (case-insensitive) — the unified sale unit, summed by quantity.
 // "Combo" is the narrow subset (name contains "combo"). Metrics are derived
-// from the per-order ledger `combo_order_facts`, excluding CANCELLED orders and
+// from the per-order ledger `order_facts`, excluding CANCELLED orders and
 // counting only orders whose detail has been fetched (burger_units IS NOT NULL).
 
 // GET /api/analytics/daily-combos?month=YYYY-MM&company_token=xxx
@@ -610,7 +610,7 @@ router.get('/daily-combos', requireAuth, async (req, res) => {
               COUNT(*) FILTER (WHERE status <> 'CANCELLED' AND has_burger) AS burger_orders,
               COALESCE(SUM(combo_units) FILTER (WHERE status <> 'CANCELLED'), 0) AS combo_units,
               COUNT(*) FILTER (WHERE status <> 'CANCELLED' AND has_combo) AS combo_orders
-       FROM combo_order_facts
+       FROM order_facts
        WHERE company_id = $1 AND day_local >= $2 AND day_local <= $3${tokenClause}
        GROUP BY day_local
        ORDER BY day_local`,
@@ -738,7 +738,7 @@ router.get('/burgers-by-source', requireAuth, async (req, res) => {
               COUNT(*) AS order_count,
               COALESCE(SUM(cof.burger_units), 0) AS burger_units,
               COALESCE(SUM(cof.combo_units), 0) AS combo_units
-       FROM combo_order_facts cof
+       FROM order_facts cof
        LEFT JOIN company_accounts ca
          ON ca.company_id = cof.company_id AND ca.company_token = cof.company_token
        WHERE cof.company_id = $1
@@ -768,6 +768,124 @@ router.get('/burgers-by-source', requireAuth, async (req, res) => {
     return res.json({ success: true, month, data })
   } catch (error) {
     console.error('❌ Burgers-by-source fetch error:', error)
+    res.status(500).json({ success: false, error: error.message })
+  }
+})
+
+// ====== DB-BACKED REVENUE / PAYMENT-METHOD ENDPOINTS ======
+// These read straight from the order ledger (order_facts + order_payment_facts),
+// replacing the private by_payment_methods scrape. Excludes CANCELLED orders.
+
+// GET /api/analytics/payment-methods?start_date=YYYY-MM-DD&end_date=YYYY-MM-DD&company_token=xxx
+// Revenue by payment method (sum of bill_amount), with tips and fees. This is
+// the ledger-backed equivalent of OlaClick's by_payment_methods report.
+router.get('/payment-methods', requireAuth, async (req, res) => {
+  try {
+    const { start_date, end_date, company_token } = req.query
+    if (!start_date || !end_date || !/^\d{4}-\d{2}-\d{2}$/.test(start_date) || !/^\d{4}-\d{2}-\d{2}$/.test(end_date)) {
+      return res.status(400).json({ success: false, error: 'start_date and end_date required (YYYY-MM-DD)' })
+    }
+    const companyId = req.user.companyId
+    const params = [companyId, start_date, end_date]
+    let tokenClause = ''
+    if (company_token) {
+      params.push(company_token)
+      tokenClause = ` AND p.company_token = $${params.length}`
+    }
+
+    const result = await pool.query(
+      `SELECT p.method AS name,
+              COUNT(*) AS count,
+              COALESCE(SUM(p.bill_amount), 0) AS sum,
+              COALESCE(SUM(p.tip_amount), 0) AS tips,
+              COALESCE(SUM(p.fee_amount), 0) AS fees
+       FROM order_payment_facts p
+       JOIN order_facts o
+         ON o.company_token = p.company_token AND o.order_id = p.order_id
+       WHERE p.company_id = $1
+         AND p.day_local >= $2 AND p.day_local <= $3
+         AND o.status <> 'CANCELLED'${tokenClause}
+       GROUP BY p.method
+       ORDER BY sum DESC`,
+      params
+    )
+
+    const data = result.rows.map((r) => ({
+      name: r.name,
+      count: Number(r.count) || 0,
+      sum: Number(r.sum) || 0,
+      tips: Number(r.tips) || 0,
+      fees: Number(r.fees) || 0
+    }))
+    const totalAmount = data.reduce((s, m) => s + m.sum, 0)
+    for (const m of data) m.percent = totalAmount > 0 ? (m.sum / totalAmount) * 100 : 0
+
+    return res.json({
+      success: true,
+      data,
+      totals: {
+        amount: totalAmount,
+        payments: data.reduce((s, m) => s + m.count, 0),
+        tips: data.reduce((s, m) => s + m.tips, 0),
+        fees: data.reduce((s, m) => s + m.fees, 0)
+      }
+    })
+  } catch (error) {
+    console.error('❌ Payment-methods fetch error:', error)
+    res.status(500).json({ success: false, error: error.message })
+  }
+})
+
+// GET /api/analytics/revenue?start_date=YYYY-MM-DD&end_date=YYYY-MM-DD&company_token=xxx
+// Per-day revenue rollup from the order ledger (gross, paid, tips, discounts,
+// service fee, order count). Excludes CANCELLED orders.
+router.get('/revenue', requireAuth, async (req, res) => {
+  try {
+    const { start_date, end_date, company_token } = req.query
+    if (!start_date || !end_date || !/^\d{4}-\d{2}-\d{2}$/.test(start_date) || !/^\d{4}-\d{2}-\d{2}$/.test(end_date)) {
+      return res.status(400).json({ success: false, error: 'start_date and end_date required (YYYY-MM-DD)' })
+    }
+    const companyId = req.user.companyId
+    const params = [companyId, start_date, end_date]
+    let tokenClause = ''
+    if (company_token) {
+      params.push(company_token)
+      tokenClause = ` AND company_token = $${params.length}`
+    }
+
+    const result = await pool.query(
+      `SELECT to_char(day_local, 'YYYY-MM-DD') AS date,
+              COUNT(*) AS order_count,
+              COALESCE(SUM(order_total), 0) AS gross_total,
+              COALESCE(SUM(total_paid), 0) AS total_paid,
+              COALESCE(SUM(tips_total), 0) AS tips_total,
+              COALESCE(SUM(discounts_total), 0) AS discounts_total,
+              COALESCE(SUM(service_fee), 0) AS service_fee
+       FROM order_facts
+       WHERE company_id = $1 AND day_local >= $2 AND day_local <= $3
+         AND status <> 'CANCELLED'${tokenClause}
+       GROUP BY day_local
+       ORDER BY day_local`,
+      params
+    )
+
+    const data = result.rows.map((r) => {
+      const orderCount = Number(r.order_count) || 0
+      const gross = Number(r.gross_total) || 0
+      return {
+        date: r.date,
+        order_count: orderCount,
+        gross_total: gross,
+        total_paid: Number(r.total_paid) || 0,
+        tips_total: Number(r.tips_total) || 0,
+        discounts_total: Number(r.discounts_total) || 0,
+        service_fee: Number(r.service_fee) || 0,
+        average_ticket: orderCount > 0 ? gross / orderCount : 0
+      }
+    })
+    return res.json({ success: true, data })
+  } catch (error) {
+    console.error('❌ Revenue fetch error:', error)
     res.status(500).json({ success: false, error: error.message })
   }
 })

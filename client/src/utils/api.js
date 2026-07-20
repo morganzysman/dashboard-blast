@@ -401,10 +401,6 @@ export const api = {
   createHolidayRequest: (payload) => apiRequest('/api/holidays/requests', { method: 'POST', body: JSON.stringify(payload) }),
   deleteHolidayRequest: (id, companyId) => apiRequest(`/api/holidays/requests/${id}${companyId ? `?companyId=${companyId}` : ''}`, { method: 'DELETE' }),
 
-  getKitchenSla: (params = '') =>
-    apiRequest(`/api/orders/kitchen-sla${params ? `?${params}` : ''}`, { method: 'GET' }),
-  putKitchenSla: (payload) => apiRequest('/api/orders/kitchen-sla', { method: 'PUT', body: JSON.stringify(payload) }),
-
   // User hired_at
   updateUserHiredAt: (userId, hiredAt) => apiRequest(`/api/admin/users/${userId}/hired-at`, { method: 'PUT', body: JSON.stringify({ hired_at: hiredAt }) }),
 
@@ -413,63 +409,7 @@ export const api = {
     apiRequest(`/api/admin/users/${userId}/job-type`, {
       method: 'PUT',
       body: JSON.stringify({ job_type: jobType })
-    }),
-
-  // Per-employee kitchen SLA
-  getEmployeeSlaLeaderboard: ({ startDate, endDate, companyToken } = {}) => {
-    const qs = new URLSearchParams()
-    if (startDate) qs.set('start_date', startDate)
-    if (endDate) qs.set('end_date', endDate)
-    if (companyToken) qs.set('company_token', companyToken)
-    return apiRequest(`/api/employee-sla/leaderboard?${qs.toString()}`, { method: 'GET' })
-  },
-  /**
-   * GET /api/employee-sla/account-matrix
-   *
-   * Returns the per-account × per-channel SLA scoreboard. Each cell stats
-   * shape (also used for per-account `total`, per-channel grand and overall
-   * `grandTotal`):
-   *   {
-   *     ordersCount,           // numerator: orders that survived the SLA filter
-   *     onTimeCount, lateCount,
-   *     onTimeRate,            // onTimeCount / ordersCount, or null
-   *     avgPrepMinutes,        // weighted mean (secondary signal)
-   *     medianPrepMinutes,     // primary central-tendency — weighted median
-   *                            // of per-day medians (approximation across days,
-   *                            // exact within a single day). See route JSDoc.
-   *     targetMinutes,
-   *     unreliablePrepCount,   // orders dropped from SLA (auto-close artefact)
-   *     coverageEvaluated,     // ordersCount + unreliablePrepCount
-   *     coveragePct            // ordersCount / coverageEvaluated, or null
-   *   }
-   */
-  getKitchenSlaAccountMatrix: ({ startDate, endDate } = {}) => {
-    const qs = new URLSearchParams()
-    if (startDate) qs.set('start_date', startDate)
-    if (endDate) qs.set('end_date', endDate)
-    return apiRequest(`/api/employee-sla/account-matrix?${qs.toString()}`, { method: 'GET' })
-  },
-  getEmployeeSlaUserDaily: (userId, { startDate, endDate } = {}) => {
-    const qs = new URLSearchParams()
-    if (startDate) qs.set('start_date', startDate)
-    if (endDate) qs.set('end_date', endDate)
-    return apiRequest(`/api/employee-sla/users/${userId}/daily?${qs.toString()}`, {
-      method: 'GET'
     })
-  },
-  recomputeEmployeeSla: (companyToken, date) =>
-    apiRequest('/api/employee-sla/recompute', {
-      method: 'POST',
-      body: JSON.stringify({ company_token: companyToken, date })
-    }),
-
-  // Per-order products peek (lazy fetch for SLA breach drill-down).
-  // Returns { success, orderId, publicId, products:[{name,quantity}], productsTruncated, totalCount }.
-  getOrderProducts: (companyToken, orderId) =>
-    apiRequest(
-      `/api/orders/${encodeURIComponent(companyToken)}/${encodeURIComponent(orderId)}/products`,
-      { method: 'GET' }
-    )
 }
 
 export default api 
