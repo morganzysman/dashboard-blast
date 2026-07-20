@@ -55,11 +55,20 @@ const WEBHOOK_SECRET_HEADER = (process.env.OLACLICK_WEBHOOK_SECRET_HEADER || 'x-
  * events with 200 so OlaClick doesn't retry them.
  */
 router.post('/olaclick', async (req, res) => {
+  // Log every inbound attempt up front so a delivery that gets rejected (wrong
+  // header/secret) is still visible — otherwise a 401'd delivery leaves no trace.
+  console.log(
+    `🔔 [Webhook] inbound source="${req.headers['source']}" secretHdr=${req.headers[WEBHOOK_SECRET_HEADER] ? 'present' : 'absent'} ` +
+    `type=${req.body?.event_type} order=${req.body?.data?.order_id ?? req.body?.data?.id ?? '-'} merchant=${req.body?.merchant_id ?? '-'}`
+  );
+
   // 1. Authenticity checks.
   if (req.headers['source'] !== 'OlaClick') {
+    console.warn(`🔔 [Webhook] rejected: unexpected source header "${req.headers['source']}"`);
     return res.status(401).json({ error: 'unknown source' });
   }
   if (WEBHOOK_SECRET && req.headers[WEBHOOK_SECRET_HEADER] !== WEBHOOK_SECRET) {
+    console.warn('🔔 [Webhook] rejected: invalid/missing secret header');
     return res.status(401).json({ error: 'invalid secret' });
   }
 
