@@ -1,9 +1,10 @@
 import { Router } from 'express';
 import { requireAuth } from '../middleware/auth.js';
 import {
-  fetchGeneralIndicators,
-  fetchServiceMetrics
-} from '../services/olaClickService.js';
+  getRevenueIndicators,
+  getServiceMetrics
+} from '../services/ledgerReadService.js';
+import { getTimezoneAwareDate } from '../services/olaClickService.js';
 import { config } from '../config/index.js';
 import { pool } from '../database.js';
 
@@ -108,13 +109,13 @@ router.get('/', requireAuth, async (req, res) => {
     if (req.user.role === 'super-admin') {
       if (requestedCompanyId) {
         const q = await pool.query(
-          `SELECT company_id, company_token, account_name, api_token FROM company_accounts WHERE company_id = $1 ORDER BY account_name`,
+          `SELECT company_id, company_token, account_name, api_token, public_api_key FROM company_accounts WHERE company_id = $1 ORDER BY account_name`,
           [requestedCompanyId]
         );
         rows = q.rows;
       } else {
         const q = await pool.query(
-          `SELECT company_id, company_token, account_name, api_token FROM company_accounts ORDER BY account_name`
+          `SELECT company_id, company_token, account_name, api_token, public_api_key FROM company_accounts ORDER BY account_name`
         );
         rows = q.rows;
       }
@@ -125,7 +126,7 @@ router.get('/', requireAuth, async (req, res) => {
       }
       if (companyId) {
         const q = await pool.query(
-          `SELECT company_id, company_token, account_name, api_token FROM company_accounts WHERE company_id = $1 ORDER BY account_name`,
+          `SELECT company_id, company_token, account_name, api_token, public_api_key FROM company_accounts WHERE company_id = $1 ORDER BY account_name`,
           [companyId]
         );
         rows = q.rows;
@@ -138,7 +139,8 @@ router.get('/', requireAuth, async (req, res) => {
       company_id: r.company_id,
       company_token: r.company_token,
       account_name: r.account_name,
-      api_token: r.api_token
+      api_token: r.api_token,
+      public_api_key: r.public_api_key
     }));
     let userTimezone = req.user.userTimezone || config.olaClick.defaultTimezone;
     
@@ -221,7 +223,7 @@ router.get('/', requireAuth, async (req, res) => {
         endDate
       };
       console.log(`   🔍 Account ${account.company_token}: params=${JSON.stringify(params)}`);
-      return fetchGeneralIndicators(account, params);
+      return getRevenueIndicators(account, params);
     });
     
     const currentResults = await Promise.all(currentPromises);
@@ -266,13 +268,13 @@ router.get('/service-metrics', requireAuth, async (req, res) => {
     if (req.user.role === 'super-admin') {
       if (requestedCompanyId) {
         const q = await pool.query(
-          `SELECT company_id, company_token, account_name, api_token FROM company_accounts WHERE company_id = $1 ORDER BY account_name`,
+          `SELECT company_id, company_token, account_name, api_token, public_api_key FROM company_accounts WHERE company_id = $1 ORDER BY account_name`,
           [requestedCompanyId]
         );
         rows = q.rows;
       } else {
         const q = await pool.query(
-          `SELECT company_id, company_token, account_name, api_token FROM company_accounts ORDER BY account_name`
+          `SELECT company_id, company_token, account_name, api_token, public_api_key FROM company_accounts ORDER BY account_name`
         );
         rows = q.rows;
       }
@@ -283,7 +285,7 @@ router.get('/service-metrics', requireAuth, async (req, res) => {
       }
       if (companyId) {
         const q = await pool.query(
-          `SELECT company_id, company_token, account_name, api_token FROM company_accounts WHERE company_id = $1 ORDER BY account_name`,
+          `SELECT company_id, company_token, account_name, api_token, public_api_key FROM company_accounts WHERE company_id = $1 ORDER BY account_name`,
           [companyId]
         );
         rows = q.rows;
@@ -296,7 +298,8 @@ router.get('/service-metrics', requireAuth, async (req, res) => {
       company_id: r.company_id,
       company_token: r.company_token,
       account_name: r.account_name,
-      api_token: r.api_token
+      api_token: r.api_token,
+      public_api_key: r.public_api_key
     }));
 
     if (!userAccounts || userAccounts.length === 0) {
@@ -305,10 +308,16 @@ router.get('/service-metrics', requireAuth, async (req, res) => {
     
     console.log(`📊 Service Metrics - Found ${userAccounts.length} accounts`);
     
-    // Fetch service metrics for all accounts
+    // Fetch service metrics for all accounts. The ledger is keyed by local day,
+    // so resolve "today" in the requested timezone and query that single day
+    // (mirrors the cookie endpoint's period=today behavior).
+    const smTimezone = req.query.timezone || config.olaClick.defaultTimezone;
+    const smToday = getTimezoneAwareDate(null, smTimezone);
     const serviceMetricsPromises = userAccounts.map(account => 
-      fetchServiceMetrics(account, {
-        timezone: req.query.timezone || config.olaClick.defaultTimezone
+      getServiceMetrics(account, {
+        startDate: smToday,
+        endDate: smToday,
+        timezone: smTimezone
       })
     );
     

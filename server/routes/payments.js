@@ -1,12 +1,14 @@
 import { Router } from 'express';
 import { requireAuth } from '../middleware/auth.js';
 import {
-  fetchOlaClickData,
-  fetchGeneralIndicators,
-  fetchTipsData,
   aggregateAccountsData,
-  getTimezoneAwareDate
+  getTimezoneAwareDate,
+  getDateDaysAgoInTimezone
 } from '../services/olaClickService.js';
+import {
+  getPaymentData,
+  getTipsData
+} from '../services/ledgerReadService.js';
 import { config } from '../config/index.js';
 import { pool } from '../database.js';
 
@@ -63,14 +65,14 @@ router.get('/', requireAuth, async (req, res) => {
       // Super-admin can optionally scope by company_id; otherwise include all
       if (requestedCompanyId) {
         const q = await pool.query(
-          `SELECT company_id, company_token, account_name, api_token
+          `SELECT company_id, company_token, account_name, api_token, public_api_key
            FROM company_accounts WHERE company_id = $1 ORDER BY account_name`,
           [requestedCompanyId]
         );
         accountsRows = q.rows;
       } else {
         const q = await pool.query(
-          `SELECT company_id, company_token, account_name, api_token
+          `SELECT company_id, company_token, account_name, api_token, public_api_key
            FROM company_accounts ORDER BY account_name`
         );
         accountsRows = q.rows;
@@ -83,7 +85,7 @@ router.get('/', requireAuth, async (req, res) => {
       }
       if (companyId) {
         const q = await pool.query(
-          `SELECT company_id, company_token, account_name, api_token
+          `SELECT company_id, company_token, account_name, api_token, public_api_key
            FROM company_accounts WHERE company_id = $1 ORDER BY account_name`,
           [companyId]
         );
@@ -101,7 +103,8 @@ router.get('/', requireAuth, async (req, res) => {
       company_id: r.company_id,
       company_token: r.company_token,
       account_name: r.account_name,
-      api_token: r.api_token
+      api_token: r.api_token,
+      public_api_key: r.public_api_key
     }));
 
     if (!userAccounts || userAccounts.length === 0) {
@@ -179,13 +182,13 @@ router.get('/', requireAuth, async (req, res) => {
     // Fetch current period data
     console.log('🔄 Fetching current period payment data...');
     const currentPromises = userAccounts.map(account => 
-      fetchOlaClickData(account, currentParams)
+      getPaymentData(account, currentParams)
     );
     
     // Fetch tips data for each account (current period only)
     console.log('🔄 Fetching tips data for each account...');
     const tipsPromises = userAccounts.map(account => 
-      fetchTipsData(account, currentParams)
+      getTipsData(account, currentParams)
     );
     
     const [currentResults, tipsResults] = await Promise.all([
@@ -345,7 +348,7 @@ router.get('/:companyToken', requireAuth, async (req, res) => {
     
     // Find the account in user's accounts
     const userAccounts = req.user.userAccounts || [];
-    const account = userAccounts.find(acc => acc.company_token === companyToken);
+    let account = userAccounts.find(acc => acc.company_token === companyToken);
     
     if (!account) {
       return res.status(404).json({
@@ -353,8 +356,17 @@ router.get('/:companyToken', requireAuth, async (req, res) => {
         error: 'Account not found or access denied'
       });
     }
-    
-    const result = await fetchOlaClickData(account, queryParams);
+
+    // Enrich with the public API key so the ledger path is used when available.
+    if (!account.public_api_key) {
+      const keyRes = await pool.query(
+        'SELECT public_api_key FROM company_accounts WHERE company_token = $1',
+        [companyToken]
+      );
+      account = { ...account, public_api_key: keyRes.rows[0]?.public_api_key || null };
+    }
+
+    const result = await getPaymentData(account, queryParams);
     
     if (result.success) {
       res.json(result);

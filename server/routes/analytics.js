@@ -1,7 +1,8 @@
 import { Router } from 'express'
 import { requireAuth, requireRole } from '../middleware/auth.js'
 import { pool } from '../database.js'
-import { fetchOlaClickData, fetchTipsData, getTimezoneAwareDate } from '../services/olaClickService.js'
+import { getTimezoneAwareDate } from '../services/olaClickService.js'
+import { getPaymentData, getTipsData } from '../services/ledgerReadService.js'
 import { computeAndStoreDailyGain, backfillGains } from '../services/dailyGainService.js'
 import { syncComboFactsForDay, backfillComboStats } from '../services/comboStatsService.js'
 import { getBadges, evaluateCompanyMonths } from '../services/achievementService.js'
@@ -63,8 +64,8 @@ router.get('/profitability', requireAuth, async (req, res) => {
     // Fetch accounts by user's company
     let userAccounts = []
     if (req.user.companyId) {
-      const q = await pool.query('SELECT company_token, api_token FROM company_accounts WHERE company_id = $1', [req.user.companyId])
-      userAccounts = q.rows.map(r => ({ company_token: r.company_token, api_token: r.api_token }))
+      const q = await pool.query('SELECT company_token, api_token, public_api_key FROM company_accounts WHERE company_id = $1', [req.user.companyId])
+      userAccounts = q.rows.map(r => ({ company_token: r.company_token, api_token: r.api_token, public_api_key: r.public_api_key }))
     }
     if (userAccounts.length === 0) {
       return res.json({ success: true, data: { period: { start: startDate, end: endDate, days: daysDiff }, company: { grossSales: 0, paymentFees: 0, netAfterFees: 0, foodCosts: 0, utilityCosts: 0, operatingProfit: 0, operatingMargin: 0, feeRate: 0, tips: 0, tipRate: 0 }, accounts: [], distributions: { feesByMethod: {}, netRevenueByMethod: {} } } })
@@ -77,8 +78,8 @@ router.get('/profitability', requireAuth, async (req, res) => {
       'filter[timezone]': timezone
     }
 
-    const paymentsPromises = userAccounts.map(acc => fetchOlaClickData(acc, filterParams))
-    const tipsPromises = userAccounts.map(acc => fetchTipsData(acc, filterParams))
+    const paymentsPromises = userAccounts.map(acc => getPaymentData(acc, filterParams))
+    const tipsPromises = userAccounts.map(acc => getTipsData(acc, filterParams))
     const [paymentsResults, tipsResults] = await Promise.all([
       Promise.all(paymentsPromises),
       Promise.all(tipsPromises)
@@ -344,8 +345,8 @@ router.get('/order-evolution', requireAuth, async (req, res) => {
     // Fetch accounts by user's company
     let userAccounts = []
     if (req.user.companyId) {
-      const q = await pool.query('SELECT company_token, api_token FROM company_accounts WHERE company_id = $1', [req.user.companyId])
-      userAccounts = q.rows.map(r => ({ company_token: r.company_token, api_token: r.api_token }))
+      const q = await pool.query('SELECT company_token, api_token, public_api_key FROM company_accounts WHERE company_id = $1', [req.user.companyId])
+      userAccounts = q.rows.map(r => ({ company_token: r.company_token, api_token: r.api_token, public_api_key: r.public_api_key }))
     }
 
     if (userAccounts.length === 0) {
@@ -384,7 +385,7 @@ router.get('/order-evolution', requireAuth, async (req, res) => {
             'filter[timezone]': timezone
           }
 
-          const result = await fetchOlaClickData(account, filterParams)
+          const result = await getPaymentData(account, filterParams)
 
           if (!result.success || !result.data?.data) {
             return { date, revenue: 0 }

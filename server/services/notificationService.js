@@ -11,7 +11,8 @@ import {
   trackNotificationError,
   logNotificationEvent
 } from '../database.js';
-import { fetchOlaClickData, getTimezoneAwareDate } from './olaClickService.js';
+import { getTimezoneAwareDate } from './olaClickService.js';
+import { getPaymentData } from './ledgerReadService.js';
 import { pool } from '../database.js';
 
 // Configure Web Push
@@ -430,9 +431,29 @@ async function generateUserDailyReport(user, subscriptionData) {
     console.log(`   Currency: ${currency} (${currencySymbol})`);
     console.log(`   Date: ${todayString}`);
     
-    // Fetch data from all user's accounts
-    const promises = user.accounts.map(account => 
-      fetchOlaClickData(account, baseParams)
+    // Ensure each account carries its public_api_key so the ledger path is used
+    // (falls back to the cookie API only for accounts without a key).
+    let reportAccounts = user.accounts;
+    try {
+      const tokens = user.accounts.map(a => a.company_token).filter(Boolean);
+      if (tokens.length > 0) {
+        const keyRes = await pool.query(
+          'SELECT company_token, public_api_key FROM company_accounts WHERE company_token = ANY($1)',
+          [tokens]
+        );
+        const keyByToken = new Map(keyRes.rows.map(r => [r.company_token, r.public_api_key]));
+        reportAccounts = user.accounts.map(a => ({
+          ...a,
+          public_api_key: a.public_api_key || keyByToken.get(a.company_token) || null
+        }));
+      }
+    } catch (err) {
+      console.error(`  ⚠️  Could not enrich accounts with public_api_key: ${err.message}`);
+    }
+
+    // Fetch data from all user's accounts (ledger-backed; cookie fallback)
+    const promises = reportAccounts.map(account => 
+      getPaymentData(account, baseParams)
     );
     
     const results = await Promise.all(promises);
