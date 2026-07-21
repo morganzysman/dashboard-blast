@@ -17,6 +17,7 @@
     "db:status": "node -e \"import('./server/database.js').then(db => db.getMigrationStatus().then(console.log))\"",
     "db:test": "node -e \"import('./server/database.js').then(db => db.testConnection())\"",
     "achievements:evaluate": "node server/scripts/evaluate-achievements.js",
+    "gains:recompute": "node server/scripts/recompute-daily-gains.mjs",
     "docker:setup": "./scripts/setup-dev.sh",
     "docker:start": "docker-compose -f deployment/dev/docker-compose.dev.yml up -d",
     "docker:stop": "./scripts/dev-stop.sh",

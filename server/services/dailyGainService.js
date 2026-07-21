@@ -1,7 +1,7 @@
 import cron from 'node-cron'
 import { pool } from '../database.js'
 // fetchOrdersList is the cookie-API fallback (temporarily disabled below).
-import { getTimezoneAwareDate /*, fetchOrdersList */ } from './olaClickService.js'
+// import { fetchOrdersList } from './olaClickService.js'
 import { getPaymentData } from './ledgerReadService.js'
 
 const FOOD_COST_RATE = 0.3
@@ -268,7 +268,14 @@ export async function autoBackfillIfNeeded() {
               dg.company_token,
               to_char(dg.date, 'YYYY-MM-DD') AS date_str,
               (dg.date < (now() AT TIME ZONE c.timezone)::date
-               AND (dg.computed_at AT TIME ZONE c.timezone)::date <= dg.date) AS is_stale
+               AND (dg.computed_at AT TIME ZONE c.timezone)::date <= dg.date) AS is_stale,
+              (dg.gross_revenue = 0 AND EXISTS (
+                 SELECT 1 FROM order_facts o
+                 WHERE o.company_token = dg.company_token
+                   AND o.day_local = dg.date
+                   AND o.status <> 'CANCELLED'
+                   AND o.deleted_at IS NULL
+               )) AS is_zeroed
        FROM daily_gains dg
        JOIN companies c ON c.id = dg.company_id
        WHERE dg.date >= $1 AND dg.date <= $2`,
@@ -294,6 +301,7 @@ export async function autoBackfillIfNeeded() {
     const existingByAccount = new Map() // key `${companyId}|${token}` -> Set(dateStr)
     const todo = new Map() // dedupe key `${companyId}|${token}|${date}` -> tuple
     let staleCount = 0
+    let zeroedCount = 0
 
     const addTuple = (companyId, companyToken, date) => {
       const acc = accMap.get(`${companyId}|${companyToken}`)
@@ -314,6 +322,12 @@ export async function autoBackfillIfNeeded() {
       // Stale rows (partial intraday snapshots) get re-finalized.
       if (row.is_stale) {
         staleCount += 1
+        addTuple(row.company_id, row.company_token, row.date_str)
+      } else if (row.is_zeroed) {
+        // Row frozen at $0 despite the ledger having live orders for that day
+        // (e.g. computed while the order backfill was still populating). Not
+        // "stale" (computed after the day), so heal it explicitly.
+        zeroedCount += 1
         addTuple(row.company_id, row.company_token, row.date_str)
       }
     }
@@ -346,7 +360,7 @@ export async function autoBackfillIfNeeded() {
       return
     }
 
-    console.log(`📊 Auto-backfill: ${tuples.length} account-days to recompute (${missingCount} missing, ${staleCount} stale; ${existingRes.rows.length} rows exist)`)
+    console.log(`📊 Auto-backfill: ${tuples.length} account-days to recompute (${missingCount} missing, ${staleCount} stale, ${zeroedCount} zeroed; ${existingRes.rows.length} rows exist)`)
 
     // Run in background — don't await
     backfillAccountDays(tuples).catch(err => {
@@ -442,31 +456,12 @@ export function scheduleDailyGainsCron() {
     }
   }, { timezone: 'America/Lima' })
 
-  // Every 2 hours from 8 AM to 11 PM Lima time — update today's rolling snapshot
-  cron.schedule('0 8-23/2 * * *', async () => {
-    console.log('📊 [Cron] Updating today\'s daily gains...')
-    try {
-      const companiesRes = await pool.query('SELECT id, timezone FROM companies')
-      for (const company of companiesRes.rows) {
-        const tz = company.timezone || 'America/Lima'
-        const today = getTimezoneAwareDate(null, tz)
-        const accounts = (await pool.query('SELECT company_token, api_token FROM company_accounts WHERE company_id = $1', [company.id])).rows
-        for (const acc of accounts) {
-          try {
-            await computeAndStoreDailyGain(company.id, acc.company_token, acc.api_token, today, tz)
-          } catch (err) {
-            console.error(`  ❌ ${acc.company_token} ${today}:`, err.message)
-          }
-          await sleep(2000)
-        }
-      }
-      console.log('📊 [Cron] Today\'s gains updated')
-    } catch (err) {
-      console.error('❌ [Cron] Today gains error:', err.message)
-    }
-  }, { timezone: 'America/Lima' })
+  // NOTE: the intraday "today" refresh moved into the combo-stats rolling cron
+  // (comboStatsService.js) so a single 5-minute pass syncs the ledger and then
+  // recomputes today's gains from it — one cron instead of two, and gains are
+  // always derived from a just-refreshed ledger.
 
-  console.log('📊 Daily gains cron jobs scheduled (3 AM final + every 2h rolling)')
+  console.log('📊 Daily gains cron scheduled (3 AM finalize; intraday refresh runs in the rolling order sync)')
 }
 
 // Helper: get the last `count` closed days (yesterday, -2, ...) in a timezone,

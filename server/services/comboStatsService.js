@@ -1,6 +1,7 @@
 import cron from 'node-cron'
 import { pool } from '../database.js'
 import { getTimezoneAwareDate } from './olaClickService.js'
+import { computeAndStoreDailyGain } from './dailyGainService.js'
 import {
   fetchPublicOrdersList,
   fetchPublicOrderDetail,
@@ -460,7 +461,7 @@ async function loadComboAccounts(companyId = null) {
     where += ` AND ca.company_id = $${params.length}`
   }
   const res = await pool.query(
-    `SELECT ca.company_id, ca.company_token, ca.public_api_key, c.timezone
+    `SELECT ca.company_id, ca.company_token, ca.public_api_key, ca.api_token, c.timezone
      FROM company_accounts ca
      JOIN companies c ON c.id = ca.company_id
      WHERE ${where}
@@ -606,6 +607,11 @@ export function scheduleComboStatsCron() {
   // */5 for poll-primary, or dial down to e.g. '0 * * * *' (hourly) once
   // webhooks are proven. updated_at diffing keeps each run cheap; guarded so
   // runs never overlap.
+  //
+  // After each account's ledger sync we also recompute today's daily_gains row
+  // for that account (ledger-only DB queries, so it's cheap). This replaced the
+  // separate every-2h daily-gains rolling cron — one cron, ledger first, gains
+  // derived from it.
   cron.schedule(ROLLING_SYNC_CRON, async () => {
     if (rollingSyncRunning) {
       console.log('🍔 [Cron] Rolling order sync still running — skipping this tick')
@@ -622,6 +628,11 @@ export function scheduleComboStatsCron() {
         } catch (err) {
           console.error(`  ❌ ${acc.company_token} ${today}: ${err.message}`)
         }
+        try {
+          await computeAndStoreDailyGain(acc.company_id, acc.company_token, acc.api_token, today, tz)
+        } catch (err) {
+          console.error(`  ❌ daily gain ${acc.company_token} ${today}: ${err.message}`)
+        }
         await sleep(INTER_ACCOUNT_SLEEP_MS)
       }
     } catch (err) {
@@ -631,5 +642,5 @@ export function scheduleComboStatsCron() {
     }
   }, { timezone: 'America/Lima' })
 
-  console.log(`🍔 Order stats cron jobs scheduled (3:30 AM finalize + rolling "${ROLLING_SYNC_CRON}")`)
+  console.log(`🍔 Order stats cron jobs scheduled (3:30 AM finalize + rolling "${ROLLING_SYNC_CRON}" incl. today's daily gains)`)
 }
