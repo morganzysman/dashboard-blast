@@ -718,7 +718,8 @@ const getAccountTotalOrders = (account) => {
 const getAccountAvgTicket = (account) => {
   if (!account.success || !account.data?.data) return 0
   const totalAmount = account.data.data.reduce((sum, method) => sum + (method.sum || 0), 0)
-  const totalOrders = account.data.data.reduce((sum, method) => sum + (method.count || 0), 0)
+  let totalOrders = getAccountTotalOrders(account)
+  if (!totalOrders) totalOrders = getServerAccount(account)?.orders || 0
   return totalOrders > 0 ? totalAmount / totalOrders : 0
 }
 

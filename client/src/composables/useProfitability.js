@@ -38,6 +38,87 @@ export function computeAccountGrossSales(account) {
   return account.data.data.reduce((sum, method) => sum + (method.sum || 0), 0)
 }
 
+// True when profitability payload matches the active date range
+export function isProfitabilityInSync(profitabilityData, currentDateRange) {
+  const pdStart = profitabilityData?.period?.start
+  const pdEnd = profitabilityData?.period?.end
+  const curStart = currentDateRange?.start
+  const curEnd = currentDateRange?.end
+  return !!(pdStart && pdEnd && curStart && curEnd && pdStart === curStart && pdEnd === curEnd)
+}
+
+// Build the /api/payments-shaped payload from a profitability response so the
+// dashboard has a single data source (same ledger query, one HTTP call).
+export function buildAnalyticsFromProfitability(profitability) {
+  const emptyAggregated = {
+    paymentMethods: [],
+    totalPayments: 0,
+    totalAmount: 0,
+    totalTips: 0,
+    accountsCount: 0
+  }
+
+  if (!profitability?.accounts?.length) {
+    return { success: true, aggregated: emptyAggregated, accounts: [] }
+  }
+
+  const accounts = profitability.accounts.map((acc) => {
+    const paymentMethods = (acc.paymentMethodBreakdown || []).map((pm) => ({
+      name: pm.method,
+      count: pm.transactionCount || 0,
+      sum: pm.revenue || 0
+    }))
+
+    return {
+      success: acc.success !== false,
+      account: acc.account,
+      accountKey: acc.accountKey,
+      data: { data: paymentMethods },
+      tipsData: {
+        success: true,
+        data: { data: (acc.tips || 0) > 0 ? [{ sum: acc.tips }] : [] }
+      }
+    }
+  })
+
+  const aggregatedMap = {}
+  let totalPayments = 0
+  let totalAmount = 0
+  let totalTips = 0
+
+  for (const acc of accounts) {
+    for (const pm of acc.data.data) {
+      if (!aggregatedMap[pm.name]) {
+        aggregatedMap[pm.name] = { name: pm.name, count: 0, sum: 0 }
+      }
+      aggregatedMap[pm.name].count += pm.count
+      aggregatedMap[pm.name].sum += pm.sum
+      totalPayments += pm.count
+      totalAmount += pm.sum
+    }
+    totalTips += acc.tipsData.data.data.reduce((s, t) => s + (t.sum || 0), 0)
+  }
+
+  const paymentMethods = Object.values(aggregatedMap)
+    .map((m) => ({
+      ...m,
+      percent: totalAmount > 0 ? (m.sum / totalAmount) * 100 : 0
+    }))
+    .sort((a, b) => b.count - a.count)
+
+  return {
+    success: true,
+    aggregated: {
+      paymentMethods,
+      totalPayments,
+      totalAmount,
+      totalTips,
+      accountsCount: accounts.filter((a) => a.success).length
+    },
+    accounts
+  }
+}
+
 // Compute total orders for account (from serviceMetrics where available)
 export function computeAccountOrders(account) {
   if (!account?.success) return 0

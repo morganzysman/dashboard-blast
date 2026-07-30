@@ -109,6 +109,7 @@ import DashboardOverview from '../components/DashboardOverview.vue'
 import AccountDetails from '../components/AccountDetails.vue'
 import OrderEvolutionChart from '../components/OrderEvolutionChart.vue'
 import api from '../utils/api'
+import { buildAnalyticsFromProfitability } from '../composables/useProfitability'
 
 const authStore = useAuthStore()
 
@@ -125,6 +126,9 @@ const selectedDateRange = ref('today')
 const customStartDate = ref('')
 const customEndDate = ref('')
 const currentDateRange = ref({ start: '', end: '' })
+
+// Ignore stale responses when the date range changes quickly
+let dashboardFetchGeneration = 0
 
 // Date helper functions
 const formatDate = (date) => {
@@ -264,10 +268,9 @@ const onDateRangeChange = () => {
   if (selectedDateRange.value !== 'custom') {
     currentDateRange.value = getDateRange(selectedDateRange.value)
   }
-  fetchAnalyticsData()
+  fetchDashboardData()
   fetchOrdersData(currentDateRange.value)
   fetchServiceMetricsData()
-  fetchProfitabilityData()
   fetchDailyRecord()
 }
 
@@ -278,10 +281,9 @@ const onCustomDateChange = () => {
       start: customStartDate.value,
       end: customEndDate.value
     }
-    fetchAnalyticsData()
+    fetchDashboardData()
     fetchOrdersData(currentDateRange.value)
     fetchServiceMetricsData()
-    fetchProfitabilityData()
     fetchDailyRecord()
   }
 }
@@ -292,10 +294,9 @@ const applyCustomDateRange = () => {
       start: customStartDate.value,
       end: customEndDate.value
     }
-    fetchAnalyticsData()
+    fetchDashboardData()
     fetchOrdersData(currentDateRange.value)
     fetchServiceMetricsData()
-    fetchProfitabilityData()
     fetchDailyRecord()
   }
 }
@@ -346,35 +347,40 @@ const fetchOrdersData = async (dateRange = null) => {
   }
 }
 
-const fetchAnalyticsData = async () => {
+const fetchDashboardData = async () => {
+  const generation = ++dashboardFetchGeneration
+  const range = { ...currentDateRange.value }
   loading.value = true
   error.value = ''
-  
+
   try {
     const timezone = authStore.user?.timezone || 'America/Lima'
-    const params = new URLSearchParams({
-      'filter[start_date]': currentDateRange.value.start,
-      'filter[end_date]': currentDateRange.value.end,
-      'filter[timezone]': timezone
-    })
+    const data = await api.getProfitability(range.start, range.end, timezone)
 
-    // Use new /api/payments endpoint (refactored version of /all)
-    const data = await api.get(`/api/payments?${params.toString()}`)
-    
+    if (generation !== dashboardFetchGeneration) return
+
     if (data.success) {
-      analyticsData.value = data
-      analyticsData.value.timestamp = Date.now()
-      console.log('📊 Analytics data loaded:', data)
+      const payload = { ...data.data, timestamp: Date.now() }
+      profitabilityData.value = payload
+      analyticsData.value = {
+        ...buildAnalyticsFromProfitability(data.data),
+        timestamp: Date.now()
+      }
+      console.log('📊 Dashboard data loaded from profitability:', {
+        period: payload.period,
+        accountsCount: payload.accounts?.length || 0,
+        companyGrossSales: payload.company?.grossSales || 0
+      })
     } else {
-      throw new Error(data.error || 'Failed to load analytics data')
+      throw new Error(data.error || 'Failed to load dashboard data')
     }
   } catch (err) {
-    console.error('❌ Analytics fetch error:', err)
-    
-    // Only show error if it's not a session expiration (handled by api wrapper)
+    if (generation !== dashboardFetchGeneration) return
+    console.error('❌ Dashboard fetch error:', err)
+
     if (err.status !== 401) {
       error.value = err.message
-      
+
       window.showNotification?.({
         type: 'error',
         title: 'Analytics Error',
@@ -382,7 +388,9 @@ const fetchAnalyticsData = async () => {
       })
     }
   } finally {
-    loading.value = false
+    if (generation === dashboardFetchGeneration) {
+      loading.value = false
+    }
   }
 }
 
@@ -449,43 +457,6 @@ const analyticsDataWithServiceMetrics = computed(() => {
 
 
 
-// Fetch server-side aggregated profitability data
-const fetchProfitabilityData = async () => {
-  try {
-    const timezone = authStore.user?.timezone || 'America/Lima'
-    console.log('📊 Fetching profitability data for:', {
-      start: currentDateRange.value.start,
-      end: currentDateRange.value.end,
-      timezone
-    })
-    
-    const data = await api.getProfitability(
-      currentDateRange.value.start,
-      currentDateRange.value.end,
-      timezone
-    )
-    
-    if (data.success) {
-      console.log('✅ Profitability data received:', {
-        period: data.data?.period,
-        accountsCount: data.data?.accounts?.length || 0,
-        companyProfit: data.data?.company?.operatingProfit || 0
-      })
-      // Add timestamp to ensure reactivity
-      profitabilityData.value = {
-        ...data.data,
-        timestamp: Date.now()
-      }
-    } else {
-      console.warn('❌ Profitability data failed:', data.error)
-      profitabilityData.value = null
-    }
-  } catch (err) {
-    console.warn('⚠️ Profitability fetch failed:', err)
-    profitabilityData.value = null
-  }
-}
-
 // Fetch the same-weekday "record to beat" for the selected day (single-day only)
 const fetchDailyRecord = async () => {
   const range = currentDateRange.value
@@ -509,19 +480,17 @@ const fetchDailyRecord = async () => {
 }
 
 const refreshData = () => {
-  fetchAnalyticsData()
+  fetchDashboardData()
   fetchOrdersData(currentDateRange.value)
   fetchServiceMetricsData()
-  fetchProfitabilityData()
   fetchDailyRecord()
 }
 
 onMounted(() => {
   currentDateRange.value = getDateRange('today')
-  fetchAnalyticsData()
+  fetchDashboardData()
   fetchOrdersData(currentDateRange.value)
   fetchServiceMetricsData()
-  fetchProfitabilityData()
   fetchDailyRecord()
 })
 </script>
