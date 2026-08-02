@@ -378,6 +378,19 @@
                 <span>{{ getSmartDetectionReason(e) }}</span>
               </div>
             </div>
+            <div class="sm:col-span-3">
+              <label class="text-xs text-gray-700">{{ $t('rentability.account') }}</label>
+              <select
+                v-model="e.company_token"
+                class="form-input w-full"
+                :disabled="!!e.id || !!e.approved_by"
+              >
+                <option value="" disabled>{{ $t('rentability.selectAccount') }}</option>
+                <option v-for="acc in accounts" :key="acc.company_token" :value="acc.company_token">
+                  {{ acc.account_name || acc.company_token }}
+                </option>
+              </select>
+            </div>
             <div>
               <label class="text-xs text-gray-700">{{ $t('payroll.clockIn') }}</label>
               <input
@@ -1327,6 +1340,7 @@ const openEdit = (row) => {
     list: list.map(e => { 
       const entry = { 
         id: e.id, 
+        company_token: e.company_token,
         clock_in_at: e.clock_in_at, // Keep full ISO string for timezone conversion
         clock_out_at: e.clock_out_at, // Keep full ISO string for timezone conversion  
         amount: e.amount, 
@@ -1370,9 +1384,17 @@ const saveEdit = async () => {
       } else {
         // New entry
         if (!body.clock_in_at) continue
+        if (!e.company_token) {
+          window.showNotification?.({
+            type: 'error',
+            title: t('common.error'),
+            message: t('rentability.selectAccount')
+          })
+          return
+        }
         const newEntry = await api.createEntry({
           user_id: editEntry.value.user_id,
-          company_token: companyToken.value,
+          company_token: e.company_token,
           ...body
         })
         if (shouldApproveAfter && body.clock_out_at && newEntry.data?.id) {
@@ -1419,7 +1441,16 @@ const editableSum = computed(() => (editEntry.value?.list || []).filter(e => !e.
   const addNewEntry = () => {
     if (!editEntry.value) return
     editEntry.value.list = editEntry.value.list || []
-    editEntry.value.list.unshift({ id: null, clock_in_at: '', clock_out_at: '', amount: '', paid: false, is_holiday: false, _isNew: true })
+    editEntry.value.list.unshift({
+      id: null,
+      company_token: companyToken.value || accounts.value[0]?.company_token || '',
+      clock_in_at: '',
+      clock_out_at: '',
+      amount: '',
+      paid: false,
+      is_holiday: false,
+      _isNew: true
+    })
   }
   const removeNewEntry = (idx) => {
     if (!editEntry.value) return
@@ -1661,6 +1692,10 @@ const getSmartDetectionReason = (entry) => {
   if (!entry.amount || entry.amount <= 0) {
     reasons.push(t('payroll.missingOrInvalidAmount'))
   }
+
+  if (!entry.id && !entry.company_token) {
+    reasons.push(t('rentability.selectAccount'))
+  }
   
   // If no specific reasons could be determined but shift data is missing, indicate it
   if (reasons.length === 0 && (!entry.shift_start || !entry.clock_in_at || !entry.clock_out_at)) {
@@ -1694,6 +1729,10 @@ const isComplexEntry = (entry) => {
   if (!entry.amount || entry.amount <= 0) {
     return true
   }
+
+  if (!entry.id && !entry.company_token) {
+    return true
+  }
   
   return false
 }
@@ -1702,6 +1741,7 @@ const isComplexEntry = (entry) => {
 const editBeforeApprove = (entry) => {
   const editableEntry = {
     id: entry.id,
+    company_token: entry.company_token,
     clock_in_at: entry.clock_in_at,
     clock_out_at: entry.clock_out_at,
     amount: entry.amount,
@@ -1753,6 +1793,7 @@ const openEditEntry = (entry) => {
   // Open the same edit modal but for a single entry in approval context
   const editableEntry = {
     id: entry.id,
+    company_token: entry.company_token,
     clock_in_at: entry.clock_in_at,
     clock_out_at: entry.clock_out_at,
     amount: entry.amount,
