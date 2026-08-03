@@ -291,6 +291,16 @@
     "analyzing": "Analyzing…",
     "cannotImport": "This file can't be imported yet",
     "notes": "Worth knowing",
+    "noteText": {
+      "noDataRows": "The file has no data rows.",
+      "ambiguousRestaurant": "Restaurant \"{restaurant}\" matches more than one shop ({matches}). Rename the shops so the match is unique.",
+      "unmatchedRestaurant": "Restaurant \"{restaurant}\" does not match any shop in your company ({rows} row(s), {amount} skipped).",
+      "apiFedAccount": "{account} is connected to the OlaClick API, so its Rappi orders arrive automatically. Importing this file would count that revenue twice.",
+      "cancelledExcluded": "{count} cancelled order(s) left out ({amount} not counted).",
+      "duplicatesIgnored": "{count} repeated order number(s) ignored.",
+      "unreadableDates": "{count} row(s) skipped because the date could not be read.",
+      "mixedDays": "{count} day(s) also have OlaClick orders. The imported total is added on top of those, not instead of them."
+    },
     "ordersCounted": "Rappi orders",
     "totalSales": "Total sales",
     "daysToCreate": "New days",

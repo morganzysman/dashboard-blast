@@ -290,6 +290,16 @@
     "analyzing": "Analisando…",
     "cannotImport": "Este arquivo ainda não pode ser importado",
     "notes": "Vale saber",
+    "noteText": {
+      "noDataRows": "O arquivo não tem linhas de dados.",
+      "ambiguousRestaurant": "O restaurante \"{restaurant}\" corresponde a mais de uma loja ({matches}). Renomeie as lojas para que a correspondência seja única.",
+      "unmatchedRestaurant": "O restaurante \"{restaurant}\" não corresponde a nenhuma loja da sua empresa ({rows} linha(s), {amount} não contados).",
+      "apiFedAccount": "{account} está conectado à API do OlaClick, então seus pedidos do Rappi chegam automaticamente. Importar este arquivo contaria essa receita duas vezes.",
+      "cancelledExcluded": "{count} pedido(s) cancelado(s) excluído(s) ({amount} não contados).",
+      "duplicatesIgnored": "{count} número(s) de pedido repetido(s) ignorado(s).",
+      "unreadableDates": "{count} linha(s) ignorada(s) porque a data não pôde ser lida.",
+      "mixedDays": "{count} dia(s) também têm pedidos do OlaClick. O total importado é somado a eles, não os substitui."
+    },
     "ordersCounted": "Pedidos Rappi",
     "totalSales": "Vendas totais",
     "daysToCreate": "Dias novos",

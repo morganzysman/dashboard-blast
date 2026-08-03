@@ -49,7 +49,7 @@
             {{ $t('salesImport.cannotImport') }}
           </div>
           <ul class="mt-1.5 list-disc pl-5 text-sm text-red-700 space-y-0.5">
-            <li v-for="(e, i) in preview.errors" :key="i">{{ e }}</li>
+            <li v-for="(e, i) in preview.errors" :key="i">{{ noteText(e) }}</li>
           </ul>
         </div>
 
@@ -60,7 +60,7 @@
             {{ $t('salesImport.notes') }}
           </div>
           <ul class="mt-1.5 list-disc pl-5 text-sm text-amber-700 space-y-0.5">
-            <li v-for="(w, i) in preview.warnings" :key="i">{{ w }}</li>
+            <li v-for="(w, i) in preview.warnings" :key="i">{{ noteText(w) }}</li>
           </ul>
         </div>
 
@@ -246,6 +246,21 @@ function formatDateTime(value) {
   return new Date(value).toLocaleString()
 }
 
+/**
+ * Server notes arrive as { code, params, message }. Translate by code, falling
+ * back to the server's English text if a locale is missing the key.
+ */
+function noteText(n) {
+  if (typeof n === 'string') return n
+  if (!n?.code) return n?.message || ''
+  const key = `salesImport.noteText.${n.code}`
+  // Money in notes gets the same currency formatting as the rest of the page.
+  const params = { ...(n.params || {}) }
+  if (params.amount !== undefined) params.amount = formatMoney(params.amount)
+  const translated = t(key, params)
+  return translated === key ? (n.message || '') : translated
+}
+
 function delta(d) {
   return Number(d.amount) - Number(d.existing_amount || 0)
 }
@@ -253,7 +268,8 @@ function delta(d) {
 function deltaLabel(d) {
   const diff = delta(d)
   if (Math.abs(diff) < 0.005) return t('salesImport.unchanged')
-  return `${diff > 0 ? '+' : ''}${formatMoney(diff)}`
+  // Sign always leads, so "+S/ 20.00" and "-S/ 10.00" line up.
+  return `${diff > 0 ? '+' : '-'}${formatMoney(Math.abs(diff))}`
 }
 
 function deltaClass(d) {

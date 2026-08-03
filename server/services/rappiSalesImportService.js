@@ -91,6 +91,15 @@ function compact(value) {
 }
 
 /**
+ * A user-facing warning or error. `code` + `params` let the client render it in
+ * the user's language; `message` is the English fallback kept for logs and for
+ * the stored audit summary, which no translator ever sees.
+ */
+function note(code, params, message) {
+  return { code, params, message }
+}
+
+/**
  * Split a CSV document into rows of string cells.
  *
  * Hand-rolled rather than pulled from npm because the format we accept is
@@ -276,7 +285,7 @@ function aggregateRappiCsv(csvText, accounts) {
   const warnings = []
 
   if (rows.length < 2) {
-    errors.push('The file has no data rows.')
+    errors.push(note('noDataRows', {}, 'The file has no data rows.'))
     return { days: [], warnings, errors, stats: emptyStats(), unmatchedRestaurants: [] }
   }
 
@@ -358,9 +367,17 @@ function aggregateRappiCsv(csvText, accounts) {
 
   for (const entry of unmatched.values()) {
     if (entry.reason === 'ambiguous') {
-      errors.push(`Restaurant "${entry.restaurant}" matches several accounts (${entry.matches.join(', ')}). Rename the accounts so the match is unique.`)
+      errors.push(note(
+        'ambiguousRestaurant',
+        { restaurant: entry.restaurant, matches: entry.matches.join(', ') },
+        `Restaurant "${entry.restaurant}" matches several accounts (${entry.matches.join(', ')}). Rename the accounts so the match is unique.`
+      ))
     } else {
-      errors.push(`Restaurant "${entry.restaurant}" doesn't match any account in this company (${entry.rows} row(s), ${entry.amount.toFixed(2)} skipped).`)
+      errors.push(note(
+        'unmatchedRestaurant',
+        { restaurant: entry.restaurant, rows: entry.rows, amount: entry.amount.toFixed(2) },
+        `Restaurant "${entry.restaurant}" doesn't match any account in this company (${entry.rows} row(s), ${entry.amount.toFixed(2)} skipped).`
+      ))
     }
   }
 
@@ -372,7 +389,11 @@ function aggregateRappiCsv(csvText, accounts) {
     if (account?.public_api_key) apiFedTokens.add(`${bucket.accountName} (${bucket.companyToken})`)
   }
   for (const label of apiFedTokens) {
-    errors.push(`${label} is connected to the OlaClick API, so its Rappi orders are already imported automatically. Importing this file would double-count that revenue.`)
+    errors.push(note(
+      'apiFedAccount',
+      { account: label },
+      `${label} is connected to the OlaClick API, so its Rappi orders are already imported automatically. Importing this file would double-count that revenue.`
+    ))
   }
 
   const days = [...buckets.values()].sort(
@@ -389,13 +410,25 @@ function aggregateRappiCsv(csvText, accounts) {
   stats.lastDay = days[days.length - 1]?.day || null
 
   if (stats.rowsSkippedCancelled > 0) {
-    warnings.push(`${stats.rowsSkippedCancelled} cancelled order(s) excluded (${stats.cancelledAmount.toFixed(2)} not counted).`)
+    warnings.push(note(
+      'cancelledExcluded',
+      { count: stats.rowsSkippedCancelled, amount: stats.cancelledAmount.toFixed(2) },
+      `${stats.rowsSkippedCancelled} cancelled order(s) excluded (${stats.cancelledAmount.toFixed(2)} not counted).`
+    ))
   }
   if (stats.rowsSkippedDuplicate > 0) {
-    warnings.push(`${stats.rowsSkippedDuplicate} duplicate order number(s) ignored.`)
+    warnings.push(note(
+      'duplicatesIgnored',
+      { count: stats.rowsSkippedDuplicate },
+      `${stats.rowsSkippedDuplicate} duplicate order number(s) ignored.`
+    ))
   }
   if (stats.rowsSkippedInvalid > 0) {
-    warnings.push(`${stats.rowsSkippedInvalid} row(s) skipped: unreadable date.`)
+    warnings.push(note(
+      'unreadableDates',
+      { count: stats.rowsSkippedInvalid },
+      `${stats.rowsSkippedInvalid} row(s) skipped: unreadable date.`
+    ))
   }
 
   return {
@@ -515,7 +548,11 @@ export async function previewRappiImport(csvText, companyId) {
   const warnings = [...result.warnings]
   const mixed = days.filter((d) => d.existing_other_amount > 0)
   if (mixed.length > 0) {
-    warnings.push(`${mixed.length} day(s) also hold OlaClick orders. The imported total is added alongside those, not instead of them.`)
+    warnings.push(note(
+      'mixedDays',
+      { count: mixed.length },
+      `${mixed.length} day(s) also hold OlaClick orders. The imported total is added alongside those, not instead of them.`
+    ))
   }
 
   return {
@@ -537,7 +574,9 @@ export async function previewRappiImport(csvText, companyId) {
  * (account, day). Atomic so the order and its payment can never drift apart.
  */
 async function upsertManualDay({ companyId, companyToken, day, amount }) {
-  const orderId = `${MANUAL_ORDER_PREFIX}${day}`
+  // The token is part of the id so it stays globally unique, like the OlaClick
+  // UUIDs it sits beside — two shops selling on the same day must not collide.
+  const orderId = `${MANUAL_ORDER_PREFIX}${companyToken}-${day}`
   const client = await pool.connect()
   try {
     await client.query('BEGIN')
@@ -602,7 +641,7 @@ export async function commitRappiImport(csvText, companyId, meta = {}) {
   const preview = await previewRappiImport(csvText, companyId)
 
   if (preview.errors.length > 0) {
-    const error = new Error(preview.errors[0])
+    const error = new Error(preview.errors[0].message)
     error.details = preview
     throw error
   }
