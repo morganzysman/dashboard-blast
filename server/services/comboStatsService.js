@@ -92,10 +92,15 @@ export async function syncComboFactsForDay(companyId, companyToken, publicApiKey
   }
 
   // Existing ledger rows for this account+day: order_id -> { fetched, updatedAt, status, deleted }
+  //
+  // Manually imported rows are excluded. They have no OlaClick counterpart, so
+  // they can never appear in the day's list and their detail fetch would 404 —
+  // leaving them in would make the reconciliation pass below soft-delete every
+  // imported day the moment this account is given a public_api_key.
   const existingRes = await pool.query(
     `SELECT order_id, fetched_at, order_updated_at, burger_units, status, deleted_at
      FROM order_facts
-     WHERE company_token = $1 AND day_local = $2`,
+     WHERE company_token = $1 AND day_local = $2 AND is_manual = FALSE`,
     [companyToken, day]
   )
   const existing = new Map()

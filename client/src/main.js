@@ -25,6 +25,7 @@ import CompaniesView from './views/CompaniesView.vue'
 import AdminHolidayView from './views/AdminHolidayView.vue'
 import GainCalendarView from './views/GainCalendarView.vue'
 import AchievementsView from './views/AchievementsView.vue'
+import AdminSalesImportView from './views/AdminSalesImportView.vue'
 
 // Import stores
 import { useAuthStore } from './stores/auth'
@@ -78,6 +79,12 @@ const routes = [
     path: '/admin/holidays',
     name: 'AdminHolidays',
     component: AdminHolidayView,
+    meta: { requiresAuth: true, requiresRole: ['admin', 'super-admin'] }
+  },
+  {
+    path: '/admin/sales-import',
+    name: 'AdminSalesImport',
+    component: AdminSalesImportView,
     meta: { requiresAuth: true, requiresRole: ['admin', 'super-admin'] }
   },
   {

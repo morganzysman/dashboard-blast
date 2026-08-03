@@ -78,6 +78,7 @@ const links = computed(() => [
   { name: 'AdminPayroll', to: '/admin/payroll', icon: 'payments', label: 'navigation.payroll', show: isAdmin.value },
   { name: 'AdminHolidays', to: '/admin/holidays', icon: 'event', label: 'navigation.holidays', show: isAdmin.value },
   { name: 'AdminShiftsCalendar', to: '/admin/shifts', icon: 'calendar_month', label: 'navigation.shiftsCalendar', show: isAdmin.value },
+  { name: 'AdminSalesImport', to: '/admin/sales-import', icon: 'upload_file', label: 'navigation.salesImport', show: isAdmin.value },
   { name: 'Admin', to: '/admin', icon: 'group', label: 'navigation.userManagement', show: isSuperAdmin.value || isAdmin.value },
   { name: 'Companies', to: '/companies', icon: 'apartment', label: 'navigation.companies', show: isSuperAdmin.value },
 ])

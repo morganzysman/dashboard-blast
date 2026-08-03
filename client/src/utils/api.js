@@ -276,6 +276,14 @@ export const api = {
     if (companyToken) params.set('company_token', companyToken)
     return apiRequest(`/api/analytics/achievements?${params.toString()}`, { method: 'GET' })
   },
+  // Manual sales import (Rappi CSV) — preview first, then commit the same text.
+  previewRappiSalesImport: (csv, fileName) =>
+    apiRequest('/api/imports/rappi-sales/preview', { method: 'POST', body: JSON.stringify({ csv, file_name: fileName }) }),
+  commitRappiSalesImport: (csv, fileName) =>
+    apiRequest('/api/imports/rappi-sales/commit', { method: 'POST', body: JSON.stringify({ csv, file_name: fileName }) }),
+  getRappiSalesImportHistory: (limit = 20) =>
+    apiRequest(`/api/imports/rappi-sales/history?limit=${limit}`, { method: 'GET' }),
+
   // Companies (admin)
   listCompanies: () => apiRequest('/api/admin/companies', { method: 'GET' }),
   createCompany: (name, timezone, currency, language, country) => apiRequest('/api/admin/companies', { method: 'POST', body: JSON.stringify({ name, timezone, currency, language, country }) }),

@@ -36,6 +36,7 @@ import warningsRoutes from './routes/warnings.js';
 import holidayRoutes from './routes/holidays.js';
 import profileRoutes from './routes/profile.js';
 import webhookRoutes from './routes/webhooks.js';
+import importsRoutes from './routes/imports.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -67,6 +68,15 @@ if (config.nodeEnv === 'production') {
 
 // Middleware
 app.use(cors());
+
+// Sales-CSV uploads get their own, larger body limit, mounted BEFORE the global
+// parser on purpose. A year-long Rappi export is a few MB of CSV, and JSON
+// string-escaping a heavily quoted file inflates it further — enough to trip the
+// 5mb global cap. body-parser marks a request as parsed, so the global
+// express.json() below is a no-op for these routes; every other endpoint
+// (including the unauthenticated ones) keeps the tighter 5mb ceiling.
+app.use('/api/imports', express.json({ limit: '25mb' }));
+
 // 5mb accommodates base64-encoded, client-compressed ID document images.
 app.use(express.json({ limit: '5mb' }));
 
@@ -152,6 +162,7 @@ app.use('/api/warnings', warningsRoutes);
 app.use('/api/holidays', holidayRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/webhooks', webhookRoutes);
+app.use('/api/imports', importsRoutes);
 
 // Serve notifications debug page
 app.get('/notifications-debug', (req, res) => {
