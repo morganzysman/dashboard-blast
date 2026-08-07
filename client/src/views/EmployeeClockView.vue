@@ -2,10 +2,10 @@
   <div class="space-y-4 lg:space-y-6 max-w-xl mx-auto">
     <div class="card">
       <div class="card-body">
-        <h2 class="text-lg font-bold text-gray-900">{{ $t('employee.clock.title') }}</h2>
-        <p class="text-sm text-gray-600">{{ $t('employee.clock.subtitle') }}</p>
+        <h2 class="text-lg font-bold text-fg-strong">{{ $t('employee.clock.title') }}</h2>
+        <p class="text-sm text-fg-muted">{{ $t('employee.clock.subtitle') }}</p>
         <div v-if="!isEmployee">
-          <div class="p-3 bg-yellow-50 border border-yellow-200 rounded text-yellow-800 text-sm">
+          <div class="p-3 bg-warning-bg border border-yellow-200 rounded text-warning-fg text-sm">
             {{ $t('employee.clock.employeesOnly') }}
           </div>
           <div class="mt-3">
@@ -15,17 +15,17 @@
         <div v-else>
           <div class="mt-4 space-y-3">
             <template v-if="hasQrContext">
-              <div class="text-gray-800">
+              <div class="text-fg-strong">
                 <span class="font-semibold text-xl">{{ $t('employee.clock.greeting', { name: auth.user?.name?.split(' ')[0] || $t('employee.clock.defaultGreeting') }) }}!</span>
               </div>
-              <div class="text-xs text-gray-500">{{ todayLabel }}</div>
-              <div class="text-sm text-gray-700">
+              <div class="text-xs text-fg-muted">{{ todayLabel }}</div>
+              <div class="text-sm text-fg">
                 <span class="font-medium">{{ $t('rentability.account') }}:</span>
                 <span>{{ accountLabel }}</span>
               </div>
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div v-if="openEntry">
-                <div class="px-3 py-2 rounded bg-green-50 border border-green-200 text-green-700 text-sm text-center">
+                <div class="px-3 py-2 rounded bg-success-bg border border-green-200 text-success-fg text-sm text-center">
                   {{ $t('employee.clock.clockedIn') }} {{ formatTime(openEntry.clock_in_at) }}
                 </div>
               </div>
@@ -42,7 +42,7 @@
               </button>
               <p 
                 v-if="!submitting && !canClockOut && hasQrContext" 
-                class="text-xs text-gray-500 text-center mt-1"
+                class="text-xs text-fg-muted text-center mt-1"
               >
                 {{ clockOutDisabledReason }}
               </p>
@@ -58,7 +58,7 @@
                     playsinline 
                     autoplay 
                     muted
-                    :style="{ backgroundColor: scannerOpen ? 'transparent' : '#f3f4f6' }"
+                    :style="{ backgroundColor: scannerOpen ? 'transparent' : 'var(--surface-2)' }"
                   ></video>
                   <div class="absolute inset-0 pointer-events-none border-2 border-green-500 m-8 rounded"></div>
                   <div class="absolute bottom-1 right-2 text-white text-[10px] px-1 rounded-md" style="background: rgba(0,0,0,0.6);">
@@ -68,7 +68,7 @@
                   <div v-if="!scannerOpen && cameraPermission !== 'denied'" class="absolute inset-0 flex items-center justify-center" style="background: var(--surface-2);">
                     <div class="flex flex-col items-center space-y-2">
                       <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-                      <div class="text-sm text-gray-600">{{ $t('employee.clock.initializingCamera') }}</div>
+                      <div class="text-sm text-fg-muted">{{ $t('employee.clock.initializingCamera') }}</div>
                     </div>
                   </div>
                 </div>
@@ -76,7 +76,7 @@
               
               <!-- Camera permission reset option for denied access -->
               <div v-if="cameraPermission === 'denied'" class="space-y-3">
-                <div class="text-center text-sm text-gray-600">
+                <div class="text-center text-sm text-fg-muted">
                   {{ $t('employee.clock.cameraAccessDenied') }}
                 </div>
                 <div class="flex justify-center">
@@ -99,21 +99,21 @@
     <div v-if="showRecap" class="fixed inset-0 flex items-center justify-center z-50 p-4" style="background: var(--scrim);">
       <div class="w-full max-w-md p-4 rounded-lg" style="background: var(--bg); border: 1px solid var(--border); box-shadow: var(--shadow-pop);">
         <div class="flex items-center justify-between mb-2">
-          <h3 class="text-md font-semibold">{{ recap.date }}</h3>
+          <h3 class="data text-sm" style="color: var(--fg2);">{{ recap.date }}</h3>
           <button class="btn-secondary btn-xs" @click="showRecap=false">Close</button>
         </div>
         <div class="space-y-2 max-h-[50vh] overflow-auto">
-          <div v-if="recap.entries.length===0" class="text-sm text-gray-600 text-center">No entries today</div>
+          <div v-if="recap.entries.length===0" class="text-sm text-fg-muted text-center">No entries today</div>
           <div v-for="e in recap.entries" :key="e.id || e.clock_in_at" class="flex items-center justify-between text-sm border-b pb-1">
             <div>
-              <div class="text-gray-900">{{ formatTime(e.clock_in_at) }} → {{ e.clock_out_at ? formatTime(e.clock_out_at) : '…' }}</div>
-              <div class="text-gray-500 text-xs">{{ formatDurationHms(e.seconds) }}</div>
+              <div class="text-fg-strong">{{ formatTime(e.clock_in_at) }} → {{ e.clock_out_at ? formatTime(e.clock_out_at) : '…' }}</div>
+              <div class="text-fg-muted text-xs">{{ formatDurationHms(e.seconds) }}</div>
             </div>
             <div class="font-medium">{{ formatCurrency(e.amount || 0) }}</div>
           </div>
         </div>
         <div class="mt-3 flex items-center justify-between text-sm">
-          <div class="text-gray-600">Total</div>
+          <div class="text-fg-muted">Total</div>
           <div class="font-semibold">{{ formatDurationHms(recap.totalSeconds) }} · {{ formatCurrency(recap.totalAmount) }}</div>
         </div>
         <div class="mt-3 text-right">

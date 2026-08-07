@@ -1,6 +1,6 @@
 /**
  * Maps the legacy emoji achievement icons (emitted by the server) to
- * OlaClick Design System Material Symbols. The DS forbids emoji in product UI,
+ * Blast Design System Material Symbols. The DS forbids emoji in product UI,
  * so badges render a monochrome symbol that inherits the tier color instead.
  */
 const EMOJI_TO_SYMBOL = {

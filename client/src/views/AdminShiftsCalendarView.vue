@@ -4,7 +4,7 @@
       <div class="card-body">
         <div class="flex flex-col sm:flex-row sm:items-end gap-3">
           <div class="flex-1">
-            <label class="text-xs text-gray-700">{{ $t('rentability.account') }}</label>
+            <label class="text-xs text-fg">{{ $t('rentability.account') }}</label>
             <select v-model="companyToken" class="form-input w-full" @change="loadCalendar">
               <option value="" disabled>{{ $t('rentability.selectAccount') }}</option>
               <option v-for="acc in accounts" :key="acc.company_token" :value="acc.company_token">
@@ -25,17 +25,17 @@
       <div class="card-body">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
           <h3 class="text-md font-semibold">{{ $t('shifts.calendar') }}</h3>
-          <div class="text-xs text-gray-500">{{ $t('shifts.weekOf') }} {{ weekStart }}</div>
+          <div class="text-xs text-fg-muted">{{ $t('shifts.weekOf') }} {{ weekStart }}</div>
         </div>
         <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 text-xs">
-          <div class="text-gray-500 hidden lg:block" v-for="(d, index) in [$t('shifts.weekdays.0'), $t('shifts.weekdays.1'), $t('shifts.weekdays.2'), $t('shifts.weekdays.3'), $t('shifts.weekdays.4'), $t('shifts.weekdays.5'), $t('shifts.weekdays.6')]" :key="index">{{ d }}</div>
+          <div class="text-fg-muted hidden lg:block" v-for="(d, index) in [$t('shifts.weekdays.0'), $t('shifts.weekdays.1'), $t('shifts.weekdays.2'), $t('shifts.weekdays.3'), $t('shifts.weekdays.4'), $t('shifts.weekdays.5'), $t('shifts.weekdays.6')]" :key="index">{{ d }}</div>
           <template v-for="day in weekDays" :key="day.date">
             <div class="rounded-md p-2 min-h-[140px]" style="background: var(--surface-1); border: 1px solid var(--border);">
-              <div class="text-[10px] text-gray-500">{{ day.label }}</div>
+              <div class="text-[10px] text-fg-muted">{{ day.label }}</div>
               <div class="mt-1 space-y-1">
                 <div v-if="loading" class="space-y-1 animate-pulse">
-                  <div class="h-4 bg-gray-200 rounded"></div>
-                  <div class="h-3 bg-gray-200 rounded w-24"></div>
+                  <div class="h-4 bg-surface-2 rounded"></div>
+                  <div class="h-3 bg-surface-2 rounded w-24"></div>
                 </div>
                 <template v-else>
                   <div
@@ -47,7 +47,7 @@
                     <div class="font-semibold truncate" :style="{ color: entryColor(e).border }">{{ e.name || e.email }}</div>
                     <div :style="{ color: entryColor(e).border, opacity: 0.85 }">{{ formatTime(e.start_time) }} - {{ formatTime(e.end_time) }}</div>
                   </div>
-                  <div v-if="!day.entries || day.entries.length === 0" class="text-gray-400">—</div>
+                  <div v-if="!day.entries || day.entries.length === 0" class="text-fg-faint">—</div>
                 </template>
               </div>
             </div>
@@ -63,6 +63,7 @@ import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../stores/auth'
 import api from '../utils/api'
+import { eventPalette } from '../utils/brandPalette'
 
 const auth = useAuthStore()
 const { t } = useI18n()
@@ -110,18 +111,7 @@ const buildWeekDays = (startStr) => {
 }
 
 // Deterministic per-person color palette so shifts are easy to distinguish
-const SHIFT_COLORS = [
-  { border: '#3b82f6', bg: 'rgba(59,130,246,0.12)' },   // blue
-  { border: '#10b981', bg: 'rgba(16,185,129,0.12)' },   // emerald
-  { border: '#f59e0b', bg: 'rgba(245,158,11,0.14)' },   // amber
-  { border: '#8b5cf6', bg: 'rgba(139,92,246,0.12)' },   // violet
-  { border: '#ec4899', bg: 'rgba(236,72,153,0.12)' },   // pink
-  { border: '#14b8a6', bg: 'rgba(20,184,166,0.12)' },   // teal
-  { border: '#ef4444', bg: 'rgba(239,68,68,0.12)' },    // red
-  { border: '#6366f1', bg: 'rgba(99,102,241,0.12)' },   // indigo
-  { border: '#84cc16', bg: 'rgba(132,204,22,0.14)' },   // lime
-  { border: '#f97316', bg: 'rgba(249,115,22,0.14)' }    // orange
-]
+const SHIFT_COLORS = eventPalette()
 
 const colorIndex = (e) => {
   const key = String(e.user_id ?? e.email ?? e.name ?? '')

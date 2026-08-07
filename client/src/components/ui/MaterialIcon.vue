@@ -11,7 +11,7 @@
 import { computed } from 'vue'
 
 /**
- * OlaClick DS icon — Material Symbols Rounded.
+ * Blast DS icon — Material Symbols Rounded.
  * Resting = FILL 0 (outlined), Active/selected = FILL 1 (filled).
  * Color inherits currentColor. Size 20–24px in UI.
  */

@@ -1,4 +1,4 @@
-// Service Worker for OlaClick Analytics PWA - NO CACHE VERSION
+// Service Worker for the Blast PWA - NO CACHE VERSION
 // This version disables all caching to ensure fresh content after deployments
 // Version: 3.0.0 - NO CACHE MODE
 
@@ -120,11 +120,12 @@ self.addEventListener('push', event => {
   console.log('📨 Service Worker: Push notification received');
   
   let notificationData = {
-    title: 'OlaClick Analytics',
+    title: 'Blast',
     body: 'You have a new notification',
     icon: '/icons/icon-192x192.png',
-    badge: '/icons/icon-72x72.png',
-    tag: 'olaclick-notification',
+    // Android renders the badge as an alpha mask, so it needs the bare glyph.
+    badge: '/icons/icon-badge-96x96.png',
+    tag: 'blast-notification',
     requireInteraction: false,
     actions: [
       {

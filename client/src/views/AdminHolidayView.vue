@@ -5,8 +5,8 @@
         <!-- Header -->
         <div class="flex items-start justify-between gap-2 flex-wrap">
           <div>
-            <h2 class="text-lg font-bold text-gray-900">{{ $t('holidays.title') }}</h2>
-            <p class="text-sm text-gray-600">{{ $t('holidays.subtitle') }}</p>
+            <h2 class="text-lg font-bold text-fg-strong">{{ $t('holidays.title') }}</h2>
+            <p class="text-sm text-fg-muted">{{ $t('holidays.subtitle') }}</p>
           </div>
         </div>
 
@@ -14,7 +14,7 @@
           <!-- Company selector for super-admin -->
           <div class="mb-3 flex items-center gap-2 flex-wrap">
             <template v-if="isSuperAdmin">
-              <label class="text-xs text-gray-700">{{ $t('admin.company') }}</label>
+              <label class="text-xs text-fg">{{ $t('admin.company') }}</label>
               <select v-model="selectedCompanyId" class="form-input" @change="loadSummary">
                 <option value="">{{ $t('rentability.selectCompany') }}</option>
                 <option v-for="c in companies" :key="c.id" :value="c.id">{{ c.name }}</option>
@@ -29,17 +29,17 @@
 
           <!-- KPI Summary -->
           <div v-if="!loading && employees.length > 0" class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-            <div class="bg-blue-50 rounded-lg p-3 text-center">
-              <div class="text-2xl font-bold text-blue-700">{{ employees.length }}</div>
-              <div class="text-xs text-blue-600">{{ $t('admin.employee') }}s</div>
+            <div class="bg-tint rounded-lg p-3 text-center">
+              <div class="text-2xl font-bold text-brand">{{ employees.length }}</div>
+              <div class="text-xs text-brand">{{ $t('admin.employee') }}s</div>
             </div>
-            <div class="bg-green-50 rounded-lg p-3 text-center">
-              <div class="text-2xl font-bold text-green-700">{{ totalAccrued }}</div>
-              <div class="text-xs text-green-600">{{ $t('holidays.accrued') }}</div>
+            <div class="bg-success-bg rounded-lg p-3 text-center">
+              <div class="text-2xl font-bold text-success">{{ totalAccrued }}</div>
+              <div class="text-xs text-success">{{ $t('holidays.accrued') }}</div>
             </div>
-            <div class="bg-orange-50 rounded-lg p-3 text-center">
-              <div class="text-2xl font-bold text-orange-700">{{ totalTaken }}</div>
-              <div class="text-xs text-orange-600">{{ $t('holidays.taken') }}</div>
+            <div class="bg-pending-bg rounded-lg p-3 text-center">
+              <div class="text-2xl font-bold text-warning">{{ totalTaken }}</div>
+              <div class="text-xs text-warning">{{ $t('holidays.taken') }}</div>
             </div>
             <div class="bg-purple-50 rounded-lg p-3 text-center">
               <div class="text-2xl font-bold text-purple-700">{{ avgBalance }}</div>
@@ -67,11 +67,11 @@
             <template #cell-name="{ item }">{{ item.name }}</template>
             <template #cell-hired_at="{ item }">
               <span v-if="item.hired_at" class="text-sm">{{ formatDate(item.hired_at) }}</span>
-              <span v-else class="text-xs text-orange-500 italic">{{ $t('holidays.noHiredDate') }}</span>
+              <span v-else class="text-xs text-warning italic">{{ $t('holidays.noHiredDate') }}</span>
             </template>
             <template #cell-months="{ item }">
               <span v-if="item.has_hired_date">{{ item.months_of_service }}</span>
-              <span v-else class="text-gray-400">-</span>
+              <span v-else class="text-fg-faint">-</span>
             </template>
             <template #cell-accrued="{ item }">{{ item.accrued.toFixed(2) }}</template>
             <template #cell-taken="{ item }">{{ item.taken.toFixed(2) }}</template>
@@ -86,11 +86,11 @@
             </template>
 
             <template #mobile-card="{ item }">
-              <div class="font-medium text-gray-900 mb-1">{{ item.name }}</div>
-              <div class="text-xs text-gray-600">
+              <div class="font-medium text-fg-strong mb-1">{{ item.name }}</div>
+              <div class="text-xs text-fg-muted">
                 {{ $t('holidays.hiredAt') }}: {{ item.hired_at ? formatDate(item.hired_at) : $t('holidays.noHiredDate') }}
               </div>
-              <div class="text-xs text-gray-600">{{ $t('holidays.monthsOfService') }}: {{ item.has_hired_date ? item.months_of_service : '-' }}</div>
+              <div class="text-xs text-fg-muted">{{ $t('holidays.monthsOfService') }}: {{ item.has_hired_date ? item.months_of_service : '-' }}</div>
               <div class="flex justify-between text-xs mt-1">
                 <span>{{ $t('holidays.accrued') }}: {{ item.accrued.toFixed(2) }}</span>
                 <span>{{ $t('holidays.taken') }}: {{ item.taken.toFixed(2) }}</span>
@@ -111,16 +111,16 @@
       <div class="rounded-lg p-5 w-full max-w-md" style="background: var(--bg); border: 1px solid var(--border); box-shadow: var(--shadow-pop);">
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-lg font-semibold">{{ $t('holidays.registerHoliday') }}</h3>
-          <button @click="registerModal = null" class="text-gray-400 hover:text-gray-600">
+          <button @click="registerModal = null" class="text-fg-faint hover:text-gray-600">
             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
           </button>
         </div>
 
         <div class="space-y-4">
           <!-- Employee info -->
-          <div class="bg-gray-50 rounded-lg p-3">
-            <div class="font-medium text-gray-900">{{ registerModal.name }}</div>
-            <div class="text-sm text-gray-600">{{ $t('holidays.currentBalance') }}: <span :class="balanceColor(registerModal.balance)" class="font-semibold">{{ registerModal.balance.toFixed(2) }} {{ $t('common.days') }}</span></div>
+          <div class="bg-surface-2 rounded-lg p-3">
+            <div class="font-medium text-fg-strong">{{ registerModal.name }}</div>
+            <div class="text-sm text-fg-muted">{{ $t('holidays.currentBalance') }}: <span :class="balanceColor(registerModal.balance)" class="font-semibold">{{ registerModal.balance.toFixed(2) }} {{ $t('common.days') }}</span></div>
           </div>
 
           <!-- Start date -->
@@ -148,7 +148,7 @@
           </div>
 
           <!-- Validation error -->
-          <div v-if="registerError" class="text-sm text-red-600 bg-red-50 rounded-lg p-2">{{ registerError }}</div>
+          <div v-if="registerError" class="text-sm text-error bg-error-bg rounded-lg p-2">{{ registerError }}</div>
         </div>
 
         <div class="flex justify-end gap-2 mt-5">
@@ -163,25 +163,25 @@
       <div class="rounded-lg p-5 w-full max-w-2xl max-h-[80vh] overflow-y-auto" style="background: var(--bg); border: 1px solid var(--border); box-shadow: var(--shadow-pop);">
         <div class="flex items-center justify-between mb-4">
           <div>
-            <h3 class="text-lg font-semibold">{{ historyModal.employee.name }}</h3>
-            <p class="text-sm text-gray-600">
+            <h3 class="heading-plain text-lg">{{ historyModal.employee.name }}</h3>
+            <p class="text-sm text-fg-muted">
               {{ $t('holidays.balance') }}: <span :class="balanceColor(historyModal.employee.balance)" class="font-semibold">{{ historyModal.employee.balance.toFixed(2) }}</span>
               &middot; {{ $t('holidays.accrued') }}: {{ historyModal.employee.accrued.toFixed(2) }}
               &middot; {{ $t('holidays.taken') }}: {{ historyModal.employee.taken.toFixed(2) }}
             </p>
           </div>
-          <button @click="historyModal = null" class="text-gray-400 hover:text-gray-600">
+          <button @click="historyModal = null" class="text-fg-faint hover:text-gray-600">
             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
           </button>
         </div>
 
-        <div v-if="historyLoading" class="text-center py-8 text-gray-500">{{ $t('common.loading') }}</div>
+        <div v-if="historyLoading" class="text-center py-8 text-fg-muted">{{ $t('common.loading') }}</div>
 
-        <div v-else-if="historyRequests.length === 0" class="text-center py-8 text-gray-500">{{ $t('holidays.noHolidays') }}</div>
+        <div v-else-if="historyRequests.length === 0" class="text-center py-8 text-fg-muted">{{ $t('holidays.noHolidays') }}</div>
 
         <table v-else class="w-full text-sm">
           <thead>
-            <tr class="border-b text-left text-xs text-gray-500">
+            <tr class="border-b text-left text-xs text-fg-muted">
               <th class="py-2 pr-2">{{ $t('holidays.startDate') }}</th>
               <th class="py-2 pr-2">{{ $t('holidays.endDate') }}</th>
               <th class="py-2 pr-2 text-right">{{ $t('holidays.days') }}</th>
@@ -195,10 +195,10 @@
               <td class="py-2 pr-2">{{ formatDate(req.start_date) }}</td>
               <td class="py-2 pr-2">{{ formatDate(req.end_date) }}</td>
               <td class="py-2 pr-2 text-right font-medium">{{ parseFloat(req.days).toFixed(2) }}</td>
-              <td class="py-2 pr-2 text-gray-600 max-w-[200px] truncate">{{ req.note || '-' }}</td>
-              <td class="py-2 pr-2 text-xs text-gray-500">{{ formatDate(req.created_at) }}</td>
+              <td class="py-2 pr-2 text-fg-muted max-w-[200px] truncate">{{ req.note || '-' }}</td>
+              <td class="py-2 pr-2 text-xs text-fg-muted">{{ formatDate(req.created_at) }}</td>
               <td class="py-2 text-right">
-                <button v-if="deleteConfirmId !== req.id" class="text-red-500 hover:text-red-700 text-xs" @click="deleteConfirmId = req.id">{{ $t('common.delete') }}</button>
+                <button v-if="deleteConfirmId !== req.id" class="text-error hover:text-red-700 text-xs" @click="deleteConfirmId = req.id">{{ $t('common.delete') }}</button>
                 <div v-else class="flex items-center gap-1 justify-end">
                   <button class="btn-danger btn-xs" :disabled="deletingId === req.id" @click="deleteHoliday(req.id)">{{ deletingId === req.id ? $t('common.deleting') : $t('common.confirm') }}</button>
                   <button class="btn-secondary btn-xs" @click="deleteConfirmId = null">{{ $t('common.cancel') }}</button>

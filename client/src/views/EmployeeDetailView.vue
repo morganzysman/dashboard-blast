@@ -5,8 +5,8 @@
       <div class="flex items-center gap-3">
         <button class="btn-secondary btn-sm" @click="goBack">← {{ $t('common.back') }}</button>
         <div>
-          <h1 class="text-2xl font-bold text-gray-900">{{ user?.name || $t('common.loading') }}</h1>
-          <p class="text-sm text-gray-500">{{ user?.email }} · {{ user?.role }} · {{ user?.company_name || '—' }}</p>
+          <h1 class="heading-plain text-2xl text-fg-strong">{{ user?.name || $t('common.loading') }}</h1>
+          <p class="text-sm text-fg-muted">{{ user?.email }} · {{ user?.role }} · {{ user?.company_name || '—' }}</p>
         </div>
       </div>
       <ContractStatusBadge v-if="user" :status="contractStatus" />
@@ -47,7 +47,7 @@
       <div class="card">
         <div class="card-body space-y-4">
           <h2 class="text-lg font-semibold">{{ $t('contract.employeeData') }}</h2>
-          <p class="text-xs text-gray-500">{{ $t('contract.employeeDataHint') }}</p>
+          <p class="text-xs text-fg-muted">{{ $t('contract.employeeDataHint') }}</p>
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label class="form-label">{{ $t('contract.documentType') }}</label>
@@ -69,15 +69,15 @@
             <label class="form-label">{{ $t('contract.idDocumentImage') }}</label>
             <div v-if="idDocumentFrontUrl || idDocumentBackUrl" class="mt-1 grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div v-if="idDocumentFrontUrl">
-                <p class="text-xs text-gray-500 mb-1">{{ $t('contract.idDocumentFront') }}</p>
+                <p class="text-xs text-fg-muted mb-1">{{ $t('contract.idDocumentFront') }}</p>
                 <img :src="idDocumentFrontUrl" alt="ID document front" class="max-h-48 rounded border border-gray-200 object-contain" />
               </div>
               <div v-if="idDocumentBackUrl">
-                <p class="text-xs text-gray-500 mb-1">{{ $t('contract.idDocumentBack') }}</p>
+                <p class="text-xs text-fg-muted mb-1">{{ $t('contract.idDocumentBack') }}</p>
                 <img :src="idDocumentBackUrl" alt="ID document back" class="max-h-48 rounded border border-gray-200 object-contain" />
               </div>
             </div>
-            <p v-else class="text-sm text-gray-400">{{ $t('common.none') }}</p>
+            <p v-else class="text-sm text-fg-faint">{{ $t('common.none') }}</p>
           </div>
           <div class="flex justify-end">
             <button class="btn-primary" :disabled="savingContractInfo" @click="saveContractInfo">{{ $t('common.save') }}</button>
@@ -90,7 +90,7 @@
         <div class="card-body space-y-4">
           <h2 class="text-lg font-semibold">{{ $t('contract.generateTitle') }}</h2>
 
-          <div v-if="accounts.length === 0" class="text-sm text-gray-500">{{ $t('contract.noAccounts') }}</div>
+          <div v-if="accounts.length === 0" class="text-sm text-fg-muted">{{ $t('contract.noAccounts') }}</div>
 
           <template v-else>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -120,11 +120,11 @@
                    nobody has to infer the term from a blank end-date field. -->
               <div v-if="supportsIndefinite">
                 <label class="form-label">{{ $t('contract.term') }}</label>
-                <div class="inline-flex rounded-lg border border-gray-200 p-0.5 bg-gray-50" role="group">
+                <div class="inline-flex rounded-lg border border-gray-200 p-0.5 bg-surface-2" role="group">
                   <button
                     type="button"
                     class="px-3 py-1.5 text-sm rounded-md transition-colors"
-                    :class="termType === 'indefinite' ? 'bg-white shadow-sm text-gray-900 font-medium' : 'text-gray-500 hover:text-gray-700'"
+                    :class="termType === 'indefinite' ? 'bg-surface-1 shadow-sm text-fg-strong font-medium' : 'text-fg-muted hover:text-gray-700'"
                     @click="termType = 'indefinite'"
                   >
                     {{ $t('contract.indefinite') }}
@@ -132,13 +132,13 @@
                   <button
                     type="button"
                     class="px-3 py-1.5 text-sm rounded-md transition-colors"
-                    :class="termType === 'fixed' ? 'bg-white shadow-sm text-gray-900 font-medium' : 'text-gray-500 hover:text-gray-700'"
+                    :class="termType === 'fixed' ? 'bg-surface-1 shadow-sm text-fg-strong font-medium' : 'text-fg-muted hover:text-gray-700'"
                     @click="termType = 'fixed'"
                   >
                     {{ $t('contract.fixedTerm') }}
                   </button>
                 </div>
-                <p class="text-xs text-gray-400 mt-1">{{ $t('contract.termHint') }}</p>
+                <p class="text-xs text-fg-faint mt-1">{{ $t('contract.termHint') }}</p>
               </div>
 
               <!-- Dynamic per-contract-type parameter fields -->
@@ -159,17 +159,17 @@
                   :type="field.type === 'date' ? 'date' : 'text'"
                   class="form-input"
                 />
-                <p v-if="field.hintKey" class="text-xs text-gray-400 mt-1">{{ paramHint(field) }}</p>
+                <p v-if="field.hintKey" class="text-xs text-fg-faint mt-1">{{ paramHint(field) }}</p>
               </div>
             </div>
 
             <!-- Template unavailable warning -->
-            <div v-if="selectedContractType && !selectedContractType.available" class="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded p-3">
+            <div v-if="selectedContractType && !selectedContractType.available" class="text-sm text-warning-fg bg-warning-bg border border-amber-200 rounded p-3">
               {{ $t('contract.templateUnavailable', { country: selectedCountryConfig?.label }) }}
             </div>
 
             <!-- Missing fields warning -->
-            <div v-else-if="missingFields.length" class="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded p-3">
+            <div v-else-if="missingFields.length" class="text-sm text-warning-fg bg-warning-bg border border-amber-200 rounded p-3">
               <div class="font-medium mb-1">{{ $t('contract.missingFieldsTitle') }}</div>
               <ul class="list-disc ml-5">
                 <li v-for="m in missingFields" :key="m">{{ $t(labelForMissing(m)) }}</li>
@@ -196,26 +196,26 @@
             <button class="btn-secondary btn-sm" :disabled="loadingContracts" @click="loadContracts">↻</button>
           </div>
 
-          <p v-if="contracts.length === 0" class="text-sm text-gray-500">{{ $t('contract.noContracts') }}</p>
+          <p v-if="contracts.length === 0" class="text-sm text-fg-muted">{{ $t('contract.noContracts') }}</p>
 
           <div v-else class="space-y-3">
             <div v-for="c in contracts" :key="c.id" class="rounded-lg border border-gray-200 p-3 space-y-2">
               <div class="flex items-center justify-between gap-2 flex-wrap">
                 <div class="flex items-center gap-2">
                   <ContractStatusBadge :status="c.status" size="sm" />
-                  <span class="text-sm font-medium text-gray-800">{{ contractTypeLabelById(c) }}</span>
+                  <span class="text-sm font-medium text-fg-strong">{{ contractTypeLabelById(c) }}</span>
                 </div>
-                <span class="text-xs text-gray-400">{{ $t('contract.createdOn') }} {{ formatDate(c.created_at) }}</span>
+                <span class="text-xs text-fg-faint">{{ $t('contract.createdOn') }} {{ formatDate(c.created_at) }}</span>
               </div>
-              <div class="text-xs text-gray-500">
+              <div class="text-xs text-fg-muted">
                 {{ $t('contract.term') }}: {{ formatDate(c.start_date) }} — {{ c.end_date ? formatDate(c.end_date) : $t('contract.indefinite') }}
-                <span v-if="c.expiring_soon" class="ml-2 text-amber-600 font-medium">· {{ $t('contract.expiringSoon') }}</span>
+                <span v-if="c.expiring_soon" class="ml-2 text-warning font-medium">· {{ $t('contract.expiringSoon') }}</span>
               </div>
               <div class="flex items-center gap-3 text-xs">
-                <span :class="c.employer_signed ? 'text-green-600' : 'text-amber-600'">
+                <span :class="c.employer_signed ? 'text-success' : 'text-warning'">
                   {{ c.employer_signed ? '✓' : '○' }} {{ $t('contract.employerSigned') }}
                 </span>
-                <span :class="c.worker_signed ? 'text-green-600' : 'text-amber-600'">
+                <span :class="c.worker_signed ? 'text-success' : 'text-warning'">
                   {{ c.worker_signed ? '✓' : '○' }} {{ $t('contract.workerSigned') }}
                 </span>
               </div>
@@ -236,7 +236,7 @@
                 </button>
                 <button
                   v-if="c.status !== 'cancelled'"
-                  class="btn-xs text-red-600 hover:text-red-700"
+                  class="btn-xs text-error hover:text-red-700"
                   @click="cancelContract(c)"
                 >
                   {{ $t('contract.cancelContract') }}
@@ -254,15 +254,15 @@
       class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
       @click.self="closePreview"
     >
-      <div class="bg-white rounded-lg shadow-xl w-full max-w-4xl h-[90vh] flex flex-col">
+      <div class="bg-surface-1 rounded-lg shadow-xl w-full max-w-4xl h-[90vh] flex flex-col">
         <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200">
-          <h3 class="text-base font-semibold text-gray-900">{{ $t('contract.previewTitle') }}</h3>
+          <h3 class="text-base font-semibold text-fg-strong">{{ $t('contract.previewTitle') }}</h3>
           <div class="flex items-center gap-2">
             <button class="btn-primary btn-sm" @click="downloadFromPreview">{{ $t('contract.downloadPdf') }}</button>
             <button class="btn-secondary btn-sm" @click="closePreview">{{ $t('common.close') }}</button>
           </div>
         </div>
-        <div class="flex-1 overflow-hidden bg-gray-100">
+        <div class="flex-1 overflow-hidden bg-surface-2">
           <iframe :src="previewUrl" class="w-full h-full" title="Contract preview"></iframe>
         </div>
       </div>
@@ -274,10 +274,10 @@
       class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
       @click.self="closeEmployerSign"
     >
-      <div class="bg-white rounded-lg shadow-xl w-full max-w-lg flex flex-col">
+      <div class="bg-surface-1 rounded-lg shadow-xl w-full max-w-lg flex flex-col">
         <div class="px-4 py-3 border-b border-gray-200">
-          <h3 class="text-base font-semibold text-gray-900">{{ $t('contract.signEmployerTitle') }}</h3>
-          <p class="text-sm text-gray-500">{{ $t('contract.signEmployerHint') }}</p>
+          <h3 class="text-base font-semibold text-fg-strong">{{ $t('contract.signEmployerTitle') }}</h3>
+          <p class="text-sm text-fg-muted">{{ $t('contract.signEmployerHint') }}</p>
         </div>
         <div class="p-4 space-y-3">
           <SignaturePad ref="employerPad" />

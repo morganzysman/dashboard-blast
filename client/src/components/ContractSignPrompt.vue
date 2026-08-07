@@ -4,26 +4,26 @@
       <div class="modal-content">
         <div class="modal-panel w-full max-w-2xl p-6 max-h-[92vh] overflow-y-auto" @click.stop>
           <div class="flex items-center gap-3 mb-4">
-            <div class="p-2 bg-primary-100 rounded-lg">
-              <svg class="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="p-2 bg-tint rounded-lg">
+              <svg class="w-5 h-5 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
               </svg>
             </div>
             <div>
-              <h3 class="text-lg font-semibold text-gray-900">{{ $t('contract.signWorkerTitle') }}</h3>
-              <p class="text-sm text-gray-500">{{ $t('contract.signWorkerHint') }}</p>
+              <h3 class="text-lg font-semibold text-fg-strong">{{ $t('contract.signWorkerTitle') }}</h3>
+              <p class="text-sm text-fg-muted">{{ $t('contract.signWorkerHint') }}</p>
             </div>
           </div>
 
-          <div class="text-xs text-gray-500 mb-3">
+          <div class="text-xs text-fg-muted mb-3">
             {{ $t('contract.term') }}: {{ formatDate(current.start_date) }} —
             {{ current.end_date ? formatDate(current.end_date) : $t('contract.indefinite') }}
           </div>
 
           <!-- PDF review -->
-          <div class="mb-2 rounded-lg border border-gray-200 overflow-hidden bg-gray-100" style="height: 45vh;">
+          <div class="mb-2 rounded-lg border border-gray-200 overflow-hidden bg-surface-2" style="height: 45vh;">
             <iframe v-if="pdfUrl" :src="pdfUrl" class="w-full h-full" :title="$t('contract.reviewPdf')"></iframe>
-            <div v-else class="w-full h-full flex items-center justify-center text-sm text-gray-400">
+            <div v-else class="w-full h-full flex items-center justify-center text-sm text-fg-faint">
               {{ $t('common.loading') }}
             </div>
           </div>
@@ -35,20 +35,20 @@
             :href="pdfUrl"
             target="_blank"
             rel="noopener"
-            class="inline-flex items-center gap-1.5 text-sm font-medium text-primary-600 hover:text-primary-700 mb-2"
+            class="inline-flex items-center gap-1.5 text-sm font-medium text-brand hover:text-primary-700 mb-2"
           >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
             </svg>
             {{ $t('contract.openFullPdf') }}
           </a>
-          <p class="text-xs text-gray-400 mb-4">{{ $t('contract.pdfMobileHint') }}</p>
+          <p class="text-xs text-fg-faint mb-4">{{ $t('contract.pdfMobileHint') }}</p>
 
           <!-- Signature -->
           <label class="form-label">{{ $t('contract.signAsWorker') }}</label>
           <SignaturePad ref="pad" />
 
-          <label class="flex items-start gap-2 mt-3 text-sm text-gray-700">
+          <label class="flex items-start gap-2 mt-3 text-sm text-fg">
             <input v-model="consent" type="checkbox" class="mt-0.5" />
             <span>{{ $t('contract.legalConsent') }}</span>
           </label>

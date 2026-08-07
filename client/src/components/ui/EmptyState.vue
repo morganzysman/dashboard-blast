@@ -6,7 +6,7 @@
           <MaterialIcon name="inbox" :size="32" />
         </slot>
       </div>
-      <h3 class="text-lg font-medium mb-2" style="color: var(--fg1);">{{ title }}</h3>
+      <h3 class="heading-plain text-lg mb-2" style="color: var(--fg1);">{{ title }}</h3>
       <p class="mb-4" style="color: var(--fg3);">{{ subtitle }}</p>
       <div>
         <slot />

@@ -4,7 +4,7 @@
       <div class="modal-content">
         <div class="modal-panel w-full sm:max-w-lg">
           <div class="modal-header">
-            <h3 class="text-lg font-semibold text-gray-900">{{ $t('modals.accountTokens.title') }}</h3>
+            <h3 class="text-lg font-semibold text-fg-strong">{{ $t('modals.accountTokens.title') }}</h3>
           </div>
           <div class="modal-body">
           <div class="sm:flex sm:items-start">
@@ -14,7 +14,7 @@
                 <div v-for="account in accounts" :key="account.company_token" class="border rounded-lg p-4">
                   <!-- Account Name -->
                   <div class="mb-3">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                    <label class="block text-sm font-medium text-fg mb-1">
                       {{ $t('companies.accountName') }}
                     </label>
                     <input
@@ -27,7 +27,7 @@
 
                   <!-- Company Token -->
                   <div class="mb-3">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                    <label class="block text-sm font-medium text-fg mb-1">
                       {{ $t('companies.companyToken') }}
                     </label>
                     <div class="flex space-x-2">
@@ -42,7 +42,7 @@
 
                   <!-- API Token -->
                   <div class="mb-3">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                    <label class="block text-sm font-medium text-fg mb-1">
                       {{ $t('companies.apiToken') }}
                     </label>
                     <div class="flex space-x-2">
@@ -73,9 +73,9 @@
                         <input
                           type="checkbox"
                           v-model="account.is_active"
-                          class="form-checkbox h-4 w-4 text-primary-600"
+                          class="form-checkbox h-4 w-4 text-brand"
                         />
-                        <span class="ml-2 text-sm text-gray-700">{{ $t('common.active') }}</span>
+                        <span class="ml-2 text-sm text-fg">{{ $t('common.active') }}</span>
                       </label>
                     </div>
                     <button

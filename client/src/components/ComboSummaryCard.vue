@@ -3,10 +3,10 @@
     <div class="card-body p-4">
       <div class="flex items-start justify-between gap-2 mb-3">
         <div class="min-w-0">
-          <h3 class="text-base font-semibold text-gray-900">{{ $t('combos.title') }}</h3>
-          <p class="text-xs text-gray-500">{{ $t('combos.subtitle') }}</p>
+          <h3 class="text-base font-semibold text-fg-strong">{{ $t('combos.title') }}</h3>
+          <p class="text-xs text-fg-muted">{{ $t('combos.subtitle') }}</p>
         </div>
-        <div class="w-9 h-9 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0">
+        <div class="w-9 h-9 bg-warning-bg rounded-lg flex items-center justify-center flex-shrink-0">
           <span class="text-lg">🍔</span>
         </div>
       </div>
@@ -16,28 +16,28 @@
       </div>
 
       <div v-else-if="!hasData" class="flex flex-col items-center justify-center h-28 text-center">
-        <p class="text-sm text-gray-500">{{ $t('combos.noData') }}</p>
-        <p class="text-[11px] text-gray-400 mt-1">{{ $t('combos.noDataHint') }}</p>
+        <p class="text-sm text-fg-muted">{{ $t('combos.noData') }}</p>
+        <p class="text-[11px] text-fg-faint mt-1">{{ $t('combos.noDataHint') }}</p>
       </div>
 
       <div v-else>
         <!-- KPI row -->
         <div class="grid grid-cols-3 gap-2 mb-1">
-          <div class="rounded-lg bg-amber-50 p-2 text-center">
-            <div class="text-xl font-bold text-amber-700">{{ avgPerOrder.toFixed(2) }}</div>
-            <div class="text-[10px] text-gray-500 leading-tight">{{ $t('combos.avgPerOrder') }}</div>
+          <div class="rounded-lg bg-warning-bg p-2 text-center">
+            <div class="text-xl font-bold text-warning">{{ avgPerOrder.toFixed(2) }}</div>
+            <div class="text-[10px] text-fg-muted leading-tight">{{ $t('combos.avgPerOrder') }}</div>
           </div>
-          <div class="rounded-lg bg-gray-50 p-2 text-center">
-            <div class="text-xl font-bold text-gray-800">{{ totalBurgerUnits }}</div>
-            <div class="text-[10px] text-gray-500 leading-tight">{{ $t('combos.totalBurgers') }}</div>
+          <div class="rounded-lg bg-surface-2 p-2 text-center">
+            <div class="text-xl font-bold text-fg-strong">{{ totalBurgerUnits }}</div>
+            <div class="text-[10px] text-fg-muted leading-tight">{{ $t('combos.totalBurgers') }}</div>
           </div>
-          <div class="rounded-lg bg-gray-50 p-2 text-center">
-            <div class="text-xl font-bold text-gray-800">{{ (burgerOrderRate * 100).toFixed(0) }}%</div>
-            <div class="text-[10px] text-gray-500 leading-tight">{{ $t('combos.ordersWithBurger') }}</div>
+          <div class="rounded-lg bg-surface-2 p-2 text-center">
+            <div class="text-xl font-bold text-fg-strong">{{ (burgerOrderRate * 100).toFixed(0) }}%</div>
+            <div class="text-[10px] text-fg-muted leading-tight">{{ $t('combos.ordersWithBurger') }}</div>
           </div>
         </div>
         <!-- Combo comparison line -->
-        <div class="text-[11px] text-gray-400 mb-3 text-right">
+        <div class="text-[11px] text-fg-faint mb-3 text-right">
           {{ avgCombosPerOrder.toFixed(2) }} {{ $t('combos.comboCompare') }}
         </div>
 
@@ -51,7 +51,7 @@
             :title="`${d.date}: ${d.avg.toFixed(2)} ${$t('combos.avgPerOrderShort')} (${d.orders} ${$t('combos.ordersShort')})`"
           ></div>
         </div>
-        <div class="mt-1 flex justify-between text-[10px] text-gray-400">
+        <div class="mt-1 flex justify-between text-[10px] text-fg-faint">
           <span>{{ bars[0]?.dayLabel }}</span>
           <span>{{ bars[bars.length - 1]?.dayLabel }}</span>
         </div>

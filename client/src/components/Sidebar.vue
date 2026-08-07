@@ -3,21 +3,15 @@
     'sidebar',
     { 'mobile-open': isMobileOpen }
   ]">
-    <!-- Logo section -->
+    <!-- Isologo — clear space kept equal to the height of the "B" -->
     <div class="sidebar-header">
-      <div class="flex items-center justify-between w-full">
-        <div class="flex items-center gap-2.5 min-w-0">
-          <div class="flex-shrink-0 flex items-center justify-center rounded-md" style="width: 28px; height: 28px; background: var(--brand-blue);">
-            <span class="font-display font-bold text-white text-base leading-none">O</span>
-          </div>
-          <div class="min-w-0">
-            <h1 class="font-bold truncate" style="font-size: 15px; color: var(--nav-text);">{{ $t('app.name') }}</h1>
-            <p class="truncate" style="font-size: 11px; color: var(--nav-muted);">{{ $t('dashboard.analytics') }}</p>
-          </div>
-        </div>
+      <div class="flex items-center justify-between w-full gap-3">
+        <router-link :to="homeLink" class="min-w-0 flex items-center" :aria-label="$t('app.name')">
+          <BlastLogo variant="isologo" :height="34" style="color: var(--nav-active-fg);" />
+        </router-link>
         <!-- Mobile close button -->
         <button @click="$emit('close')"
-                class="md:hidden p-2 rounded-md transition-colors"
+                class="md:hidden p-2 rounded-md transition-colors flex-shrink-0"
                 style="color: var(--nav-muted);">
           <MaterialIcon name="close" :size="22" />
         </button>
@@ -43,6 +37,12 @@
         {{ $t(link.label) }}
       </router-link>
     </nav>
+
+    <!-- Firma de barra -->
+    <div class="sidebar-footer">
+      <span>Miraflores · Barranco</span>
+      <span class="sidebar-footer__tag">#EstoEsBlast</span>
+    </div>
   </nav>
 </template>
 
@@ -50,6 +50,7 @@
 import { computed } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import MaterialIcon from './ui/MaterialIcon.vue'
+import BlastLogo from './ui/BlastLogo.vue'
 
 const props = defineProps({
   isMobileOpen: {
@@ -84,11 +85,33 @@ const links = computed(() => [
 ])
 
 const visibleLinks = computed(() => links.value.filter(l => l.show))
+
+const homeLink = computed(() => visibleLinks.value[0]?.to ?? '/')
 </script>
 
 <style scoped>
 .sidebar-nav-icon {
   width: auto;
   height: auto;
+}
+
+.sidebar-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 16px 14px;
+  border-top: 1px solid var(--nav-border);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-muted);
+}
+
+/* Hashtags siempre en Verde Menta. */
+.sidebar-footer__tag {
+  color: var(--accent);
+  text-transform: none;
+  letter-spacing: 0.04em;
 }
 </style>

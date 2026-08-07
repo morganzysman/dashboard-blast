@@ -1,9 +1,9 @@
 <template>
-  <div class="rounded-lg border border-dashed border-gray-200 bg-gray-50/50 p-3 space-y-4">
-    <p class="text-[10px] text-gray-500">{{ $t('accountApi.hint') }}</p>
+  <div class="rounded-lg border border-dashed border-gray-200 bg-surface-2/50 p-3 space-y-4">
+    <p class="text-[10px] text-fg-muted">{{ $t('accountApi.hint') }}</p>
 
     <!-- Private (scraped) API token -->
-    <label class="block text-[11px] font-medium text-gray-700">
+    <label class="block text-[11px] font-medium text-fg">
       {{ $t('companies.apiToken') }}
       <div class="mt-1 flex items-center gap-2">
         <input
@@ -20,7 +20,7 @@
     </label>
 
     <div class="flex items-center justify-between gap-2">
-      <span class="text-[10px]" :class="hasKey ? 'text-success-600' : 'text-gray-400'">
+      <span class="text-[10px]" :class="hasKey ? 'text-success-600' : 'text-fg-faint'">
         {{ hasKey ? $t('accountApi.configured') : $t('accountApi.notConfigured') }}
       </span>
       <button
@@ -35,8 +35,8 @@
 
     <!-- Public API key (olk_live_...) -->
     <div class="border-t border-gray-200 pt-3">
-      <p class="text-[10px] text-gray-500 mb-1">{{ $t('accountApi.publicKeyHint') }}</p>
-      <label class="block text-[11px] font-medium text-gray-700">
+      <p class="text-[10px] text-fg-muted mb-1">{{ $t('accountApi.publicKeyHint') }}</p>
+      <label class="block text-[11px] font-medium text-fg">
         {{ $t('accountApi.publicKeyLabel') }}
         <div class="mt-1 flex items-center gap-2">
           <input
@@ -53,7 +53,7 @@
       </label>
 
       <div class="mt-2 flex items-center justify-between gap-2">
-        <span class="text-[10px]" :class="hasPublicKey ? 'text-success-600' : 'text-gray-400'">
+        <span class="text-[10px]" :class="hasPublicKey ? 'text-success-600' : 'text-fg-faint'">
           {{ hasPublicKey ? $t('accountApi.configured') : $t('accountApi.notConfigured') }}
         </span>
         <button

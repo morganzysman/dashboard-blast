@@ -167,7 +167,7 @@ export async function notifyUserShiftUpdate(userId) {
       title: '🗓️ New shift ready',
       body: 'New shift ready, check it',
       icon: '/icons/icon-192x192.png',
-      badge: '/icons/icon-72x72.png',
+      badge: '/icons/icon-badge-96x96.png',
       tag: 'shift-update',
       data: { url: '/timesheet', type: 'shift-update', timestamp: Date.now() }
     };
@@ -221,7 +221,7 @@ export async function notifyUserPaid(userId, amount, currency, periodStart, peri
       title: '💵 Payroll Paid',
       body: `You have been paid ${amount} ${currency}`,
       icon: '/icons/icon-192x192.png',
-      badge: '/icons/icon-72x72.png',
+      badge: '/icons/icon-badge-96x96.png',
       tag: `payroll-paid-${periodStart}-${periodEnd}`,
       data: { url: '/timesheet', type: 'payroll-paid', periodStart, periodEnd, amount, currency, timestamp: Date.now() }
     };
@@ -306,7 +306,7 @@ export function scheduleLateEmployeeAlerts() {
           title: '⏰ Employee late',
           body: `${row.user_name} is late`,
           icon: '/icons/icon-192x192.png',
-          badge: '/icons/icon-72x72.png',
+          badge: '/icons/icon-badge-96x96.png',
           tag: `late-${row.user_id}-${today}`,
           data: { type: 'late-employee', userId: row.user_id, companyToken: row.company_token, date: today, timestamp: Date.now(), url: '/admin/payroll' }
         };
@@ -373,7 +373,7 @@ export async function notifyAdminsClockEvent({ companyId, companyToken, userId, 
       title: titleAction,
       body,
       icon: '/icons/icon-192x192.png',
-      badge: '/icons/icon-72x72.png',
+      badge: '/icons/icon-badge-96x96.png',
       tag: `clock-${userId}-${action}-${companyToken}`,
       data: { 
         type: 'clock-event', 
@@ -502,7 +502,7 @@ async function generateUserDailyReport(user, subscriptionData) {
       title: `📊 ${frequencyLabel} Sales Report`,
       body: `${formattedAmount} from ${totalPayments} payments across ${totalAccounts} account${totalAccounts > 1 ? 's' : ''}`,
       icon: '/icons/icon-192x192.png',
-      badge: '/icons/icon-72x72.png',
+      badge: '/icons/icon-badge-96x96.png',
       tag: `${frequency}-minute-report`,
       data: {
         url: '/',

@@ -5,54 +5,54 @@
     <!-- Notification Status Card -->
     <div class="card">
       <div class="card-header">
-        <h3 class="text-lg font-medium text-gray-900">{{ $t('notifications.title') }}</h3>
+        <h3 class="text-lg font-medium text-fg-strong">{{ $t('notifications.title') }}</h3>
       </div>
       <div class="card-body">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <div class="flex items-center mb-4">
               <div class="flex-shrink-0">
-                <div class="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center">
-                  <svg class="w-6 h-6 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="w-12 h-12 bg-tint rounded-lg flex items-center justify-center">
+                  <svg class="w-6 h-6 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5v-5zm-5-6h5l-5 5v-5zm-5-6h5l-5 5v-5z"></path>
                   </svg>
                 </div>
               </div>
               <div class="ml-4">
-                <h4 class="text-lg font-medium text-gray-900">{{ $t('notifications.pushNotifications') }}</h4>
-                <p class="text-sm text-gray-600">{{ isAdmin ? $t('notifications.adminDescription') : $t('notifications.employeeDescription') }}</p>
+                <h4 class="text-lg font-medium text-fg-strong">{{ $t('notifications.pushNotifications') }}</h4>
+                <p class="text-sm text-fg-muted">{{ isAdmin ? $t('notifications.adminDescription') : $t('notifications.employeeDescription') }}</p>
               </div>
             </div>
             
             <div class="space-y-4">
               <div class="flex items-center justify-between">
-                <span class="text-sm font-medium text-gray-700">{{ $t('common.status') }}</span>
+                <span class="text-sm font-medium text-fg">{{ $t('common.status') }}</span>
                 <span class="badge" :class="notificationStatus.isSubscribed ? 'badge-success' : 'badge-gray'">
                   {{ notificationStatus.isSubscribed ? $t('common.active') : $t('common.inactive') }}
                 </span>
               </div>
               
               <div v-if="notificationStatus.isSubscribed && notificationStatus.deviceCount" class="flex items-center justify-between">
-                <span class="text-sm font-medium text-gray-700">{{ $t('notifications.connectedDevices') }}</span>
-                <span class="text-sm text-gray-600">{{ $t('notifications.deviceCount', { count: notificationStatus.deviceCount }) }}</span>
+                <span class="text-sm font-medium text-fg">{{ $t('notifications.connectedDevices') }}</span>
+                <span class="text-sm text-fg-muted">{{ $t('notifications.deviceCount', { count: notificationStatus.deviceCount }) }}</span>
               </div>
               
               <div v-if="notificationStatus.subscribedAt" class="flex items-center justify-between">
-                <span class="text-sm font-medium text-gray-700">{{ $t('notifications.latestSubscription') }}</span>
-                <span class="text-sm text-gray-600">{{ formatDate(notificationStatus.subscribedAt) }}</span>
+                <span class="text-sm font-medium text-fg">{{ $t('notifications.latestSubscription') }}</span>
+                <span class="text-sm text-fg-muted">{{ formatDate(notificationStatus.subscribedAt) }}</span>
               </div>
               
               <!-- Device List -->
               <div v-if="notificationStatus.devices && notificationStatus.devices.length > 1" class="border-t pt-4">
-                <span class="text-sm font-medium text-gray-700 mb-2 block">{{ $t('notifications.allDevices') }}:</span>
+                <span class="text-sm font-medium text-fg mb-2 block">{{ $t('notifications.allDevices') }}:</span>
                 <div class="space-y-2">
                   <div v-for="(device, index) in notificationStatus.devices" :key="index"
                        class="flex items-center justify-between p-2 rounded-xl" style="background: rgba(249,250,251,0.5);">
                     <div>
-                      <span class="text-sm font-medium text-gray-900">{{ device.deviceName }}</span>
-                      <div class="text-xs text-gray-500">{{ formatDate(device.subscribedAt) }}</div>
+                      <span class="text-sm font-medium text-fg-strong">{{ device.deviceName }}</span>
+                      <div class="text-xs text-fg-muted">{{ formatDate(device.subscribedAt) }}</div>
                     </div>
-                    <div class="text-xs text-gray-400">
+                    <div class="text-xs text-fg-faint">
                       {{ device.endpoint.substring(0, 20) }}...
                     </div>
                   </div>
@@ -60,8 +60,8 @@
               </div>
               
               <div v-else-if="notificationStatus.userAgent" class="flex items-center justify-between">
-                <span class="text-sm font-medium text-gray-700">{{ $t('notifications.currentDevice') }}</span>
-                <span class="text-sm text-gray-600">{{ getDeviceInfo(notificationStatus.userAgent) }}</span>
+                <span class="text-sm font-medium text-fg">{{ $t('notifications.currentDevice') }}</span>
+                <span class="text-sm text-fg-muted">{{ getDeviceInfo(notificationStatus.userAgent) }}</span>
               </div>
             </div>
           </div>
@@ -69,8 +69,8 @@
           <div class="border-l pl-6">
             <div class="space-y-4">
               <div v-if="loading" class="space-y-2 animate-pulse">
-                <div class="h-9 bg-gray-200 rounded"></div>
-                <div class="h-9 bg-gray-200 rounded"></div>
+                <div class="h-9 bg-surface-2 rounded"></div>
+                <div class="h-9 bg-surface-2 rounded"></div>
               </div>
               <Button
                 v-else-if="!notificationStatus.isSubscribed"
@@ -116,13 +116,13 @@
     <!-- Notification Settings Card (admins only: frequency) -->
     <div v-if="notificationStatus.isSubscribed" class="card">
       <div class="card-header">
-        <h3 class="text-lg font-medium text-gray-900">{{ $t('notifications.settings') }}</h3>
+        <h3 class="text-lg font-medium text-fg-strong">{{ $t('notifications.settings') }}</h3>
       </div>
       <div class="card-body">
         <div class="space-y-4">
           <div v-if="isAdmin">
             <label class="form-label">{{ $t('notifications.frequency') }}</label>
-            <p class="text-sm text-gray-600 mb-2">{{ $t('notifications.frequencyDescription') }}</p>
+            <p class="text-sm text-fg-muted mb-2">{{ $t('notifications.frequencyDescription') }}</p>
             <select 
               v-model="selectedFrequency" 
               @change="updateNotificationFrequency"
@@ -139,23 +139,23 @@
           
           <div v-if="isAdmin && notificationSettings.lastNotificationTime" class="rounded-xl p-3" style="background: rgba(249,250,251,0.5);">
             <div class="flex items-center justify-between text-sm">
-              <span class="font-medium text-gray-700">{{ $t('notifications.lastNotification') }}:</span>
-              <span class="text-gray-600">{{ formatDate(notificationSettings.lastNotificationTime) }}</span>
+              <span class="font-medium text-fg">{{ $t('notifications.lastNotification') }}:</span>
+              <span class="text-fg-muted">{{ formatDate(notificationSettings.lastNotificationTime) }}</span>
             </div>
             <div class="flex items-center justify-between text-sm mt-1">
-              <span class="font-medium text-gray-700">{{ $t('notifications.nextNotification') }}:</span>
-              <span class="text-gray-600">{{ getNextNotificationTime() }}</span>
+              <span class="font-medium text-fg">{{ $t('notifications.nextNotification') }}:</span>
+              <span class="text-fg-muted">{{ getNextNotificationTime() }}</span>
             </div>
           </div>
           
           <div class="rounded-xl p-3" style="background: rgba(219,234,254,0.5);">
             <div class="flex items-start">
-              <svg class="w-5 h-5 text-blue-400 mt-0.5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg class="w-5 h-5 text-brand mt-0.5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
               </svg>
               <div>
-                <p class="text-sm font-medium text-blue-800">{{ $t('notifications.multiDeviceSupport') }}</p>
-                <p class="text-sm text-blue-700 mt-1">
+                <p class="text-sm font-medium text-brand">{{ $t('notifications.multiDeviceSupport') }}</p>
+                <p class="text-sm text-brand mt-1">
                   {{ $t('notifications.multiDeviceDescription') }}
                 </p>
               </div>

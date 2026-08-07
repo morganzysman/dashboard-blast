@@ -2,13 +2,99 @@
 import { resolve } from 'path'
 
 /**
- * OlaClick Design System — Tailwind theme.
- * - Numeric scales (primary/gray/success/warning/error) are realigned to DS hex
- *   so existing utility-class markup is recolored to the DS automatically.
- * - Semantic, theme-aware colors (surface/canvas/fg/border/brand/tint/tag-*)
- *   are backed by CSS variables in client/src/styles/tokens.css and flip in dark mode.
- * - Dark mode is driven by the [data-theme="dark"] attribute (DS spec).
+ * BLAST — Smash Burgers · Tailwind theme.
+ *
+ * - Numeric scales are realigned to the brandbook palette so existing utility
+ *   markup is recoloured automatically. Legacy families (blue/indigo/teal…)
+ *   alias onto the brand ramps rather than shipping off-brand hues.
+ * - Semantic, theme-aware colors are backed by CSS variables in
+ *   client/src/styles/tokens.css and flip on Fondo Verde Tattoo (dark).
+ * - Dark mode is driven by the [data-theme="dark"] attribute.
  */
+
+// Verde Menta (#50C293) at 400 · Verde Tattoo (#075A2A) at 600.
+const brandGreen = {
+  50: '#EFF9F4',
+  100: '#D8F1E4',
+  200: '#B2E4CB',
+  300: '#86D4B0',
+  400: '#50C293',
+  500: '#2C9C6C',
+  600: '#075A2A',
+  700: '#054A22',
+  800: '#043A1B',
+  900: '#042E15',
+}
+
+// Success reads slightly brighter than the brand green so state stays legible.
+const successGreen = {
+  50: '#F0FAF4',
+  100: '#DFF3E7',
+  200: '#BCE7CE',
+  300: '#8FD6AE',
+  400: '#58BE86',
+  500: '#1E8A4C',
+  600: '#157A3D',
+  700: '#0B5B2C',
+  800: '#094B25',
+  900: '#06371B',
+}
+
+// Mustard/gold — the only warm accent that sits comfortably on Crema Claro.
+const brandGold = {
+  50: '#FEFAEE',
+  100: '#FBF1D8',
+  200: '#F5E2AE',
+  300: '#EACF83',
+  400: '#DCB753',
+  500: '#C7A34A',
+  600: '#B5810F',
+  700: '#77540A',
+  800: '#5E4308',
+  900: '#3F2D05',
+}
+
+// Brick red — muted enough to avoid the "tono gritón" the brandbook forbids.
+const brandBrick = {
+  50: '#FDF3F1',
+  100: '#FBE9E6',
+  200: '#F5CFC9',
+  300: '#EDAEA4',
+  400: '#DE8375',
+  500: '#C64B39',
+  600: '#B7382A',
+  700: '#8C2015',
+  800: '#6F1911',
+  900: '#4A110B',
+}
+
+// Warm neutrals built from Crema Claro, Gris claro and Gris Acero.
+const warmGray = {
+  50: '#FFFCF4',
+  100: '#F8F2E3',
+  200: '#EEEEEE',
+  300: '#D9D9D9',
+  400: '#7E8B82',
+  500: '#5C6B62',
+  600: '#4A574E',
+  700: '#33403A',
+  800: '#0F2E1C',
+  900: '#071F12',
+}
+
+const plum = {
+  50: '#F6F4FB',
+  100: '#ECE7F5',
+  200: '#D6CCEB',
+  300: '#B9A9DC',
+  400: '#9A85C8',
+  500: '#7B63AE',
+  600: '#5F4A8C',
+  700: '#4C3A73',
+  800: '#3B2D5A',
+  900: '#2E2547',
+}
+
 export default {
   darkMode: ['selector', '[data-theme="dark"]'],
   content: [
@@ -18,78 +104,56 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Brand blue ramp centered on --brand-blue (#006FFF) at 600.
-        primary: {
-          50: '#EBF2FF',
-          100: '#D6E6FF',
-          200: '#ADC9FF',
-          300: '#7FA9FF',
-          400: '#4D8AFF',
-          500: '#1A75FF',
-          600: '#006FFF',
-          700: '#0058CC',
-          800: '#004BA8',
-          900: '#003C85',
-        },
-        // Neutrals realigned to DS surfaces/borders/text.
-        gray: {
-          50: '#F9F9F9',
-          100: '#F5F5F5',
-          200: '#EBEBEB',
-          300: '#D4D4D4',
-          400: '#9CA3AF',
-          500: '#6B7280',
-          600: '#4B5563',
-          700: '#374151',
-          800: '#242424',
-          900: '#1D252F',
-        },
-        success: {
-          50: '#F0FDF4',
-          100: '#DCFCE7',
-          200: '#BBF7D0',
-          300: '#86EFAC',
-          400: '#4ADE80',
-          500: '#28B84F',
-          600: '#1F9D42',
-          700: '#157A3D',
-          800: '#166534',
-          900: '#14532D',
-        },
-        warning: {
-          50: '#FFFBEB',
-          100: '#FEF9C3',
-          200: '#FDE68A',
-          300: '#FCD34D',
-          400: '#FBBF24',
-          500: '#FF9F00',
-          600: '#D98213',
-          700: '#A16207',
-          800: '#92400E',
-          900: '#78350F',
-        },
-        error: {
-          50: '#FEF2F2',
-          100: '#FEE2E2',
-          200: '#FECACA',
-          300: '#FCA5A5',
-          400: '#F87171',
-          500: '#EF4444',
-          600: '#DC2626',
-          700: '#B91C1C',
-          800: '#991B1B',
-          900: '#7F1D1D',
-        },
+        primary: brandGreen,
+        gray: warmGray,
+        slate: warmGray,
+        zinc: warmGray,
+        neutral: warmGray,
+        stone: warmGray,
+        // Feedback families keep their numeric ramp (fixed hues) and gain
+        // theme-aware DEFAULT/bg/fg entries: `text-success` flips with the
+        // theme, `text-success-600` stays pinned.
+        success: { ...successGreen, DEFAULT: 'var(--success)', bg: 'var(--success-bg)', fg: 'var(--success-fg)' },
+        green: successGreen,
+        emerald: successGreen,
+        lime: successGreen,
+        warning: { ...brandGold, DEFAULT: 'var(--warning)', bg: 'var(--warning-bg)', fg: 'var(--warning-fg)' },
+        amber: brandGold,
+        yellow: brandGold,
+        orange: brandGold,
+        error: { ...brandBrick, DEFAULT: 'var(--danger)', bg: 'var(--danger-bg)', fg: 'var(--danger-fg)' },
+        red: brandBrick,
+        rose: brandBrick,
+        pink: brandBrick,
+        pending: { bg: 'var(--pending-bg)', fg: 'var(--pending-fg)' },
+        info: { bg: 'var(--info-bg)', fg: 'var(--info-fg)' },
+        // Legacy blues alias onto the brand green ramp.
+        blue: brandGreen,
+        indigo: brandGreen,
+        sky: brandGreen,
+        cyan: brandGreen,
+        teal: brandGreen,
+        purple: plum,
+        violet: plum,
+        fuchsia: plum,
 
         // ---- Theme-aware semantic tokens (auto flip via CSS vars) ----
         brand: {
-          DEFAULT: 'var(--brand-blue)',
-          alt: 'var(--brand-blue-alt)',
-          press: 'var(--brand-blue-press)',
-          active: 'var(--brand-blue-active)',
-          orange: 'var(--brand-orange)',
-          teal: 'var(--brand-teal)',
-          green: 'var(--brand-active-green)',
+          DEFAULT: 'var(--brand)',
+          fg: 'var(--brand-fg)',
+          press: 'var(--brand-press)',
+          mint: 'var(--mint)',
+          'mint-press': 'var(--mint-press)',
+          tattoo: 'var(--tattoo)',
+          'tattoo-deep': 'var(--tattoo-deep)',
+          cream: 'var(--cream)',
+          ceramic: 'var(--ceramic)',
+          steel: 'var(--steel-line)',
+        },
+        accent: {
+          DEFAULT: 'var(--accent)',
+          fg: 'var(--accent-fg)',
+          wash: 'var(--accent-wash)',
         },
         canvas: 'var(--canvas)',
         surface: {
@@ -97,7 +161,7 @@ export default {
           1: 'var(--surface-1)',
           2: 'var(--surface-2)',
         },
-        tint: 'var(--tint-blue)',
+        tint: 'var(--tint)',
         fg: {
           DEFAULT: 'var(--fg1)',
           strong: 'var(--fg2)',
@@ -115,6 +179,17 @@ export default {
           'active-fg': 'var(--nav-active-fg)',
           border: 'var(--nav-border)',
         },
+        chart: {
+          1: 'var(--chart-1)',
+          2: 'var(--chart-2)',
+          3: 'var(--chart-3)',
+          4: 'var(--chart-4)',
+          5: 'var(--chart-5)',
+          6: 'var(--chart-6)',
+          7: 'var(--chart-7)',
+          8: 'var(--chart-8)',
+          grid: 'var(--chart-grid)',
+        },
         tag: {
           'default-bg': 'var(--tag-default-bg)', 'default-fg': 'var(--tag-default-fg)',
           'blue-bg': 'var(--tag-blue-bg)', 'blue-fg': 'var(--tag-blue-fg)',
@@ -127,30 +202,37 @@ export default {
         },
       },
       fontFamily: {
-        sans: ['Roboto', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Helvetica Neue', 'Arial', 'sans-serif'],
-        display: ['Poppins', 'Roboto', 'system-ui', 'sans-serif'],
+        // Quicksand educa · Anton lidera sin levantar la voz · Space Mono es la barra.
+        sans: ['Quicksand', 'system-ui', '-apple-system', 'Segoe UI', 'Helvetica Neue', 'Arial', 'sans-serif'],
+        display: ['Anton', 'Arial Narrow', 'Impact', 'sans-serif'],
+        mono: ['Space Mono', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'Consolas', 'monospace'],
       },
       fontSize: {
-        // DS type role scale
-        'micro': ['10px', { lineHeight: '1', fontWeight: '400' }],
-        'small': ['12px', { lineHeight: '1', fontWeight: '500' }],
-        'label': ['14px', { lineHeight: '1', fontWeight: '500' }],
-        'body': ['14px', { lineHeight: '1.5', fontWeight: '400' }],
-        'h3': ['16px', { lineHeight: '1.3', fontWeight: '700' }],
-        'h2': ['18px', { lineHeight: '1.25', fontWeight: '700' }],
-        'h1': ['20px', { lineHeight: '1.2', fontWeight: '700' }],
-        'display': ['40px', { lineHeight: '1.05', fontWeight: '700' }],
+        // Type roles. Anton always runs at 1.10 line-height, uppercase.
+        'micro': ['10px', { lineHeight: '1.2', fontWeight: '500' }],
+        'small': ['12px', { lineHeight: '1.3', fontWeight: '500' }],
+        'label': ['12px', { lineHeight: '1.2', fontWeight: '500' }],
+        'body': ['14px', { lineHeight: '1.55', fontWeight: '500' }],
+        'h3': ['15px', { lineHeight: '1.1', fontWeight: '400' }],
+        'h2': ['18px', { lineHeight: '1.1', fontWeight: '400' }],
+        'h1': ['22px', { lineHeight: '1.1', fontWeight: '400' }],
+        'display': ['40px', { lineHeight: '1.1', fontWeight: '400' }],
         // Standard scale retained for existing markup
         'xs': ['0.75rem', { lineHeight: '1rem' }],
-        'sm': ['0.875rem', { lineHeight: '1.25rem' }],
-        'base': ['1rem', { lineHeight: '1.5rem' }],
-        'lg': ['1.125rem', { lineHeight: '1.75rem' }],
-        'xl': ['1.25rem', { lineHeight: '1.75rem' }],
-        '2xl': ['1.5rem', { lineHeight: '2rem' }],
-        '3xl': ['1.875rem', { lineHeight: '2.25rem' }],
-        '4xl': ['2.25rem', { lineHeight: '2.5rem' }],
-        '5xl': ['3rem', { lineHeight: '1' }],
+        'sm': ['0.875rem', { lineHeight: '1.3rem' }],
+        'base': ['1rem', { lineHeight: '1.55rem' }],
+        'lg': ['1.125rem', { lineHeight: '1.6rem' }],
+        'xl': ['1.25rem', { lineHeight: '1.6rem' }],
+        '2xl': ['1.5rem', { lineHeight: '1.2' }],
+        '3xl': ['1.875rem', { lineHeight: '1.15' }],
+        '4xl': ['2.25rem', { lineHeight: '1.1' }],
+        '5xl': ['3rem', { lineHeight: '1.05' }],
         '6xl': ['3.75rem', { lineHeight: '1' }],
+      },
+      letterSpacing: {
+        display: '0.005em',
+        label: '0.06em',
+        mono: '0.02em',
       },
       borderRadius: {
         'xs': 'var(--r-xs)',
@@ -175,13 +257,13 @@ export default {
         'lg': 'var(--shadow-pop)',
         'xl': 'var(--shadow-pop)',
         '2xl': 'var(--shadow-pop)',
-        'inner': 'inset 0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+        'inner': 'inset 0 1px 2px 0 rgba(7, 90, 42, 0.06)',
         'glass-sm': 'var(--shadow-card)',
         'glass': 'var(--shadow-card)',
         'glass-lg': 'var(--shadow-pop)',
       },
       ringColor: {
-        DEFAULT: 'var(--brand-blue)',
+        DEFAULT: 'var(--accent)',
       },
       transitionTimingFunction: {
         'ds': 'cubic-bezier(0.16, 1, 0.3, 1)',

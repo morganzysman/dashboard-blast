@@ -3,11 +3,11 @@
     <div class="card-body p-4">
       <div class="flex items-center justify-between mb-4">
         <div class="min-w-0 flex-1">
-          <h3 class="text-lg font-semibold text-gray-900">{{ $t('dashboard.revenueEvolution') }}</h3>
-          <p class="text-sm text-gray-500">{{ $t('dashboard.dailyRevenueTrends') }}</p>
+          <h3 class="text-lg font-semibold text-fg-strong">{{ $t('dashboard.revenueEvolution') }}</h3>
+          <p class="text-sm text-fg-muted">{{ $t('dashboard.dailyRevenueTrends') }}</p>
         </div>
-        <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-          <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="w-10 h-10 bg-tint rounded-lg flex items-center justify-center flex-shrink-0">
+          <svg class="w-5 h-5 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
           </svg>
         </div>
@@ -17,17 +17,17 @@
       <div v-if="loading" class="flex items-center justify-center h-48 sm:h-56">
         <div class="text-center">
           <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-          <p class="text-sm text-gray-500">{{ $t('dashboard.loadingOrderData') }}</p>
+          <p class="text-sm text-fg-muted">{{ $t('dashboard.loadingOrderData') }}</p>
         </div>
       </div>
 
       <!-- Error State -->
       <div v-else-if="error" class="flex items-center justify-center h-48 sm:h-56">
         <div class="text-center">
-          <svg class="w-12 h-12 text-red-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-12 h-12 text-error mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
           </svg>
-          <p class="text-sm text-gray-500">{{ error }}</p>
+          <p class="text-sm text-fg-muted">{{ error }}</p>
         </div>
       </div>
 
@@ -35,13 +35,13 @@
       <div v-else-if="svgChart" class="relative">
         <svg :viewBox="`0 0 ${svgChart.width} ${svgChart.height}`" width="100%" preserveAspectRatio="xMidYMid meet">
           <!-- Axes -->
-          <line :x1="svgChart.padding" :y1="svgChart.height - svgChart.padding" :x2="svgChart.width - svgChart.padding" :y2="svgChart.height - svgChart.padding" stroke="#E5E7EB" stroke-width="1" />
-          <line :x1="svgChart.padding" :y1="svgChart.padding" :x2="svgChart.padding" :y2="svgChart.height - svgChart.padding" stroke="#E5E7EB" stroke-width="1" />
+          <line :x1="svgChart.padding" :y1="svgChart.height - svgChart.padding" :x2="svgChart.width - svgChart.padding" :y2="svgChart.height - svgChart.padding" :stroke="chartTheme.axis" stroke-width="1" />
+          <line :x1="svgChart.padding" :y1="svgChart.padding" :x2="svgChart.padding" :y2="svgChart.height - svgChart.padding" :stroke="chartTheme.axis" stroke-width="1" />
 
           <!-- Grid lines and Y-axis labels -->
           <g v-for="t in svgChart.ticks" :key="`tick-${t.value}`">
-            <line :x1="svgChart.padding" :x2="svgChart.width - svgChart.padding" :y1="t.y" :y2="t.y" stroke="#F3F4F6" stroke-width="1" />
-            <text :x="svgChart.padding - 6" :y="t.y + 3" fill="#6B7280" font-size="10" text-anchor="end">{{ t.value }}</text>
+            <line :x1="svgChart.padding" :x2="svgChart.width - svgChart.padding" :y1="t.y" :y2="t.y" :stroke="chartTheme.grid" stroke-width="1" />
+            <text :x="svgChart.padding - 6" :y="t.y + 3" :fill="chartTheme.label" font-size="10" font-family="Space Mono, monospace" text-anchor="end">{{ t.value }}</text>
           </g>
 
           <!-- Lines and points -->
@@ -66,7 +66,7 @@
           </g>
 
           <!-- X labels: first/middle/last -->
-          <g v-if="svgChart.labels.length" fill="#6B7280" font-size="10" text-anchor="middle">
+          <g v-if="svgChart.labels.length" :fill="chartTheme.label" font-size="10" font-family="Space Mono, monospace" text-anchor="middle">
             <text :x="svgChart.xAt(0)" :y="svgChart.height - svgChart.padding + 14">{{ svgChart.labels[0] }}</text>
             <text v-if="svgChart.labels.length > 2" :x="svgChart.xAt(Math.floor((svgChart.labels.length-1)/2))" :y="svgChart.height - svgChart.padding + 14">{{ svgChart.labels[Math.floor((svgChart.labels.length-1)/2)] }}</text>
             <text v-if="svgChart.labels.length > 1" :x="svgChart.xAt(svgChart.labels.length-1)" :y="svgChart.height - svgChart.padding + 14">{{ svgChart.labels[svgChart.labels.length-1] }}</text>
@@ -80,7 +80,7 @@
               class="w-2 h-2 rounded-full"
               :style="{ backgroundColor: dataset.color, opacity: dataset.opacity || 1 }"
             ></div>
-            <span class="text-xs text-gray-600">{{ dataset.label }}</span>
+            <span class="text-xs text-fg-muted">{{ dataset.label }}</span>
           </div>
         </div>
       </div>
@@ -88,10 +88,10 @@
       <!-- No Data State -->
       <div v-else class="flex items-center justify-center h-48 sm:h-56">
         <div class="text-center">
-          <svg class="w-12 h-12 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-12 h-12 text-fg-faint mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
           </svg>
-          <p class="text-sm text-gray-500">{{ $t('dashboard.noOrderData') }}</p>
+          <p class="text-sm text-fg-muted">{{ $t('dashboard.noOrderData') }}</p>
         </div>
       </div>
     </div>
@@ -103,6 +103,7 @@ import { ref, watch, computed } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { useI18n } from 'vue-i18n'
 import { apiRequest } from '../utils/api'
+import { series, seriesColor, chartChrome, token, alpha } from '../utils/brandPalette'
 
 const props = defineProps({
   currentDateRange: {
@@ -179,6 +180,9 @@ const generateDateLabels = (startStr, endStr, timezone) => {
 }
 
 // Chart data computed property
+// Axes, gridlines and tick labels follow the active theme.
+const chartTheme = computed(() => chartChrome())
+
 const chartData = computed(() => {
   if (!evolutionData.value || !evolutionData.value.accounts) return null
 
@@ -194,17 +198,8 @@ const chartData = computed(() => {
     props.timezone
   )
 
-  // Colors for accounts
-  const colors = [
-    '#3B82F6', // Blue
-    '#10B981', // Green
-    '#F59E0B', // Yellow
-    '#EF4444', // Red
-    '#8B5CF6', // Purple
-    '#06B6D4', // Cyan
-    '#F97316', // Orange
-    '#84CC16'  // Lime
-  ]
+  // Green-led categorical series from the brand palette
+  const colors = series()
 
   // Create a dataset for each successful account
   const accountDatasets = successfulAccounts.map((account, index) => {
@@ -221,7 +216,7 @@ const chartData = computed(() => {
       label: account.account,
       data: accountData,
       borderColor: color,
-      backgroundColor: color + '20',
+      backgroundColor: alpha(color, 0.12),
       borderWidth: 2,
       fill: false,
       tension: 0.4
@@ -236,8 +231,8 @@ const chartData = computed(() => {
   const totalDataset = {
     label: t('dashboard.total'),
     data: totalData,
-    borderColor: '#1F2937', // Dark gray for total
-    backgroundColor: '#1F293720',
+    borderColor: token('--fg1'), // El total va en la tinta base
+    backgroundColor: alpha(token('--fg1'), 0.10),
     borderWidth: 3,
     fill: false,
     tension: 0.4,
@@ -300,7 +295,7 @@ const svgChart = computed(() => {
     const points = pointsArr.map(p => `${p.cx},${p.cy}`).join(' ')
     datasets.push({
       label: ds.label,
-      color: ds.borderColor || '#3B82F6',
+      color: ds.borderColor || token('--chart-1'),
       opacity: 1,
       circles: pointsArr,
       points,

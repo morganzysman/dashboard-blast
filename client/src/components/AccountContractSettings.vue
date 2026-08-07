@@ -1,9 +1,9 @@
 <template>
-  <div class="rounded-lg border border-dashed border-gray-200 bg-gray-50/50 p-3 space-y-3">
-    <p class="text-[10px] text-gray-500">{{ $t('contract.employerDataHint') }}</p>
+  <div class="rounded-lg border border-dashed border-gray-200 bg-surface-2/50 p-3 space-y-3">
+    <p class="text-[10px] text-fg-muted">{{ $t('contract.employerDataHint') }}</p>
 
     <div>
-      <label class="block text-[11px] font-medium text-gray-700">{{ $t('contract.country') }}</label>
+      <label class="block text-[11px] font-medium text-fg">{{ $t('contract.country') }}</label>
       <select v-model="country" class="form-input text-xs mt-1">
         <option v-for="c in countries" :key="c.code" :value="c.code">{{ c.label }}</option>
       </select>
@@ -11,7 +11,7 @@
 
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
       <div v-for="field in employerFields" :key="field.key">
-        <label class="block text-[11px] font-medium text-gray-700">{{ fieldLabel(field) }}</label>
+        <label class="block text-[11px] font-medium text-fg">{{ fieldLabel(field) }}</label>
         <select
           v-if="field.options"
           v-model="info[field.key]"

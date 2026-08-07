@@ -29,8 +29,8 @@
     </div>
 
     <div v-if="showTabs && !compact" class="mb-4 px-1">
-      <label class="block text-sm font-medium text-gray-700 mb-1">{{ $t('rentability.account') }}</label>
-      <div class="px-3 py-2 rounded-xl text-sm text-gray-700 embedded-account-label">
+      <label class="block text-sm font-medium text-fg mb-1">{{ $t('rentability.account') }}</label>
+      <div class="px-3 py-2 rounded-xl text-sm text-fg embedded-account-label">
         {{ accountName || companyToken }}
       </div>
     </div>
@@ -40,7 +40,7 @@
       <form @submit.prevent="saveCosts">
         <div :class="compact ? 'grid grid-cols-1 sm:grid-cols-2 gap-2' : 'grid grid-cols-1 md:grid-cols-2 gap-4'">
           <div v-for="field in costFields" :key="field.key" :class="compact ? 'mb-0' : 'mb-4'">
-            <label class="block font-medium text-gray-700 mb-1" :class="compact ? 'text-[10px]' : 'text-sm'">
+            <label class="block font-medium text-fg mb-1" :class="compact ? 'text-[10px]' : 'text-sm'">
               {{ $t(`rentability.costFields.${field.key}`) }} ({{ $t('common.monthly') }}, {{ currencySymbol }})
             </label>
             <input
@@ -54,19 +54,19 @@
           </div>
         </div>
 
-        <div :class="compact ? 'rounded-lg p-2 mb-2 bg-blue-50/80' : 'rounded-xl p-4 mb-6 bg-blue-50/50'">
+        <div :class="compact ? 'rounded-lg p-2 mb-2 bg-tint/80' : 'rounded-xl p-4 mb-6 bg-tint/50'">
           <div class="grid grid-cols-2 gap-2 text-center">
             <div>
-              <p :class="compact ? 'text-sm font-bold text-blue-600' : 'text-lg font-bold text-blue-600'">
+              <p :class="compact ? 'text-sm font-bold text-brand' : 'text-lg font-bold text-brand'">
                 {{ formatCurrency(totalMonthlyCosts) }}
               </p>
-              <p :class="compact ? 'text-[9px] text-blue-500' : 'text-xs text-blue-500'">{{ $t('rentability.totalMonthly') }}</p>
+              <p :class="compact ? 'text-[9px] text-brand' : 'text-xs text-brand'">{{ $t('rentability.totalMonthly') }}</p>
             </div>
             <div>
-              <p :class="compact ? 'text-sm font-bold text-green-600' : 'text-lg font-bold text-green-600'">
+              <p :class="compact ? 'text-sm font-bold text-success' : 'text-lg font-bold text-success'">
                 {{ formatCurrency(totalMonthlyCosts / 30) }}
               </p>
-              <p :class="compact ? 'text-[9px] text-green-500' : 'text-xs text-green-500'">{{ $t('rentability.totalDaily') }}</p>
+              <p :class="compact ? 'text-[9px] text-success' : 'text-xs text-success'">{{ $t('rentability.totalDaily') }}</p>
             </div>
           </div>
         </div>
@@ -96,7 +96,7 @@
     <!-- Payment methods -->
     <div v-show="showPaymentPanel" class="space-y-4">
       <div class="flex items-center justify-between gap-2 flex-wrap">
-        <h3 v-if="!compact" class="text-lg font-medium text-gray-900">
+        <h3 v-if="!compact" class="text-lg font-medium text-fg-strong">
           {{ $t('rentability.paymentProcessingCosts') }}
         </h3>
         <button
@@ -115,19 +115,19 @@
 
       <div class="overflow-x-auto -mx-1">
         <table class="min-w-full divide-y divide-gray-200 text-left">
-          <thead :class="compact ? 'bg-gray-50 text-[10px]' : 'bg-gray-50/50'">
+          <thead :class="compact ? 'bg-surface-2 text-[10px]' : 'bg-surface-2/50'">
             <tr>
-              <th class="px-2 py-2 font-medium text-gray-500">{{ $t('rentability.paymentMethod') }}</th>
-              <th class="px-2 py-2 font-medium text-gray-500">{{ $t('rentability.percentage') }} (%)</th>
-              <th class="px-2 py-2 font-medium text-gray-500">{{ $t('rentability.fixedCost') }}</th>
-              <th class="px-2 py-2 font-medium text-gray-500">{{ $t('companies.actions') }}</th>
+              <th class="px-2 py-2 font-medium text-fg-muted">{{ $t('rentability.paymentMethod') }}</th>
+              <th class="px-2 py-2 font-medium text-fg-muted">{{ $t('rentability.percentage') }} (%)</th>
+              <th class="px-2 py-2 font-medium text-fg-muted">{{ $t('rentability.fixedCost') }}</th>
+              <th class="px-2 py-2 font-medium text-fg-muted">{{ $t('companies.actions') }}</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-100">
-            <tr v-for="cost in accountPaymentCosts" :key="cost.payment_method_code" :class="{ 'bg-amber-50/60': cost.isNew }">
+            <tr v-for="cost in accountPaymentCosts" :key="cost.payment_method_code" :class="{ 'bg-warning-bg/60': cost.isNew }">
               <td class="px-2 py-2 whitespace-nowrap">
                 <span :class="compact ? 'text-[11px] font-medium' : 'text-sm font-medium'">{{ formatPaymentMethodName(cost.payment_method_code) }}</span>
-                <span v-if="cost.isNew" class="ml-1 text-[10px] text-amber-800">({{ $t('common.new') }})</span>
+                <span v-if="cost.isNew" class="ml-1 text-[10px] text-warning">({{ $t('common.new') }})</span>
               </td>
               <td class="px-2 py-2">
                 <input
@@ -161,7 +161,7 @@
               </td>
             </tr>
             <tr v-if="accountPaymentCosts.length === 0">
-              <td colspan="4" :class="compact ? 'px-2 py-4 text-center text-[11px] text-gray-500' : 'px-6 py-8 text-center text-gray-500'">
+              <td colspan="4" :class="compact ? 'px-2 py-4 text-center text-[11px] text-fg-muted' : 'px-6 py-8 text-center text-fg-muted'">
                 {{ $t('rentability.noPaymentMethods') }}<br />
                 <span :class="compact ? 'text-[10px]' : 'text-sm'">{{ $t('rentability.useAddCommonMethods') }}</span>
               </td>
@@ -173,7 +173,7 @@
       <div class="border-t border-gray-200 pt-3 space-y-2">
         <div :class="compact ? 'grid grid-cols-2 gap-2 items-end' : 'grid grid-cols-1 md:grid-cols-4 gap-4 items-end'">
           <div class="md:col-span-1 col-span-2">
-            <label class="block text-[10px] font-medium text-gray-600 mb-0.5">{{ $t('rentability.paymentMethod') }}</label>
+            <label class="block text-[10px] font-medium text-fg-muted mb-0.5">{{ $t('rentability.paymentMethod') }}</label>
             <select v-model="newPaymentMethod.code" class="ars-select w-full text-xs">
               <option value="">{{ $t('rentability.selectMethod') }}</option>
               <option v-for="method in availablePaymentMethods" :key="method.code" :value="method.code">
@@ -182,11 +182,11 @@
             </select>
           </div>
           <div>
-            <label class="block text-[10px] font-medium text-gray-600 mb-0.5">{{ $t('rentability.percentage') }} (%)</label>
+            <label class="block text-[10px] font-medium text-fg-muted mb-0.5">{{ $t('rentability.percentage') }} (%)</label>
             <input type="number" v-model.number="newPaymentMethod.percentage" class="ars-input-compact w-full" min="0" max="100" step="0.01" placeholder="0" />
           </div>
           <div>
-            <label class="block text-[10px] font-medium text-gray-600 mb-0.5">{{ $t('rentability.fixedCost') }} ({{ currencySymbol }})</label>
+            <label class="block text-[10px] font-medium text-fg-muted mb-0.5">{{ $t('rentability.fixedCost') }} ({{ currencySymbol }})</label>
             <input type="number" v-model.number="newPaymentMethod.fixedCost" class="ars-input-compact w-full" min="0" step="0.01" placeholder="0" />
           </div>
           <div>
@@ -375,8 +375,8 @@ function pillClass(id) {
   return [
     'px-2 py-1 rounded-lg text-[10px] font-medium border transition-colors',
     activeTab.value === id
-      ? 'border-[#006AFF] bg-[#EBF2FF] text-[#006AFF]'
-      : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+      ? 'border-accent bg-tint text-nav-active-fg'
+      : 'border-gray-200 bg-surface-1 text-gray-600 hover:border-gray-300'
   ]
 }
 

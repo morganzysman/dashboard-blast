@@ -6,13 +6,13 @@
         <!-- Header and Date Range on same line -->
         <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-4">
           <div class="min-w-0">
-            <h2 class="text-lg sm:text-xl font-bold text-gray-900">{{ $t('dashboard.overview') }}</h2>
-            <p class="text-xs sm:text-sm text-gray-600">{{ $t('dashboard.realtimeAnalytics') }}</p>
+            <h2 class="text-lg sm:text-xl font-bold text-fg-strong">{{ $t('dashboard.overview') }}</h2>
+            <p class="text-xs sm:text-sm text-fg-muted">{{ $t('dashboard.realtimeAnalytics') }}</p>
           </div>
           
           <!-- Date Range Picker -->
           <div class="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-2 flex-shrink-0">
-            <label class="text-xs sm:text-sm font-medium text-gray-700">{{ $t('common.dateRange') }}:</label>
+            <label class="text-xs sm:text-sm font-medium text-fg">{{ $t('common.dateRange') }}:</label>
             <select 
               :value="selectedDateRange" 
               @input="$emit('update:selectedDateRange', $event.target.value)"
@@ -40,7 +40,7 @@
           <!-- Custom Date Inputs -->
           <div v-if="selectedDateRange === 'custom'" class="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
             <div class="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-1">
-              <label class="text-xs sm:text-sm text-gray-600">{{ $t('common.from') }}:</label>
+              <label class="text-xs sm:text-sm text-fg-muted">{{ $t('common.from') }}:</label>
               <input 
                 type="date" 
                 :value="customStartDate"
@@ -51,7 +51,7 @@
               />
             </div>
             <div class="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-1">
-              <label class="text-xs sm:text-sm text-gray-600">{{ $t('common.to') }}:</label>
+              <label class="text-xs sm:text-sm text-fg-muted">{{ $t('common.to') }}:</label>
               <input 
                 type="date" 
                 :value="customEndDate"
@@ -65,7 +65,7 @@
      </div>
        
           <!-- Current Range Display -->
-          <div class="flex items-center text-xs sm:text-sm text-gray-600">
+          <div class="flex items-center text-xs sm:text-sm text-fg-muted">
             <span v-if="currentDateRange.start === currentDateRange.end">
               {{ formatDisplayDate(currentDateRange.start) }}
             </span>
@@ -139,7 +139,7 @@
                     </div>
                     <div class="text-right flex-shrink-0 ml-1">
                       <span class="text-gray-900 dark:text-gray-100 font-semibold">{{ account.totalOrders }}</span>
-                      <span class="text-gray-500 ml-1">({{ account.percent.toFixed(0) }}%)</span>
+                      <span class="text-fg-muted ml-1">({{ account.percent.toFixed(0) }}%)</span>
                     </div>
                   </div>
                 </div>
@@ -184,7 +184,7 @@
                     </div>
                     <div class="text-right flex-shrink-0 ml-1">
                       <span class="text-gray-900 dark:text-gray-100 font-semibold">{{ formatCurrency(account.totalAmount) }}</span>
-                      <span class="text-gray-500 ml-1">({{ account.percent.toFixed(0) }}%)</span>
+                      <span class="text-fg-muted ml-1">({{ account.percent.toFixed(0) }}%)</span>
                     </div>
                   </div>
                 </div>
@@ -197,7 +197,7 @@
           
 
       <!-- Payment Methods Distribution -->
-      <div class="card text-white" style="background: var(--brand-blue); border-color: var(--brand-blue);">
+      <div class="card text-white" style="background: var(--tattoo); border-color: var(--tattoo);">
         <div class="card-body p-3 sm:p-4">
           <div class="flex items-center justify-between mb-2">
             <div class="min-w-0 flex-1">
@@ -215,7 +215,7 @@
             <div class="flex items-center">
               <div class="relative w-12 h-12 sm:w-16 sm:h-16 flex-shrink-0">
                 <div class="w-full h-full rounded-full" :style="{ background: getPaymentMethodsPieChart }"></div>
-                <div class="absolute inset-1.5 sm:inset-2 rounded-full flex items-center justify-center" style="background: var(--brand-blue);">
+                <div class="absolute inset-1.5 sm:inset-2 rounded-full flex items-center justify-center" style="background: var(--tattoo);">
                   <span class="text-white text-xs font-bold">{{ analyticsData.aggregated.paymentMethods.length }}</span>
                 </div>
               </div>
@@ -267,28 +267,28 @@
     <!-- Fees and Net Revenue by Payment Method -->
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6" v-if="false && analyticsData">
       <!-- Fees by Method -->
-      <div class="card bg-white">
+      <div class="card bg-surface-1">
         <div class="card-body">
           <div class="flex items-center justify-between mb-3">
             <div class="min-w-0 flex-1">
-              <p class="text-xs sm:text-sm font-medium text-gray-700">{{ $t('dashboard.feesByPaymentMethod') }}</p>
+              <p class="text-xs sm:text-sm font-medium text-fg">{{ $t('dashboard.feesByPaymentMethod') }}</p>
             </div>
           </div>
           <div class="flex items-center justify-center">
             <div class="relative w-20 h-20 sm:w-24 sm:h-24">
               <div class="w-full h-full rounded-full" :style="{ background: getFeesByMethodPieChart() }"></div>
-              <div class="absolute inset-3 bg-gray-50 rounded-full flex items-center justify-center">
-                <span class="text-gray-700 text-xs font-bold">{{ Object.keys(getFeesByMethodDistribution()).length }}</span>
+              <div class="absolute inset-3 bg-surface-2 rounded-full flex items-center justify-center">
+                <span class="text-fg text-xs font-bold">{{ Object.keys(getFeesByMethodDistribution()).length }}</span>
               </div>
             </div>
             <div class="ml-4 space-y-1 text-xs min-w-0 flex-1">
               <div v-for="item in getTopFeesByMethod(3)" :key="item.method" class="flex items-center justify-between min-w-0">
                 <div class="flex items-center space-x-1 min-w-0">
                   <div class="w-2 h-2 rounded-full flex-shrink-0" :style="{ backgroundColor: getPaymentMethodColor(item.method) }"></div>
-                  <span class="text-gray-700 capitalize">{{ item.method }}</span>
-                  <span class="text-gray-500">{{ item.percent.toFixed(0) }}%</span>
+                  <span class="text-fg capitalize">{{ item.method }}</span>
+                  <span class="text-fg-muted">{{ item.percent.toFixed(0) }}%</span>
                 </div>
-                <span class="text-gray-700 font-medium ml-2">{{ formatCurrency(item.fees) }}</span>
+                <span class="text-fg font-medium ml-2">{{ formatCurrency(item.fees) }}</span>
               </div>
             </div>
           </div>
@@ -296,28 +296,28 @@
       </div>
 
       <!-- Net Revenue by Method -->
-      <div class="card bg-white">
+      <div class="card bg-surface-1">
         <div class="card-body">
           <div class="flex items-center justify-between mb-3">
             <div class="min-w-0 flex-1">
-              <p class="text-xs sm:text-sm font-medium text-gray-700">{{ $t('dashboard.netRevenueByPaymentMethod') }}</p>
+              <p class="text-xs sm:text-sm font-medium text-fg">{{ $t('dashboard.netRevenueByPaymentMethod') }}</p>
             </div>
           </div>
           <div class="flex items-center justify-center">
             <div class="relative w-20 h-20 sm:w-24 sm:h-24">
               <div class="w-full h-full rounded-full" :style="{ background: getNetRevenueByMethodPieChart() }"></div>
-              <div class="absolute inset-3 bg-gray-50 rounded-full flex items-center justify-center">
-                <span class="text-gray-700 text-xs font-bold">{{ Object.keys(getNetRevenueByMethodDistribution()).length }}</span>
+              <div class="absolute inset-3 bg-surface-2 rounded-full flex items-center justify-center">
+                <span class="text-fg text-xs font-bold">{{ Object.keys(getNetRevenueByMethodDistribution()).length }}</span>
               </div>
             </div>
             <div class="ml-4 space-y-1 text-xs min-w-0 flex-1">
               <div v-for="item in getTopNetRevenueByMethod(3)" :key="item.method" class="flex items-center justify-between min-w-0">
                 <div class="flex items-center space-x-1 min-w-0">
                   <div class="w-2 h-2 rounded-full flex-shrink-0" :style="{ backgroundColor: getPaymentMethodColor(item.method) }"></div>
-                  <span class="text-gray-700 capitalize">{{ item.method }}</span>
-                  <span class="text-gray-500">{{ item.percent.toFixed(0) }}%</span>
+                  <span class="text-fg capitalize">{{ item.method }}</span>
+                  <span class="text-fg-muted">{{ item.percent.toFixed(0) }}%</span>
                 </div>
-                <span class="text-gray-700 font-medium ml-2">{{ formatCurrency(item.netRevenue) }}</span>
+                <span class="text-fg font-medium ml-2">{{ formatCurrency(item.netRevenue) }}</span>
               </div>
             </div>
           </div>
@@ -339,6 +339,7 @@ import ObjectiveProgress from './ui/ObjectiveProgress.vue'
 import OrderEvolutionChart from './OrderEvolutionChart.vue'
 import DailySalesGoal from './DailySalesGoal.vue'
 import { useAuthStore } from '../stores/auth'
+import { paymentMethodColor, serviceTypeColor, series, token } from '../utils/brandPalette'
 import { calculateDaysInPeriod as calcDays, DAILY_GAIN_OBJECTIVE } from '../composables/useProfitability'
 
 const props = defineProps({
@@ -393,12 +394,12 @@ watch(
 
 
 const paymentMethodColors = {
-  'cash': '#10B981',
-  'card': '#3B82F6', 
-  'bitcoin': '#F59E0B',
-  'yape': '#8B5CF6',
-  'plin': '#06B6D4',
-  'transfer': '#EF4444'
+  'cash': '#075A2A',
+  'card': '#50C293',
+  'bitcoin': '#C7A34A',
+  'yape': '#5F4A8C',
+  'plin': '#2F8E63',
+  'transfer': '#B7382A'
 }
 
 // Client-side cost fetching removed; server provides profitability and distributions
@@ -577,7 +578,7 @@ const formatCurrency = (amount) => {
 }
 
 const getPaymentMethodColor = (methodName) => {
-  return paymentMethodColors[methodName.toLowerCase()] || '#6B7280'
+  return paymentMethodColor(methodName)
 }
 
 const getAccountColor = (accountKey) => {
@@ -699,13 +700,7 @@ const getAccountTotalOrders = computed(() => {
 })
 
 const getServiceColor = (serviceType) => {
-  const colors = {
-    'TABLE': '#4F46E5', // Indigo
-    'ONSITE': '#10B981', // Green
-    'TAKEAWAY': '#F59E0B', // Amber
-    'DELIVERY': '#EF4444' // Red
-  }
-  return colors[serviceType] || '#6B7280' // Default color
+  return serviceTypeColor(serviceType)
 }
 
 // Total Orders - CONVERTED TO COMPUTED PROPERTY
@@ -997,7 +992,7 @@ const getTopFeesByMethod = (n = 3) => {
 const getFeesByMethodPieChart = () => {
   const dist = getFeesByMethodDistribution()
   const entries = Object.entries(dist).map(([method, fees]) => ({ method, fees }))
-  if (entries.length === 0) return 'conic-gradient(#E5E7EB 0deg 360deg)'
+  if (entries.length === 0) return 'conic-gradient(var(--border) 0deg 360deg)'
   const total = entries.reduce((s, e) => s + e.fees, 0)
   let currentAngle = 0
   const stops = entries
@@ -1034,7 +1029,7 @@ const getTopNetRevenueByMethod = (n = 3) => {
 const getNetRevenueByMethodPieChart = () => {
   const dist = getNetRevenueByMethodDistribution()
   const entries = Object.entries(dist).map(([method, netRevenue]) => ({ method, netRevenue }))
-  if (entries.length === 0) return 'conic-gradient(#E5E7EB 0deg 360deg)'
+  if (entries.length === 0) return 'conic-gradient(var(--border) 0deg 360deg)'
   const total = entries.reduce((s, e) => s + e.netRevenue, 0)
   let currentAngle = 0
   const stops = entries
@@ -1078,7 +1073,7 @@ const getPaymentMethodsPieChart = computed(() => {
   const trigger = forceRecompute.value
   
   if (!props.analyticsData || !props.analyticsData.aggregated.paymentMethods.length) {
-    return 'conic-gradient(#6B7280 0deg 360deg)'
+    return 'conic-gradient(var(--chart-7) 0deg 360deg)'
   }
 
   const methods = props.analyticsData.aggregated.paymentMethods
@@ -1110,7 +1105,7 @@ const getAccountsPieChart = computed(() => {
   
   const accounts = getAccountTotalsForChart.value
   if (!accounts || !accounts.length) {
-    return 'conic-gradient(#6B7280 0deg 360deg)'
+    return 'conic-gradient(var(--chart-7) 0deg 360deg)'
   }
 
   let currentAngle = 0
@@ -1177,7 +1172,7 @@ const getOrdersPieChart = computed(() => {
   
   const ordersDistribution = getOrdersDistributionForChart.value
   if (!ordersDistribution || !ordersDistribution.length) {
-    return 'conic-gradient(#6B7280 0deg 360deg)'
+    return 'conic-gradient(var(--chart-7) 0deg 360deg)'
   }
 
   let currentAngle = 0

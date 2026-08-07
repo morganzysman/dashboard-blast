@@ -22,7 +22,7 @@
             :placeholder="$t('auth.currentPassword')"
             required
           />
-          <p v-if="errors.currentPassword" class="mt-1 text-sm text-red-600">
+          <p v-if="errors.currentPassword" class="mt-1 text-sm text-error">
             {{ errors.currentPassword }}
           </p>
         </div>
@@ -42,10 +42,10 @@
             required
             minlength="6"
           />
-          <p v-if="errors.newPassword" class="mt-1 text-sm text-red-600">
+          <p v-if="errors.newPassword" class="mt-1 text-sm text-error">
             {{ errors.newPassword }}
           </p>
-          <p class="mt-1 text-xs text-gray-500">
+          <p class="mt-1 text-xs text-fg-muted">
             {{ $t('modals.changePassword.minLength') }}
           </p>
         </div>
@@ -64,19 +64,19 @@
             :placeholder="$t('auth.confirmPassword')"
             required
           />
-          <p v-if="errors.confirmPassword" class="mt-1 text-sm text-red-600">
+          <p v-if="errors.confirmPassword" class="mt-1 text-sm text-error">
             {{ errors.confirmPassword }}
           </p>
         </div>
 
         <!-- Error Message -->
-        <div v-if="error" class="p-3 bg-red-50 border border-red-200 rounded-md">
-          <p class="text-sm text-red-600">{{ error }}</p>
+        <div v-if="error" class="p-3 bg-error-bg border border-red-200 rounded-md">
+          <p class="text-sm text-error">{{ error }}</p>
         </div>
 
         <!-- Success Message -->
-        <div v-if="success" class="p-3 bg-green-50 border border-green-200 rounded-md">
-          <p class="text-sm text-green-600">{{ success }}</p>
+        <div v-if="success" class="p-3 bg-success-bg border border-green-200 rounded-md">
+          <p class="text-sm text-success">{{ success }}</p>
         </div>
       </form>
 

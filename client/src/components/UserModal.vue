@@ -5,10 +5,10 @@
         <div class="modal-panel w-full max-w-2xl p-6" @click.stop>
       <!-- Modal Header -->
       <div class="flex justify-between items-center mb-6">
-        <h3 class="text-lg font-medium text-gray-900">
+        <h3 class="text-lg font-medium text-fg-strong">
           {{ isEdit ? $t('modals.userModal.editTitle') : $t('modals.userModal.createTitle') }}
         </h3>
-        <button @click="closeModal" class="text-gray-400 hover:text-gray-600">
+        <button @click="closeModal" class="text-fg-faint hover:text-gray-600">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
           </svg>
@@ -39,7 +39,7 @@
             :placeholder="$t('modals.userModal.emailAddress')"
             :disabled="isEdit && auth.user?.role !== 'admin' && auth.user?.role !== 'super-admin'"
           />
-          <p v-if="isEdit && (auth.user?.role === 'admin' || auth.user?.role === 'super-admin')" class="text-xs text-gray-500 mt-1">
+          <p v-if="isEdit && (auth.user?.role === 'admin' || auth.user?.role === 'super-admin')" class="text-xs text-fg-muted mt-1">
             {{ $t('modals.userModal.adminCanEdit') }}
           </p>
         </div>
@@ -65,7 +65,7 @@
             <option value="admin">{{ $t('admin.admin') }}</option>
             <option value="employee">{{ $t('admin.employee') }}</option>
           </select>
-          <p class="text-xs text-gray-500 mt-1" v-if="!isSuperAdmin">{{ $t('admin.adminCreateRestriction') }}</p>
+          <p class="text-xs text-fg-muted mt-1" v-if="!isSuperAdmin">{{ $t('admin.adminCreateRestriction') }}</p>
         </div>
 
         <!-- Hourly Rate & Hired At (for employees) -->
@@ -110,7 +110,7 @@
               {{ c.name }}
             </option>
           </select>
-          <p class="text-xs text-gray-500 mt-1">{{ $t('admin.superAdminCompanyNote') }}</p>
+          <p class="text-xs text-fg-muted mt-1">{{ $t('admin.superAdminCompanyNote') }}</p>
         </div>
 
         <!-- Settings are managed at the company level -->
@@ -161,7 +161,7 @@
                   <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ $t('employee.warnings.category') }}</label>
                     <select v-model="warningForm.category" 
-                            class="w-full max-w-sm rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm focus:border-red-500 focus:ring-red-500 dark:focus:border-red-400 dark:focus:ring-red-400" 
+                            class="w-full max-w-sm rounded-lg border-gray-300 dark:border-gray-600 bg-surface-1 text-gray-900 dark:text-gray-100 shadow-sm focus:border-red-500 focus:ring-red-500 dark:focus:border-red-400 dark:focus:ring-red-400" 
                             @change="onCategoryChange">
                       <option value="">{{ $t('employee.warnings.selectCategory') }}</option>
                       <option v-for="(cat, key) in warningCategories" :key="key" :value="key">
@@ -173,7 +173,7 @@
                   <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ $t('employee.warnings.severity') }}</label>
                     <select v-model="warningForm.severity" 
-                            class="w-full max-w-sm rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm focus:border-red-500 focus:ring-red-500 dark:focus:border-red-400 dark:focus:ring-red-400">
+                            class="w-full max-w-sm rounded-lg border-gray-300 dark:border-gray-600 bg-surface-1 text-gray-900 dark:text-gray-100 shadow-sm focus:border-red-500 focus:ring-red-500 dark:focus:border-red-400 dark:focus:ring-red-400">
                       <option value="low">Low - Minor infraction</option>
                       <option value="medium">Medium - Moderate concern</option>
                       <option value="high">High - Serious violation</option>
@@ -185,7 +185,7 @@
                 <div class="mb-5">
                   <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ $t('employee.warnings.specificMotive') }}</label>
                   <select v-model="warningForm.motive" 
-                          class="w-full max-w-lg rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm focus:border-red-500 focus:ring-red-500 dark:focus:border-red-400 dark:focus:ring-red-400 disabled:bg-gray-100 dark:disabled:bg-gray-700 disabled:text-gray-500" 
+                          class="w-full max-w-lg rounded-lg border-gray-300 dark:border-gray-600 bg-surface-1 text-gray-900 dark:text-gray-100 shadow-sm focus:border-red-500 focus:ring-red-500 dark:focus:border-red-400 dark:focus:ring-red-400 disabled:bg-gray-100 dark:disabled:bg-gray-700 disabled:text-gray-500" 
                           :disabled="!warningForm.category">
                     <option value="">{{ warningForm.category ? 'Select specific motive' : 'Select category first' }}</option>
                     <option v-for="motive in availableMotives" :key="motive" :value="motive">
@@ -195,9 +195,9 @@
                 </div>
                 
                 <div class="mb-6">
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ $t('common.description') }} <span class="text-gray-500">({{ $t('common.optional') }})</span></label>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ $t('common.description') }} <span class="text-fg-muted">({{ $t('common.optional') }})</span></label>
                   <textarea v-model="warningForm.description" 
-                           class="w-full max-w-2xl rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm focus:border-red-500 focus:ring-red-500 dark:focus:border-red-400 dark:focus:ring-red-400" 
+                           class="w-full max-w-2xl rounded-lg border-gray-300 dark:border-gray-600 bg-surface-1 text-gray-900 dark:text-gray-100 shadow-sm focus:border-red-500 focus:ring-red-500 dark:focus:border-red-400 dark:focus:ring-red-400" 
                            rows="3" 
                            :placeholder="$t('modals.userModal.warning.descriptionPlaceholder')"></textarea>
                 </div>
@@ -244,7 +244,7 @@
               
               <!-- Warnings List -->
               <div v-else v-for="warning in userWarnings" :key="warning.id" 
-                   class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5 shadow-sm hover:shadow-md transition-all duration-200 hover:border-red-300 dark:hover:border-red-700">
+                   class="bg-surface-1 border border-gray-200 dark:border-gray-700 rounded-xl p-5 shadow-sm hover:shadow-md transition-all duration-200 hover:border-red-300 dark:hover:border-red-700">
                 
                 <!-- Warning Header -->
                 <div class="flex justify-between items-start mb-4">
@@ -263,7 +263,7 @@
                   </div>
                   
                   <button @click="deleteWarning(warning.id)" 
-                          class="flex-shrink-0 p-1 text-gray-400 hover:text-red-600 dark:hover:text-red-400 rounded transition-colors duration-200"
+                          class="flex-shrink-0 p-1 text-fg-faint hover:text-red-600 dark:hover:text-red-400 rounded transition-colors duration-200"
                           :title="$t('employee.warnings.deleteWarning')">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>

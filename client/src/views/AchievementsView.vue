@@ -14,7 +14,7 @@
             <button
               type="button"
               class="px-4 py-1.5 text-sm font-medium transition-colors"
-              :class="scope === 'company' ? 'bg-[#EBF2FF] text-[#006AFF]' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'"
+              :class="scope === 'company' ? 'bg-tint text-nav-active-fg' : 'bg-surface-1 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'"
               @click="scope = 'company'"
             >
               {{ $t('achievements.company') }}
@@ -22,7 +22,7 @@
             <button
               type="button"
               class="px-4 py-1.5 text-sm font-medium border-l border-gray-200 dark:border-gray-600 transition-colors"
-              :class="scope === 'account' ? 'bg-[#EBF2FF] text-[#006AFF]' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'"
+              :class="scope === 'account' ? 'bg-tint text-nav-active-fg' : 'bg-surface-1 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'"
               @click="scope = 'account'"
             >
               {{ $t('achievements.account') }}
@@ -51,7 +51,7 @@
             <span class="text-gray-600 dark:text-gray-400">
               {{ $t('achievements.earnedOfTotal', { earned: earnedCount, total: badges.length }) }}
             </span>
-            <span class="text-xs text-gray-400">{{ $t('achievements.updatedDaily') }}</span>
+            <span class="text-xs text-fg-faint">{{ $t('achievements.updatedDaily') }}</span>
           </div>
           <div class="h-2 w-full rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden">
             <div class="h-full rounded-full bg-green-500 transition-all" :style="{ width: overallPct + '%' }"></div>
@@ -62,7 +62,7 @@
 
     <!-- Loading -->
     <div v-if="loading" class="card">
-      <div class="card-body py-12 text-center text-gray-500">
+      <div class="card-body py-12 text-center text-fg-muted">
         <span class="loading-spinner inline-block mr-2"></span>
         {{ $t('common.loading') }}
       </div>
@@ -70,7 +70,7 @@
 
     <template v-else>
       <div v-if="!badges.length" class="card">
-        <div class="card-body py-10 text-center text-gray-500">
+        <div class="card-body py-10 text-center text-fg-muted">
           {{ $t('achievements.noGoals') }}
         </div>
       </div>
@@ -82,7 +82,7 @@
           :key="badge.id"
           class="relative rounded-xl border p-4 flex gap-3 transition-colors"
           :class="badge.unlocked
-            ? 'border-l-4 ' + tierBorder(badge.tier) + ' bg-white dark:bg-gray-800'
+            ? 'border-l-4 ' + tierBorder(badge.tier) + ' bg-surface-1'
             : 'border-gray-200 dark:border-gray-700 bg-gray-50/60 dark:bg-gray-800/40'"
         >
           <div
@@ -113,9 +113,9 @@
                 <div class="h-1.5 w-full rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
                   <div class="h-full rounded-full bg-indigo-400" :style="{ width: (badge.progress || 0) + '%' }"></div>
                 </div>
-                <p class="text-[11px] text-gray-400 mt-1">{{ progressHint(badge) }}</p>
+                <p class="text-[11px] text-fg-faint mt-1">{{ progressHint(badge) }}</p>
               </template>
-              <p v-else class="text-[11px] text-gray-400">{{ $t('achievements.locked') }}</p>
+              <p v-else class="text-[11px] text-fg-faint">{{ $t('achievements.locked') }}</p>
             </div>
           </div>
         </div>

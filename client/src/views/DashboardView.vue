@@ -41,47 +41,47 @@
       <div class="card">
         <div class="card-body">
           <div class="animate-pulse space-y-2">
-            <div class="h-3 w-24 bg-gray-200 rounded"></div>
-            <div class="h-6 w-32 bg-gray-200 rounded"></div>
+            <div class="h-3 w-24 bg-surface-2 rounded"></div>
+            <div class="h-6 w-32 bg-surface-2 rounded"></div>
           </div>
         </div>
       </div>
       <div class="card">
         <div class="card-body">
           <div class="animate-pulse space-y-2">
-            <div class="h-3 w-24 bg-gray-200 rounded"></div>
-            <div class="h-6 w-32 bg-gray-200 rounded"></div>
+            <div class="h-3 w-24 bg-surface-2 rounded"></div>
+            <div class="h-6 w-32 bg-surface-2 rounded"></div>
           </div>
         </div>
       </div>
       <div class="card">
         <div class="card-body">
           <div class="animate-pulse space-y-2">
-            <div class="h-3 w-24 bg-gray-200 rounded"></div>
-            <div class="h-6 w-32 bg-gray-200 rounded"></div>
+            <div class="h-3 w-24 bg-surface-2 rounded"></div>
+            <div class="h-6 w-32 bg-surface-2 rounded"></div>
           </div>
         </div>
       </div>
       <div class="card">
         <div class="card-body">
           <div class="animate-pulse space-y-2">
-            <div class="h-3 w-24 bg-gray-200 rounded"></div>
-            <div class="h-6 w-32 bg-gray-200 rounded"></div>
+            <div class="h-3 w-24 bg-surface-2 rounded"></div>
+            <div class="h-6 w-32 bg-surface-2 rounded"></div>
           </div>
         </div>
       </div>
     </div>
 
     <!-- Error State -->
-    <div v-if="error" class="card border-red-200 bg-red-50">
+    <div v-if="error" class="card border-red-200 bg-error-bg">
       <div class="card-body text-center py-12">
-        <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-          <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="w-16 h-16 bg-error-bg rounded-full flex items-center justify-center mx-auto mb-4">
+          <svg class="w-8 h-8 text-error" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
           </svg>
         </div>
-        <h3 class="text-lg font-medium text-red-900 mb-2">{{ $t('dashboard.failedToLoad') }}</h3>
-        <p class="text-red-700 mb-4">{{ error }}</p>
+        <h3 class="text-lg font-medium text-error mb-2">{{ $t('dashboard.failedToLoad') }}</h3>
+        <p class="text-error mb-4">{{ error }}</p>
         <button @click="refreshData" class="btn-primary">{{ $t('common.tryAgain') }}</button>
       </div>
     </div>
@@ -89,13 +89,13 @@
     <!-- Empty State -->
     <div v-if="!loading && !error && (!analyticsData || analyticsData.aggregated.accountsCount === 0)" class="card">
       <div class="card-body text-center py-12">
-        <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-          <svg class="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="w-16 h-16 bg-surface-2 rounded-full flex items-center justify-center mx-auto mb-4">
+          <svg class="w-8 h-8 text-fg-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
           </svg>
         </div>
-        <h3 class="text-lg font-medium text-gray-900 mb-2">{{ $t('dashboard.noData') }}</h3>
-        <p class="text-gray-600 mb-4">{{ $t('dashboard.noDataDescription') }}</p>
+        <h3 class="text-lg font-medium text-fg-strong mb-2">{{ $t('dashboard.noData') }}</h3>
+        <p class="text-fg-muted mb-4">{{ $t('dashboard.noDataDescription') }}</p>
         <button @click="refreshData" class="btn-secondary">{{ $t('common.refresh') }}</button>
       </div>
     </div>

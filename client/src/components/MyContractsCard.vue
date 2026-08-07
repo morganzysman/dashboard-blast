@@ -6,9 +6,9 @@
         <button class="btn-secondary btn-sm" :disabled="loading" @click="reload">↻</button>
       </div>
 
-      <div v-if="loading" class="text-sm text-gray-400">{{ $t('common.loading') }}</div>
+      <div v-if="loading" class="text-sm text-fg-faint">{{ $t('common.loading') }}</div>
 
-      <p v-else-if="!contracts.length" class="text-sm text-gray-500">{{ $t('contract.noContracts') }}</p>
+      <p v-else-if="!contracts.length" class="text-sm text-fg-muted">{{ $t('contract.noContracts') }}</p>
 
       <div v-else class="space-y-3">
         <div
@@ -19,23 +19,23 @@
           <div class="flex items-center justify-between gap-2 flex-wrap">
             <div class="flex items-center gap-2">
               <ContractStatusBadge :status="c.status" size="sm" />
-              <span class="text-sm font-medium text-gray-800">{{ typeLabel(c) }}</span>
+              <span class="text-sm font-medium text-fg-strong">{{ typeLabel(c) }}</span>
             </div>
-            <span v-if="c.expiring_soon" class="text-xs text-amber-600 font-medium">
+            <span v-if="c.expiring_soon" class="text-xs text-warning font-medium">
               {{ $t('contract.expiringSoon') }}
             </span>
           </div>
 
-          <div class="text-xs text-gray-500">
+          <div class="text-xs text-fg-muted">
             {{ $t('contract.term') }}: {{ formatDate(c.start_date) }} —
             {{ c.end_date ? formatDate(c.end_date) : $t('contract.indefinite') }}
           </div>
 
           <div class="flex items-center gap-3 text-xs">
-            <span :class="c.employer_signed ? 'text-green-600' : 'text-amber-600'">
+            <span :class="c.employer_signed ? 'text-success' : 'text-warning'">
               {{ c.employer_signed ? '✓' : '○' }} {{ $t('contract.employerSigned') }}
             </span>
-            <span :class="c.worker_signed ? 'text-green-600' : 'text-amber-600'">
+            <span :class="c.worker_signed ? 'text-success' : 'text-warning'">
               {{ c.worker_signed ? '✓' : '○' }} {{ $t('contract.workerSigned') }}
             </span>
           </div>

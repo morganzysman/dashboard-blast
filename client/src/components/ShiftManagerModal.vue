@@ -4,18 +4,18 @@
       <div class="modal-content">
         <div class="modal-panel w-full max-w-3xl">
           <div class="modal-header flex items-center justify-between">
-            <h3 class="text-md font-semibold">{{ $t('modals.shiftManager.title') }} - {{ user?.email }}</h3>
+            <h3 class="text-md">{{ $t('modals.shiftManager.title') }} <span class="data text-xs" style="text-transform:none;">{{ user?.email }}</span></h3>
             <div class="space-x-2">
               <button class="btn-secondary btn-xs" @click="$emit('close')">{{ $t('common.close') }}</button>
               <button class="btn-primary btn-xs" :disabled="saving" @click="saveAll">{{ saving ? $t('common.loading') : $t('common.save') }}</button>
             </div>
           </div>
           <div class="modal-body">
-            <p class="text-xs text-gray-500 mb-3">{{ $t('shifts.defineWeeklyShifts') }}</p>
+            <p class="text-xs text-fg-muted mb-3">{{ $t('shifts.defineWeeklyShifts') }}</p>
 
             <div class="overflow-auto">
               <table class="min-w-full text-sm">
-                <thead class="sticky top-0 bg-white z-10 dark:bg-gray-800">
+                <thead class="sticky top-0 bg-surface-1 z-10">
                   <tr class="text-left text-gray-600 dark:text-gray-300">
                     <th class="py-2 pr-2">{{ $t('shifts.weekday') }}</th>
                     <th class="py-2 pr-2">{{ $t('rentability.account') }}</th>
@@ -79,21 +79,21 @@
 
             <div class="mt-4">
               <div class="flex items-center justify-between mb-2">
-                <h4 class="text-sm font-semibold text-gray-900">{{ $t('shifts.previewThisWeek') }}</h4>
-                <span class="text-xs text-gray-500 hidden sm:inline">{{ $t('shifts.showsCurrentSelections') }}</span>
+                <h4 class="text-sm font-semibold text-fg-strong">{{ $t('shifts.previewThisWeek') }}</h4>
+                <span class="text-xs text-fg-muted hidden sm:inline">{{ $t('shifts.showsCurrentSelections') }}</span>
               </div>
               <div class="grid grid-cols-7 gap-2 text-xs">
-                <div class="text-gray-500" v-for="d in ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']" :key="d">{{ d }}</div>
+                <div class="text-fg-muted" v-for="d in ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']" :key="d">{{ d }}</div>
                 <template v-for="day in weekDays" :key="day.dateStr">
                   <div class="border rounded p-2 min-h-[80px]">
-                    <div class="text-[10px] text-gray-500">{{ day.label }}</div>
+                    <div class="text-[10px] text-fg-muted">{{ day.label }}</div>
                     <template v-if="filledShifts(day.weekday).length">
                       <div class="mt-1 space-y-1" v-for="(s, i) in filledShifts(day.weekday)" :key="i">
-                        <div class="text-gray-900 font-medium">{{ accountNameFor(s.company_token) }}</div>
-                        <div class="text-gray-600">{{ s.start_time }} - {{ s.end_time }}</div>
+                        <div class="text-fg-strong font-medium">{{ accountNameFor(s.company_token) }}</div>
+                        <div class="text-fg-muted">{{ s.start_time }} - {{ s.end_time }}</div>
                       </div>
                     </template>
-                    <div v-else class="text-gray-400">—</div>
+                    <div v-else class="text-fg-faint">—</div>
                   </div>
                 </template>
               </div>

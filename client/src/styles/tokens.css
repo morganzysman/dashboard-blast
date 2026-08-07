@@ -1,87 +1,134 @@
 /* ============================================================
-   OlaClick Design System — Design Tokens (source of truth)
-   Mirrors ~/ola-click-ds/colors_and_type.css
-   Light mode on :root, dark mode on [data-theme="dark"].
-   Consumed by Tailwind via var() and by component classes.
+   BLAST — Smash Burgers · Design Tokens (source of truth)
+   Derived from "Manual de Marca — Sistema Visual Oficial".
+
+   Palette roles straight from the brandbook:
+     El gris es la firma. El verde es la base.
+     El menta es solo sombra. El crema y el blanco son el aire.
+
+   Light mode  = Fondo Crema / Cerámico (uso principal)
+   Dark mode   = Fondo Verde Tattoo (ambiente noche, "micro web")
    ============================================================ */
 
 :root {
-  /* ---- Brand ---- */
-  --brand-blue: #006FFF;
-  --brand-blue-alt: #006AFF;
-  --brand-blue-press: #0058CC;
-  --brand-blue-active: #004BA8;
-  --brand-green: #00FFA8; /* logo spark only — never a UI fill */
-  --brand-orange: #FF9F00;
-  --brand-orange-deep: #FF961F;
-  --brand-teal: #0190E0;
-  --brand-active-green: #28B84F;
+  /* ---- Brand palette (raw, never theme-dependent) ---- */
+  --mint: #50C293;          /* Verde Menta — resaltante e identitario. Sin sombras. */
+  --mint-press: #3FAC7F;
+  --mint-deep: #2F8E63;
+  --mint-wash: #E4F4EC;     /* menta sobre crema/cerámico — estados activos */
+  --mint-wash-strong: #CDEBDD;
 
-  /* ---- Neutrals / text ---- */
-  --fg1: #1D252F;
-  --fg2: #242424;
-  --fg3: #6B7280;
-  --fg-muted: #9CA3AF;
-  --ink: #1A1A1A;
+  --tattoo: #075A2A;        /* Verde Tattoo — la base. Fondos limpios, ambiente noche. */
+  --tattoo-press: #054A22;
+  --tattoo-deep: #042E15;
+
+  --cream: #FFF8E7;         /* Crema Claro — fondo y aire de piezas. Cálido. */
+  --ceramic: #FFFFFF;       /* Blanco — losetas, barras de descripción. */
+  --steel-line: #D9D9D9;    /* Gris Acero — trazos, líneas de cerámicos. */
+  --hair: #EEEEEE;          /* Gris claro — bordes, divisores. */
+
+  /* Acero (#B8BEC6) queda RESTRINGIDO al acero real del local:
+     sólo en fotografía. Nunca como fondo de texto ni de imagen superpuesta. */
+  --acero-photo-only: #B8BEC6;
+
+  /* ---- Typography families ---- */
+  --font-display: 'Anton', 'Arial Narrow', Impact, sans-serif;
+  --font-sans: 'Quicksand', system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+  --font-mono: 'Space Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  /* ---- Semantic brand roles ---- */
+  --brand: var(--tattoo);        /* primary action fill */
+  --brand-fg: var(--cream);      /* text on primary fill */
+  --brand-press: var(--tattoo-press);
+  --accent: var(--mint);         /* identity accent: active, focus, data viz */
+  --accent-fg: var(--tattoo-deep);
+  --accent-wash: var(--mint-wash);
+
+  /* Tinta del isologo. El logo es monocromo y hereda currentColor, así que
+     este token es el único lugar donde se decide su color por tema:
+     Verde Tattoo sobre crema, Verde Menta sobre noche. */
+  --logo-ink: var(--tattoo);
+
+  /* ---- Text ---- */
+  --fg1: #0B3A21;           /* body / primary ink */
+  --fg2: var(--tattoo);     /* headings, labels */
+  --fg3: #5C6B62;           /* muted */
+  --fg-muted: #647268;      /* faint, placeholders — AA sobre blanco y crema */
+  --ink: #0B3A21;
   --white: #FFFFFF;
 
   /* ---- Surfaces ---- */
-  --bg: #FFFFFF;
-  --canvas: #F5F6F8;      /* content area background under header */
-  --surface-1: #F9F9F9;
-  --surface-2: #F5F5F5;
-  --tint-blue: #EBF2FF;
+  --bg: var(--ceramic);     /* cards, panels — fondo cerámico */
+  --canvas: var(--cream);   /* page background — el crema es el aire */
+  --surface-1: #FFFCF4;
+  --surface-2: #F8F2E3;
+  --tint: var(--mint-wash);
 
-  /* ---- Borders ---- */
-  --border: #EBEBEB;
-  --border-input: #D4D4D4;
-  --border-strong: #3D3D3D;
+  /* ---- Borders (bordes acero, per the approved combinations) ---- */
+  --border: var(--hair);
+  --border-input: var(--steel-line);
+  --border-strong: var(--tattoo);
 
   /* ---- Feedback / state ---- */
-  --danger: #DC2626;
-  --danger-bg: #FEE2E2;
-  --danger-fg: #991B1B;
-  --success-bg: #DCFCE7;
-  --success-fg: #157A3D;
-  --warning-bg: #FEF9C3;
-  --warning-fg: #A16207;
-  --pending-bg: #FFEDD5;
-  --pending-fg: #C2410C;
-  --info-bg: #EBF2FF;
-  --info-fg: #1E40AF;
+  --danger: #B7382A;
+  --danger-bg: #FBE9E6;
+  --danger-fg: #8C2015;
+  --success: #1E8A4C;
+  --success-bg: #DFF3E7;
+  --success-fg: #0B5B2C;
+  --warning: #B5810F;
+  --warning-bg: #FBF1D8;
+  --warning-fg: #77540A;
+  --pending-bg: #FBEADC;
+  --pending-fg: #8A420F;
+  --info-bg: var(--mint-wash);
+  --info-fg: var(--tattoo);
 
-  /* ---- Semantic tag palette ---- */
-  --tag-default-bg: #F5F5F5;  --tag-default-fg: #1D252F;
-  --tag-blue-bg: #EBF2FF;     --tag-blue-fg: #1E40AF;
-  --tag-green-bg: #DCFCE7;    --tag-green-fg: #157A3D;
-  --tag-red-bg: #FEE2E2;      --tag-red-fg: #991B1B;
-  --tag-orange-bg: #FFEDD5;   --tag-orange-fg: #C2410C;
-  --tag-yellow-bg: #FEF9C3;   --tag-yellow-fg: #A16207;
-  --tag-purple-bg: #F3E8FF;   --tag-purple-fg: #7E22CE;
-  --tag-cyan-bg: #CFFAFE;     --tag-cyan-fg: #0E7490;
+  /* ---- Semantic tag palette (tuned to the cream/green system) ---- */
+  --tag-default-bg: #F3EEE0;  --tag-default-fg: #4A574E;
+  --tag-blue-bg: var(--mint-wash);   --tag-blue-fg: var(--tattoo);
+  --tag-green-bg: #DFF3E7;    --tag-green-fg: #0B5B2C;
+  --tag-red-bg: #FBE9E6;      --tag-red-fg: #8C2015;
+  --tag-orange-bg: #FBEADC;   --tag-orange-fg: #8A420F;
+  --tag-yellow-bg: #FBF1D8;   --tag-yellow-fg: #77540A;
+  --tag-purple-bg: #ECE7F5;   --tag-purple-fg: #4C3A73;
+  --tag-cyan-bg: #DDF0F1;     --tag-cyan-fg: #165B5E;
 
   /* ---- Sidebar / nav ---- */
-  --nav-text: #141B26;
-  --nav-muted: #5A6472;
-  --nav-bg: #FFFFFF;
-  --nav-hover: #F1F2F4;
-  --nav-active-bg: #EBF2FF;
-  --nav-active-fg: #006FFF;
-  --nav-border: #DFE3EA;
+  --nav-text: #0B3A21;
+  --nav-muted: #5C6B62;
+  --nav-bg: var(--ceramic);
+  --nav-hover: #F8F2E3;
+  --nav-active-bg: var(--mint-wash);
+  --nav-active-fg: var(--tattoo);
+  --nav-active-rail: var(--mint);
+  --nav-border: var(--steel-line);
+
+  /* ---- Data visualisation (green-led, mint to tattoo) ---- */
+  --chart-1: #50C293;
+  --chart-2: #075A2A;
+  --chart-3: #2F8E63;
+  --chart-4: #9BD9BC;
+  --chart-5: #0B7A3C;
+  --chart-6: #C7A34A;
+  --chart-7: #7E8B82;
+  --chart-8: #B7382A;
+  --chart-grid: var(--steel-line);
 
   /* ---- Radii ---- */
-  --r-xs: 5px;
+  --r-xs: 4px;
   --r-sm: 6px;
-  --r-md: 8px;
-  --r-lg: 12px;
+  --r-md: 10px;
+  --r-lg: 14px;
   --r-full: 9999px;
   --r-btn: 8px;
 
-  /* ---- Shadows (border-led system, subtle) ---- */
-  --shadow-card: 0 1px 2px rgba(0, 0, 0, .05);
-  --shadow-pop: 0 4px 12px rgba(0, 0, 0, .10);
-  --shadow-thumb: 0 1px 3px rgba(0, 0, 0, .15);
-  --shadow-sidebar: 0 2px 12px rgba(0, 0, 0, .08);
+  /* ---- Shadows ----
+     Verde Menta nunca lleva sombra; el sistema es border-led y muy sutil. */
+  --shadow-card: 0 1px 2px rgba(7, 90, 42, .06);
+  --shadow-pop: 0 8px 24px rgba(7, 90, 42, .12);
+  --shadow-thumb: 0 1px 3px rgba(7, 90, 42, .16);
+  --shadow-sidebar: 0 2px 12px rgba(7, 90, 42, .07);
 
   /* ---- Spacing (4px scale) ---- */
   --sp-1: 2px;
@@ -100,69 +147,106 @@
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 
   /* ---- Focus ---- */
-  --focus-ring: 0 0 0 3px rgba(0, 106, 255, .3);
+  --focus-ring: 0 0 0 3px rgba(80, 194, 147, .45);
 
   /* ---- Scrim ---- */
-  --scrim: rgba(0, 0, 0, 0.4);
+  --scrim: rgba(4, 46, 21, 0.55);
 
   color-scheme: light;
 }
 
+/* ============================================================
+   FONDO VERDE TATTOO — ambiente noche
+   Anton Menta + Space Mono Acero & Menta sobre Verde T.
+   ============================================================ */
 [data-theme="dark"] {
-  /* ---- Surfaces ---- */
-  --bg: #1A1D23;
-  --canvas: #16181D;
-  --surface-1: #22262E;
-  --surface-2: #2A2F38;
-  --tint-blue: #1A2744;
+  /* ---- Semantic brand roles flip: menta lidera sobre tattoo ---- */
+  --brand: var(--mint);
+  --brand-fg: var(--tattoo-deep);
+  --brand-press: var(--mint-press);
+  --accent: var(--mint);
+  --accent-fg: var(--tattoo-deep);
+  --accent-wash: rgba(80, 194, 147, .16);
+  --logo-ink: var(--mint);
 
-  /* ---- Brand ---- */
-  --brand-blue: #006FFF;
-  --brand-blue-alt: #4DA3FF;
-  --brand-blue-press: #3D8FFF;
-  --brand-blue-active: #0058CC;
+  /* ---- Surfaces ---- */
+  --canvas: #032313;
+  --bg: #063D1F;
+  --surface-1: var(--tattoo);
+  --surface-2: #0A6634;
+  --tint: rgba(80, 194, 147, .16);
 
   /* ---- Text ---- */
-  --fg1: #F0F2F5;
-  --fg2: #F0F2F5;
-  --fg3: #9CA3AF;
-  --fg-muted: #6B7280;
-  --ink: #F0F2F5;
+  --fg1: var(--cream);
+  --fg2: var(--ceramic);
+  --fg3: #A6C9B4;
+  --fg-muted: #7FA891;
+  --ink: var(--cream);
 
   /* ---- Borders ---- */
-  --border: #2E333D;
-  --border-input: #3A3F4A;
-  --border-strong: #5A6472;
+  --border: rgba(255, 248, 231, .13);
+  --border-input: rgba(255, 248, 231, .26);
+  --border-strong: var(--mint);
 
   /* ---- Feedback ---- */
-  --danger: #EF4444;
+  --danger: #F08272;
+  --danger-bg: #4A1811;
+  --danger-fg: #F7B8AE;
+  --success: #6FD3A3;
+  --success-bg: #0A5730;
+  --success-fg: #A9E8C7;
+  --warning: #E0B451;
+  --warning-bg: #4A3A0E;
+  --warning-fg: #F1D591;
+  --pending-bg: #4A2A11;
+  --pending-fg: #F0C098;
+  --info-bg: rgba(80, 194, 147, .16);
+  --info-fg: var(--mint);
 
   /* ---- Tag palette (dark) ---- */
-  --tag-default-bg: #2A2F38;  --tag-default-fg: #E4E6EB;
-  --tag-blue-bg: #1A2744;     --tag-blue-fg: #93C5FD;
-  --tag-green-bg: #1A2E22;    --tag-green-fg: #6EE7B7;
-  --tag-red-bg: #2E1414;      --tag-red-fg: #FCA5A5;
-  --tag-orange-bg: #2E1F0E;   --tag-orange-fg: #FDBA74;
-  --tag-yellow-bg: #2E2A0E;   --tag-yellow-fg: #FDE047;
-  --tag-purple-bg: #2A1A3A;   --tag-purple-fg: #D8B4FE;
-  --tag-cyan-bg: #0E2A2E;     --tag-cyan-fg: #67E8F9;
+  --tag-default-bg: rgba(255, 248, 231, .10);  --tag-default-fg: var(--cream);
+  /* Menta pura sobre menta translúcida no alcanza 4.5:1; el chip de marca usa
+     fondo sólido y tinta menta clara, igual que el resto de los tags oscuros. */
+  --tag-blue-bg: #0A5730;     --tag-blue-fg: #B9EAD3;
+  --tag-green-bg: #0A5730;    --tag-green-fg: #A9E8C7;
+  --tag-red-bg: #4A1811;      --tag-red-fg: #F7B8AE;
+  --tag-orange-bg: #4A2A11;   --tag-orange-fg: #F0C098;
+  --tag-yellow-bg: #4A3A0E;   --tag-yellow-fg: #F1D591;
+  --tag-purple-bg: #2E2547;   --tag-purple-fg: #C6B6EA;
+  --tag-cyan-bg: #0D3E40;     --tag-cyan-fg: #8FD6D8;
 
   /* ---- Sidebar / nav (dark) ---- */
-  --nav-text: #E4E6EB;
-  --nav-muted: #9CA3AF;
-  --nav-bg: #22262E;
-  --nav-hover: #2A2F38;
-  --nav-active-bg: #1A2744;
-  --nav-active-fg: #4DA3FF;
-  --nav-border: #2E333D;
+  --nav-text: var(--cream);
+  --nav-muted: #A6C9B4;
+  --nav-bg: #052E17;
+  --nav-hover: rgba(255, 248, 231, .07);
+  --nav-active-bg: rgba(80, 194, 147, .16);
+  --nav-active-fg: var(--mint);
+  --nav-active-rail: var(--mint);
+  --nav-border: rgba(255, 248, 231, .13);
 
-  /* ---- Shadows (stronger in dark) ---- */
-  --shadow-card: 0 1px 2px rgba(0, 0, 0, .30);
-  --shadow-pop: 0 4px 12px rgba(0, 0, 0, .40);
-  --shadow-sidebar: 0 2px 12px rgba(0, 0, 0, .40);
+  /* ---- Data visualisation (dark) ---- */
+  --chart-1: #6FD3A3;
+  --chart-2: #C9F0DC;
+  --chart-3: #3FAC7F;
+  --chart-4: #A9E8C7;
+  --chart-5: #1E8A4C;
+  --chart-6: #E0B451;
+  --chart-7: #A6C9B4;
+  --chart-8: #F08272;
+  --chart-grid: rgba(255, 248, 231, .16);
+
+  /* ---- Shadows (deeper on tattoo) ---- */
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, .35);
+  --shadow-pop: 0 8px 24px rgba(0, 0, 0, .45);
+  --shadow-thumb: 0 1px 3px rgba(0, 0, 0, .40);
+  --shadow-sidebar: 0 2px 12px rgba(0, 0, 0, .45);
 
   /* ---- Focus ---- */
-  --focus-ring: 0 0 0 3px rgba(77, 163, 255, .35);
+  --focus-ring: 0 0 0 3px rgba(80, 194, 147, .50);
+
+  /* ---- Scrim ---- */
+  --scrim: rgba(3, 20, 10, 0.70);
 
   color-scheme: dark;
 }

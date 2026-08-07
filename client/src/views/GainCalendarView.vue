@@ -5,8 +5,8 @@
         <!-- Header: title + month nav + account selector -->
         <div class="flex items-start justify-between gap-2 flex-wrap">
           <div>
-            <h2 class="text-lg font-bold text-gray-900">{{ $t('gainCalendar.title') }}</h2>
-            <p class="text-sm text-gray-600">{{ monthLabel }}</p>
+            <h2 class="text-lg font-bold text-fg-strong">{{ $t('gainCalendar.title') }}</h2>
+            <p class="text-sm text-fg-muted">{{ monthLabel }}</p>
           </div>
           <div class="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
             <div class="inline-flex overflow-hidden rounded-md border border-gray-200">
@@ -31,7 +31,7 @@
 
         <!-- Account selector -->
         <div class="mt-4 mb-3 flex items-center gap-2 flex-wrap">
-          <label class="text-xs text-gray-700">{{ $t('rentability.account') }}</label>
+          <label class="text-xs text-fg">{{ $t('rentability.account') }}</label>
           <select v-model="selectedToken" class="form-input" @change="loadGains">
             <option value="">{{ $t('gainCalendar.allAccounts') }}</option>
             <option v-for="acc in accounts" :key="acc.company_token" :value="acc.company_token">
@@ -41,7 +41,7 @@
         </div>
 
         <!-- Monthly summary -->
-        <div class="mt-2 mb-4 p-4 bg-gray-50 rounded-lg">
+        <div class="mt-2 mb-4 p-4 bg-surface-2 rounded-lg">
           <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div class="flex gap-4 text-sm">
               <div class="flex items-center gap-1">
@@ -53,11 +53,11 @@
                 <span>{{ $t('gainCalendar.loss') }}</span>
               </div>
               <div class="flex items-center gap-1">
-                <div class="w-3 h-3 rounded bg-gray-300"></div>
+                <div class="w-3 h-3 rounded bg-surface-2"></div>
                 <span>{{ $t('gainCalendar.noData') }}</span>
               </div>
             </div>
-            <div class="text-lg font-bold" :class="monthTotal >= 0 ? 'text-green-600' : 'text-red-600'">
+            <div class="text-lg font-bold" :class="monthTotal >= 0 ? 'text-success' : 'text-error'">
               {{ $t('gainCalendar.monthTotal') }}: {{ formatCurrency(monthTotal) }}
             </div>
           </div>
@@ -85,7 +85,7 @@
         <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 lg:gap-3 text-xs">
           <!-- Weekday headers (desktop) -->
           <div
-            class="text-gray-500 hidden lg:block font-medium text-center"
+            class="text-fg-muted hidden lg:block font-medium text-center"
             v-for="d in [$t('shifts.weekdays.0'), $t('shifts.weekdays.1'), $t('shifts.weekdays.2'), $t('shifts.weekdays.3'), $t('shifts.weekdays.4'), $t('shifts.weekdays.5'), $t('shifts.weekdays.6')]"
             :key="d"
           >{{ d }}</div>
@@ -106,10 +106,10 @@
 
             <!-- Day with data -->
             <template v-else>
-              <div class="text-[10px] text-gray-400 text-center lg:hidden">{{ day.weekday || '' }}</div>
-              <div class="text-sm font-medium text-center" :class="day.isToday ? 'text-blue-600' : 'text-gray-700'">
+              <div class="text-[10px] text-fg-faint text-center lg:hidden">{{ day.weekday || '' }}</div>
+              <div class="text-sm font-medium text-center" :class="day.isToday ? 'text-brand' : 'text-fg'">
                 {{ day.label }}
-                <span v-if="day.isToday" class="ml-1 text-[9px] bg-blue-100 text-blue-600 px-1 rounded">{{ $t('gainCalendar.today') }}</span>
+                <span v-if="day.isToday" class="ml-1 text-[9px] bg-tint text-brand px-1 rounded">{{ $t('gainCalendar.today') }}</span>
               </div>
 
               <!-- Gain amount -->
@@ -120,7 +120,7 @@
                 >
                   {{ formatCurrency(day.gain) }}
                 </div>
-                <div class="text-[9px] text-gray-500 mt-0.5">
+                <div class="text-[9px] text-fg-muted mt-0.5">
                   {{ day.orders || 0 }} {{ $t('gainCalendar.orders') }}
                 </div>
                 <ObjectiveProgress
@@ -131,7 +131,7 @@
                   :tooltip="`${$t('gainCalendar.dailyObjective')}: ${formatCurrency(DAILY_GAIN_OBJECTIVE)}`"
                 />
               </div>
-              <div v-else class="mt-2 text-center text-[10px] text-gray-400">
+              <div v-else class="mt-2 text-center text-[10px] text-fg-faint">
                 —
               </div>
 
@@ -144,16 +144,16 @@
                 <div class="font-bold mb-1" style="color: var(--fg1);">{{ day.date }}</div>
                 <div class="space-y-0.5" style="color: var(--fg2);">
                   <div class="flex justify-between"><span>{{ $t('gainCalendar.grossRevenue') }}</span><span>{{ formatCurrency(day.grossRevenue) }}</span></div>
-                  <div class="flex justify-between text-red-600"><span>{{ $t('gainCalendar.paymentFees') }}</span><span>-{{ formatCurrency(day.paymentFees) }}</span></div>
-                  <div class="flex justify-between text-red-600"><span>{{ $t('gainCalendar.foodCosts') }}</span><span>-{{ formatCurrency(day.foodCosts) }}</span></div>
-                  <div class="flex justify-between text-red-600"><span>{{ $t('gainCalendar.utilityCosts') }}</span><span>-{{ formatCurrency(day.utilityCosts) }}</span></div>
-                  <div class="flex justify-between text-red-600"><span>{{ $t('gainCalendar.payrollCosts') }}</span><span>-{{ formatCurrency(day.payrollCosts) }}</span></div>
+                  <div class="flex justify-between text-error"><span>{{ $t('gainCalendar.paymentFees') }}</span><span>-{{ formatCurrency(day.paymentFees) }}</span></div>
+                  <div class="flex justify-between text-error"><span>{{ $t('gainCalendar.foodCosts') }}</span><span>-{{ formatCurrency(day.foodCosts) }}</span></div>
+                  <div class="flex justify-between text-error"><span>{{ $t('gainCalendar.utilityCosts') }}</span><span>-{{ formatCurrency(day.utilityCosts) }}</span></div>
+                  <div class="flex justify-between text-error"><span>{{ $t('gainCalendar.payrollCosts') }}</span><span>-{{ formatCurrency(day.payrollCosts) }}</span></div>
                   <hr class="my-1 border-gray-200">
-                  <div class="flex justify-between font-bold" :class="day.gain >= 0 ? 'text-green-700' : 'text-red-700'">
+                  <div class="flex justify-between font-bold" :class="day.gain >= 0 ? 'text-success' : 'text-error'">
                     <span>{{ $t('gainCalendar.netGain') }}</span>
                     <span>{{ formatCurrency(day.gain) }}</span>
                   </div>
-                  <div class="flex justify-between text-gray-500">
+                  <div class="flex justify-between text-fg-muted">
                     <span>{{ $t('gainCalendar.dailyObjective') }}</span>
                     <span>{{ formatCurrency(DAILY_GAIN_OBJECTIVE) }}</span>
                   </div>
@@ -166,7 +166,7 @@
         <!-- Loading overlay -->
         <div v-if="loading" class="flex items-center justify-center py-8">
           <div class="loading-spinner"></div>
-          <span class="ml-2 text-gray-500">{{ $t('common.loading') }}</span>
+          <span class="ml-2 text-fg-muted">{{ $t('common.loading') }}</span>
         </div>
       </div>
     </div>
@@ -311,7 +311,7 @@ const monthObjective = computed(() => DAILY_GAIN_OBJECTIVE * daysInMonthSoFar.va
 // Cell styling based on gain
 function getDayCellClass(day) {
   if (!day.date) return 'bg-gray-50'
-  if (day.gain === null) return 'bg-white hover:bg-gray-50'
+  if (day.gain === null) return 'bg-surface-1 hover:bg-surface-2'
   if (day.gain > 0) return 'bg-success-100 border-green-200 hover:bg-success-200'
   if (day.gain < 0) return 'bg-error-100 border-red-200 hover:bg-error-200'
   return 'bg-gray-50 border-gray-200 hover:bg-gray-100'

@@ -255,7 +255,7 @@
     "period": "Period"
   },
   "app": {
-    "name": "OlaClick"
+    "name": "Blast"
   },
   
   "navigation": {
@@ -1209,20 +1209,20 @@
   "pwa": {
     "installApp": "Install App",
     "preparing": "Preparing…",
-    "installDescription": "One tap to add OlaClick to your home screen.",
-    "getAppTitle": "Get the OlaClick App",
+    "installDescription": "One tap to add Blast to your home screen.",
+    "getAppTitle": "Get the Blast App",
     "getAppSubtitle": "Install it on your phone for a faster, fullscreen experience.",
     "yourDevice": "Your device",
     "howToInstall": "How to install",
     "iosInstructions": "iPhone / iPad (Safari)",
     "iosStep1": "Open this page in Safari, then tap the Share button (the square with an up arrow).",
     "iosStep2": "Scroll down and tap Add to Home Screen.",
-    "iosStep3": "Tap Add in the top-right corner. The OlaClick icon will appear on your home screen.",
+    "iosStep3": "Tap Add in the top-right corner. The Blast icon will appear on your home screen.",
     "iosTip": "Tip: If you don't see the option, scroll the share sheet up to reveal more actions.",
     "androidInstructions": "Android (Chrome)",
     "androidStep1": "Open this page in Chrome, then tap the ⋮ menu in the top-right corner.",
     "androidStep2": "Tap Install app (or Add to Home screen).",
-    "androidStep3": "Confirm by tapping Install. The OlaClick icon will appear on your home screen.",
+    "androidStep3": "Confirm by tapping Install. The Blast icon will appear on your home screen.",
     "androidTip": "Tip: If a banner appears, just tap Install — no menu needed.",
     "step1": "1. Tap the Share button in Safari (square with an up arrow).",
     "step2": "2. Scroll and choose Add to Home Screen.",
@@ -1232,7 +1232,7 @@
     "desktopInstructions": "If you see an install icon in the address bar or menu, click it to add the app."
   },
   "login": {
-    "appTitle": "OlaClick Analytics"
+    "appTitle": "Blast"
   }
   ,
   "holidays": {

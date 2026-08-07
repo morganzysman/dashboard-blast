@@ -5,8 +5,8 @@
       <div class="card-body">
         <div class="flex items-start justify-between gap-2 flex-wrap">
           <div>
-            <h2 class="text-lg font-bold text-gray-900">{{ $t('salesImport.title') }}</h2>
-            <p class="text-sm text-gray-600">{{ $t('salesImport.subtitle') }}</p>
+            <h2 class="text-lg font-bold text-fg-strong">{{ $t('salesImport.title') }}</h2>
+            <p class="text-sm text-fg-muted">{{ $t('salesImport.subtitle') }}</p>
           </div>
           <button v-if="preview" class="btn-secondary btn-sm" @click="reset">
             {{ $t('salesImport.chooseAnother') }}
@@ -17,25 +17,25 @@
         <label
           v-if="!preview"
           class="mt-4 flex flex-col items-center justify-center gap-2 rounded-lg px-4 py-10 text-center cursor-pointer transition-colors"
-          :class="dragging ? 'bg-blue-50' : ''"
+          :class="dragging ? 'bg-tint' : ''"
           style="border: 2px dashed var(--border);"
           @dragover.prevent="dragging = true"
           @dragleave.prevent="dragging = false"
           @drop.prevent="onDrop"
         >
-          <MaterialIcon name="upload_file" :size="34" class="text-gray-400" />
-          <div class="text-sm font-medium text-gray-900">{{ $t('salesImport.dropzoneTitle') }}</div>
-          <div class="text-xs text-gray-500">{{ $t('salesImport.dropzoneHint') }}</div>
+          <MaterialIcon name="upload_file" :size="34" class="text-fg-faint" />
+          <div class="text-sm font-medium text-fg-strong">{{ $t('salesImport.dropzoneTitle') }}</div>
+          <div class="text-xs text-fg-muted">{{ $t('salesImport.dropzoneHint') }}</div>
           <input type="file" accept=".csv,text/csv" class="hidden" @change="onFilePicked" />
         </label>
 
-        <div v-if="fileName" class="mt-3 flex items-center gap-2 text-sm text-gray-700">
-          <MaterialIcon name="description" :size="18" class="text-gray-400" />
+        <div v-if="fileName" class="mt-3 flex items-center gap-2 text-sm text-fg">
+          <MaterialIcon name="description" :size="18" class="text-fg-faint" />
           <span class="font-medium">{{ fileName }}</span>
-          <span v-if="parsing" class="text-xs text-gray-500">{{ $t('salesImport.analyzing') }}</span>
+          <span v-if="parsing" class="text-xs text-fg-muted">{{ $t('salesImport.analyzing') }}</span>
         </div>
 
-        <div v-if="loadError" class="mt-3 text-sm text-red-600 bg-red-50 rounded-lg p-3">{{ loadError }}</div>
+        <div v-if="loadError" class="mt-3 text-sm text-error bg-error-bg rounded-lg p-3">{{ loadError }}</div>
       </div>
     </div>
 
@@ -43,59 +43,59 @@
     <div v-if="preview" class="card">
       <div class="card-body">
         <!-- Blocking problems -->
-        <div v-if="preview.errors.length" class="mb-4 rounded-lg bg-red-50 p-3">
-          <div class="flex items-center gap-2 text-sm font-semibold text-red-800">
+        <div v-if="preview.errors.length" class="mb-4 rounded-lg bg-error-bg p-3">
+          <div class="flex items-center gap-2 text-sm font-semibold text-error">
             <MaterialIcon name="error" :size="18" />
             {{ $t('salesImport.cannotImport') }}
           </div>
-          <ul class="mt-1.5 list-disc pl-5 text-sm text-red-700 space-y-0.5">
+          <ul class="mt-1.5 list-disc pl-5 text-sm text-error space-y-0.5">
             <li v-for="(e, i) in preview.errors" :key="i">{{ noteText(e) }}</li>
           </ul>
         </div>
 
         <!-- Non-blocking notes -->
-        <div v-if="preview.warnings.length" class="mb-4 rounded-lg bg-amber-50 p-3">
-          <div class="flex items-center gap-2 text-sm font-semibold text-amber-800">
+        <div v-if="preview.warnings.length" class="mb-4 rounded-lg bg-warning-bg p-3">
+          <div class="flex items-center gap-2 text-sm font-semibold text-warning">
             <MaterialIcon name="info" :size="18" />
             {{ $t('salesImport.notes') }}
           </div>
-          <ul class="mt-1.5 list-disc pl-5 text-sm text-amber-700 space-y-0.5">
+          <ul class="mt-1.5 list-disc pl-5 text-sm text-warning space-y-0.5">
             <li v-for="(w, i) in preview.warnings" :key="i">{{ noteText(w) }}</li>
           </ul>
         </div>
 
         <!-- Headline numbers -->
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div class="bg-blue-50 rounded-lg p-3 text-center">
-            <div class="text-2xl font-bold text-blue-700">{{ preview.stats.rowsCounted }}</div>
-            <div class="text-xs text-blue-600">{{ $t('salesImport.ordersCounted') }}</div>
+          <div class="bg-tint rounded-lg p-3 text-center">
+            <div class="text-2xl font-bold text-brand">{{ preview.stats.rowsCounted }}</div>
+            <div class="text-xs text-brand">{{ $t('salesImport.ordersCounted') }}</div>
           </div>
-          <div class="bg-green-50 rounded-lg p-3 text-center">
-            <div class="text-2xl font-bold text-green-700">{{ formatMoney(preview.stats.totalAmount) }}</div>
-            <div class="text-xs text-green-600">{{ $t('salesImport.totalSales') }}</div>
+          <div class="bg-success-bg rounded-lg p-3 text-center">
+            <div class="text-2xl font-bold text-success">{{ formatMoney(preview.stats.totalAmount) }}</div>
+            <div class="text-xs text-success">{{ $t('salesImport.totalSales') }}</div>
           </div>
           <div class="bg-purple-50 rounded-lg p-3 text-center">
             <div class="text-2xl font-bold text-purple-700">{{ preview.stats.daysToCreate }}</div>
             <div class="text-xs text-purple-600">{{ $t('salesImport.daysToCreate') }}</div>
           </div>
-          <div class="bg-orange-50 rounded-lg p-3 text-center">
-            <div class="text-2xl font-bold text-orange-700">{{ preview.stats.daysToUpdate }}</div>
-            <div class="text-xs text-orange-600">{{ $t('salesImport.daysToUpdate') }}</div>
+          <div class="bg-pending-bg rounded-lg p-3 text-center">
+            <div class="text-2xl font-bold text-warning">{{ preview.stats.daysToUpdate }}</div>
+            <div class="text-xs text-warning">{{ $t('salesImport.daysToUpdate') }}</div>
           </div>
         </div>
 
         <!-- Restaurant -> account resolution -->
-        <div v-if="preview.restaurantMap?.length" class="mt-4 rounded-lg p-3" style="background: var(--surface-2, #f9fafb);">
-          <div class="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">
+        <div v-if="preview.restaurantMap?.length" class="mt-4 rounded-lg p-3" style="background: var(--surface-2);">
+          <div class="text-xs font-semibold uppercase tracking-wide text-fg-muted mb-2">
             {{ $t('salesImport.mappingTitle') }}
           </div>
           <div class="flex flex-wrap gap-2">
             <div v-for="m in preview.restaurantMap" :key="m.restaurant"
-                 class="flex items-center gap-1.5 text-sm bg-white rounded-md px-2 py-1"
+                 class="flex items-center gap-1.5 text-sm bg-surface-1 rounded-md px-2 py-1"
                  style="border: 1px solid var(--border);">
-              <span class="text-gray-600">{{ m.restaurant }}</span>
-              <MaterialIcon name="arrow_forward" :size="14" class="text-gray-400" />
-              <span class="font-medium text-gray-900">{{ m.account_name }}</span>
+              <span class="text-fg-muted">{{ m.restaurant }}</span>
+              <MaterialIcon name="arrow_forward" :size="14" class="text-fg-faint" />
+              <span class="font-medium text-fg-strong">{{ m.account_name }}</span>
             </div>
           </div>
         </div>
@@ -103,10 +103,10 @@
         <!-- Per-day breakdown -->
         <div class="mt-4">
           <div class="flex items-center justify-between mb-2">
-            <div class="text-xs font-semibold uppercase tracking-wide text-gray-500">
+            <div class="text-xs font-semibold uppercase tracking-wide text-fg-muted">
               {{ $t('salesImport.perDayTitle') }}
             </div>
-            <div v-if="preview.stats.firstDay" class="text-xs text-gray-500">
+            <div v-if="preview.stats.firstDay" class="text-xs text-fg-muted">
               {{ preview.stats.firstDay }} → {{ preview.stats.lastDay }}
             </div>
           </div>
@@ -114,7 +114,7 @@
           <div class="overflow-x-auto -mx-1 px-1 max-h-[420px] overflow-y-auto">
             <table class="w-full text-sm">
               <thead class="sticky top-0" style="background: var(--bg);">
-                <tr class="border-b text-left text-xs text-gray-500">
+                <tr class="border-b text-left text-xs text-fg-muted">
                   <th class="py-2 pr-3">{{ $t('common.date') }}</th>
                   <th class="py-2 pr-3">{{ $t('salesImport.account') }}</th>
                   <th class="py-2 pr-3 text-right">{{ $t('salesImport.rappiOrders') }}</th>
@@ -127,10 +127,10 @@
                 <tr v-for="d in preview.days" :key="`${d.companyToken}-${d.day}`" class="border-b last:border-0">
                   <td class="py-2 pr-3 whitespace-nowrap">{{ d.day }}</td>
                   <td class="py-2 pr-3">{{ d.accountName }}</td>
-                  <td class="py-2 pr-3 text-right text-gray-500">{{ d.sourceOrders }}</td>
-                  <td class="py-2 pr-3 text-right text-gray-500">
+                  <td class="py-2 pr-3 text-right text-fg-muted">{{ d.sourceOrders }}</td>
+                  <td class="py-2 pr-3 text-right text-fg-muted">
                     {{ d.existing_amount === null ? '—' : formatMoney(d.existing_amount) }}
-                    <span v-if="d.existing_other_amount > 0" class="block text-xs text-gray-400"
+                    <span v-if="d.existing_other_amount > 0" class="block text-xs text-fg-faint"
                           :title="$t('salesImport.plusOlaClickHint')">
                       + {{ formatMoney(d.existing_other_amount) }} {{ $t('salesImport.fromOlaClick') }}
                     </span>
@@ -154,7 +154,7 @@
 
         <!-- Commit -->
         <div class="mt-5 flex items-center justify-end gap-2 flex-wrap">
-          <p v-if="!preview.errors.length" class="text-xs text-gray-500 mr-auto max-w-md">
+          <p v-if="!preview.errors.length" class="text-xs text-fg-muted mr-auto max-w-md">
             {{ $t('salesImport.commitHint') }}
           </p>
           <button class="btn-secondary" @click="reset">{{ $t('common.cancel') }}</button>
@@ -165,24 +165,24 @@
           </button>
         </div>
 
-        <div v-if="commitError" class="mt-3 text-sm text-red-600 bg-red-50 rounded-lg p-3">{{ commitError }}</div>
+        <div v-if="commitError" class="mt-3 text-sm text-error bg-error-bg rounded-lg p-3">{{ commitError }}</div>
       </div>
     </div>
 
     <!-- History -->
     <div class="card">
       <div class="card-body">
-        <h3 class="text-base font-semibold text-gray-900">{{ $t('salesImport.historyTitle') }}</h3>
-        <p class="text-sm text-gray-600">{{ $t('salesImport.historySubtitle') }}</p>
+        <h3 class="text-base font-semibold text-fg-strong">{{ $t('salesImport.historyTitle') }}</h3>
+        <p class="text-sm text-fg-muted">{{ $t('salesImport.historySubtitle') }}</p>
 
-        <div v-if="historyLoading" class="py-6 text-center text-sm text-gray-500">{{ $t('common.loading') }}</div>
-        <div v-else-if="history.length === 0" class="py-6 text-center text-sm text-gray-500">
+        <div v-if="historyLoading" class="py-6 text-center text-sm text-fg-muted">{{ $t('common.loading') }}</div>
+        <div v-else-if="history.length === 0" class="py-6 text-center text-sm text-fg-muted">
           {{ $t('salesImport.noImports') }}
         </div>
         <div v-else class="mt-3 overflow-x-auto">
           <table class="w-full text-sm">
             <thead>
-              <tr class="border-b text-left text-xs text-gray-500">
+              <tr class="border-b text-left text-xs text-fg-muted">
                 <th class="py-2 pr-3">{{ $t('common.date') }}</th>
                 <th class="py-2 pr-3">{{ $t('salesImport.file') }}</th>
                 <th class="py-2 pr-3">{{ $t('salesImport.period') }}</th>
@@ -193,15 +193,15 @@
             </thead>
             <tbody>
               <tr v-for="h in history" :key="h.id" class="border-b last:border-0">
-                <td class="py-2 pr-3 whitespace-nowrap text-xs text-gray-500">{{ formatDateTime(h.created_at) }}</td>
+                <td class="py-2 pr-3 whitespace-nowrap text-xs text-fg-muted">{{ formatDateTime(h.created_at) }}</td>
                 <td class="py-2 pr-3 max-w-[220px] truncate" :title="h.file_name">{{ h.file_name || '—' }}</td>
                 <td class="py-2 pr-3 whitespace-nowrap text-xs">{{ h.first_day }} → {{ h.last_day }}</td>
                 <td class="py-2 pr-3 text-right">
                   {{ h.days_created + h.days_updated }}
-                  <span class="text-xs text-gray-500">({{ h.days_created }}{{ $t('salesImport.newShort') }})</span>
+                  <span class="text-xs text-fg-muted">({{ h.days_created }}{{ $t('salesImport.newShort') }})</span>
                 </td>
                 <td class="py-2 pr-3 text-right font-medium">{{ formatMoney(h.total_amount) }}</td>
-                <td class="py-2 text-xs text-gray-500">{{ h.uploaded_by_name || '—' }}</td>
+                <td class="py-2 text-xs text-fg-muted">{{ h.uploaded_by_name || '—' }}</td>
               </tr>
             </tbody>
           </table>

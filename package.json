@@ -1,7 +1,7 @@
 {
-  "name": "olaclick-analytics-dashboard",
+  "name": "blast-dashboard",
   "version": "2.0.0",
-  "description": "Real-time analytics dashboard for OlaClick restaurant accounts with PostgreSQL backend and Vue.js frontend",
+  "description": "Blast Smash Burgers operations dashboard \u2014 sales, shifts and team. PostgreSQL backend, Vue.js frontend.",
   "main": "server/server.js",
   "type": "module",
   "scripts": {
@@ -31,12 +31,14 @@
   "keywords": [
     "dashboard",
     "analytics",
+    "blast",
+    "smash-burgers",
     "olaclick",
     "restaurant",
     "notifications",
     "postgresql"
   ],
-  "author": "OlaClick Analytics Team",
+  "author": "Blast Smash Burgers",
   "license": "MIT",
   "dependencies": {
     "@vitejs/plugin-vue": "^4.5.0",

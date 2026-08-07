@@ -3,8 +3,8 @@
     <!-- Header -->
     <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
       <div>
-        <h2 class="text-xl sm:text-2xl font-bold text-gray-900">{{ $t('admin.title') }}</h2>
-        <p class="text-sm sm:text-base text-gray-600">{{ $t('admin.subtitle') }}</p>
+        <h2 class="text-xl sm:text-2xl font-bold text-fg-strong">{{ $t('admin.title') }}</h2>
+        <p class="text-sm sm:text-base text-fg-muted">{{ $t('admin.subtitle') }}</p>
       </div>
       <button @click="openCreateUserModal" class="btn btn-primary text-sm sm:text-base">
         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -20,15 +20,15 @@
         <div class="card-body">
           <div class="flex items-center">
             <div class="flex-shrink-0">
-              <div class="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center">
-                <svg class="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div class="w-8 h-8 bg-tint rounded-lg flex items-center justify-center">
+                <svg class="w-5 h-5 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M15 11a2 2 0 11-4 0 2 2 0 014 0z"></path>
                 </svg>
               </div>
             </div>
             <div class="ml-3 min-w-0 flex-1">
-              <p class="text-xs sm:text-sm font-medium text-gray-500">{{ $t('admin.totalUsers') }}</p>
-              <p class="text-xl sm:text-2xl font-bold text-gray-900">{{ users.length }}</p>
+              <p class="text-xs sm:text-sm font-medium text-fg-muted">{{ $t('admin.totalUsers') }}</p>
+              <p class="text-xl sm:text-2xl font-bold text-fg-strong">{{ users.length }}</p>
             </div>
           </div>
         </div>
@@ -38,15 +38,15 @@
         <div class="card-body">
           <div class="flex items-center">
             <div class="flex-shrink-0">
-              <div class="w-8 h-8 bg-success-100 rounded-lg flex items-center justify-center">
+              <div class="w-8 h-8 bg-success-bg rounded-lg flex items-center justify-center">
                 <svg class="w-5 h-5 text-success-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                 </svg>
               </div>
             </div>
             <div class="ml-3 min-w-0 flex-1">
-              <p class="text-xs sm:text-sm font-medium text-gray-500">{{ $t('admin.activeUsers') }}</p>
-              <p class="text-xl sm:text-2xl font-bold text-gray-900">{{ activeUsers }}</p>
+              <p class="text-xs sm:text-sm font-medium text-fg-muted">{{ $t('admin.activeUsers') }}</p>
+              <p class="text-xl sm:text-2xl font-bold text-fg-strong">{{ activeUsers }}</p>
             </div>
           </div>
         </div>
@@ -56,15 +56,15 @@
         <div class="card-body">
           <div class="flex items-center">
             <div class="flex-shrink-0">
-              <div class="w-8 h-8 bg-warning-100 rounded-lg flex items-center justify-center">
+              <div class="w-8 h-8 bg-warning-bg rounded-lg flex items-center justify-center">
                 <svg class="w-5 h-5 text-warning-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C20.832 18.477 19.246 18 17.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
                 </svg>
               </div>
             </div>
             <div class="ml-3 min-w-0 flex-1">
-              <p class="text-xs sm:text-sm font-medium text-gray-500">{{ $t('admin.admins') }}</p>
-              <p class="text-xl sm:text-2xl font-bold text-gray-900">{{ adminUsers }}</p>
+              <p class="text-xs sm:text-sm font-medium text-fg-muted">{{ $t('admin.admins') }}</p>
+              <p class="text-xl sm:text-2xl font-bold text-fg-strong">{{ adminUsers }}</p>
             </div>
           </div>
         </div>
@@ -74,15 +74,15 @@
         <div class="card-body">
           <div class="flex items-center">
             <div class="flex-shrink-0">
-              <div class="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
-                <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div class="w-8 h-8 bg-surface-2 rounded-lg flex items-center justify-center">
+                <svg class="w-5 h-5 text-fg-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
                 </svg>
               </div>
             </div>
             <div class="ml-3 min-w-0 flex-1">
-              <p class="text-xs sm:text-sm font-medium text-gray-500">{{ $t('admin.totalAccounts') }}</p>
-              <p class="text-xl sm:text-2xl font-bold text-gray-900">{{ totalAccounts }}</p>
+              <p class="text-xs sm:text-sm font-medium text-fg-muted">{{ $t('admin.totalAccounts') }}</p>
+              <p class="text-xl sm:text-2xl font-bold text-fg-strong">{{ totalAccounts }}</p>
             </div>
           </div>
         </div>
@@ -135,15 +135,15 @@
             <div class="flex items-center justify-between mb-3">
               <div class="flex items-center space-x-3">
                 <div class="flex-shrink-0 h-10 w-10">
-                  <div class="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center">
-                    <span class="text-sm font-medium text-primary-600">
+                  <div class="h-10 w-10 rounded-full bg-tint flex items-center justify-center">
+                    <span class="text-sm font-medium text-brand">
                       {{ user.name.charAt(0).toUpperCase() }}
                     </span>
                   </div>
                 </div>
                 <div class="min-w-0 flex-1">
-                  <div class="text-sm font-medium text-gray-900 truncate">{{ user.name }}</div>
-                  <div class="text-xs text-gray-500 truncate hidden sm:block">{{ user.email }}</div>
+                  <div class="text-sm font-medium text-fg-strong truncate">{{ user.name }}</div>
+                  <div class="text-xs text-fg-muted truncate hidden sm:block">{{ user.email }}</div>
                 </div>
               </div>
               <span class="badge" :class="user.is_active ? 'badge-success' : 'badge-gray'">
@@ -156,7 +156,7 @@
                 {{ user.role?.replace('-', ' ') }}
               </span>
               <ContractStatusBadge v-if="user.role === 'employee'" :status="contractStatusFor(user)" size="sm" />
-              <span class="text-xs text-gray-500">{{ $t('admin.company') }}: {{ user.company?.name || '—' }}</span>
+              <span class="text-xs text-fg-muted">{{ $t('admin.company') }}: {{ user.company?.name || '—' }}</span>
             </div>
             
             <div class="grid grid-cols-2 gap-2 mt-2">
@@ -190,15 +190,15 @@
                 <td>
                   <div class="flex items-center">
                     <div class="flex-shrink-0 h-10 w-10">
-                      <div class="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center">
-                        <span class="text-sm font-medium text-primary-600">
+                      <div class="h-10 w-10 rounded-full bg-tint flex items-center justify-center">
+                        <span class="text-sm font-medium text-brand">
                           {{ user.name.charAt(0).toUpperCase() }}
                         </span>
                       </div>
                     </div>
                     <div class="ml-4">
-                      <div class="text-sm font-medium text-gray-900">{{ user.name }}</div>
-                      <div class="text-sm text-gray-500">{{ user.email }}</div>
+                      <div class="text-sm font-medium text-fg-strong">{{ user.name }}</div>
+                      <div class="text-sm text-fg-muted">{{ user.email }}</div>
                     </div>
                   </div>
                 </td>
@@ -216,7 +216,7 @@
                   </span>
                 </td>
                 <td>
-                  <div class="text-sm text-gray-900">{{ user.company?.name || '—' }}</div>
+                  <div class="text-sm text-fg-strong">{{ user.company?.name || '—' }}</div>
                 </td>
                 <td>
                   <div class="flex items-center gap-1">
@@ -237,7 +237,7 @@
                   </select>
                 </td>
                 <td>
-                  <div class="text-sm text-gray-900">
+                  <div class="text-sm text-fg-strong">
                     {{ user.last_login ? formatDate(user.last_login) : $t('common.never') }}
                   </div>
                 </td>

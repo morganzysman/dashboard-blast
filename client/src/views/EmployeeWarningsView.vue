@@ -108,7 +108,7 @@
                   </span>
                 </div>
                 <div>
-                  <h3 class="font-semibold text-gray-900 dark:text-gray-100">{{ warning.warning_motive }}</h3>
+                  <h3 class="heading-plain text-gray-900 dark:text-gray-100">{{ warning.warning_motive }}</h3>
                   <p class="text-sm text-gray-600 dark:text-gray-400">{{ getWarningCategoryName(warning.warning_category) }}</p>
                 </div>
               </div>
@@ -166,7 +166,7 @@
         
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div v-for="(category, key) in warningCategories" :key="key" class="border rounded-lg p-4 dark:border-gray-700">
-            <h3 class="font-medium text-gray-900 dark:text-gray-100 mb-2">{{ category.name }}</h3>
+            <h3 class="heading-plain text-gray-900 dark:text-gray-100 mb-2">{{ category.name }}</h3>
             <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
               <li v-for="motive in category.motives.slice(0, 3)" :key="motive" class="flex items-center">
                 <span class="w-1.5 h-1.5 bg-gray-400 rounded-full mr-2"></span>

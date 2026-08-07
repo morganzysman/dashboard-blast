@@ -2,17 +2,17 @@
   <div class="space-y-6">
     <!-- Page Header -->
     <div>
-      <h1 class="text-2xl font-bold text-gray-900">{{ $t('rentability.title') }}</h1>
-      <p class="text-sm text-gray-600 mt-1">{{ $t('rentability.subtitle') }}</p>
-      <p class="text-xs text-gray-500 mt-2 max-w-2xl leading-relaxed">{{ $t('rentability.perAccountNote') }}</p>
+      <h1 class="text-2xl font-bold text-fg-strong">{{ $t('rentability.title') }}</h1>
+      <p class="text-sm text-fg-muted mt-1">{{ $t('rentability.subtitle') }}</p>
+      <p class="text-xs text-fg-muted mt-2 max-w-2xl leading-relaxed">{{ $t('rentability.perAccountNote') }}</p>
     </div>
 
     <!-- Add account (admins only) -->
     <div v-if="canManageAccounts" class="card">
       <div class="card-body space-y-3">
         <div>
-          <h2 class="text-lg font-medium text-gray-900">{{ $t('rentability.addAccountTitle') }}</h2>
-          <p class="text-sm text-gray-500">{{ $t('rentability.addAccountHint') }}</p>
+          <h2 class="text-lg font-medium text-fg-strong">{{ $t('rentability.addAccountTitle') }}</h2>
+          <p class="text-sm text-fg-muted">{{ $t('rentability.addAccountHint') }}</p>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-4 gap-2 items-end">
           <div>
@@ -59,20 +59,20 @@
     <div v-if="loading" class="card">
       <div class="card-body text-center py-12">
         <div class="loading-spinner mx-auto mb-4"></div>
-        <p class="text-gray-600">{{ $t('rentability.loading') }}</p>
+        <p class="text-fg-muted">{{ $t('rentability.loading') }}</p>
       </div>
     </div>
 
     <!-- Error State -->
-    <div v-if="error" class="card border-red-200 bg-red-50">
+    <div v-if="error" class="card border-red-200 bg-error-bg">
       <div class="card-body text-center py-12">
-        <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-          <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="w-16 h-16 bg-error-bg rounded-full flex items-center justify-center mx-auto mb-4">
+          <svg class="w-8 h-8 text-error" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
           </svg>
         </div>
-        <h3 class="text-lg font-medium text-red-900 mb-2">{{ $t('rentability.failedToLoadUtility') }}</h3>
-        <p class="text-red-700 mb-4">{{ error }}</p>
+        <h3 class="text-lg font-medium text-error mb-2">{{ $t('rentability.failedToLoadUtility') }}</h3>
+        <p class="text-error mb-4">{{ error }}</p>
         <button @click="fetchUtilityCosts" class="btn-primary">{{ $t('common.tryAgain') }}</button>
       </div>
     </div>
@@ -83,8 +83,8 @@
         <div class="card-body space-y-4">
           <div class="border-b border-gray-100 pb-3 flex items-start justify-between gap-2">
             <div>
-              <h2 class="text-lg font-medium text-gray-900">{{ row.account_name }}</h2>
-              <p class="text-sm text-gray-500 font-mono">{{ row.company_token }}</p>
+              <h2 class="heading-plain text-lg text-fg-strong">{{ row.account_name }}</h2>
+              <p class="text-sm text-fg-muted font-mono">{{ row.company_token }}</p>
             </div>
             <button
               class="btn btn-outline btn-sm whitespace-nowrap"
@@ -97,7 +97,7 @@
 
           <!-- Module: Rentability (utility / fixed costs) -->
           <section class="rounded-md border border-gray-200 p-3 space-y-2" style="background: var(--surface-1);">
-            <h3 class="text-xs font-semibold text-gray-600 uppercase tracking-wider flex items-center gap-1.5">
+            <h3 class="text-xs font-semibold text-fg-muted uppercase tracking-wider flex items-center gap-1.5">
               {{ $t('rentability.moduleRentability') }}
             </h3>
             <AccountRentabilitySettings
@@ -113,7 +113,7 @@
 
           <!-- Module: Payments -->
           <section class="rounded-md border border-gray-200 p-3 space-y-2" style="background: var(--surface-1);">
-            <h3 class="text-xs font-semibold text-gray-600 uppercase tracking-wider flex items-center gap-1.5">
+            <h3 class="text-xs font-semibold text-fg-muted uppercase tracking-wider flex items-center gap-1.5">
               {{ $t('rentability.modulePayments') }}
             </h3>
             <AccountRentabilitySettings
@@ -127,7 +127,7 @@
 
           <!-- Module: Contract / employer legal data (per account) -->
           <section class="rounded-md border border-gray-200 p-3 space-y-2" style="background: var(--surface-1);">
-            <h3 class="text-xs font-semibold text-gray-600 uppercase tracking-wider flex items-center gap-1.5">
+            <h3 class="text-xs font-semibold text-fg-muted uppercase tracking-wider flex items-center gap-1.5">
               {{ $t('rentability.moduleContract') }}
             </h3>
             <AccountContractSettings
@@ -147,7 +147,7 @@
             class="rounded-md border border-gray-200 p-3 space-y-2"
             style="background: var(--surface-1);"
           >
-            <h3 class="text-xs font-semibold text-gray-600 uppercase tracking-wider flex items-center gap-1.5">
+            <h3 class="text-xs font-semibold text-fg-muted uppercase tracking-wider flex items-center gap-1.5">
               {{ $t('rentability.moduleApiAccess') }}
             </h3>
             <AccountApiSettings
@@ -162,7 +162,7 @@
       </div>
 
       <div v-if="allAccountCards.length === 0" class="col-span-full card border-dashed">
-        <div class="card-body text-center py-12 text-gray-600">
+        <div class="card-body text-center py-12 text-fg-muted">
           {{ $t('rentability.noAccountsToConfigure') }}
         </div>
       </div>

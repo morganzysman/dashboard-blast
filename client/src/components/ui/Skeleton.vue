@@ -6,7 +6,7 @@
 const props = defineProps({
   class: { type: String, default: '' }
 })
-const skeletonClass = `animate-pulse bg-gray-200 dark:bg-gray-700 rounded ${props.class}`
+const skeletonClass = `animate-pulse bg-surface-2 rounded ${props.class}`
 </script>
 
 <style scoped>

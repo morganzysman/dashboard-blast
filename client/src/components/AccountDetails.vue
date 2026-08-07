@@ -1,35 +1,35 @@
 <template>
   <div class="space-y-4">
-    <h3 class="text-base sm:text-lg font-medium text-gray-900">{{ $t('dashboard.accountDetails') }}</h3>
+    <h3 class="text-base sm:text-lg font-medium text-fg-strong">{{ $t('dashboard.accountDetails') }}</h3>
 
     <!-- Loading skeletons -->
     <div v-if="loading" class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
       <div v-for="n in 4" :key="`skeleton-${n}`" class="card">
         <div class="card-body">
           <div class="flex items-center gap-2 mb-4 animate-pulse">
-            <div class="h-5 w-14 bg-gray-200 rounded-full"></div>
-            <div class="h-4 w-40 bg-gray-200 rounded"></div>
+            <div class="h-5 w-14 bg-surface-2 rounded-full"></div>
+            <div class="h-4 w-40 bg-surface-2 rounded"></div>
           </div>
           <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 animate-pulse">
-            <div class="bg-gray-50 rounded-lg p-3 text-center">
-              <div class="h-5 bg-gray-200 rounded mb-1"></div>
-              <div class="h-3 bg-gray-200 rounded"></div>
+            <div class="bg-surface-2 rounded-lg p-3 text-center">
+              <div class="h-5 bg-surface-2 rounded mb-1"></div>
+              <div class="h-3 bg-surface-2 rounded"></div>
             </div>
-            <div class="bg-gray-50 rounded-lg p-3 text-center">
-              <div class="h-5 bg-gray-200 rounded mb-1"></div>
-              <div class="h-3 bg-gray-200 rounded"></div>
+            <div class="bg-surface-2 rounded-lg p-3 text-center">
+              <div class="h-5 bg-surface-2 rounded mb-1"></div>
+              <div class="h-3 bg-surface-2 rounded"></div>
             </div>
-            <div class="bg-gray-50 rounded-lg p-3 text-center">
-              <div class="h-5 bg-gray-200 rounded mb-1"></div>
-              <div class="h-3 bg-gray-200 rounded"></div>
+            <div class="bg-surface-2 rounded-lg p-3 text-center">
+              <div class="h-5 bg-surface-2 rounded mb-1"></div>
+              <div class="h-3 bg-surface-2 rounded"></div>
             </div>
-            <div class="bg-gray-50 rounded-lg p-3 text-center">
-              <div class="h-5 bg-gray-200 rounded mb-1"></div>
-              <div class="h-3 bg-gray-200 rounded"></div>
+            <div class="bg-surface-2 rounded-lg p-3 text-center">
+              <div class="h-5 bg-surface-2 rounded mb-1"></div>
+              <div class="h-3 bg-surface-2 rounded"></div>
             </div>
-            <div class="bg-gray-50 rounded-lg p-3 text-center">
-              <div class="h-5 bg-gray-200 rounded mb-1"></div>
-              <div class="h-3 bg-gray-200 rounded"></div>
+            <div class="bg-surface-2 rounded-lg p-3 text-center">
+              <div class="h-5 bg-surface-2 rounded mb-1"></div>
+              <div class="h-3 bg-surface-2 rounded"></div>
             </div>
           </div>
         </div>
@@ -46,7 +46,7 @@
               {{ account.success ? $t('common.active') : $t('common.error') }}
             </span>
             <div class="relative group">
-              <h4 class="font-medium text-gray-900 text-sm sm:text-base truncate cursor-pointer" :title="account.account">
+              <h4 class="font-medium text-fg-strong text-sm sm:text-base truncate cursor-pointer" :title="account.account">
                 {{ account.account }}
               </h4>
               <!-- Custom tooltip -->
@@ -60,20 +60,20 @@
           <div class="mb-4">
             <details :open="isDesktop" class="rounded-lg border border-gray-100 lg:border-0 lg:rounded-none">
               <summary
-                class="lg:hidden flex items-center justify-between px-2 py-2 text-sm font-medium text-gray-800 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden border-b border-gray-100 mb-2"
+                class="lg:hidden flex items-center justify-between px-2 py-2 text-sm font-medium text-fg-strong cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden border-b border-gray-100 mb-2"
               >
                 <span>{{ $t('account.accountKpiToggle') }}</span>
-                <span class="text-gray-400 text-xs" aria-hidden="true">▼</span>
+                <span class="text-fg-faint text-xs" aria-hidden="true">▼</span>
               </summary>
               <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-              <div class="bg-indigo-50 rounded-lg p-3 text-center">
-                <p class="text-sm sm:text-lg font-bold text-indigo-600 truncate">{{ formatCurrency(getAccountAvgTicket(account)) }}</p>
-                <p class="text-xs text-indigo-500">{{ $t('dashboard.avgTicket') }}</p>
+              <div class="bg-tint rounded-lg p-3 text-center">
+                <p class="text-sm sm:text-lg font-bold text-brand truncate">{{ formatCurrency(getAccountAvgTicket(account)) }}</p>
+                <p class="text-xs text-brand">{{ $t('dashboard.avgTicket') }}</p>
               </div>
 
-              <div class="bg-amber-50 rounded-lg p-3 text-center">
-                <p class="text-sm sm:text-lg font-bold text-amber-600 truncate">{{ formatCurrency(getAccountTotalTips(account)) }}</p>
-                <p class="text-xs text-amber-500">{{ $t('dashboard.tips') }}</p>
+              <div class="bg-warning-bg rounded-lg p-3 text-center">
+                <p class="text-sm sm:text-lg font-bold text-warning truncate">{{ formatCurrency(getAccountTotalTips(account)) }}</p>
+                <p class="text-xs text-warning">{{ $t('dashboard.tips') }}</p>
               </div>
 
               <!-- Daily Gain KPI -->
@@ -94,13 +94,13 @@
                   <div v-if="account.success && account.data?.data" class="space-y-4">
                     <!-- Revenue by Payment Method -->
                     <div>
-                      <h5 class="font-semibold text-blue-300 mb-3 text-sm">{{ $t('account.revenueByMethod') }}:</h5>
+                      <h5 class="font-semibold text-brand mb-3 text-sm">{{ $t('account.revenueByMethod') }}:</h5>
                       <div v-for="method in accountBreakdowns.get(account.accountKey)?.paymentMethodBreakdown || []" :key="method.method" class="mb-2">
                         <div class="flex justify-between items-center mb-1">
                           <span class="capitalize text-sm font-medium">{{ method.method }}:</span>
-                          <span class="text-green-300 font-bold">{{ formatCurrency(method.netRevenue) }}</span>
+                          <span class="text-success font-bold">{{ formatCurrency(method.netRevenue) }}</span>
                         </div>
-                        <div class="text-xs text-gray-400 text-right">
+                        <div class="text-xs text-fg-faint text-right">
                           {{ formatCurrency(method.revenue) }} 
                           <span v-if="method.fees > 0">- {{ formatCurrency(method.fees) }} fees</span>
                         </div>
@@ -108,38 +108,38 @@
                       <!-- Total Revenue -->
                       <div class="border-t border-blue-700 pt-2 mt-3">
                         <div class="flex justify-between items-center">
-                          <span class="text-sm font-bold text-blue-300">{{ $t('account.totalRevenue') }}:</span>
-                          <span class="text-blue-300 font-bold">{{ formatCurrency(accountBreakdowns.get(account.accountKey)?.totalRevenue || 0) }}</span>
+                          <span class="text-sm font-bold text-brand">{{ $t('account.totalRevenue') }}:</span>
+                          <span class="text-brand font-bold">{{ formatCurrency(accountBreakdowns.get(account.accountKey)?.totalRevenue || 0) }}</span>
                         </div>
                       </div>
                     </div>
                     
                     <!-- Cost Breakdown -->
                     <div class="border-t border-gray-700 pt-3">
-                      <h5 class="font-semibold text-red-300 mb-3 text-sm">{{ $t('account.costs') }}:</h5>
+                      <h5 class="font-semibold text-error mb-3 text-sm">{{ $t('account.costs') }}:</h5>
                       <div class="space-y-2">
                         <div class="flex justify-between items-center">
                           <span class="text-sm">{{ $t('account.paymentFees') }}:</span>
-                          <span class="text-red-300 font-bold">-{{ formatCurrency(accountBreakdowns.get(account.accountKey)?.paymentFees || 0) }}</span>
+                          <span class="text-error font-bold">-{{ formatCurrency(accountBreakdowns.get(account.accountKey)?.paymentFees || 0) }}</span>
                         </div>
                         <div class="flex justify-between items-center">
                           <span class="text-sm">{{ $t('account.foodCosts') }}:</span>
-                          <span class="text-red-300 font-bold">-{{ formatCurrency(accountBreakdowns.get(account.accountKey)?.foodCosts || 0) }}</span>
+                          <span class="text-error font-bold">-{{ formatCurrency(accountBreakdowns.get(account.accountKey)?.foodCosts || 0) }}</span>
                         </div>
                         <div class="flex justify-between items-center">
                           <span class="text-sm">{{ $t('account.utilityCosts', { days: accountBreakdowns.get(account.accountKey)?.daysInPeriod || 1 }) }}:</span>
-                          <span class="text-red-300 font-bold">-{{ formatCurrency(accountBreakdowns.get(account.accountKey)?.utilityCosts || 0) }}</span>
+                          <span class="text-error font-bold">-{{ formatCurrency(accountBreakdowns.get(account.accountKey)?.utilityCosts || 0) }}</span>
                         </div>
                         <div class="flex justify-between items-center">
                           <span class="text-sm">{{ $t('account.payroll', { entries: accountBreakdowns.get(account.accountKey)?.payrollEntries || 0 }) }}:</span>
-                          <span class="text-red-300 font-bold">-{{ formatCurrency(accountBreakdowns.get(account.accountKey)?.payrollCosts || 0) }}</span>
+                          <span class="text-error font-bold">-{{ formatCurrency(accountBreakdowns.get(account.accountKey)?.payrollCosts || 0) }}</span>
                         </div>
                       </div>
                       <!-- Total Costs -->
                       <div class="border-t border-red-700 pt-2 mt-3">
                         <div class="flex justify-between items-center">
-                          <span class="text-sm font-bold text-red-300">{{ $t('account.totalCosts') }}:</span>
-                          <span class="text-red-300 font-bold">-{{ formatCurrency(accountBreakdowns.get(account.accountKey)?.totalCosts || 0) }}</span>
+                          <span class="text-sm font-bold text-error">{{ $t('account.totalCosts') }}:</span>
+                          <span class="text-error font-bold">-{{ formatCurrency(accountBreakdowns.get(account.accountKey)?.totalCosts || 0) }}</span>
                         </div>
                       </div>
                     </div>
@@ -148,14 +148,14 @@
                     <div class="border-t-2 border-gray-600 pt-3 mt-3">
                       <div class="flex justify-between items-center">
                         <span class="text-lg font-bold">{{ $t('account.finalGain') }}:</span>
-                        <span class="text-lg font-bold" :class="(accountDailyGains.get(account.accountKey) || 0) > 0 ? 'text-green-300' : 'text-red-300'">
+                        <span class="text-lg font-bold" :class="(accountDailyGains.get(account.accountKey) || 0) > 0 ? 'text-success' : 'text-error'">
                           {{ formatCurrency(accountBreakdowns.get(account.accountKey)?.finalGain || 0) }}
                         </span>
                       </div>
                     </div>
                   </div>
                   
-                  <div v-else class="text-gray-400 text-center">
+                  <div v-else class="text-fg-faint text-center">
                     {{ $t('account.noPaymentData') }}
                   </div>
                 </Popover>
@@ -168,8 +168,8 @@
           <div v-if="account.success && account.data" class="space-y-3">
           
             <!-- Account Payment Methods -->
-            <div v-if="account.data.data && account.data.data.length > 0" class="bg-white border border-gray-100 rounded-lg p-3">
-              <h5 class="text-xs font-medium text-gray-700 mb-2 flex items-center">
+            <div v-if="account.data.data && account.data.data.length > 0" class="bg-surface-1 border border-gray-100 rounded-lg p-3">
+              <h5 class="text-xs font-medium text-fg mb-2 flex items-center">
                 <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
                 </svg>
@@ -177,14 +177,14 @@
               </h5>
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div v-for="method in getAccountPaymentMethods(account)" :key="method.name" 
-                     class="bg-gray-50 rounded p-2">
+                     class="bg-surface-2 rounded p-2">
                   <div class="flex items-center space-x-2 mb-1">
                     <div class="w-2 h-2 rounded-full flex-shrink-0" :style="{ backgroundColor: getPaymentMethodColor(method.name) }"></div>
-                    <p class="font-medium text-gray-900 capitalize text-xs truncate">{{ method.name }}</p>
+                    <p class="font-medium text-fg-strong capitalize text-xs truncate">{{ method.name }}</p>
                   </div>
                   <div class="space-y-0.5">
-                    <p class="font-bold text-gray-900 text-xs">{{ formatCurrency(method.sum) }}</p>
-                    <div class="flex items-center justify-between text-xs text-gray-500">
+                    <p class="font-bold text-fg-strong text-xs">{{ formatCurrency(method.sum) }}</p>
+                    <div class="flex items-center justify-between text-xs text-fg-muted">
                       <span>{{ method.count }} {{ $t('account.transactions') }}</span>
                       <span>{{ method.percent.toFixed(1) }}%</span>
                     </div>
@@ -194,9 +194,9 @@
             </div>
 
                       <!-- Account Service Metrics -->
-                      <div v-if="account.serviceMetrics" class="bg-white border border-gray-100 rounded-lg p-3 mt-3">
+                      <div v-if="account.serviceMetrics" class="bg-surface-1 border border-gray-100 rounded-lg p-3 mt-3">
               <div class="flex items-center justify-between mb-2">
-                <h5 class="text-xs font-medium text-gray-700 flex items-center">
+                <h5 class="text-xs font-medium text-fg flex items-center">
                   <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
                   </svg>
@@ -204,7 +204,7 @@
                 </h5>
                 <button 
                   @click="toggleServiceMetricsCollapse(account.accountKey)" 
-                  class="flex items-center space-x-1 text-xs text-gray-600 hover:text-gray-900 transition-colors"
+                  class="flex items-center space-x-1 text-xs text-fg-muted hover:text-gray-900 transition-colors"
                 >
                   <svg 
                     class="w-3 h-3 transition-transform" 
@@ -219,26 +219,26 @@
                 </button>
               </div>
               <div v-show="!isServiceMetricsCollapsed(account.accountKey)" class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <div v-for="type in ['TABLE','ONSITE','TAKEAWAY','DELIVERY']" :key="type" class="bg-gray-50 rounded p-2">
+                <div v-for="type in ['TABLE','ONSITE','TAKEAWAY','DELIVERY']" :key="type" class="bg-surface-2 rounded p-2">
                   <div class="flex items-center space-x-2 mb-1">
                     <div class="w-2 h-2 rounded-full flex-shrink-0" :style="{ backgroundColor: getServiceColor(type) }"></div>
-                    <p class="font-medium text-gray-900 text-xs">{{ type }}</p>
+                    <p class="font-medium text-fg-strong text-xs">{{ type }}</p>
                   </div>
                   <div class="space-y-0.5">
-                    <div class="flex items-center justify-between text-xs text-gray-500">
+                    <div class="flex items-center justify-between text-xs text-fg-muted">
                       <span>{{ $t('dashboard.totalOrders') }}</span>
                       <div class="text-right">
-                        <span class="font-bold text-gray-900">{{ account.serviceMetrics[type]?.orders?.current_period ?? 0 }}</span>
-                        <span class="text-gray-400 ml-1">({{ getAccountServiceOrderPercentage(account, type) }}%)</span>
+                        <span class="font-bold text-fg-strong">{{ account.serviceMetrics[type]?.orders?.current_period ?? 0 }}</span>
+                        <span class="text-fg-faint ml-1">({{ getAccountServiceOrderPercentage(account, type) }}%)</span>
                       </div>
                     </div>
-                    <div class="flex items-center justify-between text-xs text-gray-500">
+                    <div class="flex items-center justify-between text-xs text-fg-muted">
                       <span>{{ $t('rentability.revenue') }}</span>
-                      <span class="font-bold text-gray-900">{{ formatCurrency(account.serviceMetrics[type]?.sales?.current_period ?? 0) }}</span>
+                      <span class="font-bold text-fg-strong">{{ formatCurrency(account.serviceMetrics[type]?.sales?.current_period ?? 0) }}</span>
                     </div>
-                    <div class="flex items-center justify-between text-xs text-gray-500">
+                    <div class="flex items-center justify-between text-xs text-fg-muted">
                       <span>{{ $t('account.avgTicket') }}</span>
-                      <span class="font-bold text-gray-900">{{ formatCurrency(account.serviceMetrics[type]?.average_ticket?.current_period ?? 0) }}</span>
+                      <span class="font-bold text-fg-strong">{{ formatCurrency(account.serviceMetrics[type]?.average_ticket?.current_period ?? 0) }}</span>
                     </div>
                   </div>
                 </div>
@@ -246,9 +246,9 @@
             </div>
             
             <!-- Service Metrics Not Available Message -->
-            <div v-else-if="account.success && account.data" class="bg-white border border-gray-100 rounded-lg p-3 mt-3">
+            <div v-else-if="account.success && account.data" class="bg-surface-1 border border-gray-100 rounded-lg p-3 mt-3">
               <div class="flex items-center justify-between mb-2">
-                <h5 class="text-xs font-medium text-gray-700 flex items-center">
+                <h5 class="text-xs font-medium text-fg flex items-center">
                   <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
                   </svg>
@@ -256,15 +256,15 @@
                 </h5>
               </div>
               <div class="text-center py-4">
-                <p class="text-xs sm:text-sm text-gray-500">{{ $t('account.serviceMetricsInfo') }}</p>
-                <p class="text-xs sm:text-sm text-gray-400 mt-1">{{ $t('dashboard.switchDateRangeMessage') }}</p>
+                <p class="text-xs sm:text-sm text-fg-muted">{{ $t('account.serviceMetricsInfo') }}</p>
+                <p class="text-xs sm:text-sm text-fg-faint mt-1">{{ $t('dashboard.switchDateRangeMessage') }}</p>
               </div>
             </div>
 
           </div>
 
           <div v-else class="text-center py-4">
-            <p class="text-xs sm:text-sm text-gray-500">{{ account.error || $t('common.unableToFetchData') }}</p>
+            <p class="text-xs sm:text-sm text-fg-muted">{{ account.error || $t('common.unableToFetchData') }}</p>
           </div>
         </div>
       </div>
@@ -272,7 +272,7 @@
 
     <!-- Empty state -->
     <div v-else class="card">
-      <div class="card-body text-center text-sm text-gray-600">{{ $t('account.noAccountData') }}</div>
+      <div class="card-body text-center text-sm text-fg-muted">{{ $t('account.noAccountData') }}</div>
     </div>
   </div>
 </template>
@@ -280,6 +280,7 @@
 <script setup>
 import { ref, reactive, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { paymentMethodColor, serviceTypeColor, series, token } from '../utils/brandPalette'
 import { useAuthStore } from '../stores/auth'
 import { calculateDaysInPeriod as calcDays } from '../composables/useProfitability'
 import Popover from './ui/Popover.vue'
@@ -314,12 +315,12 @@ onBeforeUnmount(() => {
 })
 
 const paymentMethodColors = {
-  'cash': '#10B981',
-  'card': '#3B82F6', 
-  'bitcoin': '#F59E0B',
-  'yape': '#8B5CF6',
-  'plin': '#06B6D4',
-  'transfer': '#EF4444'
+  'cash': '#075A2A',
+  'card': '#50C293',
+  'bitcoin': '#C7A34A',
+  'yape': '#5F4A8C',
+  'plin': '#2F8E63',
+  'transfer': '#B7382A'
 }
 
 // Server provides profitability; no client-side cost fetching required
@@ -675,18 +676,11 @@ const formatCurrency = (amount) => {
 }
 
 const getPaymentMethodColor = (methodName) => {
-  return paymentMethodColors[methodName.toLowerCase()] || '#6B7280'
+  return paymentMethodColor(methodName)
 }
 
 const getServiceColor = (serviceType) => {
-  const colors = {
-    'TABLE': '#4F46E5', // Indigo
-    'ONSITE': '#10B981', // Green
-    'TAKEAWAY': '#F59E0B', // Amber
-    'DELIVERY': '#EF4444', // Red
-    'OTHER': '#6B7280'
-  }
-  return colors[serviceType] || '#6B7280' // Default color
+  return serviceTypeColor(serviceType)
 }
 
 
@@ -786,11 +780,4 @@ const toggleServiceMetricsCollapse = (accountKey) => {
 </script>
 
 <style scoped>
-.badge-success {
-  @apply bg-green-100 text-green-800;
-}
-
-.badge-danger {
-  @apply bg-red-100 text-red-800;
-}
 </style>

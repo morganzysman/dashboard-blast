@@ -9,7 +9,12 @@
                 class="mobile-menu-button">
           <MaterialIcon name="menu" :size="24" />
         </button>
-        
+
+        <!-- Compact mark while the sidebar is off-canvas -->
+        <div class="md:hidden flex-shrink-0">
+          <BlastLogo variant="icon" :height="22" style="color: var(--nav-active-fg);" />
+        </div>
+
         <!-- Page title -->
         <div class="min-w-0 flex-1">
           <h1 class="page-title truncate">
@@ -32,7 +37,7 @@
             :title="$t('navigation.language')"
           >
             <MaterialIcon name="language" :size="18" />
-            <span class="hidden sm:inline uppercase">{{ currentLocale }}</span>
+            <span class="data hidden sm:inline uppercase">{{ currentLocale }}</span>
           </button>
           <Teleport to="body">
             <div v-if="showLangMenu" class="fixed w-40 overflow-hidden" style="z-index: 9999; background: var(--bg); border: 1px solid var(--border); border-radius: var(--r-lg); box-shadow: var(--shadow-pop);" :style="langDropdownPosition">
@@ -41,10 +46,10 @@
                 :key="lang.code"
                 class="w-full text-left px-3 py-2 text-sm flex items-center gap-2 transition-colors hover:bg-surface-2"
                 :class="currentLocale === lang.code ? 'font-medium' : ''"
-                :style="currentLocale === lang.code ? 'color: var(--brand-blue); background: var(--tint-blue);' : 'color: var(--fg1);'"
+                :style="currentLocale === lang.code ? 'color: var(--nav-active-fg); background: var(--accent-wash);' : 'color: var(--fg1);'"
                 @click="switchLanguage(lang.code)"
               >
-                <span class="uppercase text-xs font-semibold w-6" style="color: var(--fg3);">{{ lang.code }}</span>
+                <span class="data uppercase text-xs w-6" style="color: var(--fg3);">{{ lang.code }}</span>
                 <span>{{ lang.label }}</span>
               </button>
             </div>
@@ -70,14 +75,14 @@
             class="flex items-center space-x-2 sm:space-x-3 rounded-md px-2 sm:px-3 py-2 transition-colors duration-150"
             style="border: 1px solid var(--border);"
           >
-            <div class="h-8 w-8 rounded-full flex items-center justify-center flex-shrink-0" style="background: var(--tint-blue);">
-              <span class="text-sm font-medium" style="color: var(--brand-blue);">
+            <div class="h-8 w-8 rounded-full flex items-center justify-center flex-shrink-0" style="background: var(--accent-wash);">
+              <span class="display text-sm" style="color: var(--nav-active-fg);">
                 {{ authStore.user?.name?.charAt(0).toUpperCase() }}
               </span>
             </div>
             <div class="text-left hidden sm:block">
               <div class="flex items-center space-x-2">
-                <p class="text-sm font-medium" style="color: var(--fg1);">
+                <p class="text-sm font-semibold" style="color: var(--fg1);">
                   {{ authStore.user?.name }}
                 </p>
                 <span 
@@ -92,7 +97,7 @@
                   {{ authStore.user?.role?.replace('-', ' ') || $t('common.user') }}
                 </span>
               </div>
-              <p class="text-xs hidden md:block" style="color: var(--fg3);">
+              <p class="data text-[11px] hidden md:block" style="color: var(--fg3);">
                 {{ authStore.user?.email }}
               </p>
             </div>
@@ -133,6 +138,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import ChangePasswordModal from './ChangePasswordModal.vue'
 import MaterialIcon from './ui/MaterialIcon.vue'
+import BlastLogo from './ui/BlastLogo.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -225,7 +231,7 @@ const handleLogout = async () => {
   }
 }
 
-// Dark mode handling — driven by [data-theme="dark"] (OlaClick DS)
+// Dark mode handling — driven by [data-theme="dark"] (Fondo Verde Tattoo)
 const isDark = ref(document.documentElement.getAttribute('data-theme') === 'dark')
 const toggleDarkMode = () => {
   const root = document.documentElement

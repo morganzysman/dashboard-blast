@@ -5,9 +5,16 @@
 @tailwind utilities;
 
 /* ============================================================
-   OlaClick Design System — global base + components.
-   Border-led, solid surfaces. No gradients/blur in product UI.
-   All shared classes are theme-aware via CSS variables.
+   BLAST — Smash Burgers · global base + components.
+   Border-led, solid surfaces, cero improvisación.
+
+   Type system (three fonts, three roles):
+     Anton      → titulares. SIEMPRE mayúsculas, interlineado 1.10.
+                  Nunca minúsculas, nunca cursiva.
+     Quicksand  → cuerpo, subtítulos, botones. Nunca titulares grandes.
+     Space Mono → datos y labels: precios, fechas, hashtags, coords.
+
+   Menta nunca lleva sombra: se usa como acento, riel activo y foco.
    ============================================================ */
 
 @layer base {
@@ -19,7 +26,8 @@
   }
 
   body {
-    font-family: 'Roboto', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    font-family: var(--font-sans);
+    font-weight: 500;
     color: var(--fg1);
     background: var(--canvas);
     overflow-x: hidden;
@@ -34,6 +42,22 @@
     max-width: 100vw;
   }
 
+  /* Titulares: Anton, siempre mayúsculas, interlineado 1.10.
+     h4 y menores se quedan en Quicksand (subtítulos).
+     Headings that render user data opt out with `.heading-plain`. */
+  h1, h2, h3 {
+    font-family: var(--font-display);
+    font-weight: 400;
+    text-transform: uppercase;
+    line-height: 1.1;
+    letter-spacing: 0.005em;
+  }
+
+  h4, h5, h6 {
+    font-family: var(--font-sans);
+    font-weight: 700;
+  }
+
   /* Material Symbols defaults */
   .material-symbols-rounded {
     font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
@@ -46,7 +70,7 @@
     font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
   }
 
-  /* Min hit target on mobile (DS: 44px) */
+  /* Min hit target on mobile (44px) */
   @media (max-width: 640px) {
     button, .btn, input, select, textarea {
       @apply min-h-[44px];
@@ -58,6 +82,58 @@
 }
 
 @layer components {
+  /* ─── Type roles ───────────────────────────────────────────
+     `.display` is the Anton lockup: uppercase, tight leading.
+     `.data` is Space Mono for anything numeric or label-like. */
+  .display {
+    font-family: var(--font-display);
+    font-weight: 400;
+    text-transform: uppercase;
+    line-height: 1.1;
+    letter-spacing: 0.005em;
+  }
+
+  .data {
+    font-family: var(--font-mono);
+    font-weight: 400;
+    letter-spacing: 0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Labels de barra: Space Mono, mayúsculas, tracking abierto. */
+  .label-mono {
+    font-family: var(--font-mono);
+    font-weight: 400;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--fg3);
+  }
+
+  /* Escape hatch for headings that render user data (names, emails, motives):
+     Anton is uppercase-only, which would mangle them. */
+  .heading-plain {
+    font-family: var(--font-sans);
+    font-weight: 700;
+    text-transform: none;
+    letter-spacing: normal;
+    line-height: 1.35;
+  }
+
+  /* Precios y datos → Verde Tattoo. Hashtags → Verde Menta. */
+  .price {
+    font-family: var(--font-mono);
+    font-weight: 700;
+    color: var(--fg2);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .hashtag {
+    font-family: var(--font-mono);
+    font-weight: 400;
+    color: var(--accent);
+  }
+
   /* ─── Sidebar ─── */
   .sidebar {
     @apply fixed left-0 top-0 z-40 h-screen flex flex-col;
@@ -81,7 +157,7 @@
 
   .sidebar-header {
     @apply px-4 flex items-center;
-    height: 59px;
+    height: 64px;
     border-bottom: 1px solid var(--nav-border);
     @apply md:px-5;
   }
@@ -92,10 +168,10 @@
   }
 
   .sidebar-nav-item {
-    @apply flex items-center gap-2.5 px-3 text-sm rounded-md transition-colors duration-150;
-    min-height: 36px;
+    @apply relative flex items-center gap-2.5 px-3 text-sm rounded-md transition-colors duration-150;
+    min-height: 38px;
     color: var(--nav-text);
-    font-weight: 400;
+    font-weight: 600;
   }
   .sidebar-nav-item:hover {
     background: var(--nav-hover);
@@ -105,16 +181,37 @@
     .sidebar-nav-item { @apply min-h-[44px]; }
   }
 
+  /* Riel de menta a la izquierda del item activo — el acento identitario. */
   .sidebar-nav-item.active {
     background: var(--nav-active-bg);
     color: var(--nav-active-fg);
     font-weight: 700;
+  }
+  .sidebar-nav-item.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 7px;
+    bottom: 7px;
+    width: 3px;
+    border-radius: 0 var(--r-full) var(--r-full) 0;
+    background: var(--nav-active-rail);
   }
 
   .sidebar-nav-icon {
     @apply flex-shrink-0;
     width: 18px;
     height: 18px;
+  }
+
+  /* Section label inside the sidebar */
+  .sidebar-section {
+    @apply px-3 pt-4 pb-1.5;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--fg-muted);
   }
 
   /* ─── Main Content ─── */
@@ -127,23 +224,31 @@
     @apply md:ml-[236px];
   }
 
-  /* ─── Page Header (DS App Header, 50px) ─── */
+  /* ─── Page Header ─── */
   .page-header {
     @apply px-4 flex items-center;
-    min-height: 50px;
+    min-height: 56px;
     background: var(--nav-bg);
     border-bottom: 1px solid var(--border);
     @apply md:px-6;
   }
 
   .page-title {
-    @apply text-base font-bold;
-    color: var(--fg1);
-    @apply md:text-lg;
+    font-family: var(--font-display);
+    font-weight: 400;
+    text-transform: uppercase;
+    line-height: 1.1;
+    letter-spacing: 0.005em;
+    font-size: 18px;
+    color: var(--fg2);
+    @apply md:text-[22px];
   }
 
   .page-subtitle {
-    @apply mt-0.5 text-xs;
+    @apply mt-0.5;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.04em;
     color: var(--fg3);
   }
 
@@ -177,7 +282,7 @@
   }
 
   .dropdown-item {
-    @apply flex items-center px-3 py-2 text-sm transition-colors duration-150 rounded-md mx-1;
+    @apply flex items-center px-3 py-2 text-sm font-semibold transition-colors duration-150 rounded-md mx-1;
     color: var(--fg1);
     @apply min-h-[44px] md:min-h-[auto] md:px-3;
   }
@@ -185,10 +290,9 @@
     background: var(--surface-2);
   }
 
-  /* ─── Buttons ─── */
-  /* Variant/size classes carry the base layout too, so legacy markup that
-     uses e.g. `btn-primary btn-xs` without the base `btn` class still renders
-     as a proper button. Using `btn btn-primary` stays idempotent. */
+  /* ─── Buttons ───────────────────────────────────────────────
+     Quicksand 700. Variant classes carry the base layout too, so
+     legacy markup using only e.g. `btn-primary btn-xs` still renders. */
   .btn,
   .btn-primary,
   .btn-secondary,
@@ -198,7 +302,9 @@
   .btn-danger,
   .btn-success,
   .btn-warning {
-    @apply inline-flex items-center justify-center gap-2 text-sm font-medium transition-colors duration-150;
+    @apply inline-flex items-center justify-center gap-2 text-sm transition-colors duration-150;
+    font-family: var(--font-sans);
+    font-weight: 700;
     height: 40px;
     padding: 0 16px;
     border-radius: var(--r-btn);
@@ -229,57 +335,59 @@
     opacity: 0.4;
   }
 
+  /* Verde Tattoo sobre crema · Verde Menta sobre tattoo. */
   .btn-primary {
-    background: var(--brand-blue-alt);
-    color: #fff;
-    border-color: var(--brand-blue-alt);
+    background: var(--brand);
+    color: var(--brand-fg);
+    border-color: var(--brand);
   }
   .btn-primary:hover:not(:disabled) {
-    background: var(--brand-blue-press);
-    border-color: var(--brand-blue-press);
+    background: var(--brand-press);
+    border-color: var(--brand-press);
   }
 
   .btn-secondary {
-    background: var(--tint-blue);
-    color: var(--brand-blue-alt);
-    border-color: var(--tint-blue);
+    background: var(--accent-wash);
+    color: var(--fg2);
+    border-color: var(--accent-wash);
   }
   .btn-secondary:hover:not(:disabled) {
-    background: var(--brand-blue-alt);
-    color: #fff;
-    border-color: var(--brand-blue-alt);
+    background: var(--accent);
+    color: var(--accent-fg);
+    border-color: var(--accent);
   }
 
   .btn-outline {
-    background: var(--bg);
-    color: var(--brand-blue-alt);
-    border-color: var(--brand-blue-alt);
+    background: transparent;
+    color: var(--fg2);
+    border-color: var(--border-strong);
   }
   .btn-outline:hover:not(:disabled) {
-    background: var(--tint-blue);
+    background: var(--accent-wash);
   }
 
   .btn-ghost {
     background: transparent;
-    color: var(--brand-blue-alt);
+    color: var(--fg2);
     border-color: transparent;
   }
   .btn-ghost:hover:not(:disabled) {
-    background: var(--tint-blue);
+    background: var(--accent-wash);
   }
 
   .btn-plain {
     background: transparent;
-    color: var(--nav-muted);
+    color: var(--fg3);
     border-color: transparent;
   }
   .btn-plain:hover:not(:disabled) {
     background: var(--surface-2);
+    color: var(--fg1);
   }
 
   .btn-danger {
     background: var(--danger);
-    color: #fff;
+    color: var(--cream);
     border-color: var(--danger);
   }
   .btn-danger:hover:not(:disabled) {
@@ -287,22 +395,21 @@
   }
 
   .btn-success {
-    background: var(--brand-active-green);
-    color: #fff;
-    border-color: var(--brand-active-green);
+    background: var(--success);
+    color: var(--cream);
+    border-color: var(--success);
   }
   .btn-success:hover:not(:disabled) {
     filter: brightness(0.95);
   }
 
   .btn-warning {
-    background: var(--brand-orange);
-    color: #fff;
-    border-color: var(--brand-orange);
+    background: var(--warning);
+    color: var(--cream);
+    border-color: var(--warning);
   }
   .btn-warning:hover:not(:disabled) {
-    background: var(--brand-orange-deep);
-    border-color: var(--brand-orange-deep);
+    filter: brightness(0.95);
   }
 
   .btn-sm {
@@ -326,7 +433,7 @@
     font-size: 15px;
   }
 
-  /* ─── Cards ─── */
+  /* ─── Cards (losetas cerámicas, bordes acero) ─── */
   .card {
     background: var(--bg);
     border: 1px solid var(--border);
@@ -339,6 +446,18 @@
     @apply px-4 py-3;
     border-bottom: 1px solid var(--border);
     @apply sm:px-5 sm:py-4 md:px-6;
+  }
+
+  /* Section titles inside cards run in Anton. */
+  .card-header h1,
+  .card-header h2,
+  .card-header h3 {
+    font-family: var(--font-display);
+    font-weight: 400;
+    text-transform: uppercase;
+    line-height: 1.1;
+    letter-spacing: 0.005em;
+    color: var(--fg2);
   }
 
   .card-body {
@@ -354,13 +473,19 @@
 
   /* ─── Forms ─── */
   .form-label {
-    @apply block text-sm font-medium mb-1.5;
-    color: var(--fg2);
+    @apply block mb-1.5;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--fg3);
   }
 
   .form-input {
     @apply block w-full px-3.5 transition-colors duration-150;
     min-height: 44px;
+    font-family: var(--font-sans);
+    font-weight: 600;
     background: var(--bg);
     color: var(--fg1);
     border: 1px solid var(--border-input);
@@ -368,16 +493,19 @@
     @apply focus:outline-none;
   }
   .form-input::placeholder {
-    color: var(--fg3);
+    color: var(--fg-muted);
+    font-weight: 500;
   }
   .form-input:focus {
-    border-color: var(--border-strong);
+    border-color: var(--accent);
     box-shadow: var(--focus-ring);
   }
 
   .form-select {
     @apply block w-full px-3.5 transition-colors duration-150;
     min-height: 44px;
+    font-family: var(--font-sans);
+    font-weight: 600;
     background: var(--bg);
     color: var(--fg1);
     border: 1px solid var(--border-input);
@@ -385,7 +513,7 @@
     @apply focus:outline-none;
   }
   .form-select:focus {
-    border-color: var(--border-strong);
+    border-color: var(--accent);
     box-shadow: var(--focus-ring);
   }
 
@@ -396,8 +524,18 @@
   }
 
   .form-error {
-    @apply mt-1 text-xs;
+    @apply mt-1 text-xs font-semibold;
     color: var(--danger);
+  }
+
+  /* Numeric / date / money inputs read in Space Mono. */
+  input[type="number"],
+  input[type="date"],
+  input[type="time"],
+  input[type="datetime-local"],
+  input[type="month"] {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
   }
 
   /* ─── Tables ─── */
@@ -410,9 +548,13 @@
   }
 
   .table-header th {
-    @apply px-4 py-3 text-left text-xs font-medium tracking-normal;
+    @apply px-4 py-3 text-left;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 400;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
     color: var(--fg3);
-    text-transform: none;
     @apply sm:px-5 sm:py-3.5 md:px-6;
   }
 
@@ -429,7 +571,7 @@
   }
 
   .table-body tr:hover {
-    background: var(--surface-2);
+    background: var(--surface-1);
   }
 
   /* Mobile table cards */
@@ -453,20 +595,29 @@
   }
 
   .table-card-label {
-    @apply font-medium;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
     color: var(--fg3);
   }
 
   .table-card-value {
     color: var(--fg1);
+    @apply font-semibold;
   }
 
-  /* ─── Badges / Tags (pill) ─── */
+  /* ─── Badges / Tags (Space Mono, mayúsculas) ─── */
   .badge {
-    @apply inline-flex items-center font-medium;
-    padding: 4px 10px;
-    font-size: 12px;
+    @apply inline-flex items-center;
+    font-family: var(--font-mono);
+    font-weight: 400;
+    padding: 3px 9px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
     border-radius: var(--r-full);
+    white-space: nowrap;
   }
 
   .badge-primary {
@@ -485,11 +636,17 @@
     background: var(--tag-yellow-bg);
     color: var(--tag-yellow-fg);
   }
-  .badge-error {
+  .badge-error,
+  .badge-danger {
     background: var(--tag-red-bg);
     color: var(--tag-red-fg);
   }
-  .badge-gray {
+  .badge-info {
+    background: var(--tag-cyan-bg);
+    color: var(--tag-cyan-fg);
+  }
+  .badge-gray,
+  .badge-neutral {
     background: var(--tag-default-bg);
     color: var(--tag-default-fg);
   }
@@ -524,6 +681,17 @@
     @apply md:px-6 md:py-5;
   }
 
+  .modal-header h1,
+  .modal-header h2,
+  .modal-header h3 {
+    font-family: var(--font-display);
+    font-weight: 400;
+    text-transform: uppercase;
+    line-height: 1.1;
+    letter-spacing: 0.005em;
+    color: var(--fg2);
+  }
+
   .modal-body {
     @apply px-5 py-4 md:px-6 md:py-5;
   }
@@ -536,13 +704,14 @@
   }
 
   /* ─── Notifications / Toasts ─── */
+  /* Placement lives on the stack container in NotificationToast.vue; each
+     toast is a plain tile so several can stack instead of overlapping. */
   .notification {
-    @apply fixed z-50 p-4;
+    @apply relative w-full p-4;
     background: var(--bg);
     border: 1px solid var(--border);
     border-radius: var(--r-lg);
     box-shadow: var(--shadow-pop);
-    @apply top-3 left-3 right-3 sm:top-4 sm:right-4 sm:left-auto sm:max-w-sm sm:w-full;
   }
 
   .notification-success {
@@ -569,8 +738,8 @@
   /* ─── Loading Spinner ─── */
   .loading-spinner {
     @apply inline-block w-4 h-4 rounded-full animate-spin md:w-5 md:h-5;
-    border: 2px solid var(--border);
-    border-top-color: var(--brand-blue);
+    border: 2px solid var(--border-input);
+    border-top-color: var(--accent);
   }
 
   /* ─── Responsive Grids ─── */
@@ -589,7 +758,7 @@
     @apply md:min-h-[auto] md:min-w-[auto];
   }
 
-  /* ─── Page Content (DS: 24px padding on canvas) ─── */
+  /* ─── Page Content ─── */
   .page-content {
     @apply p-4 sm:p-5 md:p-6 lg:p-6;
   }
@@ -608,4 +777,18 @@
   .tablet-up { @apply hidden sm:block; }
   .desktop-only { @apply hidden lg:block; }
   .mobile-tablet { @apply block lg:hidden; }
+}
+
+@layer utilities {
+  /* Anton is a single-weight face: keep bold utilities from faux-bolding it. */
+  .font-display {
+    font-weight: 400 !important;
+    text-transform: uppercase;
+    letter-spacing: 0.005em;
+  }
+
+  /* Tabular figures for any money/metric run. */
+  .tnum {
+    font-variant-numeric: tabular-nums;
+  }
 }

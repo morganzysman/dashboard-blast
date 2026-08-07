@@ -60,7 +60,7 @@ const closeMobileSidebar = () => {
 
 onMounted(() => {
   // Initialize any global features here
-  console.log('🚀 OlaClick Analytics Dashboard initialized')
+  console.log('🚀 Blast dashboard initialized')
 })
 </script>
 

@@ -77,7 +77,7 @@ router.post('/subscribe', requireAuth, async (req, res) => {
         title: '✅ Notifications Activated',
         body: 'You will now receive sales reports based on your frequency settings.',
         icon: '/icons/icon-192x192.png',
-        badge: '/icons/icon-72x72.png',
+        badge: '/icons/icon-badge-96x96.png',
         tag: 'subscription-test',
         data: {
           type: 'subscription-test',
@@ -203,7 +203,7 @@ router.post('/test', requireAuth, async (req, res) => {
       title: '🧪 Test Notification',
       body: `Hello ${req.user.userName}! This is a test notification from OlaClick Analytics.`,
       icon: '/icons/icon-192x192.png',
-      badge: '/icons/icon-72x72.png',
+      badge: '/icons/icon-badge-96x96.png',
       tag: 'test-notification',
       data: {
         url: '/',

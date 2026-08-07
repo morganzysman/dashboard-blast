@@ -1,8 +1,8 @@
 <template>
   <div class="w-full" :class="compact ? 'space-y-0.5' : 'space-y-1'">
-    <div v-if="showLabel" class="flex items-center justify-between text-[10px] text-gray-500 dark:text-gray-400 leading-none">
-      <span class="truncate">{{ label }}</span>
-      <span class="font-semibold tabular-nums" :class="percentTextClass">{{ percentDisplay }}</span>
+    <div v-if="showLabel" class="flex items-center justify-between text-[10px] leading-none" style="color: var(--fg3);">
+      <span class="label-mono truncate">{{ label }}</span>
+      <span class="data font-bold" :class="percentTextClass">{{ percentDisplay }}</span>
     </div>
     <div
       class="relative w-full overflow-hidden rounded-full"
@@ -22,12 +22,13 @@
       <div
         v-for="(tick, i) in tickPositions"
         :key="i"
-        class="absolute top-0 bottom-0 w-px bg-gray-500/70 dark:bg-gray-300/70 pointer-events-none z-10"
+        class="absolute top-0 bottom-0 w-px pointer-events-none z-10"
+        style="background: var(--border-strong);"
         :style="{ left: `${tick}%` }"
       ></div>
     </div>
     <div v-if="!showLabel" class="flex justify-end leading-none">
-      <span class="text-[10px] font-semibold tabular-nums" :class="percentTextClass">{{ percentDisplay }}</span>
+      <span class="data text-[10px] font-bold" :class="percentTextClass">{{ percentDisplay }}</span>
     </div>
   </div>
 </template>
@@ -90,38 +91,39 @@ const tickPositions = computed(() => {
   return sortedTargets.value.slice(0, -1).map(t => (t / max) * 100)
 })
 
+/* Menta = en marcha, verde éxito = meta cumplida, mostaza/ladrillo = alerta. */
 const barClass = computed(() => {
   const tiers = sortedTargets.value.length
   const reached = reachedTierIndex.value
   if (tiers >= 2) {
-    if (reached >= tiers - 1) return 'bg-green-500'
-    if (reached >= 0) return 'bg-yellow-400'
-    if (percent.value >= 50) return 'bg-orange-400'
-    return 'bg-red-400'
+    if (reached >= tiers - 1) return 'bg-success-500'
+    if (reached >= 0) return 'bg-warning-400'
+    if (percent.value >= 50) return 'bg-accent'
+    return 'bg-error-400'
   }
   const p = percent.value
-  if (p >= 100) return 'bg-green-500'
-  if (p >= 75) return 'bg-green-400'
-  if (p >= 50) return 'bg-yellow-400'
-  if (p >= 25) return 'bg-orange-400'
-  return 'bg-red-400'
+  if (p >= 100) return 'bg-success-500'
+  if (p >= 75) return 'bg-accent'
+  if (p >= 50) return 'bg-warning-400'
+  if (p >= 25) return 'bg-warning-500'
+  return 'bg-error-400'
 })
 
 const trackClass = computed(() => {
-  if (percent.value < 0) return 'bg-transparent border border-red-500 dark:border-red-400'
-  return 'bg-gray-200 dark:bg-gray-700'
+  if (percent.value < 0) return 'bg-transparent border border-error-500'
+  return 'bg-surface-2'
 })
 
 const percentTextClass = computed(() => {
   const tiers = sortedTargets.value.length
-  if (percent.value < 0) return 'text-red-600 dark:text-red-400'
+  if (percent.value < 0) return 'text-error-600'
   if (tiers >= 2) {
     const reached = reachedTierIndex.value
-    if (reached >= tiers - 1) return 'text-green-600 dark:text-green-400'
-    if (reached >= 0) return 'text-yellow-600 dark:text-yellow-400'
-    return 'text-gray-600 dark:text-gray-300'
+    if (reached >= tiers - 1) return 'text-success-600 dark:text-success-400'
+    if (reached >= 0) return 'text-warning-600 dark:text-warning-400'
+    return 'text-fg-muted'
   }
-  if (percent.value >= 100) return 'text-green-600 dark:text-green-400'
-  return 'text-gray-600 dark:text-gray-300'
+  if (percent.value >= 100) return 'text-success-600 dark:text-success-400'
+  return 'text-fg-muted'
 })
 </script>

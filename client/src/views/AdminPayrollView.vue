@@ -4,8 +4,8 @@
       <div class="card-body">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h2 class="text-lg font-bold text-gray-900">{{ $t('payroll.title') }}</h2>
-            <p class="text-sm text-gray-600">{{ $t('payroll.payrollPeriod') }}: {{ periodLabel }}</p>
+            <h2 class="text-lg font-bold text-fg-strong">{{ $t('payroll.title') }}</h2>
+            <p class="text-sm text-fg-muted">{{ $t('payroll.payrollPeriod') }}: {{ periodLabel }}</p>
           </div>
           <div class="flex flex-wrap items-center gap-2 sm:justify-end">
             <div class="inline-flex overflow-hidden rounded-md border border-gray-200">
@@ -27,7 +27,7 @@
         
         <div class="mt-4">
           <div v-if="isSuperAdmin" class="mb-3 flex items-center gap-2 flex-wrap">
-            <label class="text-xs text-gray-700">{{ $t('admin.company') }}</label>
+            <label class="text-xs text-fg">{{ $t('admin.company') }}</label>
             <select v-model="selectedCompanyId" class="form-input" @change="loadCompanyAccounts">
               <option value="">{{ $t('rentability.selectCompany') }}</option>
               <option v-for="c in companies" :key="c.id" :value="c.id">{{ c.name }}</option>
@@ -37,11 +37,11 @@
           <!-- Employee Summary Table (aggregated across all accounts) -->
           <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <h3 class="text-md font-semibold text-gray-900 mb-1">{{ $t('payroll.employeeSummary') }}</h3>
-              <p class="text-xs text-gray-500">{{ $t('payroll.employeeSummaryAllAccounts') }}</p>
+              <h3 class="text-md font-semibold text-fg-strong mb-1">{{ $t('payroll.employeeSummary') }}</h3>
+              <p class="text-xs text-fg-muted">{{ $t('payroll.employeeSummaryAllAccounts') }}</p>
             </div>
             <div class="relative w-full sm:w-64">
-              <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+              <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-fg-faint">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
               </span>
               <input
@@ -53,7 +53,7 @@
               <button
                 v-if="search"
                 type="button"
-                class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
+                class="absolute inset-y-0 right-0 flex items-center pr-3 text-fg-faint hover:text-gray-600"
                 :aria-label="$t('common.clear')"
                 @click="search = ''"
               >
@@ -82,14 +82,14 @@
             <template #cell-count="{ item }">
               <div class="flex items-center gap-1">
                 <span>{{ item.count }}</span>
-                <span v-if="item.pendingApprovalCount > 0" class="text-orange-600 font-bold text-xs">
+                <span v-if="item.pendingApprovalCount > 0" class="text-warning font-bold text-xs">
                   ({{ $t('payroll.missingApprovals', { count: item.pendingApprovalCount }) }})
                 </span>
               </div>
             </template>
             <template #cell-hours="{ item }">{{ formatHoursMinutes(item.totalSeconds) }}</template>
             <template #cell-lateCount="{ item }">
-              <span :class="item.lateCount > 0 ? 'text-red-600 font-bold' : 'text-gray-600'">
+              <span :class="item.lateCount > 0 ? 'text-error font-bold' : 'text-fg-muted'">
                 {{ item.lateCount }}
               </span>
             </template>
@@ -143,7 +143,7 @@
           <!-- Simple calendar-like visualization -->
           <div class="mt-6">
             <div class="mb-3 flex items-center gap-2 flex-wrap">
-              <label class="text-xs text-gray-700">{{ $t('rentability.account') }}</label>
+              <label class="text-xs text-fg">{{ $t('rentability.account') }}</label>
               <select v-model="companyToken" class="form-input" @change="loadEntries">
                 <option v-for="acc in accounts" :key="acc.company_token" :value="acc.company_token">{{ acc.account_name || acc.company_token }}</option>
               </select>
@@ -186,15 +186,15 @@
               </div>
             </div>
             <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 lg:gap-3 text-xs">
-              <div class="text-gray-500 hidden lg:block" v-for="d in [t('shifts.weekdays.0'), t('shifts.weekdays.1'), t('shifts.weekdays.2'), t('shifts.weekdays.3'), t('shifts.weekdays.4'), t('shifts.weekdays.5'), t('shifts.weekdays.6')]" :key="d">{{ d }}</div>
+              <div class="text-fg-muted hidden lg:block" v-for="d in [t('shifts.weekdays.0'), t('shifts.weekdays.1'), t('shifts.weekdays.2'), t('shifts.weekdays.3'), t('shifts.weekdays.4'), t('shifts.weekdays.5'), t('shifts.weekdays.6')]" :key="d">{{ d }}</div>
               <div 
                 v-for="day in calendarGrid" 
                 :key="day.date || `empty-${day.index}`"
                 class="border rounded p-2 min-h-[100px]"
-                :class="!day.date ? 'bg-gray-50' : ''"
+                :class="!day.date ? 'bg-surface-2' : ''"
               >
-                <div class="text-[10px] text-gray-400 text-center lg:hidden">{{ day.weekday || '' }}</div>
-                <div class="text-[10px] text-gray-500 text-center">{{ day.label || '' }}</div>
+                <div class="text-[10px] text-fg-faint text-center lg:hidden">{{ day.weekday || '' }}</div>
+                <div class="text-[10px] text-fg-muted text-center">{{ day.label || '' }}</div>
                 <div class="space-y-1 mt-1" v-if="day.date">
                   <div 
                     v-for="e in day.entries" 
@@ -359,27 +359,27 @@
     <div v-if="editEntry" class="fixed inset-0 flex items-center justify-center z-50 p-4" style="background: var(--scrim);">
       <div class="rounded-lg p-4 sm:p-5 w-full max-w-2xl mx-4" style="background: var(--bg); border: 1px solid var(--border); box-shadow: var(--shadow-pop);">
         <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-1">
-          <h3 class="text-md font-semibold">{{ $t('payroll.editEntries') }} - {{ userName(editEntry.user_id) }}</h3>
+          <h3 class="text-md">{{ $t('payroll.editEntries') }} <span class="heading-plain text-sm" style="font-weight:600;">— {{ userName(editEntry.user_id) }}</span></h3>
           <button class="btn-secondary btn-xs shrink-0 self-start sm:self-auto" @click="addNewEntry">{{ $t('payroll.addEntry') }}</button>
         </div>
-        <p class="text-xs text-gray-500 mb-3">{{ $t('payroll.payrollPeriod') }}: {{ periodLabel }} • {{ $t('payroll.timesShownIn') }} {{ auth.user?.timezone || 'America/Lima' }}</p>
+        <p class="text-xs text-fg-muted mb-3">{{ $t('payroll.payrollPeriod') }}: {{ periodLabel }} • {{ $t('payroll.timesShownIn') }} {{ auth.user?.timezone || 'America/Lima' }}</p>
         <div class="max-h-[60vh] overflow-auto space-y-3 pr-1">
           <div
             v-for="(e, idx) in editEntry.list"
             :key="e.id || `new-${idx}`"
             class="relative grid grid-cols-1 sm:grid-cols-3 gap-2 items-end rounded p-2"
-            :class="e.approved_by ? 'bg-green-50 opacity-70' : isComplexEntry(e) ? 'bg-yellow-50' : e.paid ? 'bg-gray-50' : 'bg-white'"
+            :class="e.approved_by ? 'bg-success-bg opacity-70' : isComplexEntry(e) ? 'bg-warning-bg' : e.paid ? 'bg-surface-2' : 'bg-surface-1'"
           >
             <!-- AI Smart Detection Warning -->
-            <div v-if="!e.paid && !e.approved_by && isComplexEntry(e)" class="col-span-full mb-2 p-2 bg-yellow-50 border border-yellow-200 rounded-md">
-              <div class="flex items-center gap-2 text-xs text-yellow-800">
-                <MaterialIcon name="smart_toy" :size="16" class="text-yellow-600" />
+            <div v-if="!e.paid && !e.approved_by && isComplexEntry(e)" class="col-span-full mb-2 p-2 bg-warning-bg border border-yellow-200 rounded-md">
+              <div class="flex items-center gap-2 text-xs text-warning">
+                <MaterialIcon name="smart_toy" :size="16" class="text-warning" />
                 <span class="font-medium">{{ $t('payroll.aiReviewRequired') }}:</span>
                 <span>{{ getSmartDetectionReason(e) }}</span>
               </div>
             </div>
             <div class="sm:col-span-3">
-              <label class="text-xs text-gray-700">{{ $t('rentability.account') }}</label>
+              <label class="text-xs text-fg">{{ $t('rentability.account') }}</label>
               <select
                 v-model="e.company_token"
                 class="form-input w-full"
@@ -392,7 +392,7 @@
               </select>
             </div>
             <div>
-              <label class="text-xs text-gray-700">{{ $t('payroll.clockIn') }}</label>
+              <label class="text-xs text-fg">{{ $t('payroll.clockIn') }}</label>
               <input
                 :value="toLocalDateTime(e.clock_in_at)"
                 @input="e.clock_in_at = fromLocalDateTime($event.target.value); updateEntryAmount(e, editEntry.user_id)"
@@ -401,7 +401,7 @@
               />
             </div>
             <div>
-              <label class="text-xs text-gray-700">{{ $t('payroll.clockOut') }}</label>
+              <label class="text-xs text-fg">{{ $t('payroll.clockOut') }}</label>
               <input
                 :value="toLocalDateTime(e.clock_out_at)"
                 @input="e.clock_out_at = fromLocalDateTime($event.target.value); updateEntryAmount(e, editEntry.user_id)"
@@ -410,9 +410,9 @@
               />
             </div>
             <div>
-              <label class="text-xs text-gray-700">{{ $t('common.amount') }}</label>
+              <label class="text-xs text-fg">{{ $t('common.amount') }}</label>
               <input v-model="e.amount" type="number" inputmode="decimal" min="0" step="any" class="form-input w-full" :disabled="!!e.approved_by" />
-              <label class="mt-1.5 flex items-center gap-1.5 text-xs" :class="e.is_holiday ? 'text-purple-700 font-medium' : 'text-gray-700'">
+              <label class="mt-1.5 flex items-center gap-1.5 text-xs" :class="e.is_holiday ? 'text-purple-700 font-medium' : 'text-fg'">
                 <input
                   type="checkbox"
                   :checked="!!e.is_holiday"
@@ -420,11 +420,11 @@
                   @change="toggleHoliday(e, editEntry.user_id, $event.target.checked)"
                 />
                 <MaterialIcon name="celebration" :size="14" />
-                {{ $t('payroll.feriado') }} <span class="text-gray-400">({{ $t('payroll.paidDouble') }})</span>
+                {{ $t('payroll.feriado') }} <span class="text-fg-faint">({{ $t('payroll.paidDouble') }})</span>
               </label>
             </div>
             <div class="sm:col-span-3 flex flex-wrap items-center justify-between gap-2">
-              <label v-if="e.id" class="flex items-center gap-1.5 text-xs cursor-pointer" :class="e.paid ? 'text-yellow-700 font-medium' : 'text-gray-700'">
+              <label v-if="e.id" class="flex items-center gap-1.5 text-xs cursor-pointer" :class="e.paid ? 'text-warning font-medium' : 'text-fg'">
                 <input type="checkbox" :checked="!!e.paid" @change="setEntryPaid(e, $event.target.checked)" />
                 <MaterialIcon name="paid" :size="14" />
                 {{ $t('payroll.paid') }}
@@ -438,14 +438,14 @@
             </div>
           </div>
         </div>
-        <div class="mt-3 flex flex-wrap items-center justify-end gap-x-4 gap-y-1 text-sm text-gray-600">
-          <span>{{ $t('payroll.totalSelected') }}: <b class="text-gray-900">{{ editEntry.list.length }}</b></span>
-          <span>{{ $t('payroll.editable') }}: <b class="text-gray-900">{{ editableCount }}</b></span>
-          <span>{{ $t('payroll.sum') }}: <b class="text-gray-900">{{ formatCurrency(editableSum) }}</b></span>
+        <div class="mt-3 flex flex-wrap items-center justify-end gap-x-4 gap-y-1 text-sm text-fg-muted">
+          <span>{{ $t('payroll.totalSelected') }}: <b class="text-fg-strong">{{ editEntry.list.length }}</b></span>
+          <span>{{ $t('payroll.editable') }}: <b class="text-fg-strong">{{ editableCount }}</b></span>
+          <span>{{ $t('payroll.sum') }}: <b class="text-fg-strong">{{ formatCurrency(editableSum) }}</b></span>
         </div>
         <div class="mt-4 flex flex-wrap items-center justify-between gap-2">
           <div class="flex items-center gap-2">
-            <span v-if="editEntry.approveAfterSave" class="text-xs text-green-600 font-medium inline-flex items-center gap-1">
+            <span v-if="editEntry.approveAfterSave" class="text-xs text-success font-medium inline-flex items-center gap-1">
               <MaterialIcon name="check_circle" :size="14" :filled="true" /> {{ $t('payroll.willApproveAfterSaving') }}
             </span>
           </div>
@@ -478,8 +478,8 @@
     <div v-if="deleteConfirmation" class="fixed inset-0 flex items-center justify-center z-50 p-4" style="background: var(--scrim);">
       <div class="rounded-lg p-6 w-full max-w-md mx-4" style="background: var(--bg); border: 1px solid var(--border); box-shadow: var(--shadow-pop);">
         <div class="mb-4">
-          <h3 class="text-lg font-semibold text-gray-900">{{ $t('payroll.confirmDeletion') }}</h3>
-          <p class="text-sm text-gray-600 mt-2">
+          <h3 class="text-lg font-semibold text-fg-strong">{{ $t('payroll.confirmDeletion') }}</h3>
+          <p class="text-sm text-fg-muted mt-2">
             {{ $t('payroll.confirmDeleteEntry') }}
           </p>
         </div>
@@ -519,6 +519,7 @@ import { useAuthStore } from '../stores/auth'
 import api from '../utils/api'
 import ResponsiveTable from '../components/ui/ResponsiveTable.vue'
 import MaterialIcon from '../components/ui/MaterialIcon.vue'
+import { token } from '../utils/brandPalette'
 
 const auth = useAuthStore()
 const { t } = useI18n()
@@ -749,7 +750,7 @@ const getEntryColor = (entry) => {
   
   // If entry is in the future, use gray
   if (clockInDate > today) {
-    return '#6b7280' // gray-500
+    return token('--chart-7')
   }
   
   // For past entries, check punctuality if shift_start exists
@@ -777,14 +778,14 @@ const getEntryColor = (entry) => {
     
     // Blue if on time or less than 5 minutes late
     if (lateMinutes <= 5) {
-      return '#3b82f6' // blue-500
+      return token('--accent')
     } else {
-      return '#ef4444' // red-500
+      return token('--danger')
     }
   }
   
   // Default to gray if no shift_start data
-  return '#6b7280' // gray-500
+  return token('--chart-7')
 }
 
 // Get tooltip text explaining the entry status
@@ -1569,7 +1570,7 @@ const showEntryTooltip = (entry, event) => {
 
   const content = `
     <div class="text-sm font-medium">${userName(entry.user_id)}</div>
-    <div class="text-xs text-gray-600 mt-1">
+    <div class="text-xs text-fg-muted mt-1">
       <div><strong>Time:</strong> ${clockInTime} - ${clockOutTime}</div>
       <div><strong>Duration:</strong> ${duration}</div>
       <div><strong>Amount:</strong> ${entry.amount ? formatCurrency(entry.amount) : 'TBD'}</div>

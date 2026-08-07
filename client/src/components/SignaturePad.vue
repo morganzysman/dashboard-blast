@@ -1,10 +1,10 @@
 <template>
   <div class="space-y-2">
-    <div class="relative rounded-lg border-2 border-dashed border-gray-300 bg-white" style="touch-action: none;">
+    <div class="relative rounded-lg border-2 border-dashed border-gray-300 bg-surface-1" style="touch-action: none;">
       <canvas ref="canvasEl" class="w-full block rounded-lg" :style="{ height: height + 'px' }"></canvas>
       <span
         v-if="empty"
-        class="pointer-events-none absolute inset-0 flex items-center justify-center text-sm text-gray-300 select-none"
+        class="pointer-events-none absolute inset-0 flex items-center justify-center text-sm text-fg-faint select-none"
       >
         {{ placeholder || $t('contract.signHere') }}
       </span>
@@ -73,7 +73,7 @@ defineExpose({ clear, isEmpty, toDataURL })
 
 onMounted(async () => {
   await nextTick()
-  pad = new SignaturePad(canvasEl.value, { penColor: '#111827', backgroundColor: 'rgba(255,255,255,0)' })
+  pad = new SignaturePad(canvasEl.value, { penColor: '#075A2A', backgroundColor: 'rgba(255,255,255,0)' })
   pad.addEventListener('endStroke', onEnd)
   resizeCanvas()
   if ('ResizeObserver' in window) {

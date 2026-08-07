@@ -1,6 +1,6 @@
 <template>
   <button :type="type" :class="classes" :disabled="disabled || loading">
-    <span v-if="loading" class="loading-spinner !w-4 !h-4 !border-white/40 !border-t-white"></span>
+    <span v-if="loading" class="loading-spinner !w-4 !h-4 spinner-on-fill"></span>
     <slot />
   </button>
 </template>
@@ -9,7 +9,7 @@
 import { computed } from 'vue'
 
 /**
- * OlaClick DS Button.
+ * Blast DS Button — Quicksand 700.
  * Variants: primary, secondary, outline, ghost, plain, danger, success, warning
  * Sizes: xs, sm, md, lg, xl
  */
@@ -49,4 +49,9 @@ const classes = computed(() => [
 </script>
 
 <style scoped>
+/* The spinner sits on a filled button, so it borrows the label colour. */
+.spinner-on-fill {
+  border-color: color-mix(in srgb, currentColor 35%, transparent);
+  border-top-color: currentColor;
+}
 </style>

@@ -16,7 +16,7 @@
       </div>
       <div class="min-w-0 flex-1">
         <div class="flex items-center gap-2 flex-wrap">
-          <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ title }}</h3>
+          <h3 class="heading-plain text-sm text-gray-900 dark:text-gray-100">{{ title }}</h3>
           <span v-if="unlocked" class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-white/30">
             {{ $t('achievements.unlocked') }}
           </span>
@@ -30,7 +30,7 @@
             :objective="target"
             :tooltip="progressTooltip"
           />
-          <p class="text-[10px] text-gray-500 mt-1 tabular-nums">{{ progressLabel }}</p>
+          <p class="text-[10px] text-fg-muted mt-1 tabular-nums">{{ progressLabel }}</p>
         </div>
         <p v-else-if="unlocked && unlockedLabel" class="text-xs font-medium mt-2 text-white/90">
           {{ unlockedLabel }}
@@ -65,8 +65,8 @@ defineProps({
 }
 
 .achievement-tier-bronze {
-  border-color: #b45309;
-  background: #b45309;
+  border-color: #A2621A;
+  background: #A2621A;
   color: white;
 }
 .achievement-tier-bronze h3,
@@ -80,8 +80,8 @@ defineProps({
 }
 
 .achievement-tier-silver {
-  border-color: #6b7280;
-  background: #6b7280;
+  border-color: #7E8B82;
+  background: #7E8B82;
   color: white;
 }
 .achievement-tier-silver h3,
@@ -95,9 +95,9 @@ defineProps({
 }
 
 .achievement-tier-gold {
-  border-color: #ca8a04;
-  background: #eab308;
-  color: #422006;
+  border-color: #B5810F;
+  background: #DCB753;
+  color: #3F2D05;
 }
 .achievement-tier-gold .text-gray-600,
 .achievement-tier-gold .text-gray-400 {
@@ -105,8 +105,8 @@ defineProps({
 }
 
 .achievement-tier-platinum {
-  border-color: #7c3aed;
-  background: #7c3aed;
+  border-color: #5F4A8C;
+  background: #5F4A8C;
   color: white;
 }
 .achievement-tier-platinum h3,

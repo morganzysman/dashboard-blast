@@ -30,13 +30,13 @@ const STYLES = {
   cancelled: 'bg-gray-100 text-gray-500 border-gray-200',
 }
 const DOTS = {
-  active: '#16a34a',
-  awaiting_employer: '#d97706',
-  awaiting_worker: '#2563eb',
-  pending: '#d97706',
-  expired: '#dc2626',
-  none: '#dc2626',
-  cancelled: '#9ca3af',
+  active: 'var(--success)',
+  awaiting_employer: 'var(--warning)',
+  awaiting_worker: 'var(--accent)',
+  pending: 'var(--warning)',
+  expired: 'var(--danger)',
+  none: 'var(--danger)',
+  cancelled: 'var(--fg-muted)',
 }
 
 const styleClass = computed(() => STYLES[props.status] || STYLES.none)

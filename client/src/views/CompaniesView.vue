@@ -2,8 +2,8 @@
   <div class="space-y-6">
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900">{{ $t('companies.title') }}</h1>
-        <p class="text-sm text-gray-600 mt-1">{{ $t('companies.subtitle') }}</p>
+        <h1 class="text-2xl font-bold text-fg-strong">{{ $t('companies.title') }}</h1>
+        <p class="text-sm text-fg-muted mt-1">{{ $t('companies.subtitle') }}</p>
       </div>
       <div class="grid grid-cols-1 md:grid-cols-6 gap-2 items-end">
         <div>
@@ -58,8 +58,8 @@
           <div class="flex items-start justify-between">
             <div>
               <div class="text-lg font-semibold">{{ c.name }}</div>
-              <div class="text-xs text-gray-500">{{ c.id }}</div>
-              <div class="text-xs text-gray-500 mt-1">{{ $t('companies.country') }}: {{ getCountryLabel(c.country) }} • {{ $t('companies.timezone') }}: {{ c.timezone || 'America/Lima' }} • {{ $t('companies.currency') }}: {{ c.currency || 'PEN' }} • {{ $t('companies.language') }}: {{ getLanguageName(c.language) }}</div>
+              <div class="text-xs text-fg-muted">{{ c.id }}</div>
+              <div class="text-xs text-fg-muted mt-1">{{ $t('companies.country') }}: {{ getCountryLabel(c.country) }} • {{ $t('companies.timezone') }}: {{ c.timezone || 'America/Lima' }} • {{ $t('companies.currency') }}: {{ c.currency || 'PEN' }} • {{ $t('companies.language') }}: {{ getLanguageName(c.language) }}</div>
             </div>
             <div class="flex items-center space-x-2">
               <button class="btn-danger" @click="deleteCompany(c.id)" :title="$t('common.delete')">{{ $t('common.delete') }}</button>
@@ -93,8 +93,8 @@
                       <button class="btn-secondary btn-xs" @click="toggleShowToken(c.id, a.company_token)">{{ showToken[c.id]?.[a.company_token] ? $t('common.hide') : $t('common.show') }}</button>
                     </div>
                     <div v-else>
-                      <span v-if="a.api_token" class="text-gray-500">{{ a.api_token.substring(0,8) }}…</span>
-                      <span v-else class="text-gray-400">—</span>
+                      <span v-if="a.api_token" class="text-fg-muted">{{ a.api_token.substring(0,8) }}…</span>
+                      <span v-else class="text-fg-faint">—</span>
                     </div>
                   </td>
                   <td class="text-right">

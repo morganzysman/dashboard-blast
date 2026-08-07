@@ -7,17 +7,17 @@
           <div class="shrink-0 rounded-md p-1.5 sm:p-2" :class="iconBg">
             <slot name="icon" />
           </div>
-          <p class="text-xs sm:text-sm font-medium truncate" style="color: var(--fg3);" :title="label">{{ label }}</p>
+          <p class="label-mono truncate" :title="label">{{ label }}</p>
         </div>
         <div class="ml-auto">
           <slot name="action" />
         </div>
       </div>
-      
-      <!-- Value -->
+
+      <!-- Value — datos siempre en Space Mono -->
       <div class="mb-2">
-        <p class="text-xl sm:text-2xl lg:text-3xl font-bold tabular-nums" :class="valueClass">{{ value }}</p>
-        <p v-if="subtext" class="text-xs mt-0.5 leading-tight" style="color: var(--fg-muted);">{{ subtext }}</p>
+        <p class="price text-xl sm:text-2xl lg:text-3xl" :class="valueClass">{{ value }}</p>
+        <p v-if="subtext" class="data text-[11px] mt-1 leading-tight" style="color: var(--fg-muted);">{{ subtext }}</p>
       </div>
       
       <!-- Chart area - takes full width -->
@@ -37,13 +37,13 @@ const props = defineProps({ label: String, value: [String, Number], subtext: Str
 const toneToClasses = {
   positive: 'text-success-700 dark:text-success-400',
   negative: 'text-error-600 dark:text-error-400',
-  neutral: 'text-fg'
+  neutral: 'text-fg-strong'
 }
 
 const iconToBg = {
   positive: 'bg-success-100 text-success-700',
   negative: 'bg-error-100 text-error-600',
-  neutral: 'bg-surface-2 text-fg-muted'
+  neutral: 'bg-tint text-nav-active-fg'
 }
 
 const valueClass = computed(() => toneToClasses[props.tone] || toneToClasses.neutral)

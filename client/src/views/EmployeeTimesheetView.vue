@@ -6,11 +6,11 @@
     <!-- Shifts calendar view -->
     <div class="card" v-if="$route.query.greeted === '1'">
       <div class="card-body">
-        <div class="bg-green-50 border border-green-200 rounded p-3 text-green-800 text-sm">
+        <div class="bg-success-bg border border-green-200 rounded p-3 text-success-fg text-sm">
           <div class="flex items-center justify-between">
             <div>
               <p class="font-semibold">{{ $t('employee.timesheet.thankYou') }} {{ $route.query.type === 'in' ? $t('employee.timesheet.clockIn') : $t('employee.timesheet.clockOut') }} {{ $t('employee.timesheet.wasRegistered') }}.</p>
-              <p v-if="$route.query.late" class="text-green-900">{{ $t('employee.timesheet.youAreLate', { minutes: $route.query.late }) }}.</p>
+              <p v-if="$route.query.late" class="text-success">{{ $t('employee.timesheet.youAreLate', { minutes: $route.query.late }) }}.</p>
             </div>
             <button class="btn-secondary btn-sm" @click="dismissGreeting">{{ $t('common.dismiss') }}</button>
           </div>
@@ -23,19 +23,19 @@
           <h3 class="text-md font-semibold">{{ $t('employee.timesheet.myShiftsThisWeek') }}</h3>
         </div>
         <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 text-xs">
-          <div class="text-gray-500 hidden lg:block" v-for="(d, index) in [$t('shifts.weekdays.0'), $t('shifts.weekdays.1'), $t('shifts.weekdays.2'), $t('shifts.weekdays.3'), $t('shifts.weekdays.4'), $t('shifts.weekdays.5'), $t('shifts.weekdays.6')]" :key="index">{{ d }}</div>
+          <div class="text-fg-muted hidden lg:block" v-for="(d, index) in [$t('shifts.weekdays.0'), $t('shifts.weekdays.1'), $t('shifts.weekdays.2'), $t('shifts.weekdays.3'), $t('shifts.weekdays.4'), $t('shifts.weekdays.5'), $t('shifts.weekdays.6')]" :key="index">{{ d }}</div>
           <template v-for="(day, idx) in weekDays" :key="idx">
             <div class="rounded-md p-2 min-h-[80px]" style="background: var(--surface-1); border: 1px solid var(--border);">
               <!-- Mobile: show weekday label inside each cell -->
-              <div class="text-[10px] text-gray-400 text-center lg:hidden">{{ day.wdLabel }}</div>
-              <div class="text-[10px] text-gray-500 text-center">{{ day.label }}</div>
+              <div class="text-[10px] text-fg-faint text-center lg:hidden">{{ day.wdLabel }}</div>
+              <div class="text-[10px] text-fg-muted text-center">{{ day.label }}</div>
               <template v-if="day.shifts && day.shifts.length">
                 <div class="mt-1 space-y-0.5" v-for="(s, i) in day.shifts" :key="i">
-                  <div class="text-gray-900 font-medium truncate lg:whitespace-normal text-center">{{ s.account_name || s.company_token }}</div>
-                  <div class="text-gray-600 text-[10px] text-center">{{ formatTimeShort(s.start_time) }} – {{ formatTimeShort(s.end_time) }}</div>
+                  <div class="text-fg-strong font-medium truncate lg:whitespace-normal text-center">{{ s.account_name || s.company_token }}</div>
+                  <div class="text-fg-muted text-[10px] text-center">{{ formatTimeShort(s.start_time) }} – {{ formatTimeShort(s.end_time) }}</div>
                 </div>
               </template>
-              <div v-else class="text-gray-400">—</div>
+              <div v-else class="text-fg-faint">—</div>
             </div>
           </template>
         </div>
@@ -45,8 +45,8 @@
       <div class="card-body">
         <div class="flex items-start justify-between gap-2 flex-wrap">
           <div>
-            <h2 class="text-lg font-bold text-gray-900">{{ $t('employee.timesheet.title') }}</h2>
-            <p class="text-sm text-gray-600">{{ $t('payroll.payrollPeriod') }}: {{ periodLabel }}</p>
+            <h2 class="text-lg font-bold text-fg-strong">{{ $t('employee.timesheet.title') }}</h2>
+            <p class="text-sm text-fg-muted">{{ $t('payroll.payrollPeriod') }}: {{ periodLabel }}</p>
           </div>
           <div class="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
             <div class="inline-flex overflow-hidden rounded-md border border-gray-200">
@@ -93,16 +93,16 @@
             </template>
             <template #cell-status="{ item }">
               <div class="flex items-center gap-1">
-                <span v-if="item.approved_by" class="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded" :title="$t('employee.timesheet.approvedBy') + ' ' + (item.approved_by_name || $t('payroll.manager'))">
+                <span v-if="item.approved_by" class="inline-flex items-center px-2 py-1 text-xs font-medium bg-tint text-nav-active-fg rounded" :title="$t('employee.timesheet.approvedBy') + ' ' + (item.approved_by_name || $t('payroll.manager'))">
                   ✓ {{ $t('employee.timesheet.isApproved') }}
                 </span>
-                <span v-else-if="item.clock_out_at" class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded">
+                <span v-else-if="item.clock_out_at" class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-warning-bg text-warning-fg rounded">
                   <MaterialIcon name="schedule" :size="14" /> {{ $t('employee.timesheet.pendingApproval') }}
                 </span>
                 <span v-if="item.is_holiday" class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-purple-100 text-purple-800 rounded" :title="$t('payroll.paidDouble')">
                   <MaterialIcon name="celebration" :size="14" /> {{ $t('payroll.feriado') }}
                 </span>
-                <span v-if="item.paid" class="inline-flex items-center px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded">
+                <span v-if="item.paid" class="inline-flex items-center px-2 py-1 text-xs font-medium bg-success-bg text-success-fg rounded">
                   $ {{ $t('employee.timesheet.isPaid') }}
                 </span>
               </div>
@@ -116,24 +116,24 @@
                 <MaterialIcon v-if="item.is_holiday" name="celebration" :size="14" class="text-purple-600" :title="$t('payroll.paidDouble')" />
               </div>
               <div class="flex items-center gap-1 flex-wrap">
-                <span v-if="item.approved_by" class="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded" :title="$t('employee.timesheet.approvedBy') + ' ' + (item.approved_by_name || $t('payroll.manager'))">
+                <span v-if="item.approved_by" class="inline-flex items-center px-2 py-1 text-xs font-medium bg-tint text-nav-active-fg rounded" :title="$t('employee.timesheet.approvedBy') + ' ' + (item.approved_by_name || $t('payroll.manager'))">
                   ✓ {{ $t('employee.timesheet.isApproved') }}
                 </span>
-                <span v-else-if="item.clock_out_at" class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded">
+                <span v-else-if="item.clock_out_at" class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-warning-bg text-warning-fg rounded">
                   <MaterialIcon name="schedule" :size="14" /> {{ $t('employee.timesheet.pendingApproval') }}
                 </span>
                 <span v-if="item.is_holiday" class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-purple-100 text-purple-800 rounded" :title="$t('payroll.paidDouble')">
                   <MaterialIcon name="celebration" :size="14" /> {{ $t('payroll.feriado') }}
                 </span>
-                <span v-if="item.paid" class="inline-flex items-center px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded">
+                <span v-if="item.paid" class="inline-flex items-center px-2 py-1 text-xs font-medium bg-success-bg text-success-fg rounded">
                   $ {{ $t('employee.timesheet.isPaid') }}
                 </span>
               </div>
             </template>
           </ResponsiveTable>
-          <div class="mt-4 text-right text-gray-800 font-medium space-y-1">
+          <div class="mt-4 text-right text-fg-strong font-medium space-y-1">
             <div>{{ $t('employee.timesheet.totalHours') }}: {{ formatDuration(totalSeconds) }}</div>
-            <div class="text-lg font-bold text-gray-900">{{ $t('employee.timesheet.totalEarned') }}: {{ formatCurrency(totalAmount) }}</div>
+            <div class="text-lg font-bold text-fg-strong">{{ $t('employee.timesheet.totalEarned') }}: {{ formatCurrency(totalAmount) }}</div>
           </div>
         </div>
       </div>
@@ -145,19 +145,19 @@
         <div class="flex items-center justify-between mb-1">
           <h3 class="text-md font-semibold">{{ $t('employee.timesheet.weeklyEarnings') }}</h3>
         </div>
-        <p class="text-xs text-gray-500 mb-3">{{ $t('employee.timesheet.weeklyEarningsHint') }}</p>
+        <p class="text-xs text-fg-muted mb-3">{{ $t('employee.timesheet.weeklyEarningsHint') }}</p>
         <div class="space-y-2">
           <div v-for="w in weeklyBreakdown" :key="w.key" class="flex items-center justify-between rounded-md p-3" style="background: var(--surface-1); border: 1px solid var(--border);">
             <div>
-              <div class="text-sm font-medium text-gray-900">{{ w.label }}</div>
-              <div class="text-xs text-gray-500 flex items-center gap-1">
+              <div class="text-sm font-medium text-fg-strong">{{ w.label }}</div>
+              <div class="text-xs text-fg-muted flex items-center gap-1">
                 {{ formatDuration(w.seconds) }}
                 <span v-if="w.hasHoliday" class="inline-flex items-center gap-0.5 text-purple-600" :title="$t('payroll.paidDouble')">
                   · <MaterialIcon name="celebration" :size="12" /> {{ $t('payroll.feriado') }}
                 </span>
               </div>
             </div>
-            <div class="text-base font-semibold text-gray-900">{{ formatCurrency(w.amount) }}</div>
+            <div class="text-base font-semibold text-fg-strong">{{ formatCurrency(w.amount) }}</div>
           </div>
         </div>
       </div>

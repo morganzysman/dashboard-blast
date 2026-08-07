@@ -3,10 +3,10 @@
     <div class="card-body p-4">
       <div class="flex items-start justify-between gap-2 mb-3">
         <div class="min-w-0">
-          <h3 class="text-base font-semibold text-gray-900">{{ $t('combos.sourceMatrixTitle') }}</h3>
-          <p class="text-xs text-gray-500">{{ $t('combos.sourceMatrixSubtitle') }}</p>
+          <h3 class="text-base font-semibold text-fg-strong">{{ $t('combos.sourceMatrixTitle') }}</h3>
+          <p class="text-xs text-fg-muted">{{ $t('combos.sourceMatrixSubtitle') }}</p>
         </div>
-        <div class="w-9 h-9 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0">
+        <div class="w-9 h-9 bg-warning-bg rounded-lg flex items-center justify-center flex-shrink-0">
           <span class="text-lg">🍔</span>
         </div>
       </div>
@@ -16,26 +16,26 @@
       </div>
 
       <div v-else-if="!hasData" class="flex flex-col items-center justify-center h-28 text-center">
-        <p class="text-sm text-gray-500">{{ $t('combos.noData') }}</p>
-        <p class="text-[11px] text-gray-400 mt-1">{{ $t('combos.noDataHint') }}</p>
+        <p class="text-sm text-fg-muted">{{ $t('combos.noData') }}</p>
+        <p class="text-[11px] text-fg-faint mt-1">{{ $t('combos.noDataHint') }}</p>
       </div>
 
       <div v-else class="overflow-x-auto">
         <table class="w-full text-sm border-collapse">
           <thead>
-            <tr class="text-gray-500">
-              <th class="text-left font-medium py-2 pr-3 sticky left-0 bg-white">{{ $t('combos.shop') }}</th>
+            <tr class="text-fg-muted">
+              <th class="text-left font-medium py-2 pr-3 sticky left-0 bg-surface-1">{{ $t('combos.shop') }}</th>
               <th v-for="s in sources" :key="s" class="text-right font-medium py-2 px-3 whitespace-nowrap">
                 {{ sourceLabel(s) }}
               </th>
-              <th class="text-right font-semibold py-2 pl-3 whitespace-nowrap text-gray-700">
+              <th class="text-right font-semibold py-2 pl-3 whitespace-nowrap text-fg">
                 {{ $t('combos.total') }}
               </th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="row in matrix" :key="row.token" class="border-t border-gray-100">
-              <td class="text-left py-2 pr-3 font-medium text-gray-800 sticky left-0 bg-white whitespace-nowrap">
+              <td class="text-left py-2 pr-3 font-medium text-fg-strong sticky left-0 bg-surface-1 whitespace-nowrap">
                 {{ row.name }}
               </td>
               <td v-for="s in sources" :key="s" class="text-right py-2 px-3">
@@ -43,29 +43,29 @@
                   <span class="font-semibold" :class="cellColor(row.cells[s].avg)">
                     {{ row.cells[s].avg.toFixed(2) }}
                   </span>
-                  <span class="block text-[10px] text-gray-400">{{ row.cells[s].orders }} {{ $t('combos.ordersShort') }}</span>
+                  <span class="block text-[10px] text-fg-faint">{{ row.cells[s].orders }} {{ $t('combos.ordersShort') }}</span>
                 </template>
-                <span v-else class="text-gray-300">–</span>
+                <span v-else class="text-fg-faint">–</span>
               </td>
               <td class="text-right py-2 pl-3 border-l border-gray-100">
-                <span class="font-bold text-amber-700">{{ row.total.avg.toFixed(2) }}</span>
-                <span class="block text-[10px] text-gray-400">{{ row.total.orders }} {{ $t('combos.ordersShort') }}</span>
+                <span class="font-bold text-warning">{{ row.total.avg.toFixed(2) }}</span>
+                <span class="block text-[10px] text-fg-faint">{{ row.total.orders }} {{ $t('combos.ordersShort') }}</span>
               </td>
             </tr>
           </tbody>
           <tfoot v-if="matrix.length > 1">
             <tr class="border-t-2 border-gray-200">
-              <td class="text-left py-2 pr-3 font-semibold text-gray-700 sticky left-0 bg-white">{{ $t('combos.total') }}</td>
+              <td class="text-left py-2 pr-3 font-semibold text-fg sticky left-0 bg-surface-1">{{ $t('combos.total') }}</td>
               <td v-for="s in sources" :key="s" class="text-right py-2 px-3">
                 <template v-if="columnTotals[s] && columnTotals[s].orders > 0">
-                  <span class="font-semibold text-gray-700">{{ columnTotals[s].avg.toFixed(2) }}</span>
-                  <span class="block text-[10px] text-gray-400">{{ columnTotals[s].orders }} {{ $t('combos.ordersShort') }}</span>
+                  <span class="font-semibold text-fg">{{ columnTotals[s].avg.toFixed(2) }}</span>
+                  <span class="block text-[10px] text-fg-faint">{{ columnTotals[s].orders }} {{ $t('combos.ordersShort') }}</span>
                 </template>
-                <span v-else class="text-gray-300">–</span>
+                <span v-else class="text-fg-faint">–</span>
               </td>
               <td class="text-right py-2 pl-3 border-l border-gray-100">
-                <span class="font-bold text-amber-800">{{ grandTotal.avg.toFixed(2) }}</span>
-                <span class="block text-[10px] text-gray-400">{{ grandTotal.orders }} {{ $t('combos.ordersShort') }}</span>
+                <span class="font-bold text-warning">{{ grandTotal.avg.toFixed(2) }}</span>
+                <span class="block text-[10px] text-fg-faint">{{ grandTotal.orders }} {{ $t('combos.ordersShort') }}</span>
               </td>
             </tr>
           </tfoot>
