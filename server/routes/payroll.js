@@ -480,20 +480,37 @@ router.get('/me/entries', requireAuth, async (req, res) => {
   }
 })
 
-// Get latest open entry for a given day (defaults to today)
+// Latest open entry for the caller. POST /clock toggles on any open entry
+// regardless of date, so this is unfiltered by default to keep both in agreement.
+// An optional ?date=YYYY-MM-DD narrows to that calendar day in the company timezone.
 router.get('/me/open-entry', requireAuth, async (req, res) => {
   try {
-    const date = (req.query.date || new Date().toISOString().substring(0,10)).slice(0,10)
     const companyToken = req.query.company_token || null
-    const params = [req.user.userId, date, date]
-    let whereCompany = ''
-    if (companyToken) { params.push(companyToken); whereCompany = ' AND company_token = $4' }
+    const requestedDate = (req.query.date || '').toString().slice(0, 10)
+    const date = /^\d{4}-\d{2}-\d{2}$/.test(requestedDate) ? requestedDate : null
+
+    const params = [req.user.userId]
+    const filters = []
+    if (date) {
+      const timezone = req.user.companyId ? await getCompanyTimezone(req.user.companyId) : 'America/Lima'
+      params.push(date, timezone)
+      const dateParam = `$${params.length - 1}`
+      const tzParam = `$${params.length}::text`
+      filters.push(
+        `AND clock_in_at >= (${dateParam}::date)::timestamp AT TIME ZONE ${tzParam}
+         AND clock_in_at < (${dateParam}::date + INTERVAL '1 day')::timestamp AT TIME ZONE ${tzParam}`
+      )
+    }
+    if (companyToken) {
+      params.push(companyToken)
+      filters.push(`AND company_token = $${params.length}`)
+    }
+
     const q = await pool.query(
       `SELECT * FROM time_entries
        WHERE user_id = $1
          AND clock_out_at IS NULL
-         AND clock_in_at >= $2::date AND clock_in_at < ($3::date + INTERVAL '1 day')
-         ${whereCompany}
+         ${filters.join('\n         ')}
        ORDER BY clock_in_at DESC
        LIMIT 1`, params
     )

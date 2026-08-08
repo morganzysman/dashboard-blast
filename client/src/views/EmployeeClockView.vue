@@ -126,7 +126,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../stores/auth'
@@ -153,6 +153,8 @@ let frameHandle = null
 let barcodeDetector = null
 let zxingReader = null
 let zxingControls = null
+// Bumped on every stop so a frame scheduled mid-await can't outlive its scan session
+let scanGeneration = 0
 
 // Recap modal
 const showRecap = ref(false)
@@ -164,8 +166,8 @@ const accountLabel = computed(() => {
   return acc?.account_name || acc?.name || companyToken.value || '—'
 })
 
-// Open entry state for current day
-const hasOpenToday = ref(false)
+// Open entry state (unscoped by date, mirroring what the clock endpoint toggles on)
+const hasOpenEntry = ref(false)
 const openEntry = ref(null)
 const nowTick = ref(Date.now())
 
@@ -180,25 +182,24 @@ const refreshOpenState = async () => {
   if (!auth.sessionId) return
   try {
     const params = new URLSearchParams()
-    params.set('date', new Date().toISOString().slice(0,10))
     if (companyToken.value) params.set('company_token', companyToken.value)
     const res = await fetch(`/api/payroll/me/open-entry?${params.toString()}`, {
       headers: { 'X-Session-ID': auth.sessionId }
     }).then(r => r.json())
     openEntry.value = res?.data || null
-    hasOpenToday.value = !!openEntry.value
+    hasOpenEntry.value = !!openEntry.value
   } catch {
-    hasOpenToday.value = false
+    hasOpenEntry.value = false
     openEntry.value = null
   }
 }
 
-const canClockIn = computed(() => !!qrSecret.value && !!companyToken.value && !hasOpenToday.value)
-const canClockOut = computed(() => !!qrSecret.value && !!companyToken.value && hasOpenToday.value)
+const canClockIn = computed(() => !!qrSecret.value && !!companyToken.value && !hasOpenEntry.value)
+const canClockOut = computed(() => !!qrSecret.value && !!companyToken.value && hasOpenEntry.value)
 const clockOutDisabledReason = computed(() => {
   if (submitting.value) return t('employee.clock.pleaseWait')
   if (!qrSecret.value || !companyToken.value) return t('employee.clock.disableClockOut.noQrContext')
-  if (!hasOpenToday.value) return t('employee.clock.disableClockOut.noOpenEntry')
+  if (!hasOpenEntry.value) return t('employee.clock.disableClockOut.noOpenEntry')
   return ''
 })
 const hasQrContext = computed(() => !!qrSecret.value && !!companyToken.value)
@@ -296,9 +297,9 @@ const toggleScanner = async () => {
   await startScanner()
 }
 
-const startScanner = async () => {
+const startScanner = async ({ keepMessage = false } = {}) => {
   try {
-    message.value = ''
+    if (!keepMessage) message.value = ''
     
     // Clean up any existing stream first
     if (mediaStream) {
@@ -405,8 +406,8 @@ const startScanner = async () => {
   }
 }
 
-const scanWithDetector = async () => {
-  if (!barcodeDetector || !scannerOpen.value) return
+const scanWithDetector = async (generation = scanGeneration) => {
+  if (!barcodeDetector || !scannerOpen.value || generation !== scanGeneration) return
   try {
     const barcodes = await barcodeDetector.detect(videoEl.value)
     if (barcodes && barcodes.length) {
@@ -424,11 +425,13 @@ const scanWithDetector = async () => {
       } catch {}
     }
   } catch {}
-  frameHandle = requestAnimationFrame(scanWithDetector)
+  if (generation !== scanGeneration) return
+  frameHandle = requestAnimationFrame(() => scanWithDetector(generation))
 }
 
 const stopScanner = () => {
   scannerOpen.value = false
+  scanGeneration++
   
   // Cancel animation frame
   if (frameHandle) {
@@ -475,6 +478,15 @@ onBeforeUnmount(() => { stopScanner(); if (tickHandle) window.clearInterval(tick
 let tickHandle = null
 
 watch(openEntry, () => { nowTick.value = Date.now() })
+
+// Each punch consumes the QR secret, which swaps the view back to the scanner.
+// Without this the camera never comes back and the preview sits on its spinner.
+watch(hasQrContext, async (hasContext) => {
+  if (hasContext || cameraPermission.value === 'denied') return
+  await nextTick()
+  if (!videoEl.value || scannerOpen.value) return
+  await startScanner({ keepMessage: true }).catch(() => {})
+})
 
 // ZXing fallback with enhanced PWA support
 const startZxing = async () => {
