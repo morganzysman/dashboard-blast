@@ -186,7 +186,7 @@
                 <th class="py-2 pr-3">{{ $t('common.date') }}</th>
                 <th class="py-2 pr-3">{{ $t('salesImport.file') }}</th>
                 <th class="py-2 pr-3">{{ $t('salesImport.period') }}</th>
-                <th class="py-2 pr-3 text-right">{{ $t('salesImport.days') }}</th>
+                <th class="py-2 pr-3 text-right" :title="$t('salesImport.daysHint')">{{ $t('salesImport.days') }}</th>
                 <th class="py-2 pr-3 text-right">{{ $t('salesImport.totalSales') }}</th>
                 <th class="py-2">{{ $t('salesImport.by') }}</th>
               </tr>
