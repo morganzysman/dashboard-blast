@@ -468,9 +468,11 @@
     "netGain": "Gain",
     "marginNote": "Margin {margin} ({points})",
     "previouslyShort": "was {value}",
-    "byAccount": "Contribution by account",
-    "byAccountHint": "How much each location adds to or subtracts from the total change, in money",
+    "byAccount": "Revenue change by account",
+    "byAccountHint": "Change in revenue, not gain: last {weeks} weeks minus the {weeks} before",
+    "beforeAfter": "{before} → {after}",
     "newLocation": "new",
+    "rampingLocation": "partial baseline",
     "newShort": "new",
     "partialBaseline": "Only {days} of {total} days exist in the comparison period, so the change may be overstated.",
     "driver": {

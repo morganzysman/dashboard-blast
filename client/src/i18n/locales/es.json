@@ -469,9 +469,11 @@
     "netGain": "Ganancia",
     "marginNote": "Margen {margin} ({points})",
     "previouslyShort": "antes {value}",
-    "byAccount": "Aporte por cuenta",
-    "byAccountHint": "Cuánto suma o resta cada local a la variación total, en soles",
+    "byAccount": "Variación de ingresos por cuenta",
+    "byAccountHint": "Cambio en ingresos, no ganancia: últimas {weeks} semanas menos las {weeks} anteriores",
+    "beforeAfter": "{before} → {after}",
     "newLocation": "nuevo",
+    "rampingLocation": "base parcial",
     "newShort": "nuevo",
     "partialBaseline": "Sólo hay {days} de {total} días en el período de comparación, así que la variación puede estar exagerada.",
     "driver": {

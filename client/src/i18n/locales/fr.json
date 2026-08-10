@@ -467,9 +467,11 @@
     "netGain": "Bénéfice",
     "marginNote": "Marge {margin} ({points})",
     "previouslyShort": "avant {value}",
-    "byAccount": "Contribution par compte",
-    "byAccountHint": "Ce que chaque établissement ajoute ou retire à l'évolution totale, en argent",
+    "byAccount": "Évolution du chiffre d'affaires par compte",
+    "byAccountHint": "Évolution du chiffre d'affaires, pas du bénéfice : {weeks} dernières semaines moins les {weeks} précédentes",
+    "beforeAfter": "{before} → {after}",
     "newLocation": "nouveau",
+    "rampingLocation": "base partielle",
     "newShort": "nouveau",
     "partialBaseline": "Seuls {days} jours sur {total} existent dans la période de comparaison, l'évolution peut donc être surestimée.",
     "driver": {

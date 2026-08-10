@@ -104,13 +104,20 @@
       <div v-if="accountRows.length > 1" class="space-y-3">
         <div>
           <p class="label-mono">{{ $t('growth.byAccount') }}</p>
-          <p class="text-[11px]" style="color: var(--fg-muted);">{{ $t('growth.byAccountHint') }}</p>
+          <p class="text-[11px]" style="color: var(--fg-muted);">{{ $t('growth.byAccountHint', { weeks }) }}</p>
         </div>
         <div class="space-y-2">
           <div v-for="row in accountRows" :key="row.accountKey" class="flex items-center gap-3">
-            <span class="text-body min-w-0 flex-1 truncate" style="color: var(--fg1);" :title="row.account">
-              {{ row.account }}
-              <span v-if="row.isNew" class="badge badge-neutral ml-1">{{ $t('growth.newLocation') }}</span>
+            <span class="min-w-0 flex-1">
+              <span class="text-body block truncate" style="color: var(--fg1);" :title="row.account">
+                {{ row.account }}
+                <span v-if="row.badge" class="badge badge-neutral ml-1">{{ row.badge }}</span>
+              </span>
+              <!-- The two levels behind the delta, so a change can't be misread
+                   as an amount the location earned. -->
+              <span class="data block text-[11px]" style="color: var(--fg-muted);">
+                {{ row.beforeAfter }}
+              </span>
             </span>
             <!-- Diverging bar: gains grow right of centre, losses left -->
             <div class="relative h-2 w-24 flex-shrink-0 overflow-hidden rounded-full sm:w-40" style="background: var(--surface-2);">
@@ -125,7 +132,7 @@
               {{ formatSignedCurrency(row.abs) }}
             </span>
             <span class="data w-14 flex-shrink-0 text-right text-xs" style="color: var(--fg-muted);">
-              {{ row.isNew ? $t('growth.newShort') : formatPercent(row.pct) }}
+              {{ row.percentDisplay }}
             </span>
           </div>
         </div>
@@ -337,12 +344,23 @@ const accountRows = computed(() => {
     .map(a => {
       const abs = a.change.grossRevenue.abs
       const halfWidth = (Math.abs(abs) / widest) * 50
+      // A percentage off a partial baseline (a location open a few days) is
+      // arithmetically true and practically meaningless, so withhold it.
+      const suppressPercent = a.isNew || a.isRamping
       return {
         accountKey: a.accountKey,
         account: a.account,
-        isNew: a.isNew,
         abs,
-        pct: a.change.grossRevenue.pct,
+        badge: a.isNew
+          ? t('growth.newLocation')
+          : a.isRamping
+            ? t('growth.rampingLocation')
+            : '',
+        beforeAfter: t('growth.beforeAfter', {
+          before: formatCurrency(a.previous.grossRevenue),
+          after: formatCurrency(a.current.grossRevenue)
+        }),
+        percentDisplay: suppressPercent ? '—' : formatPercent(a.change.grossRevenue.pct),
         barStyle: abs >= 0
           ? { left: '50%', width: `${halfWidth}%` }
           : { right: '50%', width: `${halfWidth}%` }

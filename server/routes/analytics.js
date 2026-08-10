@@ -1114,7 +1114,11 @@ router.get('/growth', requireAuth, async (req, res) => {
               SUM(CASE WHEN dg.date >= $4 THEN dg.net_gain      ELSE 0 END) AS cur_net_gain,
               SUM(CASE WHEN dg.date <  $4 THEN dg.gross_revenue ELSE 0 END) AS prev_gross,
               SUM(CASE WHEN dg.date <  $4 THEN dg.orders_count  ELSE 0 END) AS prev_orders,
-              SUM(CASE WHEN dg.date <  $4 THEN dg.net_gain      ELSE 0 END) AS prev_net_gain
+              SUM(CASE WHEN dg.date <  $4 THEN dg.net_gain      ELSE 0 END) AS prev_net_gain,
+              -- Trading days in the baseline. A location that was only open a
+              -- handful of days produces a tiny denominator, and a percentage
+              -- off it (+800%) says more about the opening date than the trend.
+              COUNT(DISTINCT dg.date) FILTER (WHERE dg.date < $4 AND dg.gross_revenue > 0) AS prev_active_days
        FROM daily_gains dg
        LEFT JOIN company_accounts ca
          ON ca.company_id = dg.company_id AND ca.company_token = dg.company_token
@@ -1162,15 +1166,22 @@ router.get('/growth', requireAuth, async (req, res) => {
               orders: Number(r.prev_orders) || 0,
               netGain: Number(r.prev_net_gain) || 0
             }
+            const prevActiveDays = Number(r.prev_active_days) || 0
             return {
               accountKey: r.company_token,
               account: r.account_name || r.company_token,
               // No revenue at all in the earlier window means a location that
               // opened mid-span: a percentage would be meaningless there.
               isNew: prev.grossRevenue <= 0 && cur.grossRevenue > 0,
+              // Open for less than half the baseline: growing off a partial
+              // window, so the absolute change is the only honest figure.
+              isRamping: prev.grossRevenue > 0 && prevActiveDays < days / 2,
+              previousActiveDays: prevActiveDays,
               ...buildGrowthMetrics(cur, prev)
             }
           })
+          // Nothing in either window means the location simply wasn't trading.
+          .filter(a => a.current.grossRevenue !== 0 || a.previous.grossRevenue !== 0)
           .sort((a, b) => b.current.grossRevenue - a.current.grossRevenue)
       }
     })

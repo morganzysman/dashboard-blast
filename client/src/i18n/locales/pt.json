@@ -467,9 +467,11 @@
     "netGain": "Lucro",
     "marginNote": "Margem {margin} ({points})",
     "previouslyShort": "antes {value}",
-    "byAccount": "Contribuição por conta",
-    "byAccountHint": "Quanto cada loja soma ou subtrai da variação total, em dinheiro",
+    "byAccount": "Variação de receita por conta",
+    "byAccountHint": "Mudança em receita, não lucro: últimas {weeks} semanas menos as {weeks} anteriores",
+    "beforeAfter": "{before} → {after}",
     "newLocation": "nova",
+    "rampingLocation": "base parcial",
     "newShort": "nova",
     "partialBaseline": "Só existem {days} de {total} dias no período de comparação, então a variação pode estar exagerada.",
     "driver": {
