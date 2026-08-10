@@ -28,6 +28,13 @@
       :key="`${currentDateRange.start}-${currentDateRange.end}-${profitabilityData?.period?.start || ''}-${profitabilityData?.period?.end || ''}`"
     />
 
+    <!-- Business growth — trailing whole weeks vs the weeks before them.
+         Independent of the date picker above: it always reports the trend. -->
+    <BusinessGrowthCard
+      ref="growthCard"
+      :timezone="authStore.user?.timezone || 'America/Lima'"
+    />
+
     <!-- Order Evolution Chart Component -->
     <OrderEvolutionChart
       :current-date-range="currentDateRange"
@@ -108,6 +115,7 @@ import { useAuthStore } from '../stores/auth'
 import DashboardOverview from '../components/DashboardOverview.vue'
 import AccountDetails from '../components/AccountDetails.vue'
 import OrderEvolutionChart from '../components/OrderEvolutionChart.vue'
+import BusinessGrowthCard from '../components/BusinessGrowthCard.vue'
 import api from '../utils/api'
 import { buildAnalyticsFromProfitability } from '../composables/useProfitability'
 
@@ -118,6 +126,7 @@ const ordersData = ref(null)
 const profitabilityData = ref(null)
 const serviceMetricsData = ref(null)
 const dailyRecordData = ref(null)
+const growthCard = ref(null)
 const loading = ref(false)
 const error = ref('')
 
@@ -484,6 +493,7 @@ const refreshData = () => {
   fetchOrdersData(currentDateRange.value)
   fetchServiceMetricsData()
   fetchDailyRecord()
+  growthCard.value?.refresh()
 }
 
 onMounted(() => {

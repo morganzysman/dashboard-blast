@@ -270,6 +270,12 @@ export const api = {
     const qs = params.toString()
     return apiRequest(`/api/analytics/daily-record${qs ? `?${qs}` : ''}`, { method: 'GET' })
   },
+  // Business growth: last N whole weeks vs the N weeks before them
+  getGrowth: (weeks = 13, timezone = null) => {
+    const params = new URLSearchParams({ weeks: String(weeks) })
+    if (timezone) params.set('timezone', timezone)
+    return apiRequest(`/api/analytics/growth?${params.toString()}`, { method: 'GET' })
+  },
   // Achievements (persisted trophy case)
   getAchievements: (scope = 'company', companyToken = null) => {
     const params = new URLSearchParams({ scope })

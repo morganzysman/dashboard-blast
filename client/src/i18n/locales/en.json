@@ -454,6 +454,31 @@
     "perAccountHint": "Each account's own best {day} — the record date can differ per account",
     "goalShort": "Goal"
   },
+  "growth": {
+    "title": "How is the business doing?",
+    "subtitle": "Last {weeks} weeks compared with the {weeks} before them",
+    "weeksShort": "{weeks} wk",
+    "revenueInWindow": "Revenue this period",
+    "versusPrevious": "Previous period: {amount}",
+    "change": "Change",
+    "sparkAria": "Weekly revenue over the last {weeks} weeks",
+    "orders": "Orders",
+    "avgTicket": "Average ticket",
+    "netGain": "Gain",
+    "marginNote": "Margin {margin} ({points})",
+    "previouslyShort": "was {value}",
+    "byAccount": "Contribution by account",
+    "byAccountHint": "How much each location adds to or subtracts from the total change, in money",
+    "newLocation": "new",
+    "newShort": "new",
+    "partialBaseline": "Only {days} of {total} days exist in the comparison period, so the change may be overstated.",
+    "driver": {
+      "bothUp": "Growing on both fronts: {orders} in orders and {ticket} in average ticket.",
+      "bothDown": "Falling on both fronts: {orders} in orders and {ticket} in average ticket.",
+      "orders": "Orders are the engine ({orders}); average ticket moved {ticket}.",
+      "ticket": "Average ticket is the engine ({ticket}); orders moved {orders}."
+    }
+  },
   "companyKitchen": {
     "title": "Kitchen & SLA — all accounts",
     "tapToExpand": "(tap to expand)",

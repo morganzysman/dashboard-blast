@@ -453,6 +453,31 @@
     "perAccountHint": "O melhor {day} de cada conta — a data do recorde pode variar por conta",
     "goalShort": "Meta"
   },
+  "growth": {
+    "title": "Como vai o negócio?",
+    "subtitle": "Últimas {weeks} semanas comparadas com as {weeks} anteriores",
+    "weeksShort": "{weeks} sem",
+    "revenueInWindow": "Receita do período",
+    "versusPrevious": "Período anterior: {amount}",
+    "change": "Variação",
+    "sparkAria": "Receita por semana nas últimas {weeks} semanas",
+    "orders": "Pedidos",
+    "avgTicket": "Ticket médio",
+    "netGain": "Lucro",
+    "marginNote": "Margem {margin} ({points})",
+    "previouslyShort": "antes {value}",
+    "byAccount": "Contribuição por conta",
+    "byAccountHint": "Quanto cada loja soma ou subtrai da variação total, em dinheiro",
+    "newLocation": "nova",
+    "newShort": "nova",
+    "partialBaseline": "Só existem {days} de {total} dias no período de comparação, então a variação pode estar exagerada.",
+    "driver": {
+      "bothUp": "Crescendo pelos dois lados: {orders} em pedidos e {ticket} em ticket médio.",
+      "bothDown": "Caindo pelos dois lados: {orders} em pedidos e {ticket} em ticket médio.",
+      "orders": "O motor são os pedidos ({orders}); o ticket médio variou {ticket}.",
+      "ticket": "O motor é o ticket médio ({ticket}); os pedidos variaram {orders}."
+    }
+  },
   "companyKitchen": {
     "title": "Cozinha e SLA — todas as contas",
     "tapToExpand": "(toque para expandir)",

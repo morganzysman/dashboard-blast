@@ -453,6 +453,31 @@
     "perAccountHint": "Le meilleur {day} de chaque compte — la date du record peut varier selon le compte",
     "goalShort": "Objectif"
   },
+  "growth": {
+    "title": "Comment va l'activité ?",
+    "subtitle": "Les {weeks} dernières semaines comparées aux {weeks} précédentes",
+    "weeksShort": "{weeks} sem",
+    "revenueInWindow": "Chiffre d'affaires de la période",
+    "versusPrevious": "Période précédente : {amount}",
+    "change": "Évolution",
+    "sparkAria": "Chiffre d'affaires par semaine sur les {weeks} dernières semaines",
+    "orders": "Commandes",
+    "avgTicket": "Panier moyen",
+    "netGain": "Bénéfice",
+    "marginNote": "Marge {margin} ({points})",
+    "previouslyShort": "avant {value}",
+    "byAccount": "Contribution par compte",
+    "byAccountHint": "Ce que chaque établissement ajoute ou retire à l'évolution totale, en argent",
+    "newLocation": "nouveau",
+    "newShort": "nouveau",
+    "partialBaseline": "Seuls {days} jours sur {total} existent dans la période de comparaison, l'évolution peut donc être surestimée.",
+    "driver": {
+      "bothUp": "Croissance sur les deux fronts : {orders} de commandes et {ticket} de panier moyen.",
+      "bothDown": "Baisse sur les deux fronts : {orders} de commandes et {ticket} de panier moyen.",
+      "orders": "Le moteur, ce sont les commandes ({orders}) ; le panier moyen a évolué de {ticket}.",
+      "ticket": "Le moteur, c'est le panier moyen ({ticket}) ; les commandes ont évolué de {orders}."
+    }
+  },
   "companyKitchen": {
     "title": "Cuisine & SLA — tous les comptes",
     "tapToExpand": "(toucher pour développer)",

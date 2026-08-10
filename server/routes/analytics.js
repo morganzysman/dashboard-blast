@@ -980,6 +980,206 @@ router.get('/daily-record', requireAuth, async (req, res) => {
   }
 })
 
+// Percentage change, or null when the baseline can't support one (zero or a
+// loss). Callers render null as "—" rather than inventing an infinite gain.
+const percentChange = (current, previous) => {
+  if (!Number.isFinite(current) || !Number.isFinite(previous) || previous <= 0) return null
+  return ((current - previous) / previous) * 100
+}
+
+// Turns two windows of raw totals into the derived metrics and their deltas.
+// Margin is compared in percentage points; everything else in % and absolutes.
+function buildGrowthMetrics(cur, prev) {
+  const derive = (t) => ({
+    grossRevenue: t.grossRevenue,
+    orders: t.orders,
+    netGain: t.netGain,
+    avgTicket: t.orders > 0 ? t.grossRevenue / t.orders : 0,
+    margin: t.grossRevenue > 0 ? (t.netGain / t.grossRevenue) * 100 : 0
+  })
+  const current = derive(cur)
+  const previous = derive(prev)
+
+  return {
+    current,
+    previous,
+    change: {
+      grossRevenue: {
+        abs: current.grossRevenue - previous.grossRevenue,
+        pct: percentChange(current.grossRevenue, previous.grossRevenue)
+      },
+      orders: {
+        abs: current.orders - previous.orders,
+        pct: percentChange(current.orders, previous.orders)
+      },
+      avgTicket: {
+        abs: current.avgTicket - previous.avgTicket,
+        pct: percentChange(current.avgTicket, previous.avgTicket)
+      },
+      netGain: {
+        abs: current.netGain - previous.netGain,
+        pct: percentChange(current.netGain, previous.netGain)
+      },
+      margin: { abs: current.margin - previous.margin, pct: null }
+    },
+    // orders_count is backfilled separately from revenue, so a window can hold
+    // revenue with no order counts. Ticket and order deltas are junk if so.
+    ordersReliable: cur.orders > 0 && prev.orders > 0
+  }
+}
+
+// GET /api/analytics/growth?timezone=...&weeks=13
+// Period-over-period growth: the last N whole weeks vs the N weeks before them.
+//
+// Whole weeks (not calendar months or "last 90 days") are deliberate: both
+// windows then contain exactly the same number of Mondays, Saturdays, etc., so a
+// difference can't be an artifact of which weekdays each window happened to
+// catch. Today is excluded entirely — a day in progress would drag the current
+// window down and make the business look like it is always shrinking.
+router.get('/growth', requireAuth, async (req, res) => {
+  try {
+    const companyId = req.user.companyId
+
+    let timezone = req.query.timezone || req.query?.filter?.timezone
+    if (!timezone) {
+      const tzQ = await pool.query('SELECT timezone FROM companies WHERE id = $1', [companyId])
+      timezone = tzQ.rows[0]?.timezone || 'America/Lima'
+    }
+
+    const weeks = Math.min(26, Math.max(1, parseInt(req.query.weeks, 10) || 13))
+    const days = weeks * 7
+    const today = getTimezoneAwareDate(null, timezone)
+
+    // Resolve both window boundaries in SQL so date math never drifts.
+    const boundsRes = await pool.query(
+      `SELECT to_char($1::date - 1, 'YYYY-MM-DD')             AS cur_end,
+              to_char($1::date - $2::int, 'YYYY-MM-DD')       AS cur_start,
+              to_char($1::date - $2::int - 1, 'YYYY-MM-DD')   AS prev_end,
+              to_char($1::date - (2 * $2::int), 'YYYY-MM-DD') AS prev_start`,
+      [today, days]
+    )
+    const { cur_end: curEnd, cur_start: curStart, prev_end: prevEnd, prev_start: prevStart } = boundsRes.rows[0]
+
+    // One pass over the whole 2N-week span, bucketed into 7-day blocks counted
+    // back from cur_end. Bucket 0 is the most recent week, so buckets
+    // 0..weeks-1 are the current window and weeks..2*weeks-1 the previous one.
+    // The buckets therefore sum exactly to the window totals.
+    const bucketsRes = await pool.query(
+      `SELECT (($2::date - date) / 7)             AS bucket,
+              to_char(MIN(date), 'YYYY-MM-DD')    AS week_start,
+              to_char(MAX(date), 'YYYY-MM-DD')    AS week_end,
+              SUM(gross_revenue)                  AS gross,
+              SUM(orders_count)                   AS orders,
+              SUM(net_gain)                       AS net_gain
+       FROM daily_gains
+       WHERE company_id = $1 AND date >= $3 AND date <= $2
+       GROUP BY bucket
+       ORDER BY bucket DESC`, // highest bucket = furthest back, so this is chronological
+      [companyId, curEnd, prevStart]
+    )
+
+    const emptyTotals = () => ({ grossRevenue: 0, orders: 0, netGain: 0 })
+    const companyCur = emptyTotals()
+    const companyPrev = emptyTotals()
+    const weekly = []
+
+    for (const row of bucketsRes.rows) {
+      const bucket = Number(row.bucket)
+      const gross = Number(row.gross) || 0
+      const orders = Number(row.orders) || 0
+      const netGain = Number(row.net_gain) || 0
+      const inCurrent = bucket < weeks
+
+      const target = inCurrent ? companyCur : companyPrev
+      target.grossRevenue += gross
+      target.orders += orders
+      target.netGain += netGain
+
+      weekly.push({
+        weekStart: row.week_start,
+        weekEnd: row.week_end,
+        grossRevenue: gross,
+        orders,
+        netGain,
+        inCurrent
+      })
+    }
+
+    // Per-account totals for both windows in a single scan.
+    const accountsRes = await pool.query(
+      `SELECT dg.company_token,
+              ca.account_name,
+              SUM(CASE WHEN dg.date >= $4 THEN dg.gross_revenue ELSE 0 END) AS cur_gross,
+              SUM(CASE WHEN dg.date >= $4 THEN dg.orders_count  ELSE 0 END) AS cur_orders,
+              SUM(CASE WHEN dg.date >= $4 THEN dg.net_gain      ELSE 0 END) AS cur_net_gain,
+              SUM(CASE WHEN dg.date <  $4 THEN dg.gross_revenue ELSE 0 END) AS prev_gross,
+              SUM(CASE WHEN dg.date <  $4 THEN dg.orders_count  ELSE 0 END) AS prev_orders,
+              SUM(CASE WHEN dg.date <  $4 THEN dg.net_gain      ELSE 0 END) AS prev_net_gain
+       FROM daily_gains dg
+       LEFT JOIN company_accounts ca
+         ON ca.company_id = dg.company_id AND ca.company_token = dg.company_token
+       WHERE dg.company_id = $1 AND dg.date >= $3 AND dg.date <= $2
+       GROUP BY dg.company_token, ca.account_name`,
+      [companyId, curEnd, prevStart, curStart]
+    )
+
+    // How much of the previous window we actually hold. Without this a fresh
+    // install shows spectacular "growth" that is really just missing history.
+    const coverageRes = await pool.query(
+      `SELECT to_char(MIN(date), 'YYYY-MM-DD') AS data_start,
+              COUNT(DISTINCT date) FILTER (WHERE date >= $2 AND date <= $3) AS prev_days
+       FROM daily_gains
+       WHERE company_id = $1`,
+      [companyId, prevStart, prevEnd]
+    )
+    const prevDaysPresent = Number(coverageRes.rows[0]?.prev_days) || 0
+
+    return res.json({
+      success: true,
+      data: {
+        window: {
+          weeks,
+          days,
+          current: { start: curStart, end: curEnd },
+          previous: { start: prevStart, end: prevEnd }
+        },
+        coverage: {
+          dataStart: coverageRes.rows[0]?.data_start || null,
+          previousDaysPresent: prevDaysPresent,
+          previousComplete: prevDaysPresent >= days
+        },
+        company: buildGrowthMetrics(companyCur, companyPrev),
+        weekly, // chronological: oldest week first
+        accounts: accountsRes.rows
+          .map(r => {
+            const cur = {
+              grossRevenue: Number(r.cur_gross) || 0,
+              orders: Number(r.cur_orders) || 0,
+              netGain: Number(r.cur_net_gain) || 0
+            }
+            const prev = {
+              grossRevenue: Number(r.prev_gross) || 0,
+              orders: Number(r.prev_orders) || 0,
+              netGain: Number(r.prev_net_gain) || 0
+            }
+            return {
+              accountKey: r.company_token,
+              account: r.account_name || r.company_token,
+              // No revenue at all in the earlier window means a location that
+              // opened mid-span: a percentage would be meaningless there.
+              isNew: prev.grossRevenue <= 0 && cur.grossRevenue > 0,
+              ...buildGrowthMetrics(cur, prev)
+            }
+          })
+          .sort((a, b) => b.current.grossRevenue - a.current.grossRevenue)
+      }
+    })
+  } catch (error) {
+    console.error('❌ Growth fetch error:', error)
+    res.status(500).json({ success: false, error: error.message })
+  }
+})
+
 // GET /api/analytics/achievements?scope=company|account&company_token=xxx
 // Returns the mixed badge list (earned + upcoming) for the current period.
 router.get('/achievements', requireAuth, async (req, res) => {
