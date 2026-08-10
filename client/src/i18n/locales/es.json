@@ -470,8 +470,18 @@
     "netGain": "Ganancia",
     "marginNote": "Margen {margin} ({points})",
     "previouslyShort": "antes {value}",
-    "byAccount": "Variación de ingresos por cuenta",
-    "byAccountHint": "Cambio en ingresos, no ganancia: últimas {weeks} semanas menos las {weeks} anteriores",
+    "metric": {
+      "grossRevenue": "Ingresos",
+      "netGain": "Ganancia"
+    },
+    "byAccount": {
+      "grossRevenue": "Variación de ingresos por cuenta",
+      "netGain": "Variación de ganancia por cuenta"
+    },
+    "byAccountHint": {
+      "grossRevenue": "Cambio en ingresos, no ganancia: últimas {weeks} semanas menos las {weeks} anteriores",
+      "netGain": "Ganancia después de comisiones, comida, servicios y planilla: últimas {weeks} semanas menos las {weeks} anteriores"
+    },
     "beforeAfter": "{before} → {after}",
     "newLocation": "nuevo",
     "rampingLocation": "base parcial",

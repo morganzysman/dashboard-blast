@@ -468,8 +468,18 @@
     "netGain": "Lucro",
     "marginNote": "Margem {margin} ({points})",
     "previouslyShort": "antes {value}",
-    "byAccount": "Variação de receita por conta",
-    "byAccountHint": "Mudança em receita, não lucro: últimas {weeks} semanas menos as {weeks} anteriores",
+    "metric": {
+      "grossRevenue": "Receita",
+      "netGain": "Lucro"
+    },
+    "byAccount": {
+      "grossRevenue": "Variação de receita por conta",
+      "netGain": "Variação de lucro por conta"
+    },
+    "byAccountHint": {
+      "grossRevenue": "Mudança em receita, não lucro: últimas {weeks} semanas menos as {weeks} anteriores",
+      "netGain": "Lucro após taxas, comida, utilidades e folha: últimas {weeks} semanas menos as {weeks} anteriores"
+    },
     "beforeAfter": "{before} → {after}",
     "newLocation": "nova",
     "rampingLocation": "base parcial",

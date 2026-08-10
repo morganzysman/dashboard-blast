@@ -468,8 +468,18 @@
     "netGain": "Bénéfice",
     "marginNote": "Marge {margin} ({points})",
     "previouslyShort": "avant {value}",
-    "byAccount": "Évolution du chiffre d'affaires par compte",
-    "byAccountHint": "Évolution du chiffre d'affaires, pas du bénéfice : {weeks} dernières semaines moins les {weeks} précédentes",
+    "metric": {
+      "grossRevenue": "Chiffre d'affaires",
+      "netGain": "Bénéfice"
+    },
+    "byAccount": {
+      "grossRevenue": "Évolution du chiffre d'affaires par compte",
+      "netGain": "Évolution du bénéfice par compte"
+    },
+    "byAccountHint": {
+      "grossRevenue": "Évolution du chiffre d'affaires, pas du bénéfice : {weeks} dernières semaines moins les {weeks} précédentes",
+      "netGain": "Bénéfice après commissions, nourriture, charges et salaires : {weeks} dernières semaines moins les {weeks} précédentes"
+    },
     "beforeAfter": "{before} → {after}",
     "newLocation": "nouveau",
     "rampingLocation": "base partielle",

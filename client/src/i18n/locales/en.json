@@ -469,8 +469,18 @@
     "netGain": "Gain",
     "marginNote": "Margin {margin} ({points})",
     "previouslyShort": "was {value}",
-    "byAccount": "Revenue change by account",
-    "byAccountHint": "Change in revenue, not gain: last {weeks} weeks minus the {weeks} before",
+    "metric": {
+      "grossRevenue": "Revenue",
+      "netGain": "Gain"
+    },
+    "byAccount": {
+      "grossRevenue": "Revenue change by account",
+      "netGain": "Gain change by account"
+    },
+    "byAccountHint": {
+      "grossRevenue": "Change in revenue, not gain: last {weeks} weeks minus the {weeks} before",
+      "netGain": "Gain after payment fees, food, utilities and payroll: last {weeks} weeks minus the {weeks} before"
+    },
     "beforeAfter": "{before} → {after}",
     "newLocation": "new",
     "rampingLocation": "partial baseline",

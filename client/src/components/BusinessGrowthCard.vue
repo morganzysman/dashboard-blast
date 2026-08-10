@@ -102,9 +102,25 @@
 
       <!-- Contribution by location, in money rather than percentages -->
       <div v-if="accountRows.length > 1" class="space-y-3">
-        <div>
-          <p class="label-mono">{{ $t('growth.byAccount') }}</p>
-          <p class="text-[11px]" style="color: var(--fg-muted);">{{ $t('growth.byAccountHint', { weeks }) }}</p>
+        <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+          <div class="min-w-0">
+            <p class="label-mono">{{ $t(`growth.byAccount.${accountMetric}`) }}</p>
+            <p class="text-[11px]" style="color: var(--fg-muted);">
+              {{ $t(`growth.byAccountHint.${accountMetric}`, { weeks }) }}
+            </p>
+          </div>
+          <div class="flex flex-shrink-0 gap-1 rounded-lg p-1" style="background: var(--surface-2);">
+            <button
+              v-for="option in accountMetricOptions"
+              :key="option"
+              type="button"
+              class="label-mono rounded px-2 py-1 text-[11px] transition-colors"
+              :class="option === accountMetric ? 'bg-accent text-accent-fg' : 'text-fg-muted hover:text-fg-strong'"
+              @click="accountMetric = option"
+            >
+              {{ $t(`growth.metric.${option}`) }}
+            </button>
+          </div>
         </div>
         <div class="space-y-2">
           <div v-for="row in accountRows" :key="row.accountKey" class="flex items-center gap-3">
@@ -335,14 +351,21 @@ const driverIcon = computed(() => {
   return pct > 0 ? 'trending_up' : 'trending_down'
 })
 
+// Revenue answers "where did the growth come from", gain answers "was it worth
+// it" — a chain can add locations, grow revenue and still lose money, so both
+// need to be reachable from the same list.
+const accountMetricOptions = ['grossRevenue', 'netGain']
+const accountMetric = ref('grossRevenue')
+
 // Contribution in money: a percentage flatters a location opening from zero and
 // understates the one that actually carries the chain.
 const accountRows = computed(() => {
   const accounts = growthData.value?.accounts || []
-  const widest = Math.max(1, ...accounts.map(a => Math.abs(a.change.grossRevenue.abs)))
+  const metric = accountMetric.value
+  const widest = Math.max(1, ...accounts.map(a => Math.abs(a.change[metric].abs)))
   return accounts
     .map(a => {
-      const abs = a.change.grossRevenue.abs
+      const abs = a.change[metric].abs
       const halfWidth = (Math.abs(abs) / widest) * 50
       // A percentage off a partial baseline (a location open a few days) is
       // arithmetically true and practically meaningless, so withhold it.
@@ -357,10 +380,10 @@ const accountRows = computed(() => {
             ? t('growth.rampingLocation')
             : '',
         beforeAfter: t('growth.beforeAfter', {
-          before: formatCurrency(a.previous.grossRevenue),
-          after: formatCurrency(a.current.grossRevenue)
+          before: formatCurrency(a.previous[metric]),
+          after: formatCurrency(a.current[metric])
         }),
-        percentDisplay: suppressPercent ? '—' : formatPercent(a.change.grossRevenue.pct),
+        percentDisplay: suppressPercent ? '—' : formatPercent(a.change[metric].pct),
         barStyle: abs >= 0
           ? { left: '50%', width: `${halfWidth}%` }
           : { right: '50%', width: `${halfWidth}%` }
