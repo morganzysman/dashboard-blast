@@ -27,10 +27,15 @@
       <div class="rounded-lg p-4" style="background: var(--surface-2);">
         <div class="flex flex-wrap items-end justify-between gap-4">
           <div class="min-w-0">
-            <p class="label-mono">{{ $t('growth.revenueInWindow') }}</p>
+            <p class="label-mono">{{ $t('growth.revenueInWindow', { weeks }) }}</p>
             <p class="price text-2xl sm:text-3xl text-fg-strong">{{ formatCurrency(company.current.grossRevenue) }}</p>
-            <p class="text-small mt-1" style="color: var(--fg3);">
-              {{ $t('growth.versusPrevious', { amount: formatCurrency(company.previous.grossRevenue) }) }}
+            <!-- A 13-week total is hard to feel; the daily average is the number
+                 everyone already has an instinct for. -->
+            <p class="text-small mt-1" style="color: var(--fg1);">
+              {{ $t('growth.dailyAverage', { amount: formatCurrency(dailyAverage, 2) }) }}
+            </p>
+            <p class="text-small" style="color: var(--fg3);">
+              {{ $t('growth.versusPrevious', { weeks, amount: formatCurrency(company.previous.grossRevenue) }) }}
             </p>
           </div>
           <div class="text-right">
@@ -186,14 +191,37 @@ const hasData = computed(() => {
   return !!c && (c.current.grossRevenue > 0 || c.previous.grossRevenue > 0)
 })
 
+// Grouping separators are regional, not just linguistic: a bare 'es' groups
+// thousands with a dot, so S/ 261576 renders as "261.576" and a Peruvian reader
+// sees two hundred sixty-one soles. Pairing the language with the tenant country
+// gives "261,576".
+const numberLocale = computed(() => {
+  const language = (locale.value || 'en').split('-')[0]
+  const countryCode = authStore.country
+  if (!countryCode) return language
+  const tag = `${language}-${String(countryCode).toUpperCase()}`
+  try {
+    new Intl.NumberFormat(tag)
+    return tag
+  } catch {
+    return language
+  }
+})
+
 const formatCurrency = (amount, decimals = 0) => {
   const symbol = authStore.user?.currencySymbol || 'S/'
   const num = Number(amount) || 0
-  return `${symbol} ${num.toLocaleString(locale.value || 'en', {
+  return `${symbol} ${num.toLocaleString(numberLocale.value, {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals
   })}`
 }
+
+const dailyAverage = computed(() => {
+  const days = windowInfo.value?.days
+  if (!days || !company.value) return 0
+  return company.value.current.grossRevenue / days
+})
 
 const formatSignedCurrency = (amount, decimals = 0) => {
   const num = Number(amount) || 0
@@ -231,8 +259,8 @@ const secondaryMetrics = computed(() => {
     {
       key: 'orders',
       label: t('growth.orders'),
-      value: c.current.orders.toLocaleString(locale.value || 'en'),
-      previous: c.previous.orders.toLocaleString(locale.value || 'en'),
+      value: c.current.orders.toLocaleString(numberLocale.value),
+      previous: c.previous.orders.toLocaleString(numberLocale.value),
       delta: formatPercent(c.change.orders.pct),
       tone: c.change.orders.pct
     },
