@@ -100,6 +100,7 @@
     <DailySalesGoal
       :record-data="recordData"
       :profitability-data="profitabilityData"
+      :store-status-data="storeStatusData"
       :current-date-range="currentDateRange"
       :loading="loading"
     />
@@ -347,6 +348,7 @@ const props = defineProps({
   ordersData: Object,
   profitabilityData: Object,
   recordData: Object,
+  storeStatusData: Object,
   loading: Boolean,
   selectedDateRange: String,
   customStartDate: String,

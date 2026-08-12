@@ -65,6 +65,25 @@
               <span class="text-body font-semibold truncate" style="color: var(--fg1);" :title="row.account">{{ row.account }}</span>
               <MaterialIcon v-if="row.isNewRecord" name="emoji_events" :size="16" :filled="true" class="flex-shrink-0 text-success-600" />
             </div>
+            <div v-if="row.providers.length" class="flex flex-wrap items-center gap-x-2.5 gap-y-1 mb-2">
+              <span
+                v-for="p in row.providers"
+                :key="p.provider"
+                class="inline-flex items-center gap-1 text-[11px] leading-none"
+                :title="providerTitle(p)"
+              >
+                <span
+                  class="inline-block w-1.5 h-1.5 rounded-full flex-shrink-0"
+                  :class="providerDotClass(p.status)"
+                  aria-hidden="true"
+                />
+                <span style="color: var(--fg3);">{{ providerLabel(p.provider) }}</span>
+                <span
+                  class="font-medium"
+                  :class="providerTextClass(p.status)"
+                >{{ providerStatusLabel(p.status) }}</span>
+              </span>
+            </div>
             <div class="flex items-end justify-between gap-2 mb-2">
               <span class="price text-base" :class="row.isNewRecord ? 'text-success-600' : 'text-fg-strong'">
                 {{ formatCurrency(row.current) }}
@@ -94,12 +113,63 @@ import { useAuthStore } from '../stores/auth'
 const props = defineProps({
   recordData: Object,
   profitabilityData: Object,
+  storeStatusData: Object,
   currentDateRange: Object,
   loading: Boolean
 })
 
 const authStore = useAuthStore()
-const { locale } = useI18n()
+const { t, locale } = useI18n()
+
+const PROVIDER_ORDER = ['RAPPI', 'RAPPI_TURBO', 'PEDIDOSYA', 'UBER_EATS', 'DIDI', 'IFOOD', '99FOOD']
+
+const providerLabel = (provider) => {
+  const key = `dailyGoal.providers.${provider}`
+  const label = t(key)
+  return label === key ? provider : label
+}
+
+const providerTitle = (p) => {
+  const name = providerLabel(p.provider)
+  if (p.status === 'OPEN') return t('dailyGoal.storeOpenOn', { provider: name })
+  if (p.status === 'CLOSED') return t('dailyGoal.storeClosedOn', { provider: name })
+  return t('dailyGoal.storeUnknownOn', { provider: name })
+}
+
+const providerStatusLabel = (status) => {
+  if (status === 'OPEN') return t('dailyGoal.storeOpen')
+  if (status === 'CLOSED') return t('dailyGoal.storeClosed')
+  return t('dailyGoal.storeUnknown')
+}
+
+const providerDotClass = (status) => {
+  if (status === 'OPEN') return 'bg-success-600'
+  if (status === 'CLOSED') return 'bg-error'
+  return 'bg-fg-muted'
+}
+
+const providerTextClass = (status) => {
+  if (status === 'OPEN') return 'text-success-700'
+  if (status === 'CLOSED') return 'text-error'
+  return 'text-fg-muted'
+}
+
+const statusByAccount = computed(() => {
+  const map = new Map()
+  for (const acc of props.storeStatusData?.accounts || []) {
+    const known = (acc.providers || [])
+      .filter((p) => p.status === 'OPEN' || p.status === 'CLOSED' || p.status === 'UNKNOWN')
+      .sort((a, b) => {
+        const rank = (name) => {
+          const i = PROVIDER_ORDER.indexOf(name)
+          return i === -1 ? PROVIDER_ORDER.length : i
+        }
+        return rank(a.provider) - rank(b.provider) || a.provider.localeCompare(b.provider)
+      })
+    map.set(acc.accountKey, known)
+  }
+  return map
+})
 
 const isSingleDay = computed(() => {
   const r = props.currentDateRange
@@ -160,7 +230,8 @@ const accountRows = computed(() => {
         current,
         record,
         recordDate: rec?.date || null,
-        isNewRecord: record > 0 && current > record
+        isNewRecord: record > 0 && current > record,
+        providers: statusByAccount.value.get(acc.accountKey) || []
       }
     })
     .sort((a, b) => b.current - a.current)

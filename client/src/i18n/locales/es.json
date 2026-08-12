@@ -469,7 +469,7 @@
     "saveFailedTitle": "No se pudo guardar",
     "saveFailedMsg": "No se pudo guardar la clave API. Inténtalo de nuevo.",
     "publicKeyLabel": "Clave API pública",
-    "publicKeyHint": "Clave API pública de OlaClick (olk_live_...) desde Integraciones > API Keys. Se usa para la analítica de combos.",
+    "publicKeyHint": "Clave API pública de OlaClick (olk_live_...) desde Integraciones > API Keys. Necesita orders:read y stores:read. Se usa para combos y el estado de las tiendas.",
     "publicKeyPlaceholder": "Pega la clave API pública (olk_live_...)"
   },
   "combos": {
@@ -546,7 +546,22 @@
     "remaining": "Faltan {amount} para un nuevo récord",
     "perAccount": "Por cuenta",
     "perAccountHint": "El mejor {day} de cada cuenta — la fecha del récord puede variar por cuenta",
-    "goalShort": "Meta"
+    "goalShort": "Meta",
+    "storeOpen": "Abierta",
+    "storeClosed": "Cerrada",
+    "storeUnknown": "—",
+    "storeOpenOn": "Abierta en {provider}",
+    "storeClosedOn": "Cerrada en {provider}",
+    "storeUnknownOn": "No se pudo consultar {provider}",
+    "providers": {
+      "RAPPI": "Rappi",
+      "RAPPI_TURBO": "Rappi Turbo",
+      "PEDIDOSYA": "PedidosYa",
+      "UBER_EATS": "Uber Eats",
+      "DIDI": "Didi",
+      "IFOOD": "iFood",
+      "99FOOD": "99Food"
+    }
   },
   "growth": {
     "title": "¿Cómo va el negocio?",

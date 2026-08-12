@@ -6,6 +6,7 @@
               :orders-data="ordersData"
               :profitability-data="profitabilityData"
               :record-data="dailyRecordData"
+              :store-status-data="storeStatusData"
               :loading="loading"
               v-model:selected-date-range="selectedDateRange"
               v-model:custom-start-date="customStartDate"
@@ -126,6 +127,7 @@ const ordersData = ref(null)
 const profitabilityData = ref(null)
 const serviceMetricsData = ref(null)
 const dailyRecordData = ref(null)
+const storeStatusData = ref(null)
 const growthCard = ref(null)
 const loading = ref(false)
 const error = ref('')
@@ -281,6 +283,7 @@ const onDateRangeChange = () => {
   fetchOrdersData(currentDateRange.value)
   fetchServiceMetricsData()
   fetchDailyRecord()
+  fetchStoreStatus()
 }
 
 const onCustomDateChange = () => {
@@ -294,6 +297,7 @@ const onCustomDateChange = () => {
     fetchOrdersData(currentDateRange.value)
     fetchServiceMetricsData()
     fetchDailyRecord()
+    fetchStoreStatus()
   }
 }
 
@@ -307,6 +311,7 @@ const applyCustomDateRange = () => {
     fetchOrdersData(currentDateRange.value)
     fetchServiceMetricsData()
     fetchDailyRecord()
+    fetchStoreStatus()
   }
 }
 
@@ -488,11 +493,38 @@ const fetchDailyRecord = async () => {
   }
 }
 
+// Live food-app open/closed status — only meaningful for "today"
+let storeStatusGeneration = 0
+const fetchStoreStatus = async () => {
+  const generation = ++storeStatusGeneration
+  const range = currentDateRange.value
+  const todayStr = getCurrentDateInTimezone()
+  const viewingToday = range.start && range.start === range.end && range.start === todayStr
+  if (!viewingToday) {
+    if (generation === storeStatusGeneration) storeStatusData.value = null
+    return
+  }
+  try {
+    const data = await api.getStoreStatus()
+    if (generation !== storeStatusGeneration) return
+    if (data.success) {
+      storeStatusData.value = data.data
+    } else {
+      storeStatusData.value = null
+    }
+  } catch (err) {
+    if (generation !== storeStatusGeneration) return
+    console.warn('⚠️ Store status fetch failed:', err)
+    storeStatusData.value = null
+  }
+}
+
 const refreshData = () => {
   fetchDashboardData()
   fetchOrdersData(currentDateRange.value)
   fetchServiceMetricsData()
   fetchDailyRecord()
+  fetchStoreStatus()
   growthCard.value?.refresh()
 }
 
@@ -502,6 +534,7 @@ onMounted(() => {
   fetchOrdersData(currentDateRange.value)
   fetchServiceMetricsData()
   fetchDailyRecord()
+  fetchStoreStatus()
 })
 </script>
 

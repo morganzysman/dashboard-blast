@@ -262,6 +262,8 @@ export const api = {
     if (companyToken) params.set('company_token', companyToken)
     return apiRequest(`/api/analytics/burgers-by-source?${params.toString()}`, { method: 'GET' })
   },
+  // Live open/closed status of each account on food apps (Rappi, Rappi Turbo)
+  getStoreStatus: () => apiRequest('/api/analytics/store-status', { method: 'GET' }),
   // Daily record / goal-to-beat for the weekday of `date` (defaults to today)
   getDailyRecord: (date = null, timezone = null) => {
     const params = new URLSearchParams()

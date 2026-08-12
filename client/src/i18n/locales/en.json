@@ -468,7 +468,7 @@
     "saveFailedTitle": "Could not save",
     "saveFailedMsg": "Failed to save the API key. Please try again.",
     "publicKeyLabel": "Public API key",
-    "publicKeyHint": "OlaClick Public API key (olk_live_...) from Integrations > API Keys. Used for combo analytics.",
+    "publicKeyHint": "OlaClick Public API key (olk_live_...) from Integrations > API Keys. Needs orders:read and stores:read. Used for combo analytics and live store status.",
     "publicKeyPlaceholder": "Paste public API key (olk_live_...)"
   },
   "combos": {
@@ -545,7 +545,22 @@
     "remaining": "{amount} to go to set a new record",
     "perAccount": "Per account",
     "perAccountHint": "Each account's own best {day} — the record date can differ per account",
-    "goalShort": "Goal"
+    "goalShort": "Goal",
+    "storeOpen": "Open",
+    "storeClosed": "Closed",
+    "storeUnknown": "—",
+    "storeOpenOn": "Open on {provider}",
+    "storeClosedOn": "Closed on {provider}",
+    "storeUnknownOn": "Could not check {provider}",
+    "providers": {
+      "RAPPI": "Rappi",
+      "RAPPI_TURBO": "Rappi Turbo",
+      "PEDIDOSYA": "PedidosYa",
+      "UBER_EATS": "Uber Eats",
+      "DIDI": "Didi",
+      "IFOOD": "iFood",
+      "99FOOD": "99Food"
+    }
   },
   "growth": {
     "title": "How is the business doing?",

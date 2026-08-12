@@ -269,6 +269,38 @@ export async function fetchPublicOrderDetail(publicApiKey, orderId) {
   return body?.data ?? null;
 }
 
+/**
+ * Live open/closed status of this restaurant on each food app
+ * (`GET /v1/stores/status`). Requires the `stores:read` scope.
+ *
+ * Pass `providerNames` to skip live lookups for apps you don't use — the
+ * endpoint checks each provider in real time, so a shorter list is faster.
+ * Known providers: RAPPI, RAPPI_TURBO, IFOOD, DIDI, PEDIDOSYA, UBER_EATS, 99FOOD.
+ *
+ * @param {string} publicApiKey
+ * @param {{providerNames?: string[]|string}} [opts]
+ * @returns {Promise<Array<{provider:string, status:'OPEN'|'CLOSED'|'UNKNOWN'}>>}
+ */
+export async function fetchStoreStatus(publicApiKey, { providerNames } = {}) {
+  const params = {};
+  if (providerNames != null && providerNames !== '') {
+    params.provider_names = Array.isArray(providerNames)
+      ? providerNames.join(',')
+      : String(providerNames);
+  }
+  const body = await publicApiGet(publicApiKey, '/stores/status', params);
+  const rows = Array.isArray(body?.data) ? body.data : [];
+  return rows
+    .filter((row) => row && typeof row === 'object')
+    .map((row) => {
+      const provider = String(row.provider_name || '').toUpperCase().trim();
+      const raw = String(row.store_status || 'UNKNOWN').toUpperCase().trim();
+      const status = raw === 'OPEN' || raw === 'CLOSED' ? raw : 'UNKNOWN';
+      return { provider, status };
+    })
+    .filter((row) => row.provider);
+}
+
 function isCanceledLine(line) {
   if (!line || typeof line !== 'object') return false;
   const c = line.canceled_at ?? line.cancelled_at ?? line.canceledAt ?? line.cancelledAt;

@@ -6,6 +6,17 @@ import { getPaymentData, getTipsData } from '../services/ledgerReadService.js'
 import { computeAndStoreDailyGain, backfillGains } from '../services/dailyGainService.js'
 import { syncComboFactsForDay, backfillComboStats } from '../services/comboStatsService.js'
 import { getBadges, evaluateCompanyMonths } from '../services/achievementService.js'
+import { fetchStoreStatus } from '../services/publicOlaClickService.js'
+
+// Food apps Blast actually sells on. Narrowing the live lookup keeps
+// GET /v1/stores/status fast (each provider is checked in real time).
+const STORE_STATUS_PROVIDERS = ['RAPPI', 'RAPPI_TURBO']
+
+// Live provider checks are slow and rate-limited; reuse a fresh result for
+// a short window so dashboard refresh / date-picker churn doesn't fan out
+// another N OlaClick calls per company.
+const STORE_STATUS_TTL_MS = 45_000
+const storeStatusCache = new Map() // companyId → { data, expiresAt }
 
 const router = Router()
 
@@ -976,6 +987,61 @@ router.get('/daily-record', requireAuth, async (req, res) => {
     })
   } catch (error) {
     console.error('❌ Daily record fetch error:', error)
+    res.status(500).json({ success: false, error: error.message })
+  }
+})
+
+// GET /api/analytics/store-status
+// Live open/closed state of each account on Rappi / Rappi Turbo (OlaClick
+// public API). One account failing does not fail the rest. Accounts without
+// a public_api_key, or whose key is missing `stores:read`, come back with
+// `available: false` so the UI can stay quiet rather than error.
+router.get('/store-status', requireAuth, async (req, res) => {
+  try {
+    const companyId = req.user.companyId
+    const cached = storeStatusCache.get(companyId)
+    if (cached && Date.now() < cached.expiresAt) {
+      return res.json({ success: true, data: cached.data })
+    }
+
+    const q = await pool.query(
+      `SELECT company_token, account_name, public_api_key
+       FROM company_accounts
+       WHERE company_id = $1
+       ORDER BY account_name`,
+      [companyId]
+    )
+
+    const accounts = await Promise.all(q.rows.map(async (acc) => {
+      const base = {
+        accountKey: acc.company_token,
+        account: acc.account_name || acc.company_token,
+        providers: [],
+        available: false
+      }
+      if (!acc.public_api_key) {
+        return { ...base, error: 'no_key' }
+      }
+      try {
+        const providers = await fetchStoreStatus(acc.public_api_key, {
+          providerNames: STORE_STATUS_PROVIDERS
+        })
+        return { ...base, providers, available: true }
+      } catch (err) {
+        const status = Number(err?.status)
+        const error = status === 403 ? 'missing_scope' : 'fetch_failed'
+        console.warn(
+          `⚠️ Store status ${acc.company_token}: ${error} (${err.message})`
+        )
+        return { ...base, error }
+      }
+    }))
+
+    const data = { accounts }
+    storeStatusCache.set(companyId, { data, expiresAt: Date.now() + STORE_STATUS_TTL_MS })
+    return res.json({ success: true, data })
+  } catch (error) {
+    console.error('❌ Store status fetch error:', error)
     res.status(500).json({ success: false, error: error.message })
   }
 })
