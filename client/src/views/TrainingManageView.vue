@@ -5,12 +5,13 @@
       <p class="text-fg-muted mt-1">{{ $t('training.manage.subtitle') }}</p>
     </div>
 
-    <!-- Tabs -->
-    <div class="flex gap-2 mb-6 border-b" style="border-color: var(--border);">
+    <!-- Tabs. The Spanish labels are far too wide for a phone, so the bar scrolls
+         sideways instead of wrapping each label into a three-line stack. -->
+    <div class="flex gap-2 mb-6 border-b overflow-x-auto tab-bar" style="border-color: var(--border);">
       <button
         v-for="tab in tabs"
         :key="tab.key"
-        class="px-4 py-2 text-sm font-medium -mb-px border-b-2 transition-colors"
+        class="px-4 py-2 text-sm font-medium -mb-px border-b-2 transition-colors whitespace-nowrap flex-shrink-0"
         :class="activeTab === tab.key
           ? 'border-brand-600 text-fg-strong'
           : 'border-transparent text-fg-muted hover:text-fg'"
@@ -25,12 +26,12 @@
 
     <!-- ================= REVIEW QUEUE ================= -->
     <div v-if="activeTab === 'review'">
-      <div class="flex items-center justify-between mb-4">
-        <label class="flex items-center gap-2 text-sm text-fg">
-          <input type="checkbox" v-model="onlyPending" @change="loadSubmissions" />
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <label class="flex items-center gap-2 text-sm text-fg min-w-0">
+          <input type="checkbox" class="flex-shrink-0" v-model="onlyPending" @change="loadSubmissions" />
           {{ $t('training.manage.onlyPending') }}
         </label>
-        <button class="btn-secondary btn-sm" :disabled="loadingSubmissions" @click="loadSubmissions">
+        <button class="btn-secondary btn-sm flex-shrink-0" :disabled="loadingSubmissions" @click="loadSubmissions">
           {{ $t('common.refresh') }}
         </button>
       </div>
@@ -50,17 +51,19 @@
       <div v-else class="space-y-4">
         <div v-for="s in submissions" :key="s.id" class="card">
           <div class="card-body">
-            <div class="flex justify-between items-start gap-3 mb-3">
+            <!-- Badge under the title on a phone: side by side it leaves the title
+                 about 80px of column. -->
+            <div class="flex flex-col gap-2 sm:flex-row sm:justify-between sm:items-start mb-3">
               <div class="min-w-0">
-                <h3 class="font-semibold text-fg-strong">{{ s.template_title }}</h3>
-                <p class="text-sm text-fg-muted">
+                <h3 class="font-semibold text-fg-strong break-words">{{ s.template_title }}</h3>
+                <p class="text-sm text-fg-muted break-words">
                   {{ s.user_name }}
                   <span v-if="s.job_type"> · {{ $t(`admin.jobType${s.job_type === 'kitchen' ? 'Kitchen' : 'Waiter'}`) }}</span>
                   <span v-if="s.account_name"> · {{ s.account_name }}</span>
                 </p>
                 <p class="text-xs text-fg-muted mt-0.5">{{ formatDate(s.created_at) }}</p>
               </div>
-              <span class="badge flex-shrink-0" :class="statusClass(s)">{{ statusLabel(s) }}</span>
+              <span class="badge self-start flex-shrink-0" :class="statusClass(s)">{{ statusLabel(s) }}</span>
             </div>
 
             <div v-if="s.photos?.length" class="grid grid-cols-3 sm:grid-cols-4 gap-2 mb-3">
@@ -145,9 +148,9 @@
 
     <!-- ================= CATALOGUE ================= -->
     <div v-else-if="activeTab === 'catalogue'" class="space-y-6">
-      <div class="flex items-center justify-between">
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p class="text-sm text-fg-muted">{{ $t('training.manage.catalogueHint') }}</p>
-        <button class="btn-primary btn-sm" @click="startCreate">
+        <button class="btn-primary btn-sm w-full sm:w-auto flex-shrink-0 whitespace-nowrap" @click="startCreate">
           <MaterialIcon name="add" :size="16" class="mr-1" />
           {{ $t('training.manage.newEvidence') }}
         </button>
@@ -270,10 +273,12 @@
       <div v-else class="space-y-3">
         <div v-for="tpl in templates" :key="tpl.id" class="card">
           <div class="card-body">
-            <div class="flex justify-between items-start gap-3">
+            <!-- Actions drop below the content on a phone so the checklist gets the
+                 full width instead of wrapping around a button column. -->
+            <div class="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-start">
               <div class="min-w-0">
                 <div class="flex items-center gap-2 flex-wrap">
-                  <h3 class="font-semibold text-fg-strong">{{ tpl.title }}</h3>
+                  <h3 class="font-semibold text-fg-strong break-words">{{ tpl.title }}</h3>
                   <span v-if="!tpl.is_active" class="badge bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300">
                     {{ $t('training.manage.inactive') }}
                   </span>
@@ -576,5 +581,14 @@ onMounted(async () => {
 
 .btn-sm {
   @apply px-3 py-1 text-sm;
+}
+
+/* The tab strip scrolls on narrow screens; the scrollbar itself just adds noise. */
+.tab-bar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.tab-bar::-webkit-scrollbar {
+  display: none;
 }
 </style>

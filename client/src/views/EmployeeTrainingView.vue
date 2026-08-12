@@ -1,33 +1,34 @@
 <template>
   <div class="container mx-auto px-4 py-6">
-    <div class="flex justify-between items-center mb-6">
-      <div>
+    <div class="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center mb-6">
+      <div class="min-w-0">
         <h1 class="text-2xl font-bold text-fg-strong">{{ $t('training.employee.title') }}</h1>
         <p class="text-fg-muted mt-1">{{ $t('training.employee.subtitle') }}</p>
       </div>
-      <button class="btn-secondary" :disabled="loading" @click="load">
+      <button class="btn-secondary w-full sm:w-auto flex-shrink-0" :disabled="loading" @click="load">
         {{ $t('common.refresh') }}
       </button>
     </div>
 
-    <!-- Summary -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+    <!-- Summary — three across even on a phone; stacking three single numbers
+         would push the actual feedback below the fold. -->
+    <div class="grid grid-cols-3 gap-2 sm:gap-4 mb-6">
       <div class="card">
-        <div class="card-body">
-          <p class="text-sm text-fg-muted">{{ $t('training.employee.totalSubmitted') }}</p>
-          <p class="text-2xl font-bold text-fg-strong">{{ submissions.length }}</p>
+        <div class="card-body p-3 sm:p-4">
+          <p class="text-xs sm:text-sm text-fg-muted">{{ $t('training.employee.totalSubmitted') }}</p>
+          <p class="text-xl sm:text-2xl font-bold text-fg-strong">{{ submissions.length }}</p>
         </div>
       </div>
       <div class="card">
-        <div class="card-body">
-          <p class="text-sm text-fg-muted">{{ $t('training.employee.awaitingFeedback') }}</p>
-          <p class="text-2xl font-bold text-fg-strong">{{ pendingCount }}</p>
+        <div class="card-body p-3 sm:p-4">
+          <p class="text-xs sm:text-sm text-fg-muted">{{ $t('training.employee.awaitingFeedback') }}</p>
+          <p class="text-xl sm:text-2xl font-bold text-fg-strong">{{ pendingCount }}</p>
         </div>
       </div>
       <div class="card">
-        <div class="card-body">
-          <p class="text-sm text-fg-muted">{{ $t('training.employee.markedGood') }}</p>
-          <p class="text-2xl font-bold text-green-600 dark:text-green-400">{{ goodCount }}</p>
+        <div class="card-body p-3 sm:p-4">
+          <p class="text-xs sm:text-sm text-fg-muted">{{ $t('training.employee.markedGood') }}</p>
+          <p class="text-xl sm:text-2xl font-bold text-green-600 dark:text-green-400">{{ goodCount }}</p>
         </div>
       </div>
     </div>
@@ -54,12 +55,14 @@
             class="border rounded-lg p-4"
             style="border-color: var(--border);"
           >
-            <div class="flex justify-between items-start gap-3 mb-3">
+            <!-- The status badge sits under the title on a phone; side by side it
+                 squeezes the title into a two-word column. -->
+            <div class="flex flex-col gap-2 sm:flex-row sm:justify-between sm:items-start mb-3">
               <div class="min-w-0">
-                <h3 class="font-semibold text-fg-strong">{{ s.template_title }}</h3>
+                <h3 class="font-semibold text-fg-strong break-words">{{ s.template_title }}</h3>
                 <p class="text-xs text-fg-muted mt-0.5">{{ formatDate(s.created_at) }}</p>
               </div>
-              <span class="badge flex-shrink-0" :class="statusClass(s)">{{ statusLabel(s) }}</span>
+              <span class="badge self-start flex-shrink-0" :class="statusClass(s)">{{ statusLabel(s) }}</span>
             </div>
 
             <div v-if="s.photos?.length" class="grid grid-cols-3 sm:grid-cols-4 gap-2 mb-3">

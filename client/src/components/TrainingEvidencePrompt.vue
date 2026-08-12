@@ -1,8 +1,11 @@
 <template>
   <div class="fixed inset-0 flex items-center justify-center z-50 p-4" style="background: var(--scrim);">
+    <!-- dvh, not vh: on mobile browsers vh measures the expanded viewport, which
+         would push the Send button underneath the address bar. -->
     <div
-      class="w-full max-w-md rounded-lg overflow-hidden flex flex-col max-h-[92vh]"
-      style="background: var(--bg); border: 1px solid var(--border); box-shadow: var(--shadow-pop);"
+      class="w-full max-w-md rounded-lg overflow-hidden flex flex-col"
+      style="background: var(--bg); border: 1px solid var(--border); box-shadow: var(--shadow-pop);
+             max-height: 92vh; max-height: 92dvh;"
     >
       <!-- Header: framed as training, never as an audit -->
       <div class="p-4 border-b" style="border-color: var(--border);">
@@ -63,13 +66,14 @@
             <label
               v-for="c in prompt.checkpoints"
               :key="c.id"
-              class="flex items-start gap-2 p-2 rounded cursor-pointer"
+              class="flex items-start gap-3 p-3 rounded cursor-pointer"
               style="background: var(--surface-2);"
             >
-              <input type="checkbox" class="mt-1 flex-shrink-0" v-model="checked[c.id]" />
+              <!-- Oversized box: this gets tapped mid-shift with wet or greasy hands. -->
+              <input type="checkbox" class="mt-0.5 h-5 w-5 flex-shrink-0" v-model="checked[c.id]" />
               <span class="min-w-0">
-                <span class="text-sm text-fg-strong block">{{ c.label }}</span>
-                <span v-if="c.hint" class="text-xs text-fg-muted block mt-0.5">{{ c.hint }}</span>
+                <span class="text-sm text-fg-strong block break-words">{{ c.label }}</span>
+                <span v-if="c.hint" class="text-xs text-fg-muted block mt-0.5 break-words">{{ c.hint }}</span>
               </span>
             </label>
           </div>
