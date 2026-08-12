@@ -95,6 +95,13 @@
       </div>
     </div>
 
+    <!-- Training evidence prompt, shown before the clock-out call goes out -->
+    <TrainingEvidencePrompt
+      v-if="trainingPrompt"
+      :prompt="trainingPrompt"
+      @done="onTrainingPromptDone"
+    />
+
     <!-- Day recap modal after clock-out -->
     <div v-if="showRecap" class="fixed inset-0 flex items-center justify-center z-50 p-4" style="background: var(--scrim);">
       <div class="w-full max-w-md p-4 rounded-lg" style="background: var(--bg); border: 1px solid var(--border); box-shadow: var(--shadow-pop);">
@@ -131,6 +138,7 @@ import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../stores/auth'
 import api from '../utils/api'
+import TrainingEvidencePrompt from '../components/TrainingEvidencePrompt.vue'
 
 const auth = useAuthStore()
 const router = useRouter()
@@ -142,7 +150,8 @@ const submitting = ref(false)
 const message = ref('')
 const messageClass = computed(() => success.value ? 'text-green-600' : 'text-red-600')
 const success = ref(false)
-const isEmployee = computed(() => auth.user?.role === 'employee')
+// Managers work shifts too, so they clock in and out like any other staff.
+const isEmployee = computed(() => ['employee', 'manager'].includes(auth.user?.role))
 const loginPrefill = computed(() => ({ redirect: '/clock', company_token: companyToken.value }))
 const action = ref('')
 const scannerOpen = ref(false)
@@ -159,6 +168,10 @@ let scanGeneration = 0
 // Recap modal
 const showRecap = ref(false)
 const recap = ref({ date: '', entries: [], totalSeconds: 0, totalAmount: 0 })
+
+// Training-evidence prompt shown between tapping "Clock Out" and the actual
+// clock-out call. Null when this clock-out was not selected for a prompt.
+const trainingPrompt = ref(null)
 
 // Derived: account label for display
 const accountLabel = computed(() => {
@@ -552,7 +565,42 @@ const startZxing = async () => {
   }
 }
 
+// Clocking out may first surface a training-evidence prompt. The prompt is a
+// coaching moment, not a gate: whether the employee submits or skips, the
+// clock-out below runs unchanged, and any failure fetching a prompt is ignored.
 const submitClock = async (dir) => {
+  if (dir === 'out') {
+    submitting.value = true
+    action.value = dir
+    try {
+      const res = await api.getTrainingClockOutPrompt(companyToken.value)
+      const prompt = res?.data?.prompt
+      if (prompt) {
+        trainingPrompt.value = prompt
+        submitting.value = false
+        action.value = ''
+        return
+      }
+    } catch {
+      // No prompt is better than a blocked clock-out.
+    }
+  }
+  await performClock(dir)
+}
+
+const onTrainingPromptDone = async ({ submitted }) => {
+  trainingPrompt.value = null
+  if (submitted) {
+    window.showNotification?.({
+      type: 'success',
+      title: t('training.prompt.thanksTitle'),
+      message: t('training.prompt.thanksMessage')
+    })
+  }
+  await performClock('out')
+}
+
+const performClock = async (dir) => {
   try {
     submitting.value = true
     action.value = dir

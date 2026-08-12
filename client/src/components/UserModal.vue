@@ -63,6 +63,7 @@
             <option value="">{{ $t('modals.userModal.selectRole') }}</option>
             <option v-if="isSuperAdmin" value="super-admin">{{ $t('admin.superAdmin') }}</option>
             <option value="admin">{{ $t('admin.admin') }}</option>
+            <option value="manager">{{ $t('admin.manager') }}</option>
             <option value="employee">{{ $t('admin.employee') }}</option>
           </select>
           <p class="text-xs text-fg-muted mt-1" v-if="!isSuperAdmin">{{ $t('admin.adminCreateRestriction') }}</p>
@@ -91,8 +92,8 @@
           </div>
         </div>
 
-        <!-- Job Type (for employees) -->
-        <div v-if="form.role === 'employee'">
+        <!-- Job Type (station staff: employees and managers) -->
+        <div v-if="isStationRole">
           <label class="form-label">{{ $t('admin.jobType') }}</label>
           <select v-model="form.job_type" class="form-input">
             <option value="">—</option>
@@ -321,7 +322,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, watch, onMounted } from 'vue'
+import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import api from '../utils/api'
 const auth = useAuthStore()
@@ -350,6 +351,10 @@ const form = reactive({
   hired_at: '',
   job_type: ''
 })
+
+// Roles that actually work a station, and therefore carry a job_type used for
+// training-evidence targeting.
+const isStationRole = computed(() => ['employee', 'manager'].includes(form.role))
 
 // Companies list for dropdown (super-admin only)
 const companies = ref([])
@@ -394,7 +399,7 @@ const handleSubmit = () => {
     company_id: form.company_id || undefined,
     hourly_rate: form.hourly_rate != null ? Number(form.hourly_rate) : undefined,
     hired_at: form.hired_at || undefined,
-    job_type: form.role === 'employee' ? (form.job_type || null) : null
+    job_type: isStationRole.value ? (form.job_type || null) : null
   }
 
   if (!props.isEdit) {

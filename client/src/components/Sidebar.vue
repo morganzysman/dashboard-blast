@@ -64,18 +64,26 @@ const emit = defineEmits(['close'])
 const authStore = useAuthStore()
 
 const isEmployee = computed(() => authStore.user?.role === 'employee')
+const isManager = computed(() => authStore.user?.role === 'manager')
 const isAdmin = computed(() => authStore.user?.role === 'admin')
 const isSuperAdmin = computed(() => authStore.isSuperAdmin)
 
+// Managers and employees share the self-service pages; managers additionally get
+// the training console. Neither sees the financial surface.
+const isStaff = computed(() => isEmployee.value || isManager.value)
+
 const links = computed(() => [
-  { name: 'Dashboard', to: '/', icon: 'dashboard', label: 'navigation.dashboard', show: !isSuperAdmin.value && !isEmployee.value },
-  { name: 'Setup', to: '/setup', icon: 'settings', label: 'navigation.setup', show: !isSuperAdmin.value && !isEmployee.value },
-  { name: 'EmployeeClock', to: '/clock', icon: 'schedule', label: 'navigation.clock', show: isEmployee.value },
-  { name: 'EmployeeTimesheet', to: '/timesheet', icon: 'event_note', label: 'navigation.timesheet', show: isEmployee.value },
-  { name: 'EmployeeContracts', to: '/contracts', icon: 'description', label: 'navigation.contracts', show: isEmployee.value },
+  { name: 'Dashboard', to: '/', icon: 'dashboard', label: 'navigation.dashboard', show: !isSuperAdmin.value && !isStaff.value },
+  { name: 'Setup', to: '/setup', icon: 'settings', label: 'navigation.setup', show: !isSuperAdmin.value && !isStaff.value },
+  { name: 'EmployeeClock', to: '/clock', icon: 'schedule', label: 'navigation.clock', show: isStaff.value },
+  { name: 'EmployeeTimesheet', to: '/timesheet', icon: 'event_note', label: 'navigation.timesheet', show: isStaff.value },
+  { name: 'EmployeeTraining', to: '/training', icon: 'school', label: 'navigation.training', show: isStaff.value },
+  { name: 'TrainingReview', to: '/training/review', icon: 'rate_review', label: 'navigation.trainingReview', show: isManager.value || isAdmin.value },
+  { name: 'TrainingManage', to: '/training/manage', icon: 'checklist', label: 'navigation.trainingCatalogue', show: isManager.value || isAdmin.value },
+  { name: 'EmployeeContracts', to: '/contracts', icon: 'description', label: 'navigation.contracts', show: isStaff.value },
   { name: 'Notifications', to: '/notifications', icon: 'notifications', label: 'navigation.notifications', show: !isSuperAdmin.value },
-  { name: 'GainCalendar', to: '/gain-calendar', icon: 'savings', label: 'navigation.gainCalendar', show: !isSuperAdmin.value && !isEmployee.value },
-  { name: 'Achievements', to: '/achievements', icon: 'emoji_events', label: 'navigation.achievements', show: !isSuperAdmin.value && !isEmployee.value },
+  { name: 'GainCalendar', to: '/gain-calendar', icon: 'savings', label: 'navigation.gainCalendar', show: !isSuperAdmin.value && !isStaff.value },
+  { name: 'Achievements', to: '/achievements', icon: 'emoji_events', label: 'navigation.achievements', show: !isSuperAdmin.value && !isStaff.value },
   { name: 'AdminPayroll', to: '/admin/payroll', icon: 'payments', label: 'navigation.payroll', show: isAdmin.value },
   { name: 'AdminHolidays', to: '/admin/holidays', icon: 'event', label: 'navigation.holidays', show: isAdmin.value },
   { name: 'AdminShiftsCalendar', to: '/admin/shifts', icon: 'calendar_month', label: 'navigation.shiftsCalendar', show: isAdmin.value },

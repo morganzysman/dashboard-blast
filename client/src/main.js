@@ -26,6 +26,8 @@ import AdminHolidayView from './views/AdminHolidayView.vue'
 import GainCalendarView from './views/GainCalendarView.vue'
 import AchievementsView from './views/AchievementsView.vue'
 import AdminSalesImportView from './views/AdminSalesImportView.vue'
+import EmployeeTrainingView from './views/EmployeeTrainingView.vue'
+import TrainingManageView from './views/TrainingManageView.vue'
 
 // Import stores
 import { useAuthStore } from './stores/auth'
@@ -45,23 +47,42 @@ const routes = [
     component: EmployeeClockView,
     meta: { }
   },
+  // Managers work shifts alongside employees, so they keep the self-service pages.
   {
     path: '/timesheet',
     name: 'EmployeeTimesheet',
     component: EmployeeTimesheetView,
-    meta: { requiresAuth: true, requiresRole: ['employee'] }
+    meta: { requiresAuth: true, requiresRole: ['employee', 'manager'] }
   },
   {
     path: '/contracts',
     name: 'EmployeeContracts',
     component: EmployeeContractsView,
-    meta: { requiresAuth: true, requiresRole: ['employee'] }
+    meta: { requiresAuth: true, requiresRole: ['employee', 'manager'] }
   },
   {
     path: '/warnings',
     name: 'EmployeeWarnings',
     component: EmployeeWarningsView,
-    meta: { requiresAuth: true, requiresRole: ['employee'] }
+    meta: { requiresAuth: true, requiresRole: ['employee', 'manager'] }
+  },
+  {
+    path: '/training',
+    name: 'EmployeeTraining',
+    component: EmployeeTrainingView,
+    meta: { requiresAuth: true, requiresRole: ['employee', 'manager'] }
+  },
+  {
+    path: '/training/review',
+    name: 'TrainingReview',
+    component: TrainingManageView,
+    meta: { requiresAuth: true, requiresRole: ['manager', 'admin', 'super-admin'] }
+  },
+  {
+    path: '/training/manage',
+    name: 'TrainingManage',
+    component: TrainingManageView,
+    meta: { requiresAuth: true, requiresRole: ['manager', 'admin', 'super-admin'] }
   },
   {
     path: '/admin/payroll',
@@ -91,7 +112,9 @@ const routes = [
     path: '/',
     name: 'Dashboard',
     component: DashboardView,
-    meta: { requiresAuth: true, excludeRoles: ['super-admin', 'employee'] }
+    // Managers are excluded alongside employees: the training module deliberately
+    // gives them no access to sales, costs or margins.
+    meta: { requiresAuth: true, excludeRoles: ['super-admin', 'employee', 'manager'] }
   },
   {
     path: '/login',
@@ -127,7 +150,7 @@ const routes = [
     path: '/setup',
     name: 'Setup',
     component: SetupView,
-    meta: { requiresAuth: true, excludeRoles: ['super-admin', 'employee'] }
+    meta: { requiresAuth: true, excludeRoles: ['super-admin', 'employee', 'manager'] }
   },
   {
     // Legacy URL kept so old bookmarks / sidebar caches keep working.
@@ -138,13 +161,13 @@ const routes = [
     path: '/gain-calendar',
     name: 'GainCalendar',
     component: GainCalendarView,
-    meta: { requiresAuth: true, excludeRoles: ['super-admin', 'employee'] }
+    meta: { requiresAuth: true, excludeRoles: ['super-admin', 'employee', 'manager'] }
   },
   {
     path: '/achievements',
     name: 'Achievements',
     component: AchievementsView,
-    meta: { requiresAuth: true, excludeRoles: ['super-admin', 'employee'] }
+    meta: { requiresAuth: true, excludeRoles: ['super-admin', 'employee', 'manager'] }
   }
 ]
 
@@ -158,6 +181,8 @@ const router = createRouter({
 const getDefaultRouteForRole = (userRole) => {
   if (userRole === 'super-admin') {
     return { name: 'Admin' }
+  } else if (userRole === 'manager') {
+    return { name: 'TrainingReview' }
   } else if (userRole === 'employee') {
     return { name: 'EmployeeTimesheet' }
   } else {

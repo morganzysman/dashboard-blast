@@ -76,6 +76,7 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import api from '../utils/api'
+import { compressImage } from '../utils/image'
 import { useAuthStore } from '../stores/auth'
 
 const authStore = useAuthStore()
@@ -115,36 +116,6 @@ const canSave = computed(() => {
 
 // Per-login skip flag: keyed by session so it reappears on the next login.
 const skipKey = computed(() => `contractPromptSkipped:${authStore.sessionId || 'anon'}`)
-
-// Downscale + compress an image file to keep DB rows small.
-function compressImage(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onerror = () => reject(new Error('read failed'))
-    reader.onload = () => {
-      const img = new Image()
-      img.onerror = () => reject(new Error('image decode failed'))
-      img.onload = () => {
-        const maxDim = 1280
-        let { width, height } = img
-        if (width > maxDim || height > maxDim) {
-          const scale = Math.min(maxDim / width, maxDim / height)
-          width = Math.round(width * scale)
-          height = Math.round(height * scale)
-        }
-        const canvas = document.createElement('canvas')
-        canvas.width = width
-        canvas.height = height
-        const ctx = canvas.getContext('2d')
-        ctx.drawImage(img, 0, 0, width, height)
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.7)
-        resolve({ base64: dataUrl, mime: 'image/jpeg', preview: dataUrl })
-      }
-      img.src = reader.result
-    }
-    reader.readAsDataURL(file)
-  })
-}
 
 const onFileChange = async (e, side) => {
   const file = e.target.files && e.target.files[0]

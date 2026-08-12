@@ -156,7 +156,7 @@
                 {{ user.role?.replace('-', ' ') }}
               </span>
               <ContractStatusBadge v-if="user.role === 'employee'" :status="contractStatusFor(user)" size="sm" />
-              <span class="text-xs text-fg-muted">{{ $t('admin.company') }}: {{ user.company?.name || 'â€”' }}</span>
+              <span class="text-xs text-fg-muted">{{ $t('admin.company') }}: {{ user.company?.name || '—' }}</span>
             </div>
             
             <div class="grid grid-cols-2 gap-2 mt-2">
@@ -216,7 +216,7 @@
                   </span>
                 </td>
                 <td>
-                  <div class="text-sm text-fg-strong">{{ user.company?.name || 'â€”' }}</div>
+                  <div class="text-sm text-fg-strong">{{ user.company?.name || '—' }}</div>
                 </td>
                 <td>
                   <div class="flex items-center gap-1">
@@ -228,10 +228,10 @@
                     class="form-select text-sm w-28"
                     :value="user.job_type || ''"
                     @change="e => onJobTypeInput(user, e)"
-                    :disabled="user.role !== 'employee'"
-                    :title="user.role !== 'employee' ? $t('admin.jobTypeEmployeeOnly') : ''"
+                    :disabled="!isStationRole(user.role)"
+                    :title="!isStationRole(user.role) ? $t('admin.jobTypeEmployeeOnly') : ''"
                   >
-                    <option value="">â€”</option>
+                    <option value="">—</option>
                     <option value="kitchen">{{ $t('admin.jobTypeKitchen') }}</option>
                     <option value="waiter">{{ $t('admin.jobTypeWaiter') }}</option>
                   </select>
@@ -686,12 +686,17 @@ const getRoleBadgeClass = (role) => {
       return 'badge-primary'
     case 'admin':
       return 'badge-success'
+    case 'manager':
+      return 'badge-info'
     case 'employee':
       return 'badge-warning'
     default:
       return 'badge-gray'
   }
 }
+
+// job_type only means something for roles that work a station.
+const isStationRole = (role) => ['employee', 'manager'].includes(role)
 
 const formatDate = (dateString) => {
   if (!dateString) return 'Never'

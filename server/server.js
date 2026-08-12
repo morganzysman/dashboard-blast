@@ -37,6 +37,7 @@ import holidayRoutes from './routes/holidays.js';
 import profileRoutes from './routes/profile.js';
 import webhookRoutes from './routes/webhooks.js';
 import importsRoutes from './routes/imports.js';
+import trainingRoutes from './routes/training.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -76,6 +77,11 @@ app.use(cors());
 // express.json() below is a no-op for these routes; every other endpoint
 // (including the unauthenticated ones) keeps the tighter 5mb ceiling.
 app.use('/api/imports', express.json({ limit: '25mb' }));
+
+// Training evidence can carry up to 3 base64 photos in one submission, which
+// clears the 5mb global cap once base64 inflation is counted. Mounted before the
+// global parser for the same reason as the imports route above.
+app.use('/api/training', express.json({ limit: '15mb' }));
 
 // 5mb accommodates base64-encoded, client-compressed ID document images.
 app.use(express.json({ limit: '5mb' }));
@@ -163,6 +169,7 @@ app.use('/api/holidays', holidayRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/webhooks', webhookRoutes);
 app.use('/api/imports', importsRoutes);
+app.use('/api/training', trainingRoutes);
 
 // Serve notifications debug page
 app.get('/notifications-debug', (req, res) => {

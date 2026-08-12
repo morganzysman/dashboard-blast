@@ -423,6 +423,59 @@ export const api = {
     apiRequest(`/api/admin/users/${userId}/job-type`, {
       method: 'PUT',
       body: JSON.stringify({ job_type: jobType })
+    }),
+
+  // ---- Training evidence ----
+  // Employee side
+  getTrainingClockOutPrompt: (companyToken) =>
+    apiRequest('/api/training/clock-out-prompt', {
+      method: 'POST',
+      body: JSON.stringify({ company_token: companyToken })
+    }),
+  submitTrainingEvidence: (requestId, payload) =>
+    apiRequest(`/api/training/requests/${requestId}/submit`, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    }),
+  skipTrainingPrompt: (requestId, reason) =>
+    apiRequest(`/api/training/requests/${requestId}/skip`, {
+      method: 'POST',
+      body: JSON.stringify({ reason: reason || null })
+    }),
+  getMyTrainingSubmissions: () => apiRequest('/api/training/me/submissions'),
+
+  // Photo bytes need the session header, which an <img src> cannot send, so the
+  // caller gets an object URL instead. Revoke it when the element goes away.
+  getTrainingPhotoObjectUrl: async (photoId) => {
+    const authStore = useAuthStore()
+    const res = await fetch(`/api/training/photos/${photoId}`, {
+      headers: authStore.sessionId ? { 'X-Session-ID': authStore.sessionId } : {}
+    })
+    if (!res.ok) throw new ApiError('Failed to load photo', res.status, {})
+    return URL.createObjectURL(await res.blob())
+  },
+
+  // Manager / admin side
+  getTrainingTemplates: () => apiRequest('/api/training/templates'),
+  createTrainingTemplate: (payload) =>
+    apiRequest('/api/training/templates', { method: 'POST', body: JSON.stringify(payload) }),
+  updateTrainingTemplate: (id, payload) =>
+    apiRequest(`/api/training/templates/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
+  deleteTrainingTemplate: (id) =>
+    apiRequest(`/api/training/templates/${id}`, { method: 'DELETE' }),
+  getTrainingSettings: () => apiRequest('/api/training/settings'),
+  updateTrainingSettings: (payload) =>
+    apiRequest('/api/training/settings', { method: 'PUT', body: JSON.stringify(payload) }),
+  getTrainingSubmissions: (params = {}) => {
+    const qs = new URLSearchParams(
+      Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== '')
+    ).toString()
+    return apiRequest(`/api/training/submissions${qs ? `?${qs}` : ''}`)
+  },
+  reviewTrainingSubmission: (id, rating, comment) =>
+    apiRequest(`/api/training/submissions/${id}/review`, {
+      method: 'POST',
+      body: JSON.stringify({ rating, comment })
     })
 }
 

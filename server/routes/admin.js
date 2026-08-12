@@ -134,7 +134,7 @@ router.post('/users', requireAuth, requireRole(['admin', 'super-admin']), async 
     
     // Validate role
     // Admins cannot create super-admin users
-    const validRoles = ['super-admin', 'admin', 'employee'];
+    const validRoles = ['super-admin', 'admin', 'manager', 'employee'];
     if (role && !validRoles.includes(role)) {
       return res.status(400).json({
         success: false,
@@ -240,7 +240,7 @@ router.put('/users/:userId/role', requireAuth, requireRole(['admin', 'super-admi
     const { userId } = req.params;
     const { role } = req.body;
     
-    const validRoles = ['super-admin', 'admin', 'employee'];
+    const validRoles = ['super-admin', 'admin', 'manager', 'employee'];
     if (!validRoles.includes(role)) {
       return res.status(400).json({
         success: false,
@@ -841,7 +841,7 @@ router.delete('/companies/:companyId/accounts/:companyToken', requireAuth, requi
 })
 
 // Get single company details
-router.get('/companies/:companyId', requireAuth, requireRole(['super-admin', 'admin', 'employee']), async (req, res) => {
+router.get('/companies/:companyId', requireAuth, requireRole(['super-admin', 'admin', 'manager', 'employee']), async (req, res) => {
   try {
     const { companyId } = req.params
     // Non super-admins can only access their own company

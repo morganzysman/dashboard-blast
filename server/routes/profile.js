@@ -8,6 +8,7 @@ import { Router } from 'express'
 import { requireAuth } from '../middleware/auth.js'
 import { pool } from '../database.js'
 import { getCountryConfig, getContractType, DEFAULT_COUNTRY } from '../config/contractCountries.js'
+import { decodeImagePayload } from '../utils/imagePayload.js'
 import {
   contractStatusFor,
   isExpiringSoon,
@@ -27,36 +28,6 @@ async function resolveUserCountry(companyId) {
     [companyId]
   )
   return (q.rows[0]?.country || DEFAULT_COUNTRY).toUpperCase()
-}
-
-const ALLOWED_IMAGE_MIME = new Set(['image/jpeg', 'image/png', 'image/webp'])
-const MAX_IMAGE_BYTES = 4 * 1024 * 1024 // 4MB decoded
-
-// Parse a data URL or raw base64 + mime into a validated Buffer.
-function decodeImagePayload({ image_base64, mime }) {
-  if (!image_base64 || typeof image_base64 !== 'string') {
-    return { error: 'image_base64 is required' }
-  }
-  let resolvedMime = mime
-  let b64 = image_base64
-  const dataUrlMatch = image_base64.match(/^data:([^;]+);base64,(.*)$/s)
-  if (dataUrlMatch) {
-    resolvedMime = resolvedMime || dataUrlMatch[1]
-    b64 = dataUrlMatch[2]
-  }
-  resolvedMime = (resolvedMime || '').toLowerCase()
-  if (!ALLOWED_IMAGE_MIME.has(resolvedMime)) {
-    return { error: 'Unsupported image type (use JPEG, PNG or WebP)' }
-  }
-  let buf
-  try {
-    buf = Buffer.from(b64, 'base64')
-  } catch {
-    return { error: 'Invalid base64 image data' }
-  }
-  if (!buf.length) return { error: 'Empty image' }
-  if (buf.length > MAX_IMAGE_BYTES) return { error: 'Image too large (max 4MB)' }
-  return { buffer: buf, mime: resolvedMime }
 }
 
 // GET own contract identity data + the doc-type options for the resolved country.
