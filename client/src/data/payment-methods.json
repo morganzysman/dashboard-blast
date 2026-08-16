@@ -213,6 +213,15 @@
       "provider": null
     },
     {
+      "id": "c4e91b2a-7d3f-4a18-9e6c-1b8f5d2a0e47",
+      "code": "peya_pay",
+      "country_code": "PE",
+      "position": 116,
+      "provider_id": null,
+      "provider_code": null,
+      "provider": null
+    },
+    {
       "id": "516845a6-8c2e-4ccd-9986-1d508bc2e82d",
       "code": "d24_yape",
       "country_code": "PE",
