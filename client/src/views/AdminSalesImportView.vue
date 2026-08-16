@@ -117,6 +117,7 @@
                 <tr class="border-b text-left text-xs text-fg-muted">
                   <th class="py-2 pr-3">{{ $t('common.date') }}</th>
                   <th class="py-2 pr-3">{{ $t('salesImport.account') }}</th>
+                  <th class="py-2 pr-3">{{ $t('salesImport.channel') }}</th>
                   <th class="py-2 pr-3 text-right">{{ $t('salesImport.rappiOrders') }}</th>
                   <th class="py-2 pr-3 text-right">{{ $t('salesImport.currentTotal') }}</th>
                   <th class="py-2 pr-3 text-right">{{ $t('salesImport.newTotal') }}</th>
@@ -124,9 +125,10 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="d in preview.days" :key="`${d.companyToken}-${d.day}`" class="border-b last:border-0">
+                <tr v-for="d in preview.days" :key="`${d.companyToken}-${d.day}-${d.paymentMethod}`" class="border-b last:border-0">
                   <td class="py-2 pr-3 whitespace-nowrap">{{ d.day }}</td>
                   <td class="py-2 pr-3">{{ d.accountName }}</td>
+                  <td class="py-2 pr-3 whitespace-nowrap">{{ d.channelLabel }}</td>
                   <td class="py-2 pr-3 text-right text-fg-muted">{{ d.sourceOrders }}</td>
                   <td class="py-2 pr-3 text-right text-fg-muted">
                     {{ d.existing_amount === null ? '—' : formatMoney(d.existing_amount) }}

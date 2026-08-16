@@ -1,22 +1,23 @@
-// Manual sales import for webhook-less delivery platforms (Rappi).
+// Manual sales import for webhook-less delivery platforms (Rappi / PedidosYa).
 //
 // WHY THIS EXISTS
 // Most shops stream orders into the ledger from the OlaClick Public API (cron +
-// webhooks). A few shops sell only through Rappi, whose provider exposes no
-// webhook or API to us, so those accounts have no public_api_key and their
+// webhooks). A few shops sell only through delivery apps whose providers expose
+// no webhook or API to us, so those accounts have no public_api_key and their
 // order_facts / daily_gains rows sit empty. Their revenue is only available as a
-// CSV order export ("Historique des commandes") downloaded from the Rappi
-// dashboard every few days.
+// CSV order export ("Historique des commandes") downloaded from the kitchen-hub
+// dashboard every few days. That file mixes Rappi and PedidosYa on the
+// "Canal de vente" column.
 //
 // WHAT IT WRITES
 // The export is per-order, but we deliberately do NOT create one ledger row per
-// Rappi order: the export carries no product names, so per-order rows would
+// source order: the export carries no product names, so per-order rows would
 // fabricate order-level analytics (burgers per order, service mix) we can't
-// actually support. Instead each (account, local day) in the file collapses into
-// ONE synthetic order whose id is `manual-rappi-<YYYY-MM-DD>`:
+// actually support. Instead each (account, local day, platform) in the file
+// collapses into ONE synthetic order:
 //
-//   order_facts          1 row  — order_total = summed net payment for the day
-//   order_payment_facts  1 row  — method 'rappi_pay', bill_amount = same total
+//   Rappi      id `manual-rappi-<token>-<YYYY-MM-DD>`  source RAPPI      method rappi_pay
+//   PedidosYa  id `manual-peya-<token>-<YYYY-MM-DD>`   source PEDIDOSYA  method peya_pay
 //
 // Product-unit columns (combo_units / burger_units) are left NULL on purpose.
 // The burger analytics filter on `burger_units IS NOT NULL`, so imported days
@@ -24,34 +25,47 @@
 // with invented data.
 //
 // IDEMPOTENCE
-// The synthetic id is derived from the day, so re-uploading an overlapping
-// export replaces that day's total instead of adding to it. Uploads may overlap
-// freely and arrive on no fixed schedule. Days absent from the file are never
-// touched, which keeps partial exports safe.
+// The synthetic id is derived from the day and platform, so re-uploading an
+// overlapping export replaces that platform's day total instead of adding to
+// it. Uploads may overlap freely and arrive on no fixed schedule. Days (or
+// platforms) absent from the file are never touched, which keeps partial
+// exports safe. Re-importing a file that used to be lumped into rappi_pay
+// splits it: the Rappi row is rewritten with Rappi-only totals and a new PeYA
+// row is created.
 //
 // SAFETY RAILS
-//   • Accounts that have a public_api_key are refused — their Rappi orders
+//   • Accounts that have a public_api_key are refused — their delivery orders
 //     already arrive through the API, so importing would double-count.
 //   • Rows whose Statut is cancelled are excluded from the day total, matching
 //     how every dashboard read filters status <> 'CANCELLED'.
-//   • Unrecognised restaurant names abort the import instead of silently
-//     dropping revenue.
+//   • Unrecognised restaurant names or sales channels abort the import instead
+//     of silently dropping revenue.
 
 import { pool } from '../database.js'
 import { computeAndStoreDailyGain } from './dailyGainService.js'
 
-// Synthetic order id prefix. Also how `is_manual` rows are recognised by eye in
-// the DB. Changing this orphans previously imported days.
-const MANUAL_ORDER_PREFIX = 'manual-rappi-'
-
-// Every imported day is booked against this payment method so the 32% Rappi
-// commission configured in payment_method_costs applies. Must stay lowercase to
-// match payment_method_costs.payment_method_code lookups.
-const PAYMENT_METHOD = 'rappi_pay'
-
-const ORDER_SOURCE = 'RAPPI'
 const ORDER_STATUS = 'FINALIZED'
 const SERVICE_TYPE = 'DELIVERY'
+
+// One synthetic-order shape per sales channel. `orderPrefix` is part of the
+// ledger id — changing a prefix orphans previously imported days for that
+// platform. Payment methods stay lowercase to match payment_method_costs.
+const CHANNELS = {
+  rappi: {
+    id: 'rappi',
+    label: 'Rappi',
+    source: 'RAPPI',
+    paymentMethod: 'rappi_pay',
+    orderPrefix: 'manual-rappi-'
+  },
+  peya: {
+    id: 'peya',
+    label: 'PedidosYa',
+    source: 'PEDIDOSYA',
+    paymentMethod: 'peya_pay',
+    orderPrefix: 'manual-peya-'
+  }
+}
 
 // Rappi localises its export headers. Each field is resolved by header name
 // first (any locale below), falling back to the fixed column position the
@@ -61,6 +75,10 @@ const COLUMN_SPECS = {
   orderNumber: {
     aliases: ['n de commande', 'ndecommande', 'order id', 'orderid', 'n de pedido', 'numero de pedido', 'id du pedido'],
     index: 1
+  },
+  channel: {
+    aliases: ['canal de vente', 'canal de venta', 'sales channel', 'channel', 'canal de vendas'],
+    index: 4
   },
   status: { aliases: ['statut', 'estado', 'status'], index: 5 },
   restaurant: { aliases: ['restaurant', 'restaurante', 'tienda', 'store', 'loja'], index: 8 },
@@ -88,6 +106,22 @@ function deaccent(value) {
 /** Collapse to bare alphanumerics for fuzzy name matching: "La Molina" -> "lamolina". */
 function compact(value) {
   return deaccent(value).replace(/[^a-z0-9]/g, '')
+}
+
+/**
+ * Map the export's "Canal de vente" cell to a ledger channel.
+ *
+ * Empty cells default to Rappi so older exports that omit the column still
+ * import. PedidosYa is matched on "pedidosya" / "peya" so "PedidosYa API v2"
+ * lands on peya_pay. Anything else is unknown — the caller aborts rather than
+ * booking it under the wrong commission.
+ */
+function resolveChannel(raw) {
+  const key = deaccent(raw)
+  if (!key) return CHANNELS.rappi
+  if (key.includes('pedidosya') || key.includes('peya')) return CHANNELS.peya
+  if (key.includes('rappi')) return CHANNELS.rappi
+  return null
 }
 
 /**
@@ -270,7 +304,7 @@ function matchAccount(restaurantName, accounts) {
 }
 
 /**
- * Turn raw CSV text into per-(account, day) totals.
+ * Turn raw CSV text into per-(account, day, platform) totals.
  *
  * Pure: touches no database beyond the `accounts` list handed in, so the
  * preview and the commit run the exact same reduction and can't disagree.
@@ -292,12 +326,13 @@ function aggregateRappiCsv(csvText, accounts) {
   const columns = resolveColumns(rows[0])
   const dataRows = rows.slice(1)
 
-  // key `${company_token}|${day}` -> accumulator
+  // key `${company_token}|${day}|${channel.id}` -> accumulator
   const buckets = new Map()
-  // Rappi occasionally repeats a line when an export is regenerated mid-write.
+  // The hub occasionally repeats a line when an export is regenerated mid-write.
   const seenOrderNumbers = new Set()
   const restaurantResolution = new Map()
   const unmatched = new Map()
+  const unknownChannels = new Map()
 
   const stats = emptyStats()
   stats.rowsTotal = dataRows.length
@@ -305,6 +340,7 @@ function aggregateRappiCsv(csvText, accounts) {
   for (const row of dataRows) {
     const restaurantRaw = (row[columns.restaurant] ?? '').trim()
     const statusRaw = (row[columns.status] ?? '').trim()
+    const channelRaw = (row[columns.channel] ?? '').trim()
     const orderNumber = (row[columns.orderNumber] ?? '').trim()
     const day = parseLocalDay(row[columns.orderedAt])
     const amount = parseAmount(row[columns.netAmount])
@@ -328,6 +364,16 @@ function aggregateRappiCsv(csvText, accounts) {
       seenOrderNumbers.add(orderNumber)
     }
 
+    const channel = resolveChannel(channelRaw)
+    if (!channel) {
+      const entry = unknownChannels.get(channelRaw) || { channel: channelRaw, rows: 0, amount: 0 }
+      entry.rows += 1
+      entry.amount += amount
+      unknownChannels.set(channelRaw, entry)
+      stats.rowsSkippedUnknownChannel += 1
+      continue
+    }
+
     // Resolve each distinct restaurant string once.
     if (!restaurantResolution.has(restaurantRaw)) {
       restaurantResolution.set(restaurantRaw, matchAccount(restaurantRaw, accounts))
@@ -344,7 +390,7 @@ function aggregateRappiCsv(csvText, accounts) {
     }
 
     const account = resolution.account
-    const key = `${account.company_token}|${day}`
+    const key = `${account.company_token}|${day}|${channel.id}`
     let bucket = buckets.get(key)
     if (!bucket) {
       bucket = {
@@ -354,7 +400,12 @@ function aggregateRappiCsv(csvText, accounts) {
         restaurant: restaurantRaw,
         day,
         amount: 0,
-        sourceOrders: 0
+        sourceOrders: 0,
+        channel: channel.id,
+        channelLabel: channel.label,
+        source: channel.source,
+        paymentMethod: channel.paymentMethod,
+        orderPrefix: channel.orderPrefix
       }
       buckets.set(key, bucket)
     }
@@ -381,7 +432,15 @@ function aggregateRappiCsv(csvText, accounts) {
     }
   }
 
-  // Refuse accounts already fed by the API — their Rappi orders are ingested
+  for (const entry of unknownChannels.values()) {
+    errors.push(note(
+      'unknownChannel',
+      { channel: entry.channel, rows: entry.rows, amount: entry.amount.toFixed(2) },
+      `Sales channel "${entry.channel}" is not Rappi or PedidosYa (${entry.rows} row(s), ${entry.amount.toFixed(2)} skipped).`
+    ))
+  }
+
+  // Refuse accounts already fed by the API — their delivery orders are ingested
   // automatically and importing would book the same revenue twice.
   const apiFedTokens = new Set()
   for (const bucket of buckets.values()) {
@@ -392,12 +451,14 @@ function aggregateRappiCsv(csvText, accounts) {
     errors.push(note(
       'apiFedAccount',
       { account: label },
-      `${label} is connected to the OlaClick API, so its Rappi orders are already imported automatically. Importing this file would double-count that revenue.`
+      `${label} is connected to the OlaClick API, so its delivery orders are already imported automatically. Importing this file would double-count that revenue.`
     ))
   }
 
   const days = [...buckets.values()].sort(
-    (a, b) => a.day.localeCompare(b.day) || a.accountName.localeCompare(b.accountName)
+    (a, b) => a.day.localeCompare(b.day)
+      || a.accountName.localeCompare(b.accountName)
+      || a.channelLabel.localeCompare(b.channelLabel)
   )
 
   // Round once, at the boundary, to keep the stored total equal to the sum of
@@ -455,6 +516,7 @@ function emptyStats() {
     rowsSkippedUnmatched: 0,
     rowsSkippedDuplicate: 0,
     rowsSkippedInvalid: 0,
+    rowsSkippedUnknownChannel: 0,
     totalAmount: 0,
     cancelledAmount: 0,
     daysAffected: 0,
@@ -480,47 +542,70 @@ async function loadImportableAccounts(companyId) {
 }
 
 /**
- * Look up what the ledger currently holds for the (account, day) pairs a file
- * covers, so the preview can show "current -> new" and the commit can report
- * created vs updated.
+ * Look up what the ledger currently holds for the (account, day, method) pairs
+ * a file covers, so the preview can show "current -> new" and the commit can
+ * report created vs updated.
  *
- * Manual and OlaClick totals are split apart deliberately. Only the manual part
- * is what this import replaces, so it's the only honest thing to compare the new
- * amount against — lumping in real orders would render the per-day delta as a
- * large fake drop on any day that has both.
+ * Manual totals are split by payment method so a Rappi re-import is not
+ * compared against a PedidosYa row on the same day (and vice versa). OlaClick
+ * totals stay at day grain — they are only a hint, never replaced.
  *
- * @returns {Promise<Map<string, {manualAmount:number, otherAmount:number, hasManual:boolean}>>} keyed `${token}|${day}`
+ * @returns {Promise<{manual: Map<string, {manualAmount:number, hasManual:boolean}>, other: Map<string, number>}>}
  */
 async function loadExistingDayTotals(days) {
-  if (days.length === 0) return new Map()
+  if (days.length === 0) return { manual: new Map(), other: new Map() }
 
   const tokens = [...new Set(days.map((d) => d.companyToken))]
   const dayList = [...new Set(days.map((d) => d.day))]
 
-  const res = await pool.query(
-    `SELECT company_token,
-            to_char(day_local, 'YYYY-MM-DD') AS day,
-            COALESCE(SUM(order_total) FILTER (WHERE is_manual), 0) AS manual_amount,
-            COALESCE(SUM(order_total) FILTER (WHERE NOT is_manual), 0) AS other_amount,
-            BOOL_OR(is_manual) AS has_manual
-     FROM order_facts
-     WHERE company_token = ANY($1::varchar[])
-       AND day_local = ANY($2::date[])
-       AND status <> 'CANCELLED'
-       AND deleted_at IS NULL
-     GROUP BY company_token, day_local`,
-    [tokens, dayList]
-  )
+  const [manualRes, otherRes] = await Promise.all([
+    pool.query(
+      `SELECT o.company_token,
+              to_char(o.day_local, 'YYYY-MM-DD') AS day,
+              LOWER(COALESCE(p.method, 'rappi_pay')) AS method,
+              COALESCE(SUM(o.order_total), 0) AS manual_amount
+       FROM order_facts o
+       LEFT JOIN order_payment_facts p
+         ON p.company_token = o.company_token
+        AND p.order_id = o.order_id
+        AND p.seq = 0
+       WHERE o.company_token = ANY($1::varchar[])
+         AND o.day_local = ANY($2::date[])
+         AND o.status <> 'CANCELLED'
+         AND o.deleted_at IS NULL
+         AND o.is_manual
+       GROUP BY o.company_token, o.day_local, LOWER(COALESCE(p.method, 'rappi_pay'))`,
+      [tokens, dayList]
+    ),
+    pool.query(
+      `SELECT company_token,
+              to_char(day_local, 'YYYY-MM-DD') AS day,
+              COALESCE(SUM(order_total), 0) AS other_amount
+       FROM order_facts
+       WHERE company_token = ANY($1::varchar[])
+         AND day_local = ANY($2::date[])
+         AND status <> 'CANCELLED'
+         AND deleted_at IS NULL
+         AND NOT is_manual
+       GROUP BY company_token, day_local`,
+      [tokens, dayList]
+    )
+  ])
 
-  const map = new Map()
-  for (const row of res.rows) {
-    map.set(`${row.company_token}|${row.day}`, {
+  const manual = new Map()
+  for (const row of manualRes.rows) {
+    manual.set(`${row.company_token}|${row.day}|${row.method}`, {
       manualAmount: Number(row.manual_amount) || 0,
-      otherAmount: Number(row.other_amount) || 0,
-      hasManual: row.has_manual === true
+      hasManual: true
     })
   }
-  return map
+
+  const other = new Map()
+  for (const row of otherRes.rows) {
+    other.set(`${row.company_token}|${row.day}`, Number(row.other_amount) || 0)
+  }
+
+  return { manual, other }
 }
 
 /**
@@ -533,25 +618,28 @@ export async function previewRappiImport(csvText, companyId) {
   const existing = await loadExistingDayTotals(result.days)
 
   const days = result.days.map((d) => {
-    const prior = existing.get(`${d.companyToken}|${d.day}`)
+    const prior = existing.manual.get(`${d.companyToken}|${d.day}|${d.paymentMethod}`)
+    const otherAmount = existing.other.get(`${d.companyToken}|${d.day}`) || 0
     return {
       ...d,
-      // The amount this import replaces (null when there's nothing to replace).
+      // The amount this import replaces for this platform (null when new).
       existing_amount: prior?.hasManual ? round2(prior.manualAmount) : null,
       // Real OlaClick orders on the same day. Untouched by the import, but shown
       // so a day's dashboard total isn't a surprise.
-      existing_other_amount: prior ? round2(prior.otherAmount) : 0,
+      existing_other_amount: round2(otherAmount),
       action: prior?.hasManual ? 'update' : 'create'
     }
   })
 
   const warnings = [...result.warnings]
-  const mixed = days.filter((d) => d.existing_other_amount > 0)
-  if (mixed.length > 0) {
+  const mixedKeys = new Set(
+    days.filter((d) => d.existing_other_amount > 0).map((d) => `${d.companyToken}|${d.day}`)
+  )
+  if (mixedKeys.size > 0) {
     warnings.push(note(
       'mixedDays',
-      { count: mixed.length },
-      `${mixed.length} day(s) also hold OlaClick orders. The imported total is added alongside those, not instead of them.`
+      { count: mixedKeys.size },
+      `${mixedKeys.size} day(s) also hold OlaClick orders. The imported total is added alongside those, not instead of them.`
     ))
   }
 
@@ -570,13 +658,15 @@ export async function previewRappiImport(csvText, companyId) {
 }
 
 /**
- * Write one synthetic order (+ its single rappi_pay payment) for an
- * (account, day). Atomic so the order and its payment can never drift apart.
+ * Write one synthetic order (+ its single platform payment) for an
+ * (account, day, platform). Atomic so the order and its payment can never drift
+ * apart. Rappi keeps the historical `manual-rappi-` id so re-imports update the
+ * row that used to hold the combined total.
  */
-async function upsertManualDay({ companyId, companyToken, day, amount }) {
+async function upsertManualDay({ companyId, companyToken, day, amount, source, paymentMethod, orderPrefix }) {
   // The token is part of the id so it stays globally unique, like the OlaClick
   // UUIDs it sits beside — two shops selling on the same day must not collide.
-  const orderId = `${MANUAL_ORDER_PREFIX}${companyToken}-${day}`
+  const orderId = `${orderPrefix}${companyToken}-${day}`
   const client = await pool.connect()
   try {
     await client.query('BEGIN')
@@ -602,7 +692,7 @@ async function upsertManualDay({ companyId, companyToken, day, amount }) {
          fetched_at = NOW(),
          is_manual = TRUE,
          deleted_at = NULL`,
-      [companyId, companyToken, orderId, day, ORDER_STATUS, ORDER_SOURCE, amount, SERVICE_TYPE]
+      [companyId, companyToken, orderId, day, ORDER_STATUS, source, amount, SERVICE_TYPE]
     )
 
     await client.query(
@@ -615,7 +705,7 @@ async function upsertManualDay({ companyId, companyToken, day, amount }) {
          method = EXCLUDED.method,
          bill_amount = EXCLUDED.bill_amount,
          received_amount = EXCLUDED.received_amount`,
-      [companyId, companyToken, orderId, day, PAYMENT_METHOD, amount]
+      [companyId, companyToken, orderId, day, paymentMethod, amount]
     )
 
     await client.query('COMMIT')
@@ -628,8 +718,8 @@ async function upsertManualDay({ companyId, companyToken, day, amount }) {
 }
 
 /**
- * Commit an import: upsert one synthetic order per (account, day), then
- * recompute daily_gains for every day touched so the gain calendar, profit
+ * Commit an import: upsert one synthetic order per (account, day, platform),
+ * then recompute daily_gains for every day touched so the gain calendar, profit
  * figures and the "record to beat" pick the revenue up immediately (their
  * scheduled recompute only covers the last 3 days).
  *
@@ -665,7 +755,10 @@ export async function commitRappiImport(csvText, companyId, meta = {}) {
         companyId,
         companyToken: day.companyToken,
         day: day.day,
-        amount: day.amount
+        amount: day.amount,
+        source: day.source,
+        paymentMethod: day.paymentMethod,
+        orderPrefix: day.orderPrefix
       })
       written.push(day)
     } catch (err) {
@@ -675,10 +768,14 @@ export async function commitRappiImport(csvText, companyId, meta = {}) {
   }
 
   // Gains are derived from the ledger we just wrote, so recompute after all the
-  // rows land. One call per (account, day) actually written — DB-only work, no
-  // OlaClick calls, so no throttling needed.
+  // rows land. One call per (account, day) — two platforms on the same day share
+  // one daily_gains row. DB-only work, no OlaClick calls, so no throttling.
   const gainFailures = []
+  const gainSeen = new Set()
   for (const day of written) {
+    const gainKey = `${day.companyToken}|${day.day}`
+    if (gainSeen.has(gainKey)) continue
+    gainSeen.add(gainKey)
     try {
       await computeAndStoreDailyGain(
         companyId,
@@ -705,6 +802,8 @@ export async function commitRappiImport(csvText, companyId, meta = {}) {
       amount: d.amount,
       previous_amount: d.existing_amount,
       source_orders: d.sourceOrders,
+      channel: d.channel,
+      payment_method: d.paymentMethod,
       action: d.action
     })),
     restaurant_map: preview.restaurantMap,
@@ -726,7 +825,8 @@ export async function commitRappiImport(csvText, companyId, meta = {}) {
       preview.stats.rowsTotal,
       preview.stats.rowsCounted,
       preview.stats.rowsSkippedCancelled + preview.stats.rowsSkippedUnmatched +
-        preview.stats.rowsSkippedDuplicate + preview.stats.rowsSkippedInvalid,
+        preview.stats.rowsSkippedDuplicate + preview.stats.rowsSkippedInvalid +
+        preview.stats.rowsSkippedUnknownChannel,
       daysCreated,
       daysUpdated,
       totalAmount,
@@ -737,7 +837,7 @@ export async function commitRappiImport(csvText, companyId, meta = {}) {
   )
 
   console.log(
-    `📥 Rappi import committed: ${written.length} day(s) (${daysCreated} new, ${daysUpdated} updated), total ${totalAmount}` +
+    `📥 Sales import committed: ${written.length} shop-day-platform(s) (${daysCreated} new, ${daysUpdated} updated), total ${totalAmount}` +
     (failures.length ? `, ${failures.length} write failure(s)` : '')
   )
 

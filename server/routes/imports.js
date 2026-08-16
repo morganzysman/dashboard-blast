@@ -60,7 +60,7 @@ router.post('/rappi-sales/preview', requireAuth, requireRole(['admin', 'super-ad
 })
 
 // POST /api/imports/rappi-sales/commit  { csv, file_name? }
-// Upserts one synthetic order per (account, day) and recomputes daily gains.
+// Upserts one synthetic order per (account, day, platform) and recomputes daily gains.
 router.post('/rappi-sales/commit', requireAuth, requireRole(['admin', 'super-admin']), async (req, res) => {
   try {
     const { csv, error } = readCsvBody(req)
