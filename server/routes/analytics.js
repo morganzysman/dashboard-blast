@@ -10,7 +10,7 @@ import { fetchStoreStatus } from '../services/publicOlaClickService.js'
 
 // Food apps Blast actually sells on. Narrowing the live lookup keeps
 // GET /v1/stores/status fast (each provider is checked in real time).
-const STORE_STATUS_PROVIDERS = ['RAPPI', 'RAPPI_TURBO']
+const STORE_STATUS_PROVIDERS = ['RAPPI', 'RAPPI_TURBO', 'PEDIDOSYA']
 
 // Live provider checks are slow and rate-limited; reuse a fresh result for
 // a short window so dashboard refresh / date-picker churn doesn't fan out
@@ -992,10 +992,10 @@ router.get('/daily-record', requireAuth, async (req, res) => {
 })
 
 // GET /api/analytics/store-status
-// Live open/closed state of each account on Rappi / Rappi Turbo (OlaClick
-// public API). One account failing does not fail the rest. Accounts without
-// a public_api_key, or whose key is missing `stores:read`, come back with
-// `available: false` so the UI can stay quiet rather than error.
+// Live open/closed state of each account on Rappi / Rappi Turbo / PedidosYa
+// (OlaClick public API). One account failing does not fail the rest. Accounts
+// without a public_api_key, or whose key is missing `stores:read`, come back
+// with `available: false` so the UI can stay quiet rather than error.
 router.get('/store-status', requireAuth, async (req, res) => {
   try {
     const companyId = req.user.companyId
