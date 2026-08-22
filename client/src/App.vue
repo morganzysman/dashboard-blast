@@ -35,6 +35,10 @@
       </main>
     </div>
 
+    <!-- Ask employees for contract identity on every page until it is complete.
+         Skip only dismisses this visit; the next navigation asks again. -->
+    <ContractInfoPrompt v-if="authStore.isAuthenticated && authStore.user?.role === 'employee'" />
+
     <!-- Global notifications -->
     <NotificationToast />
   </div>
@@ -46,6 +50,7 @@ import { useAuthStore } from './stores/auth'
 import Sidebar from './components/Sidebar.vue'
 import TopNavigation from './components/TopNavigation.vue'
 import NotificationToast from './components/NotificationToast.vue'
+import ContractInfoPrompt from './components/ContractInfoPrompt.vue'
 
 const authStore = useAuthStore()
 const isMobileSidebarOpen = ref(false)

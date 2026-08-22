@@ -74,12 +74,12 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import api from '../utils/api'
 import { compressImage } from '../utils/image'
-import { useAuthStore } from '../stores/auth'
 
-const authStore = useAuthStore()
+const route = useRoute()
 
 const show = ref(false)
 const saving = ref(false)
@@ -114,8 +114,9 @@ const canSave = computed(() => {
   return textComplete && sideReady('front') && sideReady('back')
 })
 
-// Per-login skip flag: keyed by session so it reappears on the next login.
-const skipKey = computed(() => `contractPromptSkipped:${authStore.sessionId || 'anon'}`)
+// Skip only hides this overlay until the next navigation. Incomplete identity
+// is asked again on every page — skip is "later on this screen", not "this session".
+const skipped = ref(false)
 
 const onFileChange = async (e, side) => {
   const file = e.target.files && e.target.files[0]
@@ -156,16 +157,12 @@ const submit = async () => {
 }
 
 const skip = () => {
-  try { sessionStorage.setItem(skipKey.value, '1') } catch { /* ignore */ }
+  skipped.value = true
   show.value = false
 }
 
-onMounted(async () => {
-  // Respect a skip from earlier in this login session.
-  try {
-    if (sessionStorage.getItem(skipKey.value) === '1') return
-  } catch { /* ignore */ }
-
+const check = async () => {
+  if (skipped.value) return
   try {
     const res = await api.getMyContractInfo()
     const d = res?.data
@@ -181,5 +178,12 @@ onMounted(async () => {
     // Non-blocking: if the check fails, don't trap the employee.
     console.error('Contract info check failed', e)
   }
+}
+
+onMounted(check)
+
+watch(() => route.fullPath, () => {
+  skipped.value = false
+  check()
 })
 </script>
