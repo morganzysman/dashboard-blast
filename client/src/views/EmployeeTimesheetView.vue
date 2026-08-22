@@ -47,6 +47,7 @@
           <div>
             <h2 class="text-lg font-bold text-fg-strong">{{ $t('employee.timesheet.title') }}</h2>
             <p class="text-sm text-fg-muted">{{ $t('payroll.payrollPeriod') }}: {{ periodLabel }}</p>
+            <p v-if="payMode === 'monthly'" class="text-xs text-fg-muted mt-1">{{ $t('employee.timesheet.monthlyPayHint') }}</p>
           </div>
           <div class="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
             <div class="inline-flex overflow-hidden rounded-md border border-gray-200">
@@ -68,14 +69,7 @@
         <div class="mt-4">
           <ResponsiveTable
             :items="entries"
-            :columns="[
-              { key: 'account', label: $t('rentability.account'), headerClass: 'whitespace-normal', cellClass: 'whitespace-normal break-words max-w-[180px]', skeletonWidth: 'w-40' },
-              { key: 'clock_in', label: $t('employee.timesheet.clockInTime'), headerClass: 'whitespace-normal', cellClass: 'whitespace-normal', skeletonWidth: 'w-32' },
-              { key: 'clock_out', label: $t('employee.timesheet.clockOutTime'), headerClass: 'whitespace-normal', cellClass: 'whitespace-normal', skeletonWidth: 'w-24' },
-              { key: 'duration', label: $t('common.duration'), headerClass: 'whitespace-normal', cellClass: 'whitespace-normal', skeletonWidth: 'w-20' },
-              { key: 'earned', label: $t('employee.timesheet.earned'), headerClass: 'whitespace-normal', cellClass: 'whitespace-normal text-right', skeletonWidth: 'w-20' },
-              { key: 'status', label: $t('common.status'), headerClass: 'whitespace-normal', cellClass: 'whitespace-normal', skeletonWidth: 'w-16' }
-            ]"
+            :columns="timesheetColumns"
             :stickyHeader="true"
             :loading="loading"
             rowKeyField="id"
@@ -85,7 +79,7 @@
             <template #cell-clock_in="{ item }">{{ formatDateTime(item.clock_in_at) }}</template>
             <template #cell-clock_out="{ item }">{{ item.clock_out_at ? formatDateTime(item.clock_out_at) : '—' }}</template>
             <template #cell-duration="{ item }">{{ formatDuration(secondsBetween(item.clock_in_at, item.clock_out_at)) }}</template>
-            <template #cell-earned="{ item }">
+            <template v-if="showHourlyPay" #cell-earned="{ item }">
               <span class="inline-flex items-center gap-1 font-medium">
                 {{ formatCurrency(item.amount) }}
                 <MaterialIcon v-if="item.is_holiday" name="celebration" :size="14" class="text-purple-600" :title="$t('payroll.paidDouble')" />
@@ -99,10 +93,10 @@
                 <span v-else-if="item.clock_out_at" class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-warning-bg text-warning-fg rounded">
                   <MaterialIcon name="schedule" :size="14" /> {{ $t('employee.timesheet.pendingApproval') }}
                 </span>
-                <span v-if="item.is_holiday" class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-purple-100 text-purple-800 rounded" :title="$t('payroll.paidDouble')">
+                <span v-if="item.is_holiday" class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-purple-100 text-purple-800 rounded" :title="showHourlyPay ? $t('payroll.paidDouble') : $t('payroll.feriado')">
                   <MaterialIcon name="celebration" :size="14" /> {{ $t('payroll.feriado') }}
                 </span>
-                <span v-if="item.paid" class="inline-flex items-center px-2 py-1 text-xs font-medium bg-success-bg text-success-fg rounded">
+                <span v-if="showHourlyPay && item.paid" class="inline-flex items-center px-2 py-1 text-xs font-medium bg-success-bg text-success-fg rounded">
                   $ {{ $t('employee.timesheet.isPaid') }}
                 </span>
               </div>
@@ -111,7 +105,7 @@
               <div class="font-medium text-gray-900 dark:text-gray-100 mb-1">{{ accountLabel(item.company_token) }}</div>
               <div class="text-xs text-gray-600 dark:text-gray-400">{{ formatDateTime(item.clock_in_at) }} → {{ item.clock_out_at ? formatDateTime(item.clock_out_at) : '—' }}</div>
               <div class="text-xs text-gray-600 dark:text-gray-400">{{ $t('common.duration') }}: {{ formatDuration(secondsBetween(item.clock_in_at, item.clock_out_at)) }}</div>
-              <div class="text-xs text-gray-900 dark:text-gray-100 font-medium mb-2 flex items-center gap-1">
+              <div v-if="showHourlyPay" class="text-xs text-gray-900 dark:text-gray-100 font-medium mb-2 flex items-center gap-1">
                 {{ $t('employee.timesheet.earned') }}: {{ formatCurrency(item.amount) }}
                 <MaterialIcon v-if="item.is_holiday" name="celebration" :size="14" class="text-purple-600" :title="$t('payroll.paidDouble')" />
               </div>
@@ -122,10 +116,10 @@
                 <span v-else-if="item.clock_out_at" class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-warning-bg text-warning-fg rounded">
                   <MaterialIcon name="schedule" :size="14" /> {{ $t('employee.timesheet.pendingApproval') }}
                 </span>
-                <span v-if="item.is_holiday" class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-purple-100 text-purple-800 rounded" :title="$t('payroll.paidDouble')">
+                <span v-if="item.is_holiday" class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-purple-100 text-purple-800 rounded" :title="showHourlyPay ? $t('payroll.paidDouble') : $t('payroll.feriado')">
                   <MaterialIcon name="celebration" :size="14" /> {{ $t('payroll.feriado') }}
                 </span>
-                <span v-if="item.paid" class="inline-flex items-center px-2 py-1 text-xs font-medium bg-success-bg text-success-fg rounded">
+                <span v-if="showHourlyPay && item.paid" class="inline-flex items-center px-2 py-1 text-xs font-medium bg-success-bg text-success-fg rounded">
                   $ {{ $t('employee.timesheet.isPaid') }}
                 </span>
               </div>
@@ -133,31 +127,31 @@
           </ResponsiveTable>
           <div class="mt-4 text-right text-fg-strong font-medium space-y-1">
             <div>{{ $t('employee.timesheet.totalHours') }}: {{ formatDuration(totalSeconds) }}</div>
-            <div class="text-lg font-bold text-fg-strong">{{ $t('employee.timesheet.totalEarned') }}: {{ formatCurrency(totalAmount) }}</div>
+            <div v-if="showHourlyPay" class="text-lg font-bold text-fg-strong">{{ $t('employee.timesheet.totalEarned') }}: {{ formatCurrency(totalAmount) }}</div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Weekly earnings breakdown (Monday–Sunday) -->
+    <!-- Weekly breakdown (Monday–Sunday) -->
     <div class="card" v-if="weeklyBreakdown.length">
       <div class="card-body">
         <div class="flex items-center justify-between mb-1">
-          <h3 class="text-md font-semibold">{{ $t('employee.timesheet.weeklyEarnings') }}</h3>
+          <h3 class="text-md font-semibold">{{ payMode === 'monthly' ? $t('employee.timesheet.weeklyHours') : $t('employee.timesheet.weeklyEarnings') }}</h3>
         </div>
-        <p class="text-xs text-fg-muted mb-3">{{ $t('employee.timesheet.weeklyEarningsHint') }}</p>
+        <p class="text-xs text-fg-muted mb-3">{{ payMode === 'monthly' ? $t('employee.timesheet.weeklyHoursHint') : $t('employee.timesheet.weeklyEarningsHint') }}</p>
         <div class="space-y-2">
           <div v-for="w in weeklyBreakdown" :key="w.key" class="flex items-center justify-between rounded-md p-3" style="background: var(--surface-1); border: 1px solid var(--border);">
             <div>
               <div class="text-sm font-medium text-fg-strong">{{ w.label }}</div>
               <div class="text-xs text-fg-muted flex items-center gap-1">
                 {{ formatDuration(w.seconds) }}
-                <span v-if="w.hasHoliday" class="inline-flex items-center gap-0.5 text-purple-600" :title="$t('payroll.paidDouble')">
+                <span v-if="w.hasHoliday" class="inline-flex items-center gap-0.5 text-purple-600" :title="$t('payroll.feriado')">
                   · <MaterialIcon name="celebration" :size="12" /> {{ $t('payroll.feriado') }}
                 </span>
               </div>
             </div>
-            <div class="text-base font-semibold text-fg-strong">{{ formatCurrency(w.amount) }}</div>
+            <div v-if="showHourlyPay" class="text-base font-semibold text-fg-strong">{{ formatCurrency(w.amount) }}</div>
           </div>
         </div>
       </div>
@@ -175,14 +169,30 @@ import ResponsiveTable from '../components/ui/ResponsiveTable.vue'
 import MaterialIcon from '../components/ui/MaterialIcon.vue'
 import ContractInfoPrompt from '../components/ContractInfoPrompt.vue'
 import ContractSignPrompt from '../components/ContractSignPrompt.vue'
+import { useHourlyPayVisible } from '../composables/useHourlyPayVisible'
 
 const entries = ref([])
 const loading = ref(false)
 const auth = useAuthStore()
 const { t } = useI18n()
 const period = ref({ start: '', end: '' })
+const { showHourlyPay, payMode } = useHourlyPayVisible()
 
 const periodLabel = computed(() => `${period.value.start} → ${period.value.end}`)
+
+const timesheetColumns = computed(() => {
+  const cols = [
+    { key: 'account', label: t('rentability.account'), headerClass: 'whitespace-normal', cellClass: 'whitespace-normal break-words max-w-[180px]', skeletonWidth: 'w-40' },
+    { key: 'clock_in', label: t('employee.timesheet.clockInTime'), headerClass: 'whitespace-normal', cellClass: 'whitespace-normal', skeletonWidth: 'w-32' },
+    { key: 'clock_out', label: t('employee.timesheet.clockOutTime'), headerClass: 'whitespace-normal', cellClass: 'whitespace-normal', skeletonWidth: 'w-24' },
+    { key: 'duration', label: t('common.duration'), headerClass: 'whitespace-normal', cellClass: 'whitespace-normal', skeletonWidth: 'w-20' },
+  ]
+  if (showHourlyPay.value) {
+    cols.push({ key: 'earned', label: t('employee.timesheet.earned'), headerClass: 'whitespace-normal', cellClass: 'whitespace-normal text-right', skeletonWidth: 'w-20' })
+  }
+  cols.push({ key: 'status', label: t('common.status'), headerClass: 'whitespace-normal', cellClass: 'whitespace-normal', skeletonWidth: 'w-16' })
+  return cols
+})
 
 const secondsBetween = (a,b) => {
   if (!a || !b) return 0

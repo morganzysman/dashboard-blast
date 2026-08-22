@@ -116,12 +116,12 @@
               <div class="text-fg-strong">{{ formatTime(e.clock_in_at) }} → {{ e.clock_out_at ? formatTime(e.clock_out_at) : '…' }}</div>
               <div class="text-fg-muted text-xs">{{ formatDurationHms(e.seconds) }}</div>
             </div>
-            <div class="font-medium">{{ formatCurrency(e.amount || 0) }}</div>
+            <div v-if="showHourlyPay" class="font-medium">{{ formatCurrency(e.amount || 0) }}</div>
           </div>
         </div>
         <div class="mt-3 flex items-center justify-between text-sm">
           <div class="text-fg-muted">Total</div>
-          <div class="font-semibold">{{ formatDurationHms(recap.totalSeconds) }} · {{ formatCurrency(recap.totalAmount) }}</div>
+          <div class="font-semibold">{{ formatDurationHms(recap.totalSeconds) }}<template v-if="showHourlyPay"> · {{ formatCurrency(recap.totalAmount) }}</template></div>
         </div>
         <div class="mt-3 text-right">
           <button class="btn-primary btn-sm" @click="showRecap=false">Close</button>
@@ -139,10 +139,12 @@ import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../stores/auth'
 import api from '../utils/api'
 import TrainingEvidencePrompt from '../components/TrainingEvidencePrompt.vue'
+import { useHourlyPayVisible } from '../composables/useHourlyPayVisible'
 
 const auth = useAuthStore()
 const router = useRouter()
 const { t } = useI18n()
+const { showHourlyPay } = useHourlyPayVisible()
 const accounts = computed(() => auth.user?.userAccounts || [])
 const companyToken = ref(accounts.value[0]?.company_token || '')
 const qrSecret = ref('')

@@ -1282,7 +1282,10 @@
       "earned": "Earned",
       "totalEarned": "Total earned",
       "weeklyEarnings": "Weekly earnings",
-      "weeklyEarningsHint": "Your pay grouped by week (Monday to Sunday)."
+      "weeklyEarningsHint": "Your pay grouped by week (Monday to Sunday).",
+      "weeklyHours": "Weekly hours",
+      "weeklyHoursHint": "Hours grouped by week (Monday to Sunday).",
+      "monthlyPayHint": "Your contract is a monthly salary. Hours are for attendance — this screen does not show an amount due."
     },
     "clock": {
       "title": "Employee Clock",

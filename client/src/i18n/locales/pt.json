@@ -782,7 +782,10 @@
       "earned": "Ganho",
       "totalEarned": "Total ganho",
       "weeklyEarnings": "Ganhos semanais",
-      "weeklyEarningsHint": "Seu pagamento agrupado por semana (de segunda a domingo)."
+      "weeklyEarningsHint": "Seu pagamento agrupado por semana (de segunda a domingo).",
+      "weeklyHours": "Horas semanais",
+      "weeklyHoursHint": "Horas agrupadas por semana (de segunda a domingo).",
+      "monthlyPayHint": "Seu contrato é de salário mensal. As horas são para frequência — esta tela não mostra um valor a pagar."
     },
     "warnings": {
       "title": "Advertências do Funcionário",

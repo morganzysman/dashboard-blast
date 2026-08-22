@@ -8,6 +8,7 @@ import { Router } from 'express'
 import { requireAuth } from '../middleware/auth.js'
 import { pool } from '../database.js'
 import { getCountryConfig, getContractType, DEFAULT_COUNTRY } from '../config/contractCountries.js'
+import { payModeForContracts } from '../config/payMode.js'
 import { decodeImagePayload } from '../utils/imagePayload.js'
 import {
   contractStatusFor,
@@ -176,6 +177,7 @@ router.get('/contracts', requireAuth, async (req, res) => {
           // i18n suffix under `contract.types.` so the worker UI can localize
           // the contract type without the admin-only contract-config endpoint.
           type_label_key: type?.labelKey || null,
+          category: type?.category || null,
           params: r.params,
           start_date: r.start_date,
           end_date: r.end_date,
@@ -192,7 +194,12 @@ router.get('/contracts', requireAuth, async (req, res) => {
       // Hide contracts still awaiting the employer's signature — they only
       // become visible to the worker after the employer signs.
       .filter((c) => c.status !== 'awaiting_employer')
-    res.json({ success: true, data, awaitingCount: data.filter((c) => c.awaiting_signature).length })
+    res.json({
+      success: true,
+      data,
+      awaitingCount: data.filter((c) => c.awaiting_signature).length,
+      pay_mode: payModeForContracts(data),
+    })
   } catch (e) {
     console.error('Error listing own contracts:', e)
     res.status(500).json({ success: false, error: 'Failed to list contracts' })

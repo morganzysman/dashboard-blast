@@ -26,7 +26,8 @@
     "docker:reset": "./scripts/dev-reset.sh",
     "docker:build": "docker-compose -f deployment/dev/docker-compose.dev.yml build",
     "docker:shell": "docker-compose -f deployment/dev/docker-compose.dev.yml exec app sh",
-    "docker:db": "docker-compose -f deployment/dev/docker-compose.dev.yml exec postgres psql -U postgres -d olaclick_analytics"
+    "docker:db": "docker-compose -f deployment/dev/docker-compose.dev.yml exec postgres psql -U postgres -d olaclick_analytics",
+    "test": "node --test server/config/payMode.test.js"
   },
   "keywords": [
     "dashboard",

@@ -781,7 +781,10 @@
       "earned": "Gagné",
       "totalEarned": "Total gagné",
       "weeklyEarnings": "Gains hebdomadaires",
-      "weeklyEarningsHint": "Votre paie regroupée par semaine (du lundi au dimanche)."
+      "weeklyEarningsHint": "Votre paie regroupée par semaine (du lundi au dimanche).",
+      "weeklyHours": "Heures hebdomadaires",
+      "weeklyHoursHint": "Heures regroupées par semaine (du lundi au dimanche).",
+      "monthlyPayHint": "Votre contrat est un salaire mensuel. Les heures servent à l'assiduité — cet écran n'affiche pas de montant dû."
     },
     "warnings": {
       "title": "Avertissements des employés",

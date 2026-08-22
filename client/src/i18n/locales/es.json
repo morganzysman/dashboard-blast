@@ -787,7 +787,10 @@
       "earned": "Ganado",
       "totalEarned": "Total ganado",
       "weeklyEarnings": "Ganancias semanales",
-      "weeklyEarningsHint": "Tu pago agrupado por semana (de lunes a domingo)."
+      "weeklyEarningsHint": "Tu pago agrupado por semana (de lunes a domingo).",
+      "weeklyHours": "Horas semanales",
+      "weeklyHoursHint": "Horas agrupadas por semana (de lunes a domingo).",
+      "monthlyPayHint": "Tu contrato es de sueldo mensual. Las horas son para asistencia — esta pantalla no muestra un monto a pagar."
     },
     "warnings": {
       "title": "Advertencias del Empleado",
