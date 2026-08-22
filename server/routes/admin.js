@@ -30,6 +30,50 @@ import {
 
 const router = Router();
 
+// List query: skip ID-scan BYTEA columns (they can be large) and expose
+// completeness flags instead. Identity fields are only returned for employees.
+const USERS_LIST_SELECT = `u.id, u.email, u.name, u.role, u.hourly_rate, u.hired_at, u.job_type,
+         u.is_active, u.created_at, u.updated_at, u.last_login, u.company_id,
+         u.document_type, u.document_number,
+         (NULLIF(BTRIM(COALESCE(u.address, '')), '') IS NOT NULL) AS has_address,
+         (u.id_document_image IS NOT NULL) AS has_id_document_front,
+         (u.id_document_image_back IS NOT NULL) AS has_id_document_back,
+         c.name AS company_name`
+
+function shapeListUser(user) {
+  const identityComplete = !!(
+    user.document_type &&
+    user.document_number &&
+    user.has_address &&
+    user.has_id_document_front &&
+    user.has_id_document_back
+  )
+  return {
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    role: user.role,
+    hourly_rate: user.hourly_rate != null ? Number(Number(user.hourly_rate).toFixed(2)) : null,
+    hired_at: user.hired_at || null,
+    job_type: user.job_type || null,
+    is_active: user.is_active,
+    created_at: user.created_at,
+    updated_at: user.updated_at,
+    last_login: user.last_login,
+    company: user.company_id ? { id: user.company_id, name: user.company_name || null } : null,
+    contract_identity: user.role === 'employee'
+      ? {
+          document_type: user.document_type || null,
+          document_number: user.document_number || null,
+          has_address: !!user.has_address,
+          has_id_document_front: !!user.has_id_document_front,
+          has_id_document_back: !!user.has_id_document_back,
+          complete: identityComplete,
+        }
+      : null,
+  }
+}
+
 // Get all users (super-admin only)
 router.get('/users', requireAuth, requireRole(['admin', 'super-admin']), async (req, res) => {
   try {
@@ -55,7 +99,7 @@ router.get('/users', requireAuth, requireRole(['admin', 'super-admin']), async (
           idx += rolesList.length
         }
         const q = await pool.query(
-          `SELECT u.*, c.name AS company_name
+          `SELECT ${USERS_LIST_SELECT}
            FROM users u
            LEFT JOIN companies c ON c.id = u.company_id
            ${where}
@@ -66,7 +110,7 @@ router.get('/users', requireAuth, requireRole(['admin', 'super-admin']), async (
       } else {
         // default: previous behavior (no employees)
         const q = await pool.query(
-          `SELECT u.*, c.name AS company_name
+          `SELECT ${USERS_LIST_SELECT}
            FROM users u
            LEFT JOIN companies c ON c.id = u.company_id
            WHERE ($1::boolean OR u.is_active = TRUE)
@@ -78,32 +122,20 @@ router.get('/users', requireAuth, requireRole(['admin', 'super-admin']), async (
       }
     } else {
       const q = await pool.query(
-        `SELECT u.*, c.name AS company_name
+        `SELECT ${USERS_LIST_SELECT}
          FROM users u
          LEFT JOIN companies c ON c.id = u.company_id
          WHERE ($1::boolean OR u.is_active = TRUE)
            AND u.company_id = $2
-           ${rolesList && rolesList.length ? `AND u.role IN (${rolesList.map((_,i)=>`$${i+3}`).join(', ')})` : ''}`,
+           ${rolesList && rolesList.length ? `AND u.role IN (${rolesList.map((_,i)=>`$${i+3}`).join(', ')})` : ''}
+         ORDER BY u.created_at DESC`,
         [includeInactive, req.user.companyId || null, ...(rolesList || [])]
       )
       users = q.rows
     }
     
     // Shape response (exclude deprecated fields, include company relation)
-    const safeUsers = users.map(user => ({
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      role: user.role,
-      hourly_rate: user.hourly_rate != null ? Number(Number(user.hourly_rate).toFixed(2)) : null,
-      hired_at: user.hired_at || null,
-      job_type: user.job_type || null,
-      is_active: user.is_active,
-      created_at: user.created_at,
-      updated_at: user.updated_at,
-      last_login: user.last_login,
-      company: user.company_id ? { id: user.company_id, name: user.company_name || null } : null
-    }));
+    const safeUsers = users.map(shapeListUser)
     
     res.json({
       success: true,

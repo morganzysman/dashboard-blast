@@ -121,6 +121,11 @@
               <option value="active">{{ $t('contract.status.active') }}</option>
               <option value="expired">{{ $t('contract.status.expired') }}</option>
             </select>
+            <select v-model="identityFilter" class="form-input w-full sm:w-auto text-sm">
+              <option value="">{{ $t('contract.employeeDataColumn') }}: {{ $t('contract.filterAll') }}</option>
+              <option value="missing">{{ $t('contract.filterIdentityMissing') }}</option>
+              <option value="complete">{{ $t('contract.employeeDataComplete') }}</option>
+            </select>
           </div>
         </div>
       </div>
@@ -156,7 +161,11 @@
                 {{ user.role?.replace('-', ' ') }}
               </span>
               <ContractStatusBadge v-if="user.role === 'employee'" :status="contractStatusFor(user)" size="sm" />
-              <span class="text-xs text-fg-muted">{{ $t('admin.company') }}: {{ user.company?.name || '—' }}</span>
+              <span v-if="user.role === 'employee'" class="text-xs text-fg-muted">
+                <template v-if="identityLabel(user)">{{ identityLabel(user) }} Â· </template>
+                {{ identityComplete(user) ? $t('contract.employeeDataComplete') : $t('contract.employeeDataMissing') }}
+              </span>
+              <span class="text-xs text-fg-muted">{{ $t('admin.company') }}: {{ user.company?.name || 'â€”' }}</span>
             </div>
             
             <div class="grid grid-cols-2 gap-2 mt-2">
@@ -177,6 +186,7 @@
               <tr>
                 <th>{{ $t('admin.user') }}</th>
                 <th>{{ $t('admin.role') }}</th>
+                <th>{{ $t('contract.employeeDataColumn') }}</th>
                 <th>{{ $t('common.status') }}</th>
                  <th>{{ $t('admin.company') }}</th>
                 <th>{{ $t('admin.hourlyRate') }}</th>
@@ -211,12 +221,30 @@
                   </div>
                 </td>
                 <td>
+                  <div v-if="user.role === 'employee'" class="flex flex-col items-start gap-1">
+                    <span v-if="identityLabel(user)" class="text-sm text-fg-strong">{{ identityLabel(user) }}</span>
+                    <span
+                      class="inline-flex items-center gap-1.5 rounded-full font-medium border px-2 py-0.5 text-xs"
+                      :class="identityComplete(user)
+                        ? 'bg-green-50 text-green-700 border-green-200'
+                        : 'bg-amber-50 text-amber-700 border-amber-200'"
+                    >
+                      <span
+                        class="inline-block rounded-full w-1.5 h-1.5"
+                        :style="{ backgroundColor: identityComplete(user) ? 'var(--success)' : 'var(--warning)' }"
+                      ></span>
+                      {{ identityComplete(user) ? $t('contract.employeeDataComplete') : $t('contract.employeeDataMissing') }}
+                    </span>
+                  </div>
+                  <span v-else class="text-sm text-fg-muted">â€”</span>
+                </td>
+                <td>
                   <span class="badge" :class="user.is_active ? 'badge-success' : 'badge-gray'">
                     {{ user.is_active ? $t('common.active') : $t('common.inactive') }}
                   </span>
                 </td>
                 <td>
-                  <div class="text-sm text-fg-strong">{{ user.company?.name || '—' }}</div>
+                  <div class="text-sm text-fg-strong">{{ user.company?.name || 'â€”' }}</div>
                 </td>
                 <td>
                   <div class="flex items-center gap-1">
@@ -231,7 +259,7 @@
                     :disabled="!isStationRole(user.role)"
                     :title="!isStationRole(user.role) ? $t('admin.jobTypeEmployeeOnly') : ''"
                   >
-                    <option value="">—</option>
+                    <option value="">â€”</option>
                     <option value="kitchen">{{ $t('admin.jobTypeKitchen') }}</option>
                     <option value="waiter">{{ $t('admin.jobTypeWaiter') }}</option>
                   </select>
@@ -338,6 +366,7 @@ const searchQuery = ref('')
 const roleFilter = ref('')
 const statusFilter = ref('')
 const contractFilter = ref('')
+const identityFilter = ref('')
 const contractStatuses = ref({})
 const showUserModal = ref(false)
 const selectedUser = ref(null)
@@ -357,12 +386,24 @@ const filteredUsers = computed(() => {
       (statusFilter.value === 'inactive' && !user.is_active)
     const matchesContract = !contractFilter.value ||
       (user.role === 'employee' && contractStatusFor(user) === contractFilter.value)
+    const matchesIdentity = !identityFilter.value ||
+      user.role !== 'employee' ||
+      (identityFilter.value === 'complete' && identityComplete(user)) ||
+      (identityFilter.value === 'missing' && !identityComplete(user))
     
-    return matchesSearch && matchesRole && matchesStatus && matchesContract
+    return matchesSearch && matchesRole && matchesStatus && matchesContract && matchesIdentity
   })
 })
 
 const contractStatusFor = (user) => contractStatuses.value[user.id] || 'none'
+
+const identityOf = (user) => user.contract_identity || null
+const identityComplete = (user) => !!identityOf(user)?.complete
+const identityLabel = (user) => {
+  const id = identityOf(user)
+  if (!id) return ''
+  return [id.document_type, id.document_number].filter(Boolean).join(' ')
+}
 
 const activeUsers = computed(() => users.value.filter(user => user.is_active).length)
 const adminUsers = computed(() => users.value.filter(user => user.role === 'admin').length)
